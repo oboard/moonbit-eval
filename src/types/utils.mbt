@@ -4,7 +4,7 @@ pub fn to_json(self : Type) -> Json {
     Unit => "Unit"
     Bool => "Bool"
     Int => "Int"
-    Double => "Float"
+    Double => "Double"
     Fun(params, result) =>
       ["Fun", params.map(Type::to_json) |> Json::Array, result.to_json()]
     Tuple(types) => ["Tuple", types.map(Type::to_json) |> Json::Array]
@@ -29,7 +29,7 @@ pub fn Type::from_json(self : Json) -> Type!Error {
     "Unit" => Unit
     "Bool" => Bool
     "Int" => Int
-    "Float" => Double
+    "Double" => Double
     ["Fun", [.. as params], result] =>
       Fun(from!(params), result |> Type::from_json!())
     ["Tuple", [.. as types]] => Tuple(from!(types))
@@ -130,7 +130,8 @@ pub fn to_json(self : Syntax) -> Json {
     Unit => "Unit"
     Bool(b) => ["Bool", if b { true } else { false }]
     Int(i) => ["Int", Json::Number(i.to_double())]
-    Double(f) => ["Float", Json::Number(f)]
+    String(i) => ["String", Json::String(i)]
+    Double(f) => ["Double", Json::Number(f)]
     Not(e) => ["Not", e.to_json()]
     Neg(e, kind=Some(Double)) => ["FNeg", e.to_json()]
     Neg(e, kind=_) => ["Neg", e.to_json()]
@@ -178,10 +179,10 @@ pub fn Syntax::from_json(json : Json) -> Syntax! {
           }
         None => fail!("invalid json: should contain a number as int")
       }
-    ["Float", f] =>
+    ["Double", f] =>
       match f.as_number() {
         Some(f) => Double(f)
-        None => fail!("invalid json: should contain a number as float")
+        None => fail!("invalid json: should contain a number as Double")
       }
     ["Not", e] => Not(e |> Syntax::from_json!())
     ["Neg", e] => Neg(e |> Syntax::from_json!(), kind=None)
@@ -365,7 +366,7 @@ test {
   inspect!(
     Syntax::Double(1.0).to_json().stringify(),
     content=
-      #|["Float",1]
+      #|["Double",1]
     ,
   )
   inspect!(
@@ -395,7 +396,7 @@ test {
   inspect!(Syntax::from_json!(["Bool", true]), content="Bool(true)")
   inspect!(Syntax::from_json!(["Bool", false]), content="Bool(false)")
   inspect!(Syntax::from_json!(["Int", 1]), content="Int(1)")
-  inspect!(Syntax::from_json!(["Float", 1.0]), content="Double(1)")
+  inspect!(Syntax::from_json!(["Double", 1.0]), content="Double(1)")
   inspect!(
     Syntax::from_json!(["Not", ["Bool", true]]),
     content="Not(Bool(true))",
@@ -421,19 +422,19 @@ test {
     content="Prim(Int(1), Int(2), Div, kind=None)",
   )
   inspect!(
-    Syntax::from_json!(["FAdd", ["Float", 1.0], ["Float", 2.0]]),
+    Syntax::from_json!(["FAdd", ["Double", 1.0], ["Double", 2.0]]),
     content="Prim(Double(1), Double(2), Add, kind=Some(Double))",
   )
   inspect!(
-    Syntax::from_json!(["FSub", ["Float", 1.0], ["Float", 2.0]]),
+    Syntax::from_json!(["FSub", ["Double", 1.0], ["Double", 2.0]]),
     content="Prim(Double(1), Double(2), Sub, kind=Some(Double))",
   )
   inspect!(
-    Syntax::from_json!(["FMul", ["Float", 1.0], ["Float", 2.0]]),
+    Syntax::from_json!(["FMul", ["Double", 1.0], ["Double", 2.0]]),
     content="Prim(Double(1), Double(2), Mul, kind=Some(Double))",
   )
   inspect!(
-    Syntax::from_json!(["FDiv", ["Float", 1.0], ["Float", 2.0]]),
+    Syntax::from_json!(["FDiv", ["Double", 1.0], ["Double", 2.0]]),
     content="Prim(Double(1), Double(2), Div, kind=Some(Double))",
   )
   inspect!(
