@@ -1,32 +1,43 @@
-fn eval_code(code : String) -> Unit {
-  let tokens = []
-  @lex.lex({ str: code, offset: 0, array: tokens })
-  // println(tokens)
-  match @parser.parse_syntax(tokens[:]) {
-    Some((expr, _)) => {
-      // println(expr)
-      let interpreter = ClosureInterpreter::new()
-      interpreter.add_extern_fn(
-        "println",
-        fn(arr) {
-          match arr[0] {
-            Int(i) => println(i)
-            Double(i) => println(i)
-            Bool(i) => println(i)
-            String(i) => println(i)
-            _ => println("Unknown type")
-          }
-          Unit
-        },
-      )
-      interpreter.visit(expr) |> ignore
-    }
-    None => println("Syntax error")
-  }
+test "basic" {
+  let vm = MoonBitVM::new()
+  inspect!(vm.eval("1"), content="Int(1)")
+  inspect!(vm.eval("1+1"), content="Int(2)")
+  inspect!(vm.eval("2-1"), content="Int(1)")
+  inspect!(
+    vm.eval("\"hello\""),
+    content=
+      #|String("hello")
+    ,
+  )
+  // inspect!(vm.eval("println(\"hello\")"), content="Unit")
 }
 
-test "println" {
-  // eval_code("let x: Int = 2\nlet b: Int = 3\nprintln(x+b)")
-  eval_code("println(\"hello哈哈world\")")
-  // eval_code("println(1)")
+test "variables" {
+  let vm = MoonBitVM::new()
+  inspect!(vm.eval("let a = 1"), content="Unit")
+  inspect!(vm.eval("a"), content="Int(1)")
+}
+
+test "function" {
+  let vm = MoonBitVM::new()
+  inspect!(vm.eval("fn double(x: Int) -> Int { x*2 }"), content="Unit")
+  inspect!(vm.eval("double(2)"), content="Int(4)")
+}
+
+
+
+test "str" {
+  let vm = MoonBitVM::new()
+  inspect!(vm.eval("let str1: String = \"haha\""), content="Unit")
+  inspect!(vm.eval("let str2: String = \"hello\""), content="Unit")
+  inspect!(vm.eval("str1 + str2"), content=
+    #|String("hahahello")
+  )
+}
+
+
+test "if" {
+  let vm = MoonBitVM::new()
+  inspect!(vm.eval("if true { 1 } else { 2 }"), content="Int(1)")
+  inspect!(vm.eval("if false { 1 } else { 2 }"), content="Int(2)")
 }

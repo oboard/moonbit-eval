@@ -141,11 +141,11 @@ fn fn_statement(
     ),
   )
   .and(block) // 解析函数体
-  .and(semicolon)
+  // .and(semicolon)
   .map(
     fn {
       // ((((_,fun_name), ((_,array_params),_)),ty), body)
-      ((((((_, fun_name), _), (array_params, _)), return_type), body), _) => {
+      (((((_, fun_name), _), (array_params, _)), return_type), body) => {
         let params = []
         for param in array_params {
           params.push(param.0)

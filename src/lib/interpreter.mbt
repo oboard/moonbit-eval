@@ -93,6 +93,15 @@ fn ClosureInterpreter::visit(
       // println("y: \{y}")
       // println("op: \{op}")
       match result {
+        String(x) =>
+          match y {
+            String(y) =>
+              match op {
+                Add => String(x + y)
+                _ => Unit
+              }
+            _ => Unit
+          }
         Int(x) =>
           match y {
             Int(y) =>
@@ -118,6 +127,22 @@ fn ClosureInterpreter::visit(
         _ => Unit
       }
     }
+    LetRec({ name, args, body }, _return_type) => {
+      let (funcName, _) = name
+      self.values
+      .last()
+      .unwrap()
+      .set(funcName, Closure({ name, args, body }, []))
+      Unit
+    }
+    If(cond, then, else_) => {
+      let cond_val = self.visit(cond)
+      if cond_val.op_equal(Bool(true)) {
+        self.visit(then)
+      } else {
+        self.visit(else_)
+      }
+    }
     App(f, xs) => {
       let f_val = self.visit(f)
       let xs_val = xs.map(fn(x) { self.visit(x) })
@@ -126,14 +151,17 @@ fn ClosureInterpreter::visit(
           let f = self.extern_fns.get(name).unwrap()
           f(xs_val)
         }
-        // Closure(func, env) => {
-        //   let new_env = [env, xs_val]
-        //   let new_interpreter =  {
-        //     extern_fns: self.extern_fns,
-        //     values: [{}]
-        //   }
-        //   new_interpreter.visit(func)
-        // }
+        Closure(func, _env) => {
+          let closure = Map::new()
+          for i = 0; i < xs_val.length(); i = i + 1 {
+            let (name, _) = func.args[i]
+            closure.set(name, xs_val[i])
+          }
+          self.values.push(closure)
+          let result = self.visit(func.body)
+          self.values.pop() |> ignore
+          result
+        }
         _ => Unit
       }
     }

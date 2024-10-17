@@ -29,9 +29,6 @@ fn let_statement(
   // .and(statements) // 去掉连续语句
   .map(
     fn {
-      // (((((((_,name),_,), ty), _), expr1), _), expr2) => @types.Syntax::Let((name, ty), expr1, expr2) 
-      // ((((((_,name),_,), ty), _), expr1), _) => @types.Syntax::Let((name, ty), expr1, @types.Syntax::Unit) 
-      // (((((_,name),_,), ty), _), expr1) => @types.Syntax::Let((name, ty), expr1, @types.Syntax::Unit) 
       ((((_, name), (_, ty)), _), expr1) =>
         @types.Syntax::Let((name, ty), expr1, @types.Syntax::Unit)
     },
