@@ -19,6 +19,7 @@ pub enum Token {
   Bool // Bool
   Int // Int
   Double // Double
+  String // String
   Tuple // Tuple
   Array // Array
   Main // main

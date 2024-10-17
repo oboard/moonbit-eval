@@ -171,19 +171,18 @@ pub fn lex(context : Context) -> Unit {
       context.offset += 1
     }
     '"' => {
-      context.array.push(DoubleQuote)
+      // context.array.push(DoubleQuote)
       context.offset += 1
       let start = context.offset
 
       // 字符串字面量
-
       while context.offset < context.str.length() &&
             context.str[context.offset] != '"' {
         context.offset += 1
       }
       let literal = context.str.substring(~start, end=context.offset)
       context.array.push(StringLiteral(literal))
-      context.array.push(DoubleQuote)
+      // context.array.push(DoubleQuote)
       context.offset += 1
     }
     '\'' => {
@@ -266,7 +265,8 @@ pub fn lex(context : Context) -> Unit {
         // 关键字和标识符
         lex_identifier(context)
       } else {
-        panic()
+        println("unknown character: \{ch}")
+        // panic()
       }
   }
   if context.array.length() > token_postion.token_number {

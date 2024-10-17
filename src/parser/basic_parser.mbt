@@ -158,10 +158,22 @@ let assign : Parser[@lex.Token] = ptoken(
 //     },
 // )
 
+let string : Parser[@types.Syntax] = ptoken(
+  fn {
+    StringLiteral(_) => true
+    _ => false
+  },
+).map(
+  fn {
+    StringLiteral(value) => @types.Syntax::String(value)
+    _ => @util.die("")
+  },
+)
+
 let number : Parser[@types.Syntax] = ptoken(
   fn {
-    @lex.Token::Number(_) => true
-    @lex.Token::Number_Double(_) => true
+    Number(_) => true
+    Number_Double(_) => true
     _ => false
   },
 ).map(
@@ -282,6 +294,7 @@ let parse_type_skip : Parser[@types.Type] = ptoken_skip(
     Unit => true
     Bool => true
     Int => true
+    String => true
     Double => true
     Tuple => true
     Array => true
@@ -293,6 +306,7 @@ let parse_type_skip : Parser[@types.Type] = ptoken_skip(
     Bool => @types.Type::Bool
     Int => @types.Type::Int
     Double => @types.Type::Double
+    String => @types.Type::String
     // Tuple => @types.Type::Tuple(Array[Type])  // todo
     // todo
     _ => @types.Type::Var({ val: None })
