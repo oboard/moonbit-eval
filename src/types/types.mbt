@@ -18,7 +18,7 @@ pub enum Syntax {
   Prim(Syntax, Syntax, Op, mut ~kind : Kind?) // _+ - * / _
   Eq(Syntax, Syntax) // _==_
   LE(Syntax, Syntax) // _<=_
-  Let((String, Type), Syntax, Syntax) // let _: _ = _; _
+  Let((String, Type), Syntax, Syntax, ~mutable: Bool) // let _: _ = _; _
   LetRec(Fundef, Syntax) // fn f() {} ; _
   LetTuple(Array[(String, Type)], Syntax, Syntax) // let (_ , _) : (_, _)= _; _
   Put(Syntax, Syntax, Syntax) // _[_] = _

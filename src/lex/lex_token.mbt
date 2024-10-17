@@ -32,6 +32,7 @@ pub enum Token {
 
   // 一般关键词
   Let //  let
+  Mut //  mut
   If //  if
   Else //  else
   Fn //  fn

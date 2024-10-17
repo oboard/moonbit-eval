@@ -2,11 +2,23 @@
 fn let_statement(
   tokens : ArrayView[@lex.Token]
 ) -> (@types.Syntax, ArrayView[@lex.Token])? {
+  let mut mutable = false
   ptoken(
     fn {
       @lex.Token::Let => true
       _ => false
     },
+  )
+  .and(
+    ptoken_skip(
+      fn {
+        Mut => {
+          mutable = true
+          true
+        }
+        _ => false
+      },
+    ),
   )
   .and(
     ptoken(
@@ -29,8 +41,10 @@ fn let_statement(
   // .and(statements) // 去掉连续语句
   .map(
     fn {
+      // ((((_, name), (_, ty)), _), expr1) =>
+      // ((((((@lex.Token, @lex.Token), String), (@lex.Token, @types.Type)), @lex.Token), @types.Syntax))
       ((((_, name), (_, ty)), _), expr1) =>
-        @types.Syntax::Let((name, ty), expr1, @types.Syntax::Unit)
+        @types.Syntax::Let((name, ty), expr1, @types.Syntax::Unit, ~mutable)
     },
   )
   .parse(tokens)

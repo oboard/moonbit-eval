@@ -142,8 +142,14 @@ pub fn to_json(self : Syntax) -> Json {
     Eq(e1, e2) => ["Eq", e1.to_json(), e2.to_json()]
     LE(e1, e2) => ["LE", e1.to_json(), e2.to_json()]
     If(e1, e2, e3) => ["If", e1.to_json(), e2.to_json(), e3.to_json()]
-    Let((x, t), e1, e2) =>
-      ["Let", [x |> Json::String, t.to_json()], e1.to_json(), e2.to_json()]
+    Let((x, t), e1, e2, ~mutable) =>
+      [
+        "Let",
+        [x |> Json::String, t.to_json()],
+        e1.to_json(),
+        e2.to_json(),
+        mutable.to_json(),
+      ]
     Var(id) => ["Var", id |> Json::String]
     LetRec(funcdef, e) => ["LetRec", funcdef.to_json(), e.to_json()]
     App(e, es) => ["App", e.to_json(), es.map(Syntax::to_json) |> Json::Array]
@@ -251,7 +257,7 @@ pub fn Syntax::from_json(json : Json) -> Syntax! {
         e2 |> Syntax::from_json!(),
         e3 |> Syntax::from_json!(),
       )
-    ["Let", [x, t], e1, e2] =>
+    ["Let", [x, t], e1, e2, mutable] =>
       Let(
         (
           match x.as_string() {
@@ -262,6 +268,7 @@ pub fn Syntax::from_json(json : Json) -> Syntax! {
         ),
         e1 |> Syntax::from_json!(),
         e2 |> Syntax::from_json!(),
+        mutable=mutable == Json::True,
       )
     ["Var", id] =>
       match id.as_string() {

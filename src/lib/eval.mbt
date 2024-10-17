@@ -24,20 +24,29 @@ test "function" {
   inspect!(vm.eval("double(2)"), content="Int(4)")
 }
 
-
-
 test "str" {
   let vm = MoonBitVM::new()
   inspect!(vm.eval("let str1: String = \"haha\""), content="Unit")
   inspect!(vm.eval("let str2: String = \"hello\""), content="Unit")
-  inspect!(vm.eval("str1 + str2"), content=
-    #|String("hahahello")
+  inspect!(
+    vm.eval("str1 + str2"),
+    content=
+      #|String("hahahello")
+    ,
   )
 }
-
 
 test "if" {
   let vm = MoonBitVM::new()
   inspect!(vm.eval("if true { 1 } else { 2 }"), content="Int(1)")
   inspect!(vm.eval("if false { 1 } else { 2 }"), content="Int(2)")
+}
+
+test "for" {
+  let vm = MoonBitVM::new()
+  inspect!(vm.eval("let mut output = \"\""), content="Unit")
+  // inspect!(
+  //   vm.eval("for i = 0; i < 10; i = i + 1 {  output = output + i.to_string() }"),
+  //   content="Int(0)\nInt(1)\nInt(2)",
+  // )
 }
