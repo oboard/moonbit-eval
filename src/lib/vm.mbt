@@ -20,13 +20,21 @@ pub fn MoonBitVM::new() -> MoonBitVM {
   { interpreter, }
 }
 
-pub fn MoonBitVM::eval(self : MoonBitVM, code : String) -> Value {
+pub fn MoonBitVM::eval(
+  self : MoonBitVM,
+  code : String,
+  ~log : Bool = false
+) -> Value {
   let tokens = []
   @lex.lex({ str: code, offset: 0, array: tokens })
-  println(tokens)
+  if log {
+    println(tokens)
+  }
   match @parser.parse_syntax(tokens[:]) {
     Some((expr, _)) => {
-      println(expr)
+      if log {
+        println(expr)
+      }
       self.interpreter.visit(expr)
     }
     None => Unit
