@@ -22,7 +22,12 @@ pub fn IndentLogger::outdent(self : IndentLogger) -> Unit {
   self.indent -= 1
 }
 
-pub impl Logger for IndentLogger with write_sub_string(
+pub fn IndentLogger::write_string(self : IndentLogger, s : String) -> Unit {
+  Logger::write_sub_string(self, s, 0, s.length())
+}
+
+
+pub impl Logger for IndentLogger with write_substring(
   self : IndentLogger,
   s : String,
   start : Int,
@@ -63,8 +68,4 @@ pub impl Logger for IndentLogger with write_char(self : IndentLogger, c : Char) 
     }
     self.logger.write_char(c)
   }
-}
-
-pub fn IndentLogger::write_string(self : IndentLogger, s : String) -> Unit {
-  Logger::write_sub_string(self, s, 0, s.length())
 }

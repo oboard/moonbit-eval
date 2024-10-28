@@ -32,9 +32,9 @@ fn unify(t1 : @types.Type, t2 : @types.Type) -> Unit!TyErr {
 // 类型推导的上下文
 // 全局的表记录外部函数的类型
 pub let extenv : Map[String, @types.Type] = {}
+
 // 局部的表记录函数内部的变量和局部函数的类型，（嵌套作用域采用不可变数据结构，避免变量和局部函数的参数因命名相同而发生干涉。）
 // type LocalCtx @immut/hashmap.T[String,@types.Type]
-
 typealias LocalCtx = @immut/hashmap.T[String, @types.Type] // 为某类型起别名
 
 // 类型推导

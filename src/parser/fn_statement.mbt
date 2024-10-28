@@ -146,10 +146,7 @@ fn fn_statement(
     fn {
       // ((((_,fun_name), ((_,array_params),_)),ty), body)
       (((((_, fun_name), _), (array_params, _)), return_type), body) => {
-        let params = []
-        for param in array_params {
-          params.push(param.0)
-        }
+        let params = array_params.map(fn(param) { param.0 })
         // body[0]
         let fundef : @types.Fundef = {
           name: (fun_name, return_type),

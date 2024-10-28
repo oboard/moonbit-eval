@@ -18,6 +18,13 @@ test "variables" {
   inspect!(vm.eval("a"), content="Int(1)")
 }
 
+test "mutable variables" {
+  let vm = MoonBitVM::new()
+  inspect!(vm.eval("let mut a = 1"), content="Unit")
+  inspect!(vm.eval("a = 12"), content="Unit")
+  inspect!(vm.eval("a"), content="Int(12)")
+}
+
 test "function" {
   let vm = MoonBitVM::new()
   inspect!(vm.eval("fn double(x: Int) -> Int { x*2 }"), content="Unit")

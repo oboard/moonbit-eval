@@ -229,7 +229,7 @@ fn statement() -> Parser[@types.Syntax] {
     if tokens.length() > 0 {
       // println(tokens.length())
       let parsers = [
-        fn_main_statement, fn_statement, let_statement, if_statement,
+        fn_main_statement, fn_statement, let_statement, assign_statement, if_statement,
         expression, // 表达式也是一种语句
          lparen_rparen_stmt, call_fn_stmt,
         // newline_stmt,

@@ -1,6 +1,6 @@
 struct ClosureInterpreter {
   extern_fns : Map[String, (Array[Value]) -> Value]
-  values : Array[Map[String, Value]]
+  values : Array[Map[String, Variable]]
 }
 
 pub typealias InterpreterLocalVars = @immut/hashmap.T[@types.Name, Value]
@@ -10,6 +10,11 @@ pub typealias InterpreterLocalVars = @immut/hashmap.T[@types.Name, Value]
 //   args : Array[String]
 //   body : @types.Syntax
 // } derive(Show, ToJson)
+
+pub enum Variable {
+  Immutable(Value)
+  Mutable(Value)
+} derive(Show, ToJson)
 
 pub enum Value {
   Unit
@@ -62,7 +67,10 @@ fn ClosureInterpreter::find(self : ClosureInterpreter, name : String) -> Value {
     match value[name] {
       Some(value) =>
         // println("found value: \{name}")
-        return value
+        return match value {
+          Immutable(value) => value
+          Mutable(value) => value
+        }
       None => continue
     }
   }
@@ -81,9 +89,13 @@ fn ClosureInterpreter::visit(
     Unit => Unit
     Tuple(xs) => Tuple(xs.map(fn(x) { self.visit(x) }))
     Seq(xs) => xs.map(fn(x) { self.visit(x) }).last().unwrap()
-    Let((name, _types), value, _return_type) => {
+    Let((name, _types), value, _return_type, ~mutable) => {
       let value_val = self.visit(value)
-      self.values[0][name] = value_val
+      self.values[0][name] = if mutable {
+        Mutable(value_val)
+      } else {
+        Immutable(value_val)
+      }
       Unit
     }
     Prim(lhs, rhs, op, ..) => {
@@ -132,7 +144,7 @@ fn ClosureInterpreter::visit(
       self.values
       .last()
       .unwrap()
-      .set(funcName, Closure({ name, args, body }, []))
+      .set(funcName, Immutable(Closure({ name, args, body }, [])))
       Unit
     }
     If(cond, then, else_) => {
@@ -142,6 +154,20 @@ fn ClosureInterpreter::visit(
       } else {
         self.visit(else_)
       }
+    }
+    Assign(name, value) => {
+      let value_val = self.visit(value)
+      for value in self.values.rev() {
+        match value[name] {
+          Some(variable) =>
+            match variable {
+              Mutable(_) => value[name] = Mutable(value_val)
+              _ => continue
+            }
+          None => continue
+        }
+      }
+      Unit
     }
     App(f, xs) => {
       let f_val = self.visit(f)
@@ -154,8 +180,9 @@ fn ClosureInterpreter::visit(
         Closure(func, _env) => {
           let closure = Map::new()
           for i = 0; i < xs_val.length(); i = i + 1 {
-            let (name, _) = func.args[i]
-            closure.set(name, xs_val[i])
+            let (name, _types) = func.args[i]
+            let val = xs_val[i]
+            closure.set(name, Immutable(val))
           }
           self.values.push(closure)
           let result = self.visit(func.body)

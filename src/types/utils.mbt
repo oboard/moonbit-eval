@@ -74,7 +74,9 @@ pub fn to_json(self : Fundef) -> Json {
     "name": [self.name.0 |> Json::String, self.name.1.to_json()],
     "args": [
       ..self.args.map(
-        fn { (name, ty) => ([name |> Json::String, ty.to_json()] : Json) },
+        fn {
+          (name, ty) => ([name |> Json::String, ty.to_json()] : Json)
+        },
       ),
     ],
     "body": self.body.to_json(),
