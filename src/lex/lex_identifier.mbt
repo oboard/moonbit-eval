@@ -25,6 +25,7 @@ fn lex_identifier(context : Context) -> Unit {
     match ident {
       // 关键词
       "let" => Let
+      "for" => For
       "mut" => Mut
       "if" => If
       "else" => Else

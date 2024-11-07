@@ -229,11 +229,17 @@ fn statement() -> Parser[@types.Syntax] {
     if tokens.length() > 0 {
       // println(tokens.length())
       let parsers = [
-        fn_main_statement, fn_statement, let_statement, assign_statement, if_statement,
-        expression, // 表达式也是一种语句
-         lparen_rparen_stmt, call_fn_stmt,
+        fn_main_statement, // fn main {}
+         fn_statement, // fn _(_) {_}
+         let_statement, // let _: _ = _; _
+         for_statement, // for _; _; _ { _ }
+         if_statement, // if _ { _ }
+         assign_statement, // _ = _
+         expression, // _ _ _
+         lparen_rparen_stmt, // ()
+         call_fn_stmt, // _()
         // newline_stmt,
-        // lbrace,  // 单独解析}
+        // lbrace,  // 单独解析
       ]
       // todo spilt tokens
       //   RBrace

@@ -24,12 +24,12 @@ fn let_statement(
     ptoken(
       fn {
         Identifier(_) => true
-        _ => @util.die("标识符错误")
+        _ => @util.die("let identifier 标识符错误")
       },
     ).map(
       fn {
         @lex.Token::Identifier(name) => name
-        _ => @util.die("标识符错误")
+        _ => @util.die("let identifier 标识符错误")
       },
     ),
   )

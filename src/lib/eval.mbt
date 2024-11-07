@@ -51,9 +51,10 @@ test "if" {
 
 test "for" {
   let vm = MoonBitVM::new()
-  inspect!(vm.eval("let mut output = \"\""), content="Unit")
+  // inspect!(vm.eval("let mut output = \"\"", log=true), content="Unit")
+  inspect!(vm.eval("for i = 0; i < 10; i = i + 1 {  }", log=true), content="Unit")
   // inspect!(
-  //   vm.eval("for i = 0; i < 10; i = i + 1 {  output = output + i.to_string() }"),
-  //   content="Int(0)\nInt(1)\nInt(2)",
+  //   vm.eval("for i = 0; i < 10; i = i + 1 {  output = output + i }"),
+  //   content="Unit",
   // )
 }

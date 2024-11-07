@@ -1,13 +1,43 @@
 # MoonBit Eval
 
+## Introduction
+MoonBit Eval is a interpreter of MoonBit language.
 
-```rust
+
+## Progress
+- [x] Expression
+- [x] Variable
+- [x] Basic Types
+- [x] If
+- [x] Let (Mut)
+- [x] Assign
+- [ ] For
+
+
+## Examples
+
+### Mutable Variables Test
+```moonbit
+test "mutable variables" {
+  let vm = MoonBitVM::new()
+  inspect!(vm.eval("let mut a = 1"), content="Unit")
+  inspect!(vm.eval("a = 12"), content="Unit")
+  inspect!(vm.eval("a"), content="Int(12)")
+}
+```
+
+### Function Test
+```moonbit
+test "function" {
+  let vm = MoonBitVM::new()
+  inspect!(vm.eval("fn double(x: Int) -> Int { x*2 }"), content="Unit")
+  inspect!(vm.eval("double(2)"), content="Int(4)")
+}
+```
+
 
 
 MoonBit Eval 是 MoonBit 语言的解释器，它宛如一颗待打磨的宝石，充满潜力。
-
-Thanks for `lijiajun3029` for providing the `minimoonbit-public` project, which is the foundation of MoonBit Eval.
-
 
 感谢 `lijiajun3029` 提供的 `minimoonbit-public` 项目，它是 MoonBit Eval 的基础。
 

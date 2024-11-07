@@ -110,6 +110,13 @@ let separator_skip : Parser[@lex.Token] = ptoken_skip(
   },
 )
 
+let semicolon_skip : Parser[@lex.Token] = ptoken_skip(
+  fn {
+    Semicolon => true
+    _ => false
+  },
+)
+
 // let colon : Parser[@lex.Token] = ptoken(
 //   fn {
 //     Colon => true

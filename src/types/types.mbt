@@ -15,6 +15,8 @@ pub enum Syntax {
   App(Syntax, Array[Syntax]) // _(_, _, _) or _()
   Get(Syntax, Syntax) // _[_]
   If(Syntax, Syntax, Syntax) // if _ { _ } else { _ }
+  ForIn(Syntax, Syntax) // for _ in _ { _ }
+  For(Syntax, Syntax, Syntax, Syntax) // for _; _; _ { _ }
   Prim(Syntax, Syntax, Op, mut ~kind : Kind?) // _+ - * / _
   Eq(Syntax, Syntax) // _==_
   LE(Syntax, Syntax) // _<=_
