@@ -1,7 +1,5 @@
 {
     "import": [
-        "oboard/moonbit-eval/util",
-        "oboard/moonbit-eval/lex",
         "oboard/moonbit-eval/types"
     ]
 }
