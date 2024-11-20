@@ -9,7 +9,7 @@ test "basic" {
       #|String("hello")
     ,
   )
-  // inspect!(vm.eval("println(\"hello\")"), content="Unit")
+  inspect!(vm.eval("println(\"hello\")"), content="Unit")
 }
 
 test "variables" {
@@ -19,7 +19,7 @@ test "variables" {
 }
 
 
-test "Eq" {
+test "compare" {
   let vm = MoonBitVM::new(log=true)
   inspect!(vm.eval("let a = -1"), content="Unit")
   inspect!(vm.eval("a"), content="Int(-1)")
