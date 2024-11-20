@@ -20,12 +20,11 @@ fn atomic(
   .parse(tokens)
 }
 
-// 使用组合子构建的解析器combine：从左到右解析atomic和乘或除运算符（递归）
-fn combine(
+fn compare(
   tokens : ArrayView[@lex.Token]
 ) -> (@types.Syntax, ArrayView[@lex.Token])? {
   Parser(atomic)
-  .and(mul_div.map(map_op).and(atomic).many())
+  .and(compares.map(map_op).and(atomic).many())
   .map(
     fn {
       (e, list) =>
@@ -35,10 +34,39 @@ fn combine(
           fn {
             e, (Some(op), expr) =>
               match op {
-                @types.Op::Mul =>
-                  @types.Syntax::Prim(e, expr, @types.Op::Mul, kind=None)
-                @types.Op::Div =>
-                  @types.Syntax::Prim(e, expr, @types.Op::Div, kind=None)
+                Eq => Prim(e, expr, Eq)
+                NE => Prim(e, expr, NE)
+                Gt => Prim(e, expr, Gt)
+                Lt => Prim(e, expr, Lt)
+                GE => Prim(e, expr, GE)
+                LE => Prim(e, expr, LE)
+                _ => @util.die("不应该出现在这里")
+              }
+            _, _ => @util.die("不应该出现在这里")
+          },
+        )
+    },
+  )
+  .parse(tokens)
+}
+
+// 使用组合子构建的解析器combine：从左到右解析atomic和乘或除运算符（递归）
+fn combine(
+  tokens : ArrayView[@lex.Token]
+) -> (@types.Syntax, ArrayView[@lex.Token])? {
+  Parser(compare)
+  .and(mul_div.map(map_op).and(compare).many())
+  .map(
+    fn {
+      (e, list) =>
+        // println("combine fold: \{e} \{list}")
+        list.fold(
+          init=e,
+          fn {
+            e, (Some(op), expr) =>
+              match op {
+                Mul => Prim(e, expr, Mul)
+                Div => Prim(e, expr, Div)
                 _ => @util.die("不应该出现在这里")
               }
             _, _ => @util.die("不应该出现在这里")
@@ -64,10 +92,8 @@ fn expression(
           fn {
             e, (Some(op), expr) =>
               match op {
-                @types.Op::Add =>
-                  @types.Syntax::Prim(e, expr, @types.Op::Add, kind=None)
-                @types.Op::Sub =>
-                  @types.Syntax::Prim(e, expr, @types.Op::Sub, kind=None)
+                Add => Prim(e, expr, Add)
+                Sub => Prim(e, expr, Sub)
                 _ => @util.die("不应该出现在这里")
               }
             _, _ => @util.die("不应该出现在这里")

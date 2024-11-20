@@ -4,7 +4,7 @@ fn assign_statement(
   ptoken(
     fn {
       Identifier(_) => true
-      e => @util.die("assign identifier 标识符错误 \{e}")
+      _ => false
     },
   )
   .map(

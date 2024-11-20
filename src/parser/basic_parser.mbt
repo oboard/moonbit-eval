@@ -58,6 +58,13 @@ let rbrace : Parser[@lex.Token] = ptoken(
   },
 )
 
+let compares : Parser[@lex.Token] = ptoken(
+  fn {
+    EqEq | GE | Gt | LE | Lt => true
+    _ => false
+  },
+)
+
 let mul_div : Parser[@lex.Token] = ptoken(
   fn {
     Mul | Div => true
@@ -203,26 +210,12 @@ let add_sub_number : Parser[@types.Syntax] = add_sub
   )
   .map(
     fn {
-      (Add, Number(value)) =>
-        @types.Syntax::Neg(
-          @types.Syntax::Int(value),
-          kind=Some(@types.Kind::Int),
-        )
-      (Sub, Number(value)) =>
-        @types.Syntax::Neg(
-          @types.Syntax::Int(value),
-          kind=Some(@types.Kind::Int),
-        )
+      (Add, Number(value)) => @types.Syntax::Neg(@types.Syntax::Int(value))
+      (Sub, Number(value)) => @types.Syntax::Neg(@types.Syntax::Int(value))
       (Add, Number_Double(value)) =>
-        @types.Syntax::Neg(
-          @types.Syntax::Double(value),
-          kind=Some(@types.Kind::Double),
-        )
+        @types.Syntax::Neg(@types.Syntax::Double(value))
       (Sub, Number_Double(value)) =>
-        @types.Syntax::Neg(
-          @types.Syntax::Double(value),
-          kind=Some(@types.Kind::Double),
-        )
+        @types.Syntax::Neg(@types.Syntax::Double(value))
       _ => @util.die("")
     },
   )
@@ -263,16 +256,8 @@ let add_sub_var : Parser[@types.Syntax] = add_sub
   )
   .map(
     fn {
-      (Add, Identifier(name)) =>
-        @types.Syntax::Neg(
-          @types.Syntax::Var(name),
-          kind=Some(@types.Kind::Int),
-        )
-      (Sub, Identifier(name)) =>
-        @types.Syntax::Neg(
-          @types.Syntax::Var(name),
-          kind=Some(@types.Kind::Int),
-        )
+      (Add, Identifier(name)) => @types.Syntax::Neg(@types.Syntax::Var(name))
+      (Sub, Identifier(name)) => @types.Syntax::Neg(@types.Syntax::Var(name))
       _ => @util.die("add_sub_var错误")
     },
   )

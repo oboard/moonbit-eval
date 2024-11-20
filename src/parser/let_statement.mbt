@@ -44,7 +44,7 @@ fn let_statement(
       // ((((_, name), (_, ty)), _), expr1) =>
       // ((((((@lex.Token, @lex.Token), String), (@lex.Token, @types.Type)), @lex.Token), @types.Syntax))
       ((((_, name), (_, ty)), _), expr1) =>
-        @types.Syntax::Let((name, ty), expr1, @types.Syntax::Unit, ~mutable)
+        @types.Syntax::Let((name, ty), expr1, @types.Syntax::Unit, mutable~)
     },
   )
   .parse(tokens)

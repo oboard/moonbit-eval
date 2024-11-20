@@ -4,7 +4,7 @@
 // issues
 // 1、暂时保留所有token，等待删除部分token
 // 2、minimoonbit中token部分命名和moonbit关键词相同
-pub enum Token {
+pub(all) enum Token {
   // 数据
   Number(Int) //  整数
   Number_Double(Double) //  浮点数
@@ -47,9 +47,9 @@ pub enum Token {
   Assign // =
   EqEq // ==
   Lt // <
-  Le // <=
-  Ne // !=
-  Ge // >=
+  LE // <=
+  NE // !=
+  GE // >=
   Gt // >
 
   // 标点符号
@@ -83,7 +83,7 @@ pub enum Token {
 } derive(Show, Eq)
 
 // todo support debug etc.
-pub struct TokenPosition {
+pub(all) struct TokenPosition {
   mut token_number : Int
   mut line : Int // 行号
   mut column_start : Int // 列号开始

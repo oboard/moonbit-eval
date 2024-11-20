@@ -16,7 +16,7 @@ fn lex_identifier(context : Context) -> Unit {
         is_alphanumeric(context.str[context.offset]) {
     context.offset += 1
   }
-  let ident = context.str.substring(~start, end=context.offset)
+  let ident = context.str.substring(start~, end=context.offset)
   if ident[0] == '_' && ident.length() > 1 {
     @util.die("非法标识符'_' from \{ident}")
   }

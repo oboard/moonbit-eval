@@ -3,20 +3,12 @@ struct ClosureInterpreter {
   values : Array[Map[String, Variable]]
 }
 
-pub typealias InterpreterLocalVars = @immut/hashmap.T[@types.Name, Value]
-
-// struct Func {
-//   name : String
-//   args : Array[String]
-//   body : @types.Syntax
-// } derive(Show, ToJson)
-
-pub enum Variable {
+enum Variable {
   Immutable(Value)
   Mutable(Value)
 } derive(Show, ToJson)
 
-pub enum Value {
+enum Value {
   Unit
   Int(Int)
   Bool(Bool)
@@ -89,7 +81,7 @@ fn ClosureInterpreter::visit(
     Unit => Unit
     Tuple(xs) => Tuple(xs.map(fn(x) { self.visit(x) }))
     Seq(xs) => xs.map(fn(x) { self.visit(x) }).last().unwrap()
-    Let((name, _types), value, _return_type, ~mutable) => {
+    Let((name, _types), value, _return_type, mutable~) => {
       let value_val = self.visit(value)
       self.values[0][name] = if mutable {
         Mutable(value_val)
@@ -97,6 +89,14 @@ fn ClosureInterpreter::visit(
         Immutable(value_val)
       }
       Unit
+    }
+    Neg(x) => {
+      let x_val = self.visit(x)
+      match x_val {
+        Int(x) => Int(-x)
+        Double(x) => Double(-x)
+        _ => Unit
+      }
     }
     Prim(lhs, rhs, op, ..) => {
       let result = self.visit(lhs)
@@ -122,6 +122,13 @@ fn ClosureInterpreter::visit(
                 Sub => Int(x - y)
                 Mul => Int(x * y)
                 Div => Int(x / y)
+                Eq => Bool(x == y)
+                NE => Bool(x != y)
+                Lt => Bool(x < y)
+                Gt => Bool(x > y)
+                LE => Bool(x <= y)
+                GE => Bool(x >= y)
+                _ => Unit
               }
             _ => Unit
           }
@@ -133,6 +140,7 @@ fn ClosureInterpreter::visit(
                 Sub => Double(x - y)
                 Mul => Double(x * y)
                 Div => Double(x / y)
+                _ => Unit
               }
             _ => Unit
           }
@@ -147,6 +155,7 @@ fn ClosureInterpreter::visit(
       .set(funcName, Immutable(Closure({ name, args, body }, [])))
       Unit
     }
+    Array(xs) => Array(xs.map(fn(x) { self.visit(x) }))
     If(cond, then, else_) => {
       let cond_val = self.visit(cond)
       if cond_val.op_equal(Bool(true)) {

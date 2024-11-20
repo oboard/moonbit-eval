@@ -1,5 +1,5 @@
 // 词法解析的上下文
-pub struct ParserContext {
+struct ParserContext {
     mut is_top_level: Bool  // 假定不在block中即为顶级
     // current_scope: Vec<String>, // 用于维护当前作用域的栈
     // defined_variables: HashMap<String, String>, // 变量名与类型的映射

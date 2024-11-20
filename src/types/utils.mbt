@@ -74,9 +74,7 @@ pub fn to_json(self : Fundef) -> Json {
     "name": [self.name.0 |> Json::String, self.name.1.to_json()],
     "args": [
       ..self.args.map(
-        fn {
-          (name, ty) => ([name |> Json::String, ty.to_json()] : Json)
-        },
+        fn { (name, ty) => ([name |> Json::String, ty.to_json()] : Json) },
       ),
     ],
     "body": self.body.to_json(),
@@ -135,16 +133,13 @@ pub fn to_json(self : Syntax) -> Json {
     String(i) => ["String", Json::String(i)]
     Double(f) => ["Double", Json::Number(f)]
     Not(e) => ["Not", e.to_json()]
-    Neg(e, kind=Some(Double)) => ["FNeg", e.to_json()]
-    Neg(e, kind=_) => ["Neg", e.to_json()]
-    Prim(e1, e2, op, ~kind) => {
-      let op = if kind == Some(Double) { "F\{op}" } else { "{op}" }
+    Neg(e) => ["Neg", e.to_json()]
+    Prim(e1, e2, op) => {
+      let op = op.to_string()
       [op |> Json::String, e1.to_json(), e2.to_json()]
     }
-    Eq(e1, e2) => ["Eq", e1.to_json(), e2.to_json()]
-    LE(e1, e2) => ["LE", e1.to_json(), e2.to_json()]
     If(e1, e2, e3) => ["If", e1.to_json(), e2.to_json(), e3.to_json()]
-    Let((x, t), e1, e2, ~mutable) =>
+    Let((x, t), e1, e2, mutable~) =>
       [
         "Let",
         [x |> Json::String, t.to_json()],
@@ -163,7 +158,7 @@ pub fn to_json(self : Syntax) -> Json {
         value.to_json(),
         body.to_json(),
       ]
-    Array(size, init) => ["Array", size.to_json(), init.to_json()]
+    Array(es) => ["Array", es.map(Syntax::to_json) |> Json::Array]
     Get(arr, idx) => ["Get", arr.to_json(), idx.to_json()]
     Put(arr, idx, value) =>
       ["Put", arr.to_json(), idx.to_json(), value.to_json()]
@@ -193,66 +188,15 @@ pub fn Syntax::from_json(json : Json) -> Syntax! {
         None => fail!("invalid json: should contain a number as Double")
       }
     ["Not", e] => Not(e |> Syntax::from_json!())
-    ["Neg", e] => Neg(e |> Syntax::from_json!(), kind=None)
-    ["FNeg", e] => Neg(e |> Syntax::from_json!(), kind=Some(Double))
+    ["Neg", e] => Neg(e |> Syntax::from_json!())
     ["Add", e1, e2] =>
-      Prim(
-        e1 |> Syntax::from_json!(),
-        e2 |> Syntax::from_json!(),
-        Add,
-        kind=None,
-      )
+      Prim(e1 |> Syntax::from_json!(), e2 |> Syntax::from_json!(), Add)
     ["Sub", e1, e2] =>
-      Prim(
-        e1 |> Syntax::from_json!(),
-        e2 |> Syntax::from_json!(),
-        Sub,
-        kind=None,
-      )
+      Prim(e1 |> Syntax::from_json!(), e2 |> Syntax::from_json!(), Sub)
     ["Mul", e1, e2] =>
-      Prim(
-        e1 |> Syntax::from_json!(),
-        e2 |> Syntax::from_json!(),
-        Mul,
-        kind=None,
-      )
+      Prim(e1 |> Syntax::from_json!(), e2 |> Syntax::from_json!(), Mul)
     ["Div", e1, e2] =>
-      Prim(
-        e1 |> Syntax::from_json!(),
-        e2 |> Syntax::from_json!(),
-        Div,
-        kind=None,
-      )
-    ["FAdd", e1, e2] =>
-      Syntax::Prim(
-        e1 |> Syntax::from_json!(),
-        e2 |> Syntax::from_json!(),
-        Add,
-        kind=Some(Double),
-      )
-    ["FSub", e1, e2] =>
-      Prim(
-        e1 |> Syntax::from_json!(),
-        e2 |> Syntax::from_json!(),
-        Sub,
-        kind=Some(Double),
-      )
-    ["FMul", e1, e2] =>
-      Prim(
-        e1 |> Syntax::from_json!(),
-        e2 |> Syntax::from_json!(),
-        Mul,
-        kind=Some(Double),
-      )
-    ["FDiv", e1, e2] =>
-      Prim(
-        e1 |> Syntax::from_json!(),
-        e2 |> Syntax::from_json!(),
-        Div,
-        kind=Some(Kind::Double),
-      )
-    ["Eq", e1, e2] => Eq(e1 |> Syntax::from_json!(), e2 |> Syntax::from_json!())
-    ["LE", e1, e2] => LE(e1 |> Syntax::from_json!(), e2 |> Syntax::from_json!())
+      Prim(e1 |> Syntax::from_json!(), e2 |> Syntax::from_json!(), Div)
     ["If", e1, e2, e3] =>
       If(
         e1 |> Syntax::from_json!(),
@@ -332,8 +276,17 @@ pub fn Syntax::from_json(json : Json) -> Syntax! {
         body |> Syntax::from_json!(),
       )
     }
-    ["Array", size, init] =>
-      Array(size |> Syntax::from_json!(), init |> Syntax::from_json!())
+    ["Array", [.. as es]] => {
+      fn from_json(values : ArrayView[Json]) -> Array[Syntax]! {
+        let array = []
+        for i = 0; i < values.length(); i = i + 1 {
+          array.push(values[i] |> Syntax::from_json!())
+        }
+        array
+      }
+
+      Array(from_json!(es))
+    }
     ["Get", arr, idx] =>
       Get(arr |> Syntax::from_json!(), idx |> Syntax::from_json!())
     ["Put", arr, idx, value] =>
@@ -361,7 +314,7 @@ test {
     ,
   )
   inspect!(
-    Syntax::Array(Syntax::Int(1), Syntax::Int(2)).to_json().stringify(),
+    Syntax::Array([Syntax::Int(1), Syntax::Int(2)]).to_json().stringify(),
     content=
       #|["Array",["Int",1],["Int",2]]
     ,
@@ -376,12 +329,6 @@ test {
     Syntax::Double(1.0).to_json().stringify(),
     content=
       #|["Double",1]
-    ,
-  )
-  inspect!(
-    Syntax::Eq(Syntax::Int(1), Syntax::Int(2)).to_json().stringify(),
-    content=
-      #|["Eq",["Int",1],["Int",2]]
     ,
   )
   inspect!(
@@ -429,22 +376,6 @@ test {
   inspect!(
     Syntax::from_json!(["Div", ["Int", 1], ["Int", 2]]),
     content="Prim(Int(1), Int(2), Div, kind=None)",
-  )
-  inspect!(
-    Syntax::from_json!(["FAdd", ["Double", 1.0], ["Double", 2.0]]),
-    content="Prim(Double(1), Double(2), Add, kind=Some(Double))",
-  )
-  inspect!(
-    Syntax::from_json!(["FSub", ["Double", 1.0], ["Double", 2.0]]),
-    content="Prim(Double(1), Double(2), Sub, kind=Some(Double))",
-  )
-  inspect!(
-    Syntax::from_json!(["FMul", ["Double", 1.0], ["Double", 2.0]]),
-    content="Prim(Double(1), Double(2), Mul, kind=Some(Double))",
-  )
-  inspect!(
-    Syntax::from_json!(["FDiv", ["Double", 1.0], ["Double", 2.0]]),
-    content="Prim(Double(1), Double(2), Div, kind=Some(Double))",
   )
   inspect!(
     Syntax::from_json!(["Eq", ["Int", 1], ["Int", 2]]),

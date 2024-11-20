@@ -1,7 +1,7 @@
 // Syntax枚举用于构建表达式抽象语法树
 // 多语句问题：Let、LetRec、LetTuple最后一个参数用来支持连续语句。虽然不存在mut变量，因此赋值之后无法修改，但是数组内容可以重复更改，这意味着必须有一个Seq
 // 注意：返回的语法结构，本身就可以自行构建一个Array[Syntax]  ：)，但是Array[Syntax]和Syntax类型验证时又不同！头大！
-pub enum Syntax {
+pub(all) enum Syntax {
   Unit
   Bool(Bool) // Bool(true),Bool(false)
   Int(Int) // Int(1)
@@ -10,43 +10,44 @@ pub enum Syntax {
   Var(String) // _
   Tuple(Array[Syntax]) // Tuple(_, _, _)
   Not(Syntax) // not(_)
-  Array(Syntax, Syntax) // Array::make(_, _)
-  Neg(Syntax, mut ~kind : Kind?) // -_
+  Array(Array[Syntax]) // [_, _, ...]
+  Neg(Syntax) // -_
   App(Syntax, Array[Syntax]) // _(_, _, _) or _()
   Get(Syntax, Syntax) // _[_]
   If(Syntax, Syntax, Syntax) // if _ { _ } else { _ }
   ForIn(Syntax, Syntax) // for _ in _ { _ }
   For(Syntax, Syntax, Syntax, Syntax) // for _; _; _ { _ }
-  Prim(Syntax, Syntax, Op, mut ~kind : Kind?) // _+ - * / _
-  Eq(Syntax, Syntax) // _==_
-  LE(Syntax, Syntax) // _<=_
+  Prim(Syntax, Syntax, Op) // _+ - * / _
   Assign(String, Syntax) // _ = _
-  Let((String, Type), Syntax, Syntax, ~mutable : Bool) // let _: _ = _; _
+  Let((String, Type), Syntax, Syntax, mutable~ : Bool) // let _: _ = _; _
   LetRec(Fundef, Syntax) // fn f() {} ; _
   LetTuple(Array[(String, Type)], Syntax, Syntax) // let (_ , _) : (_, _)= _; _
   Put(Syntax, Syntax, Syntax) // _[_] = _
   Seq(Array[Syntax]) // Seq(_,_,_):未来弃用：目前其等同于Tuple(Array[Syntax])，本质上是一个函数，输入为语法数组，输出为语法，且无法取出任意一条语法。
 } derive(Show)
 
-pub enum Kind {
-  Int
-  Double
-} derive(Show, Eq, ToJson)
-
-pub enum Op {
+pub(all) enum Op {
   Add
   Sub
   Mul
   Div
+  Eq
+  LE
+  NE
+  Lt
+  Gt
+  GE
+  And
+  Or
 } derive(Show, Eq, ToJson)
 
-pub struct Fundef {
+pub(all) struct Fundef {
   name : (String, Type)
   args : Array[(String, Type)]
   body : Syntax
 } derive(Show)
 
-pub enum Type {
+pub(all) enum Type {
   Unit
   Bool
   Int

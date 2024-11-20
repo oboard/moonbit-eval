@@ -18,6 +18,19 @@ test "variables" {
   inspect!(vm.eval("a"), content="Int(1)")
 }
 
+
+test "Eq" {
+  let vm = MoonBitVM::new(log=true)
+  inspect!(vm.eval("let a = -1"), content="Unit")
+  inspect!(vm.eval("a"), content="Int(-1)")
+  inspect!(vm.eval("a == 2"), content="Bool(false)")
+  inspect!(vm.eval("1 > 2"), content="Bool(false)")
+  inspect!(vm.eval("1 < 2"), content="Bool(true)")
+  inspect!(vm.eval("1 <= 2"), content="Bool(true)")
+  inspect!(vm.eval("1 >= 2"), content="Bool(false)")
+  inspect!(vm.eval("2 >= 2"), content="Bool(true)")
+}
+
 test "mutable variables" {
   let vm = MoonBitVM::new()
   inspect!(vm.eval("let mut a = 1"), content="Unit")
@@ -50,9 +63,12 @@ test "if" {
 }
 
 test "for" {
-  let vm = MoonBitVM::new()
-  // inspect!(vm.eval("let mut output = \"\"", log=true), content="Unit")
-  inspect!(vm.eval("for i = 0; i < 10; i = i + 1 {  }", log=true), content="Unit")
+  let vm = MoonBitVM::new(log=true)
+  inspect!(vm.eval("let mut output = 0"), content="Unit")
+  inspect!(
+    vm.eval("for i = 0; i < 10; i = i + 1 { output += i }"),
+    content="Unit",
+  )
   // inspect!(
   //   vm.eval("for i = 0; i < 10; i = i + 1 {  output = output + i }"),
   //   content="Unit",

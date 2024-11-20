@@ -4,7 +4,11 @@ fn for_statement(
 ) -> (@types.Syntax, ArrayView[@lex.Token])? {
   ptoken(
     fn {
-      @lex.Token::For => true
+      @lex.Token::For => {
+        println("for_statement")
+        println(tokens)
+        true
+      }
       _ => false
     },
   )

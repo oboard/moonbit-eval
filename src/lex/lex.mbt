@@ -8,7 +8,7 @@ pub let token_postion : TokenPosition = {
 
 pub let token_postion_array : Array[TokenPosition] = []
 
-pub struct Context {
+pub(all) struct Context {
   str : String
   mut offset : Int
   array : Array[Token]
@@ -68,19 +68,38 @@ pub fn lex(context : Context) -> Unit {
       }
     }
     '=' => {
-      // todo ==, =>
-      array.push(Assign)
-      context.offset += 1
+      // ==
+      let has_more = context.offset + 1 < context.str.length()
+      let next = if has_more { context.str[context.offset + 1] } else { ' ' }
+      if has_more && next == '=' {
+        array.push(EqEq)
+        context.offset += 2
+      } else {
+        array.push(Assign)
+        context.offset += 1
+      }
     }
     '>' => {
-      // todo >=
-      array.push(Gt)
-      context.offset += 1
+      let has_more = context.offset + 1 < context.str.length()
+      let next = if has_more { context.str[context.offset + 1] } else { ' ' }
+      if has_more && next == '=' {
+        array.push(GE)
+        context.offset += 2
+      } else {
+        array.push(Gt)
+        context.offset += 1
+      }
     }
     '<' => {
-      // todo <=
-      array.push(Lt)
-      context.offset += 1
+      let has_more = context.offset + 1 < context.str.length()
+      let next = if has_more { context.str[context.offset + 1] } else { ' ' }
+      if has_more && next == '=' {
+        array.push(LE)
+        context.offset += 2
+      } else {
+        array.push(Lt)
+        context.offset += 1
+      }
     }
     '(' => {
       array.push(LParen)
@@ -180,7 +199,7 @@ pub fn lex(context : Context) -> Unit {
             context.str[context.offset] != '"' {
         context.offset += 1
       }
-      let literal = context.str.substring(~start, end=context.offset)
+      let literal = context.str.substring(start~, end=context.offset)
       context.array.push(StringLiteral(literal))
       // context.array.push(DoubleQuote)
       context.offset += 1

@@ -1,4 +1,4 @@
-pub struct Name {
+struct Name {
   name : String?
   slot : Int
 } derive(Eq, Hash, Compare)
@@ -16,7 +16,7 @@ pub fn Name::to_string(self : Name) -> String {
   }
 }
 
-pub type! NameFromStringError {
+type! NameFromStringError {
   InvalidSlotNumber(String, String)
 }
 

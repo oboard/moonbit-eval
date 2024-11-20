@@ -1,7 +1,7 @@
 // 表达式词法解析
 
 // Token枚举用于表示源代码中识别出的词法单元。
-pub enum Token {
+enum Token {
   Number(Int)
   LParen
   RParen
@@ -11,7 +11,7 @@ pub enum Token {
   Div
 } derive(Show)
 
-pub struct Context {
+struct Context {
   str : String
   mut offset : Int
   array : Array[Token]

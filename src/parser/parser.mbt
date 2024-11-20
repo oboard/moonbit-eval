@@ -3,10 +3,16 @@
 // 解析操作符并映射到 Op 枚举
 fn map_op(token : @lex.Token) -> @types.Op? {
   match token {
-    @lex.Token::Add => Some(@types.Op::Add)
-    @lex.Token::Sub => Some(@types.Op::Sub)
-    @lex.Token::Mul => Some(@types.Op::Mul)
-    @lex.Token::Div => Some(@types.Op::Div)
+    Add => Some(Add)
+    Sub => Some(Sub)
+    Mul => Some(Mul)
+    Div => Some(Div)
+    EqEq => Some(Eq)
+    Lt => Some(Lt)
+    Gt => Some(Gt)
+    LE => Some(LE)
+    GE => Some(GE)
+    NE => Some(NE)
     _ => None
   }
 }
@@ -143,8 +149,8 @@ fn zero_one[Value : Show](self : Parser[Value]) -> Parser[Array[Value]] {
 }
 
 // 递归定义：延迟定义并未使用
-fn Parser::ref[Value](ref : Ref[Parser[Value]]) -> Parser[Value] {
-  fn(input) { ref.val.parse(input) }
+fn Parser::reference[Value](reference : Ref[Parser[Value]]) -> Parser[Value] {
+  fn(input) { reference.val.parse(input) }
 }
 
 // if语句解析器
