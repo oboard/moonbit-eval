@@ -31,12 +31,12 @@ pub(all) enum Op {
   Sub
   Mul
   Div
-  Eq
-  LE
-  NE
-  Lt
-  Gt
-  GE
+  EqEq
+  LessEqual
+  NotEqual
+  LessThan
+  GreaterThan
+  GreaterEqual
   And
   Or
 } derive(Show, Eq, ToJson)
@@ -55,8 +55,7 @@ pub(all) enum Type {
   String
   Fun(Array[Type], Type) // (_, _, _) -> _
   Tuple(Array[Type]) // (_, _, _)
-  Array(Type) // Array[_]
-  // Var(mut ~t: Type?)  // 定义可变类型变量
+  Array(Type) // Array[_]\
   Var(Ref[Type?]) // 等价于视频教程中的Var(mut ~t: Type?):VScode鼠标光标悬浮在其上即见真面目，Ref[A]是一个泛型结构体(此时传入具体的类型Type?)，而Var()是一个函数，函数名被定义为Var。
   Ptr
 } derive(Show)

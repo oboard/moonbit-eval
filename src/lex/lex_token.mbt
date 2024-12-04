@@ -41,16 +41,20 @@ pub(all) enum Token {
 
   // 运算符号
   Add //  +
+  AddEqual // +=
   Sub //  -
+  SubEqual // -=
   Mul //  *  
+  MulEqual // *=
   Div //  /
+  DivEqual // /=
   Assign // =
   EqEq // ==
-  Lt // <
-  LE // <=
-  NE // !=
-  GE // >=
-  Gt // >
+  LessThan // <
+  LessEqual // <=
+  NotEqual // !=
+  GreaterThan // >
+  GreaterEqual // >=
 
   // 标点符号
   Comma //  ,

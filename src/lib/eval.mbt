@@ -66,11 +66,15 @@ test "for" {
   let vm = MoonBitVM::new(log=true)
   inspect!(vm.eval("let mut output = 0"), content="Unit")
   inspect!(
-    vm.eval("for i = 0; i < 10; i = i + 1 { output += i }"),
+    vm.eval("for i = 0; i < 10; i += 1 { output += i }"),
     content="Unit",
   )
-  // inspect!(
-  //   vm.eval("for i = 0; i < 10; i = i + 1 {  output = output + i }"),
-  //   content="Unit",
-  // )
+  inspect!(
+    vm.eval("output"),
+    content="Int(45)",
+  )
+
+  let mut output = 0
+  for i = 0; i < 10; i = i + 1 { output += i }
+  inspect!(output, content="45")
 }

@@ -6,7 +6,7 @@ fn for_statement(
     fn {
       @lex.Token::For => {
         println("for_statement")
-        println(tokens)
+        // println(tokens)
         true
       }
       _ => false
@@ -20,8 +20,10 @@ fn for_statement(
   .and(block)
   .map(
     fn {
-      ((((((_, initialization), _), condition), _), iteration), statements) =>
+      ((((((_, initialization), _), condition), _), iteration), statements) => {
+        println("for_statementa")
         @types.Syntax::For(initialization, condition, iteration, statements)
+      }
     },
   )
   .parse(tokens)

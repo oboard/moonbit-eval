@@ -7,12 +7,12 @@ fn map_op(token : @lex.Token) -> @types.Op? {
     Sub => Some(Sub)
     Mul => Some(Mul)
     Div => Some(Div)
-    EqEq => Some(Eq)
-    Lt => Some(Lt)
-    Gt => Some(Gt)
-    LE => Some(LE)
-    GE => Some(GE)
-    NE => Some(NE)
+    EqEq => Some(EqEq)
+    LessThan => Some(LessThan)
+    GreaterThan => Some(GreaterThan)
+    LessEqual => Some(LessEqual)
+    GreaterEqual => Some(GreaterEqual)
+    NotEqual => Some(NotEqual)
     _ => None
   }
 }

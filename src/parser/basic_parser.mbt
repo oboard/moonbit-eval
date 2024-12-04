@@ -60,7 +60,7 @@ let rbrace : Parser[@lex.Token] = ptoken(
 
 let compares : Parser[@lex.Token] = ptoken(
   fn {
-    EqEq | GE | Gt | LE | Lt => true
+    EqEq | GreaterEqual | GreaterThan | LessEqual | LessThan => true
     _ => false
   },
 )
@@ -155,6 +155,10 @@ let comma_skip : Parser[@lex.Token] = ptoken_skip(
 let assign : Parser[@lex.Token] = ptoken(
   fn {
     Assign => true
+    AddEqual => true
+    SubEqual => true
+    MulEqual => true
+    DivEqual => true
     _ => false
   },
 )

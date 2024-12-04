@@ -24,14 +24,22 @@ pub fn lex(context : Context) -> Unit {
   match str[offset] {
     // 运算符
     '+' => {
-      array.push(Add)
       context.offset += 1
+      if context.offset < str.length() && str[context.offset] == '=' {
+        context.offset += 1
+        array.push(AddEqual)
+      } else {
+        array.push(Add)
+      }
     }
     '-' => {
       context.offset += 1
       if context.offset < str.length() && str[context.offset] == '>' {
         context.offset += 1
         array.push(Arrow)
+      } else if context.offset < str.length() && str[context.offset] == '=' {
+        context.offset += 1
+        array.push(SubEqual)
       } else {
         array.push(Sub)
       }
@@ -63,42 +71,36 @@ pub fn lex(context : Context) -> Unit {
             continue
           }
         }
+      } else if context.offset < str.length() && str[context.offset] == '=' {
+        context.offset += 1
+        array.push(DivEqual)
       } else {
         array.push(Div)
       }
     }
     '=' => {
       // ==
-      let has_more = context.offset + 1 < context.str.length()
-      let next = if has_more { context.str[context.offset + 1] } else { ' ' }
-      if has_more && next == '=' {
-        array.push(EqEq)
-        context.offset += 2
+      context.offset += 1
+      if context.offset < str.length() && str[context.offset] == '=' {
+        array.push(SubEqual)
       } else {
         array.push(Assign)
-        context.offset += 1
       }
     }
     '>' => {
-      let has_more = context.offset + 1 < context.str.length()
-      let next = if has_more { context.str[context.offset + 1] } else { ' ' }
-      if has_more && next == '=' {
-        array.push(GE)
-        context.offset += 2
+      context.offset += 1
+      if context.offset < str.length() && str[context.offset] == '=' {
+        array.push(GreaterEqual)
       } else {
-        array.push(Gt)
-        context.offset += 1
+        array.push(GreaterThan)
       }
     }
     '<' => {
-      let has_more = context.offset + 1 < context.str.length()
-      let next = if has_more { context.str[context.offset + 1] } else { ' ' }
-      if has_more && next == '=' {
-        array.push(LE)
-        context.offset += 2
+      context.offset += 1
+      if context.offset < str.length() && str[context.offset] == '=' {
+        array.push(LessEqual)
       } else {
-        array.push(Lt)
-        context.offset += 1
+        array.push(LessThan)
       }
     }
     '(' => {

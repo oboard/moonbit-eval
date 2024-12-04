@@ -110,6 +110,15 @@ fn ClosureInterpreter::visit(
             String(y) =>
               match op {
                 Add => String(x + y)
+                Sub => String(x - y)
+                Mul => String(x * y)
+                Div => String(x / y)
+                EqEq => Bool(x == y)
+                NotEqual => Bool(x != y)
+                LessThan => Bool(x < y)
+                GreaterThan => Bool(x > y)
+                LessEqual => Bool(x <= y)
+                GreaterEqual => Bool(x >= y)
                 _ => Unit
               }
             _ => Unit
@@ -122,12 +131,12 @@ fn ClosureInterpreter::visit(
                 Sub => Int(x - y)
                 Mul => Int(x * y)
                 Div => Int(x / y)
-                Eq => Bool(x == y)
-                NE => Bool(x != y)
-                Lt => Bool(x < y)
-                Gt => Bool(x > y)
-                LE => Bool(x <= y)
-                GE => Bool(x >= y)
+                EqEq => Bool(x == y)
+                NotEqual => Bool(x != y)
+                LessThan => Bool(x < y)
+                GreaterThan => Bool(x > y)
+                LessEqual => Bool(x <= y)
+                GreaterEqual => Bool(x >= y)
                 _ => Unit
               }
             _ => Unit
@@ -140,6 +149,12 @@ fn ClosureInterpreter::visit(
                 Sub => Double(x - y)
                 Mul => Double(x * y)
                 Div => Double(x / y)
+                EqEq => Bool(x == y)
+                NotEqual => Bool(x != y)
+                LessThan => Bool(x < y)
+                GreaterThan => Bool(x > y)
+                LessEqual => Bool(x <= y)
+                GreaterEqual => Bool(x >= y)
                 _ => Unit
               }
             _ => Unit
@@ -164,6 +179,15 @@ fn ClosureInterpreter::visit(
         self.visit(else_)
       }
     }
+    For(initialization, condition, iteration, statements) => {
+      self.visit(initialization) |> ignore
+      while self.visit(condition) == Bool(true) {
+        self.visit(statements) |> ignore
+        self.visit(iteration) |> ignore
+      } else {
+        Unit
+      }
+    }
     Assign(name, value) => {
       let value_val = self.visit(value)
       for value in self.values.rev() {
@@ -173,7 +197,7 @@ fn ClosureInterpreter::visit(
               Mutable(_) => value[name] = Mutable(value_val)
               _ => continue
             }
-          None => continue
+          None => value[name] = Mutable(value_val)
         }
       }
       Unit

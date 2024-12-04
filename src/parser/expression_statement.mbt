@@ -34,12 +34,12 @@ fn compare(
           fn {
             e, (Some(op), expr) =>
               match op {
-                Eq => Prim(e, expr, Eq)
-                NE => Prim(e, expr, NE)
-                Gt => Prim(e, expr, Gt)
-                Lt => Prim(e, expr, Lt)
-                GE => Prim(e, expr, GE)
-                LE => Prim(e, expr, LE)
+                EqEq => Prim(e, expr, EqEq)
+                NotEqual => Prim(e, expr, NotEqual)
+                GreaterThan => Prim(e, expr, GreaterThan)
+                LessThan => Prim(e, expr, LessThan)
+                GreaterEqual => Prim(e, expr, GreaterEqual)
+                LessEqual => Prim(e, expr, LessEqual)
                 _ => @util.die("不应该出现在这里")
               }
             _, _ => @util.die("不应该出现在这里")
