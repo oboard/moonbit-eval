@@ -11,7 +11,11 @@ MoonBit Eval is a interpreter of MoonBit language.
 - [x] If
 - [x] Let (Mut)
 - [x] Assign
-- [ ] For
+- [x] For
+- [ ] While
+- [ ] Match
+- [ ] Struct
+- [ ] Trait
 
 
 ## Examples
