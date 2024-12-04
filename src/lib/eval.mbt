@@ -18,7 +18,6 @@ test "variables" {
   inspect!(vm.eval("a"), content="Int(1)")
 }
 
-
 test "compare" {
   let vm = MoonBitVM::new(log=true)
   inspect!(vm.eval("let a = -1"), content="Unit")
@@ -39,7 +38,7 @@ test "mutable variables" {
 }
 
 test "function" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM::new(log=true)
   inspect!(vm.eval("fn double(x: Int) -> Int { x*2 }"), content="Unit")
   inspect!(vm.eval("double(2)"), content="Int(4)")
 }
@@ -65,16 +64,37 @@ test "if" {
 test "for" {
   let vm = MoonBitVM::new(log=true)
   inspect!(vm.eval("let mut output = 0"), content="Unit")
+  inspect!(vm.eval("for i = 0; i < 10; i += 1 { output += i }"), content="Unit")
+  inspect!(vm.eval("output"), content="Int(45)")
+  let mut output = 0
+  for i = 0; i < 10; i = i + 1 {
+    output += i
+  }
+  inspect!(output, content="45")
+}
+
+test "fib" {
+  let vm = MoonBitVM::new(log=true)
   inspect!(
-    vm.eval("for i = 0; i < 10; i += 1 { output += i }"),
+    vm.eval(
+      #|fn fib(n : Int) -> Int {
+      #|  if n <= 1 {
+      #|    1
+      #|  } else {
+      #|    fib(n - 1) + fib(n - 2)
+      #|  }
+      #|}
+    ),
     content="Unit",
   )
-  inspect!(
-    vm.eval("output"),
-    content="Int(45)",
-  )
+  inspect!(vm.eval("fib(10)"), content="Int(89)")
+  fn fib(n : Int) -> Int {
+    if n <= 1 {
+      1
+    } else {
+      fib(n - 1) + fib(n - 2)
+    }
+  }
 
-  let mut output = 0
-  for i = 0; i < 10; i = i + 1 { output += i }
-  inspect!(output, content="45")
+  inspect!(fib(10), content="89")
 }

@@ -22,10 +22,6 @@ fn assign_statement(
   .map(
     fn {
       (((name, _), sign), expr1) => {
-        println("assign_statement: ")
-        println(name)
-        println(sign)
-        println(expr1)
         let expr = match sign {
           Assign => expr1
           AddEqual => Prim(Var(name), expr1, Add)

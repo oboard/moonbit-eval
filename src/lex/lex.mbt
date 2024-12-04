@@ -82,7 +82,8 @@ pub fn lex(context : Context) -> Unit {
       // ==
       context.offset += 1
       if context.offset < str.length() && str[context.offset] == '=' {
-        array.push(SubEqual)
+        context.offset += 1
+        array.push(EqEq)
       } else {
         array.push(Assign)
       }
@@ -90,6 +91,7 @@ pub fn lex(context : Context) -> Unit {
     '>' => {
       context.offset += 1
       if context.offset < str.length() && str[context.offset] == '=' {
+        context.offset += 1
         array.push(GreaterEqual)
       } else {
         array.push(GreaterThan)
@@ -98,6 +100,7 @@ pub fn lex(context : Context) -> Unit {
     '<' => {
       context.offset += 1
       if context.offset < str.length() && str[context.offset] == '=' {
+        context.offset += 1
         array.push(LessEqual)
       } else {
         array.push(LessThan)

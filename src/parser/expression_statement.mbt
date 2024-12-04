@@ -17,6 +17,7 @@ fn atomic(
   .or(boolean)
   .or(var)
   .or(add_sub_var)
+  .or(call_fn_stmt)
   .parse(tokens)
 }
 

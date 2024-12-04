@@ -20,6 +20,26 @@ MoonBit Eval is a interpreter of MoonBit language.
 
 ## Examples
 
+### Fibonacci Test
+```moonbit
+test "fibonacci" {
+  let vm = MoonBitVM::new(log=true)
+  inspect!(
+    vm.eval(
+      #|fn fib(n : Int) -> Int {
+      #|  if n <= 1 {
+      #|    1
+      #|  } else {
+      #|    fib(n - 1) + fib(n - 2)
+      #|  }
+      #|}
+    ),
+    content="Unit",
+  )
+  inspect!(vm.eval("fib(10)"), content="Int(89)")
+}
+```
+
 ### Mutable Variables Test
 ```moonbit
 test "mutable variables" {

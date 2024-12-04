@@ -173,7 +173,7 @@ fn ClosureInterpreter::visit(
     Array(xs) => Array(xs.map(fn(x) { self.visit(x) }))
     If(cond, then, else_) => {
       let cond_val = self.visit(cond)
-      if cond_val.op_equal(Bool(true)) {
+      if cond_val == Bool(true) {
         self.visit(then)
       } else {
         self.visit(else_)
