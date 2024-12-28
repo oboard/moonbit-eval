@@ -259,7 +259,7 @@ fn statement() -> Parser[@types.Syntax] {
         //   None => println("none")
         //   _ => break
         // }
-        if ast.is_empty().not() {
+        if not(ast.is_empty()) {
           break
         }
       }
