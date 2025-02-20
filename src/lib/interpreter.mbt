@@ -1,13 +1,16 @@
+///|
 struct ClosureInterpreter {
   extern_fns : Map[String, (Array[Value]) -> Value]
   values : Array[Map[String, Variable]]
 }
 
+///|
 enum Variable {
   Immutable(Value)
   Mutable(Value)
 } derive(Show, ToJson)
 
+///|
 enum Value {
   Unit
   Int(Int)
@@ -20,6 +23,7 @@ enum Value {
   Closure(@types.Fundef, Array[Value])
 } derive(Show, ToJson)
 
+///|
 pub fn Value::op_equal(self : Value, other : Value) -> Bool {
   match (self, other) {
     (Unit, Unit) => true
@@ -35,10 +39,12 @@ pub fn Value::op_equal(self : Value, other : Value) -> Bool {
   }
 }
 
+///|
 pub fn ClosureInterpreter::new() -> ClosureInterpreter {
   { extern_fns: Map::new(), values: [{}] }
 }
 
+///|
 pub fn ClosureInterpreter::add_extern_fn(
   self : ClosureInterpreter,
   name : String,
@@ -47,6 +53,7 @@ pub fn ClosureInterpreter::add_extern_fn(
   self.extern_fns.set(name, f)
 }
 
+///|
 fn ClosureInterpreter::find(self : ClosureInterpreter, name : String) -> Value {
   // println("find: \{name}")
   for value in self.extern_fns.keys() {
@@ -69,6 +76,7 @@ fn ClosureInterpreter::find(self : ClosureInterpreter, name : String) -> Value {
   Unit
 }
 
+///|
 fn ClosureInterpreter::visit(
   self : ClosureInterpreter,
   node : @types.Syntax

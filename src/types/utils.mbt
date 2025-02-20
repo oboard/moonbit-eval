@@ -1,4 +1,5 @@
 // 暂未使用
+///|
 pub fn to_json(self : Type) -> Json {
   match self {
     Unit => "Unit"
@@ -16,6 +17,7 @@ pub fn to_json(self : Type) -> Json {
   }
 }
 
+///|
 pub fn Type::from_json(self : Json) -> Type!Error {
   fn from(values : ArrayView[Json]) -> Array[Type]!Error {
     let array = []
@@ -30,9 +32,9 @@ pub fn Type::from_json(self : Json) -> Type!Error {
     "Bool" => Bool
     "Int" => Int
     "Double" => Double
-    ["Fun", [.. as params], result] =>
+    ["Fun", [.. params], result] =>
       Fun(from!(params), result |> Type::from_json!())
-    ["Tuple", [.. as types]] => Tuple(from!(types))
+    ["Tuple", [.. types]] => Tuple(from!(types))
     ["Array", t] => Array(t |> Type::from_json!())
     ["Var", "None"] => Var({ val: None })
     ["Var", ["Some", t]] => Var({ val: Some(t |> Type::from_json!()) })
@@ -41,6 +43,7 @@ pub fn Type::from_json(self : Json) -> Type!Error {
   }
 }
 
+///|
 test {
   // Type序列化和反序列化
   inspect!(Type::from_json?(Type::Unit.to_json()), content="Ok(Unit)")
@@ -69,18 +72,20 @@ test {
   )
 }
 
+///|
 pub fn to_json(self : Fundef) -> Json {
   {
     "name": [self.name.0 |> Json::String, self.name.1.to_json()],
     "args": [
-      ..self.args.map(
-        fn { (name, ty) => ([name |> Json::String, ty.to_json()] : Json) },
-      ),
+      ..self.args.map(fn {
+        (name, ty) => ([name |> Json::String, ty.to_json()] : Json)
+      }),
     ],
     "body": self.body.to_json(),
   }
 }
 
+///|
 pub fn Fundef::from_json(json : Json) -> Fundef!Error {
   fn from_json(json : ArrayView[Json]) -> Array[(String, Type)]!Error {
     let array = []
@@ -107,7 +112,7 @@ pub fn Fundef::from_json(json : Json) -> Fundef!Error {
   }
 
   match json {
-    { "name": [name, ty], "args": [.. as args], "body": body } => {
+    { "name": [name, ty], "args": [.. args], "body": body, .. } => {
       let name = match name.as_string() {
         Some(name) => name
         None => fail!("invalid field name: should contain a string and a type")
@@ -124,6 +129,7 @@ pub fn Fundef::from_json(json : Json) -> Fundef!Error {
   }
 }
 
+///|
 pub fn to_json(self : Syntax) -> Json {
   // 序列化：可以将AST序列化为json，以供存储或传输。
   match self {
@@ -166,6 +172,7 @@ pub fn to_json(self : Syntax) -> Json {
   }
 }
 
+///|
 pub fn Syntax::from_json(json : Json) -> Syntax! {
   // 反序列化，可以将json反序列化为AST，以供进一步的处理。
   match json {
@@ -223,7 +230,7 @@ pub fn Syntax::from_json(json : Json) -> Syntax! {
       }
     ["LetRec", funcdef, e] =>
       LetRec(funcdef |> Fundef::from_json!(), e |> Syntax::from_json!())
-    ["App", e, [.. as es]] => {
+    ["App", e, [.. es]] => {
       fn from_json(values : ArrayView[Json]) -> Array[Syntax]! {
         let array = []
         for i = 0; i < values.length(); i = i + 1 {
@@ -234,7 +241,7 @@ pub fn Syntax::from_json(json : Json) -> Syntax! {
 
       App(e |> Syntax::from_json!(), from_json!(es))
     }
-    ["Tuple", [.. as es]] => {
+    ["Tuple", [.. es]] => {
       fn from_json(values : ArrayView[Json]) -> Array[Syntax]! {
         let array = []
         for i = 0; i < values.length(); i = i + 1 {
@@ -245,7 +252,7 @@ pub fn Syntax::from_json(json : Json) -> Syntax! {
 
       Tuple(from_json!(es))
     }
-    ["LetTuple", [.. as def], value, body] => {
+    ["LetTuple", [.. def], value, body] => {
       fn from_json(values : ArrayView[Json]) -> Array[(String, Type)]! {
         let array = []
         for i = 0; i < values.length(); i = i + 1 {
@@ -276,7 +283,7 @@ pub fn Syntax::from_json(json : Json) -> Syntax! {
         body |> Syntax::from_json!(),
       )
     }
-    ["Array", [.. as es]] => {
+    ["Array", [.. es]] => {
       fn from_json(values : ArrayView[Json]) -> Array[Syntax]! {
         let array = []
         for i = 0; i < values.length(); i = i + 1 {
@@ -299,6 +306,7 @@ pub fn Syntax::from_json(json : Json) -> Syntax! {
   }
 }
 
+///|
 test {
   // 语法序列化和反序列化
   inspect!(
@@ -347,6 +355,7 @@ test {
   )
 }
 
+///|
 test {
   inspect!(Syntax::from_json!("Unit"), content="Unit")
   inspect!(Syntax::from_json!(["Bool", true]), content="Bool(true)")

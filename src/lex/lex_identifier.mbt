@@ -1,15 +1,18 @@
 // 匹配关键词和标识符
 // 判断字符是否为字母或下划线
+///|
 fn is_alpha(ch : Char) -> Bool {
   (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || ch == '_'
 }
 
 // 判断字符是否为字母或数字或下划线
+///|
 fn is_alphanumeric(ch : Char) -> Bool {
   is_alpha(ch) || (ch >= '0' && ch <= '9')
 }
 
 // 匹配关键词和标识符
+///|
 fn lex_identifier(context : Context) -> Unit {
   let start = context.offset
   while context.offset < context.str.length() &&

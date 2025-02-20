@@ -1,4 +1,5 @@
 // minimoonbit词法解析
+///|
 pub let token_postion : TokenPosition = {
   token_number: 0,
   line: 1,
@@ -6,14 +7,17 @@ pub let token_postion : TokenPosition = {
   column_end: 1,
 }
 
+///|
 pub let token_postion_array : Array[TokenPosition] = []
 
+///|
 pub(all) struct Context {
   str : String
   mut offset : Int
   array : Array[Token]
 } derive(Show)
 
+///|
 pub fn lex(context : Context) -> Unit {
   // 方法1
   // 基于字符匹配，进行状态转移
@@ -124,14 +128,12 @@ pub fn lex(context : Context) -> Unit {
         token_postion.column_end = token_postion.column_start +
           (context.offset - offset)
         // token_postion_array.push(token_postion) // 同值
-        token_postion_array.push(
-          {
-            token_number: token_postion.token_number,
-            line: token_postion.line,
-            column_start: token_postion.column_start,
-            column_end: token_postion.column_end,
-          },
-        )
+        token_postion_array.push({
+          token_number: token_postion.token_number,
+          line: token_postion.line,
+          column_start: token_postion.column_start,
+          column_end: token_postion.column_end,
+        })
         token_postion.column_start = token_postion.column_end
         // println(token_postion_array)
       }
@@ -160,14 +162,12 @@ pub fn lex(context : Context) -> Unit {
         token_postion.column_end = token_postion.column_start +
           (context.offset - offset)
         // token_postion_array.push(token_postion) // 同值
-        token_postion_array.push(
-          {
-            token_number: token_postion.token_number,
-            line: token_postion.line,
-            column_start: token_postion.column_start,
-            column_end: token_postion.column_end,
-          },
-        )
+        token_postion_array.push({
+          token_number: token_postion.token_number,
+          line: token_postion.line,
+          column_start: token_postion.column_start,
+          column_end: token_postion.column_end,
+        })
         token_postion.column_start = token_postion.column_end
         // println(token_postion_array)
       }
@@ -250,14 +250,12 @@ pub fn lex(context : Context) -> Unit {
         token_postion.column_end = token_postion.column_start +
           (context.offset - offset)
         // token_postion_array.push(token_postion) // 同值
-        token_postion_array.push(
-          {
-            token_number: token_postion.token_number,
-            line: token_postion.line,
-            column_start: token_postion.column_start,
-            column_end: token_postion.column_end,
-          },
-        )
+        token_postion_array.push({
+          token_number: token_postion.token_number,
+          line: token_postion.line,
+          column_start: token_postion.column_start,
+          column_end: token_postion.column_end,
+        })
         token_postion.column_start = token_postion.column_end
         // println(token_postion_array)
       }
@@ -298,14 +296,12 @@ pub fn lex(context : Context) -> Unit {
     token_postion.column_end = token_postion.column_start +
       (context.offset - offset)
     // token_postion_array.push(token_postion) // 同值
-    token_postion_array.push(
-      {
-        token_number: token_postion.token_number,
-        line: token_postion.line,
-        column_start: token_postion.column_start,
-        column_end: token_postion.column_end,
-      },
-    )
+    token_postion_array.push({
+      token_number: token_postion.token_number,
+      line: token_postion.line,
+      column_start: token_postion.column_start,
+      column_end: token_postion.column_end,
+    })
     token_postion.column_start = token_postion.column_end
     // println(token_postion_array)
   }
@@ -313,6 +309,7 @@ pub fn lex(context : Context) -> Unit {
   lex(context)
 }
 
+///|
 test {
   let array = []
   lex({ str: "-10123 -+ - 523 103 (5))", offset: 0, array })
