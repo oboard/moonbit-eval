@@ -5,10 +5,10 @@ struct ClosureInterpreter {
 }
 
 ///|
-enum Variable {
+priv enum Variable {
   Immutable(Value)
   Mutable(Value)
-} derive(Show, ToJson)
+} derive(Show)
 
 ///|
 enum Value {
@@ -21,7 +21,7 @@ enum Value {
   Array(Array[Value])
   ExternFn(String)
   Closure(@types.Fundef, Array[Value])
-} derive(Show, ToJson)
+} derive(Show)
 
 ///|
 pub fn Value::op_equal(self : Value, other : Value) -> Bool {
@@ -181,7 +181,7 @@ fn ClosureInterpreter::visit(
     Array(xs) => Array(xs.map(fn(x) { self.visit(x) }))
     If(cond, then, else_) => {
       let cond_val = self.visit(cond)
-      if cond_val == Bool(true) {
+      if cond_val is Bool(true) {
         self.visit(then)
       } else {
         self.visit(else_)
@@ -189,7 +189,7 @@ fn ClosureInterpreter::visit(
     }
     For(initialization, condition, iteration, statements) => {
       self.visit(initialization) |> ignore
-      while self.visit(condition) == Bool(true) {
+      while self.visit(condition) is Bool(true) {
         self.visit(statements) |> ignore
         self.visit(iteration) |> ignore
       } else {

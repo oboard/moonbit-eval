@@ -1,4 +1,4 @@
-/// 类型检查：类型标注、类型推导、类型检查。
+///| 类型检查：类型标注、类型推导、类型检查。
 /// moonbit是一门静态类型编程语言。
 /// 类型检查方法主要分为两大类：语法解析时检查、语法解析后检查
 fn new_tvar() -> @types.Type {
@@ -6,9 +6,11 @@ fn new_tvar() -> @types.Type {
   Var({ val: None })
 }
 
+///|
 type! TyErr String
 
 // 类型变量的归一化
+///|
 fn unify(t1 : @types.Type, t2 : @types.Type) -> Unit!TyErr {
   let t1 = t1.repr()
   let t2 = t2.repr()
@@ -31,13 +33,16 @@ fn unify(t1 : @types.Type, t2 : @types.Type) -> Unit!TyErr {
 
 // 类型推导的上下文
 // 全局的表记录外部函数的类型
+///|
 pub let extenv : Map[String, @types.Type] = {}
 
 // 局部的表记录函数内部的变量和局部函数的类型，（嵌套作用域采用不可变数据结构，避免变量和局部函数的参数因命名相同而发生干涉。）
 // type LocalCtx @immut/hashmap.T[String,@types.Type]
+///|
 typealias LocalCtx = @immut/hashmap.T[String, @types.Type] // 为某类型起别名
 
 // 类型推导
+///|
 fn infer(ctx : LocalCtx, e : @types.Syntax) -> @types.Type!TyErr {
   match e {
     // 简单的类型推导
@@ -86,6 +91,7 @@ fn infer(ctx : LocalCtx, e : @types.Syntax) -> @types.Type!TyErr {
 }
 
 // 清理类型变量
+///|
 fn deref_type(t : @types.Type) -> @types.Type {
   match t {
     Fun(params, result) =>
@@ -105,13 +111,15 @@ fn deref_type(t : @types.Type) -> @types.Type {
   }
 }
 
+///|
 fn deref_term(_syntax : @types.Syntax) -> @types.Syntax {
   // 实现细节
   @types.Syntax::Unit
 }
 
+///|
 pub fn typing(e : @types.Syntax) -> @types.Syntax!TyErr {
-  unify!(Unit, infer!(@immut/hashmap.T::new(), e))
+  unify!(Unit, infer!(@immut/hashmap.new(), e))
   for ext_f, ext_t in extenv {
     extenv[ext_f] = deref_type(ext_t)
   }

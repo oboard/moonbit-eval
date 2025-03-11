@@ -8,7 +8,7 @@ fn is_dot(ch : Char) -> Bool {
   ch == '.'
 }
 
-struct ContextOfNumber {
+priv struct ContextOfNumber {
   mut is_double : Bool
 }
 

@@ -73,7 +73,7 @@ test {
 }
 
 ///|
-pub fn to_json(self : Fundef) -> Json {
+pub fn to_fn_dict(self : Fundef) -> Json {
   {
     "name": [self.name.0 |> Json::String, self.name.1.to_json()],
     "args": [
@@ -81,7 +81,7 @@ pub fn to_json(self : Fundef) -> Json {
         (name, ty) => ([name |> Json::String, ty.to_json()] : Json)
       }),
     ],
-    "body": self.body.to_json(),
+    "body": self.body.to_dict(),
   }
 }
 
@@ -130,7 +130,7 @@ pub fn Fundef::from_json(json : Json) -> Fundef!Error {
 }
 
 ///|
-pub fn to_json(self : Syntax) -> Json {
+pub fn to_dict(self : Syntax) -> Json {
   // 序列化：可以将AST序列化为json，以供存储或传输。
   match self {
     Unit => "Unit"
@@ -138,36 +138,36 @@ pub fn to_json(self : Syntax) -> Json {
     Int(i) => ["Int", Json::Number(i.to_double())]
     String(i) => ["String", Json::String(i)]
     Double(f) => ["Double", Json::Number(f)]
-    Not(e) => ["Not", e.to_json()]
-    Neg(e) => ["Neg", e.to_json()]
+    Not(e) => ["Not", e.to_dict()]
+    Neg(e) => ["Neg", e.to_dict()]
     Prim(e1, e2, op) => {
       let op = op.to_string()
-      [op |> Json::String, e1.to_json(), e2.to_json()]
+      [op |> Json::String, e1.to_dict(), e2.to_dict()]
     }
-    If(e1, e2, e3) => ["If", e1.to_json(), e2.to_json(), e3.to_json()]
+    If(e1, e2, e3) => ["If", e1.to_dict(), e2.to_dict(), e3.to_dict()]
     Let((x, t), e1, e2, mutable~) =>
       [
         "Let",
         [x |> Json::String, t.to_json()],
-        e1.to_json(),
-        e2.to_json(),
+        e1.to_dict(),
+        e2.to_dict(),
         mutable.to_json(),
       ]
     Var(id) => ["Var", id |> Json::String]
-    LetRec(funcdef, e) => ["LetRec", funcdef.to_json(), e.to_json()]
-    App(e, es) => ["App", e.to_json(), es.map(Syntax::to_json) |> Json::Array]
-    Tuple(es) => ["Tuple", es.map(Syntax::to_json) |> Json::Array]
+    LetRec(funcdef, e) => ["LetRec", funcdef.to_fn_dict(), e.to_dict()]
+    App(e, es) => ["App", e.to_dict(), es.map(Syntax::to_dict) |> Json::Array]
+    Tuple(es) => ["Tuple", es.map(Syntax::to_dict) |> Json::Array]
     LetTuple(def, value, body) =>
       [
         "LetTuple",
         [..def.map(fn { (x, t) => ([x |> Json::String, t.to_json()] : Json) })],
-        value.to_json(),
-        body.to_json(),
+        value.to_dict(),
+        body.to_dict(),
       ]
-    Array(es) => ["Array", es.map(Syntax::to_json) |> Json::Array]
-    Get(arr, idx) => ["Get", arr.to_json(), idx.to_json()]
+    Array(es) => ["Array", es.map(Syntax::to_dict) |> Json::Array]
+    Get(arr, idx) => ["Get", arr.to_dict(), idx.to_dict()]
     Put(arr, idx, value) =>
-      ["Put", arr.to_json(), idx.to_json(), value.to_json()]
+      ["Put", arr.to_dict(), idx.to_dict(), value.to_dict()]
     _ => "Invalid"
   }
 }
@@ -310,44 +310,44 @@ pub fn Syntax::from_json(json : Json) -> Syntax! {
 test {
   // 语法序列化和反序列化
   inspect!(
-    Syntax::App(Syntax::Var("f"), []).to_json().stringify(),
+    Syntax::App(Syntax::Var("f"), []).to_dict().stringify(),
     content=
       #|["App",["Var","f"],[]]
     ,
   )
   inspect!(
-    Syntax::App(Syntax::Var("f"), [Syntax::Int(1)]).to_json().stringify(),
+    Syntax::App(Syntax::Var("f"), [Syntax::Int(1)]).to_dict().stringify(),
     content=
       #|["App",["Var","f"],[["Int",1]]]
     ,
   )
   inspect!(
-    Syntax::Array([Syntax::Int(1), Syntax::Int(2)]).to_json().stringify(),
+    Syntax::Array([Syntax::Int(1), Syntax::Int(2)]).to_dict().stringify(),
     content=
       #|["Array",["Int",1],["Int",2]]
     ,
   )
   inspect!(
-    Syntax::Bool(true).to_json().stringify(),
+    Syntax::Bool(true).to_dict().stringify(),
     content=
       #|["Bool",true]
     ,
   )
   inspect!(
-    Syntax::Double(1.0).to_json().stringify(),
+    Syntax::Double(1.0).to_dict().stringify(),
     content=
       #|["Double",1]
     ,
   )
   inspect!(
-    Syntax::Get(Syntax::Int(1), Syntax::Int(2)).to_json().stringify(),
+    Syntax::Get(Syntax::Int(1), Syntax::Int(2)).to_dict().stringify(),
     content=
       #|["Get",["Int",1],["Int",2]]
     ,
   )
   inspect!(
     Syntax::If(Syntax::Bool(true), Syntax::Int(1), Syntax::Int(2))
-    .to_json()
+    .to_dict()
     .stringify(),
     content=
       #|["If",["Bool",true],["Int",1],["Int",2]]
