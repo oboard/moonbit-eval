@@ -22,7 +22,7 @@ test "variables" {
 
 ///|
 test "compare" {
-  let vm = MoonBitVM::new(log=true)
+  let vm = MoonBitVM::new()
   inspect!(vm.eval("let a = -1"), content="Unit")
   inspect!(vm.eval("a"), content="Int(-1)")
   inspect!(vm.eval("a == 2"), content="Bool(false)")
@@ -43,7 +43,7 @@ test "mutable variables" {
 
 ///|
 test "function" {
-  let vm = MoonBitVM::new(log=true)
+  let vm = MoonBitVM::new()
   inspect!(vm.eval("fn double(x: Int) -> Int { x*2 }"), content="Unit")
   inspect!(vm.eval("double(2)"), content="Int(4)")
 }
@@ -70,7 +70,7 @@ test "if" {
 
 ///|
 test "for" {
-  let vm = MoonBitVM::new(log=true)
+  let vm = MoonBitVM::new()
   inspect!(vm.eval("let mut output = 0"), content="Unit")
   inspect!(vm.eval("for i = 0; i < 10; i += 1 { output += i }"), content="Unit")
   inspect!(vm.eval("output"), content="Int(45)")
@@ -83,7 +83,7 @@ test "for" {
 
 ///|
 test "fib" {
-  let vm = MoonBitVM::new(log=true)
+  let vm = MoonBitVM::new()
   inspect!(
     vm.eval(
       #|fn fib(n : Int) -> Int {

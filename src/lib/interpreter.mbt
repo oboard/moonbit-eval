@@ -24,7 +24,7 @@ enum Value {
 } derive(Show)
 
 ///|
-pub fn Value::op_equal(self : Value, other : Value) -> Bool {
+pub impl Eq for Value with op_equal(self : Value, other : Value) -> Bool {
   match (self, other) {
     (Unit, Unit) => true
     (Int(x), Int(y)) => x == y
