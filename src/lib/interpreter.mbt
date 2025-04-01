@@ -106,7 +106,7 @@ fn ClosureInterpreter::visit(
         _ => Unit
       }
     }
-    Prim(lhs, rhs, op, ..) => {
+    Prim(lhs, rhs, op) => {
       let result = self.visit(lhs)
       let y = self.visit(rhs)
       // println("result: \{result}")
