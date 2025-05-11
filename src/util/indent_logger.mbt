@@ -28,7 +28,10 @@ pub fn IndentLogger::outdent(self : IndentLogger) -> Unit {
 }
 
 ///|
-pub fn IndentLogger::write_string(self : IndentLogger, s : String) -> Unit {
+pub impl Logger for IndentLogger with write_string(
+  self : IndentLogger,
+  s : String
+) -> Unit {
   Logger::write_substring(self, s, 0, s.length())
 }
 

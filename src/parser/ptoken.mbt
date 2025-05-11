@@ -3,7 +3,7 @@ fn ptoken(predicate : (@lex.Token) -> Bool) -> Parser[@lex.Token] {
   // 必须要有
   // 直接返回一个函数作为Parser[@lex.Token]
   fn { // 省略参数
-    [hd, .. as tl] =>
+    [hd, .. tl] =>
       if hd == @lex.Token::Skip {
         if predicate(tl[0]) {
           Some((tl[0], tl[1:]))
@@ -23,7 +23,7 @@ fn ptoken_skip(predicate : (@lex.Token) -> Bool) -> Parser[@lex.Token] {
   // 可有可无
   // 直接返回一个函数作为Parser[@lex.Token];跳过失败，并不消耗token
   fn { // 省略参数
-    [hd, .. as tl] as all =>
+    [hd, .. tl] as all =>
       if predicate(hd) {
         Some((hd, tl))
       } else {

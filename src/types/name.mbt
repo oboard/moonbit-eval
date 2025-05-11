@@ -37,8 +37,8 @@ pub impl Show for NameFromStringError with output(
 
 ///|
 pub fn Name::from_string(s : String) -> Name!NameFromStringError {
-  let first_dot = s.index_of(".")
-  if first_dot != -1 {
+  let first_dot = s.find(".")
+  if first_dot is Some(first_dot) {
     let name = s.substring(start=0, end=first_dot)
     let slot_s = s.substring(start=first_dot + 1, end=s.length())
     try {
@@ -48,7 +48,7 @@ pub fn Name::from_string(s : String) -> Name!NameFromStringError {
       @strconv.StrConvError(e) =>
         raise NameFromStringError::InvalidSlotNumber(e, slot_s)
     }
-  } else if s.starts_with("_") &&
+  } else if s.has_prefix("_") &&
     s.length() > 1 &&
     s
     .substring(start=1, end=s.length())

@@ -49,10 +49,10 @@ fn infer(ctx : LocalCtx, e : @types.Syntax) -> @types.Type!TyErr {
     Int(_) => Int
     Bool(_) => Bool
     Var(x) =>
-      match ctx[x] {
+      match ctx.get(x) {
         Some(t) => t
         None =>
-          match extenv[x] {
+          match extenv.get(x) {
             Some(t) => t
             None => {
               let t = new_tvar()
