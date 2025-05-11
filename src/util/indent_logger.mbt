@@ -29,7 +29,7 @@ pub fn IndentLogger::outdent(self : IndentLogger) -> Unit {
 
 ///|
 pub fn IndentLogger::write_string(self : IndentLogger, s : String) -> Unit {
-  Logger::write_sub_string(self, s, 0, s.length())
+  Logger::write_substring(self, s, 0, s.length())
 }
 
 ///|
@@ -49,7 +49,7 @@ pub impl Logger for IndentLogger with write_substring(
       self.line_start = false
     }
     if s[curr] == '\n' {
-      self.logger.write_sub_string(s, start, curr - start)
+      self.logger.write_substring(s, start, curr - start)
       self.logger.write_char('\n')
       self.line_start = true
       start = curr + 1
@@ -60,7 +60,7 @@ pub impl Logger for IndentLogger with write_substring(
     self.print_indent()
     self.line_start = false
   }
-  self.logger.write_sub_string(s, start, end - start)
+  self.logger.write_substring(s, start, end - start)
 }
 
 ///|

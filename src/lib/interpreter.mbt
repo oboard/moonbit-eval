@@ -63,10 +63,10 @@ fn ClosureInterpreter::find(self : ClosureInterpreter, name : String) -> Value {
     }
   }
   for value in self.values.rev() {
-    match value[name] {
-      Some(value) =>
+    match value.get(name) {
+      Some(variable) =>
         // println("found value: \{name}")
-        return match value {
+        return match variable {
           Immutable(value) => value
           Mutable(value) => value
         }
@@ -106,7 +106,7 @@ fn ClosureInterpreter::visit(
         _ => Unit
       }
     }
-    Prim(lhs, rhs, op, ..) => {
+    Prim(lhs, rhs, op) => {
       let result = self.visit(lhs)
       let y = self.visit(rhs)
       // println("result: \{result}")
@@ -118,9 +118,6 @@ fn ClosureInterpreter::visit(
             String(y) =>
               match op {
                 Add => String(x + y)
-                Sub => String(x - y)
-                Mul => String(x * y)
-                Div => String(x / y)
                 EqEq => Bool(x == y)
                 NotEqual => Bool(x != y)
                 LessThan => Bool(x < y)
@@ -199,7 +196,7 @@ fn ClosureInterpreter::visit(
     Assign(name, value) => {
       let value_val = self.visit(value)
       for value in self.values.rev() {
-        match value[name] {
+        match value.get(name) {
           Some(variable) =>
             match variable {
               Mutable(_) => value[name] = Mutable(value_val)
