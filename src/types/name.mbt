@@ -20,7 +20,7 @@ pub fn Name::to_string(self : Name) -> String {
 }
 
 ///|
-type! NameFromStringError {
+suberror NameFromStringError {
   InvalidSlotNumber(String, String)
 }
 
@@ -36,13 +36,13 @@ pub impl Show for NameFromStringError with output(
 }
 
 ///|
-pub fn Name::from_string(s : String) -> Name!NameFromStringError {
+pub fn Name::from_string(s : String) -> Name raise NameFromStringError {
   let first_dot = s.find(".")
   if first_dot is Some(first_dot) {
     let name = s.substring(start=0, end=first_dot)
     let slot_s = s.substring(start=first_dot + 1, end=s.length())
     try {
-      let slot = @strconv.parse_int!(slot_s, base=10)
+      let slot = @strconv.parse_int(slot_s, base=10)
       Name::name_and_slot(name, slot)
     } catch {
       @strconv.StrConvError(e) =>
@@ -56,7 +56,7 @@ pub fn Name::from_string(s : String) -> Name!NameFromStringError {
     .all(fn(c) { c >= '0' && c <= '9' }) {
     let slot_s = s.substring(start=1, end=s.length())
     try {
-      let slot = @strconv.parse_int!(slot_s, base=10)
+      let slot = @strconv.parse_int(slot_s, base=10)
       Name::slot_only(slot)
     } catch {
       @strconv.StrConvError(e) =>
@@ -88,9 +88,9 @@ pub fn Name::to_json(self : Name) -> Json {
 }
 
 ///|
-pub fn Name::from_json(json : Json) -> Name! {
+pub fn Name::from_json(json : Json) -> Name raise {
   match json {
-    Json::String(s) => Name::from_string!(s)
-    _ => fail!("Name::from_json: expected a string, but got \{json}")
+    Json::String(s) => Name::from_string(s)
+    _ => fail("Name::from_json: expected a string, but got \{json}")
   }
 }

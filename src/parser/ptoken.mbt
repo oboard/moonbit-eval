@@ -1,8 +1,10 @@
 // 返回一个词法单元解析器函数
+
+///|
 fn ptoken(predicate : (@lex.Token) -> Bool) -> Parser[@lex.Token] {
   // 必须要有
   // 直接返回一个函数作为Parser[@lex.Token]
-  fn { // 省略参数
+  x => match x { // 省略参数
     [hd, .. tl] =>
       if hd == @lex.Token::Skip {
         if predicate(tl[0]) {
@@ -19,10 +21,11 @@ fn ptoken(predicate : (@lex.Token) -> Bool) -> Parser[@lex.Token] {
   }
 }
 
+///|
 fn ptoken_skip(predicate : (@lex.Token) -> Bool) -> Parser[@lex.Token] {
   // 可有可无
   // 直接返回一个函数作为Parser[@lex.Token];跳过失败，并不消耗token
-  fn { // 省略参数
+  x => match x { // 省略参数
     [hd, .. tl] as all =>
       if predicate(hd) {
         Some((hd, tl))

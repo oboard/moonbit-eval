@@ -1,4 +1,5 @@
 // minimoonbit词法解析
+
 ///|
 pub let token_postion : TokenPosition = {
   token_number: 0,

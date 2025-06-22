@@ -1,17 +1,22 @@
 // 匹配数字
 // 整数和浮点数判断，在词法解析环节的实现
+
+///|
 fn is_number(ch : Char) -> Bool {
   ch >= '0' && ch <= '9'
 }
 
+///|
 fn is_dot(ch : Char) -> Bool {
   ch == '.'
 }
 
+///|
 priv struct ContextOfNumber {
   mut is_double : Bool
 }
 
+///|
 fn lex_number(context : Context) -> Unit {
   let { offset, str, .. } = context
   let context_of_number = { is_double: false }
@@ -20,6 +25,7 @@ fn lex_number(context : Context) -> Unit {
   lex_number_rest(context, number, context_of_number)
 }
 
+///|
 fn lex_number_rest(
   context : Context,
   number : String,
@@ -28,9 +34,9 @@ fn lex_number_rest(
   let { offset, str, array } = context
   if offset >= str.length() {
     if context_of_number.is_double {
-      array.push(Number_Double(@strconv.parse_double?(number).unwrap()))
+      array.push(Number_Double((try? @strconv.parse_double(number)).unwrap()))
     } else {
-      array.push(Number(@strconv.parse_int?(number).unwrap()))
+      array.push(Number((try? @strconv.parse_int(number)).unwrap()))
     }
     return
   }
@@ -49,8 +55,8 @@ fn lex_number_rest(
       lex_number_rest(context, number + ch.to_string(), context_of_number)
     }
   } else if context_of_number.is_double {
-    array.push(Number_Double(@strconv.parse_double?(number).unwrap()))
+    array.push(Number_Double((try? @strconv.parse_double(number)).unwrap()))
   } else {
-    array.push(Number(@strconv.parse_int?(number).unwrap()))
+    array.push(Number((try? @strconv.parse_int(number)).unwrap()))
   }
 }

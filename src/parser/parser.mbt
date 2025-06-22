@@ -34,7 +34,7 @@ pub fn[V] parse(
 
 ///|
 fn[I, O] map(self : Parser[I], f : (I) -> O) -> Parser[O] {
-  fn {
+  x => match x {
     input =>
       match self.parse(input) {
         Some((token, rest)) => Some((f(token), rest))
@@ -46,19 +46,21 @@ fn[I, O] map(self : Parser[I], f : (I) -> O) -> Parser[O] {
 // 顺序解析：顺序解析，若遇到失败则返回None，提前退出解析。
 
 ///|
-fn and[V1, V2](self : Parser[V1], parser2 : Parser[V2]) -> Parser[(V1, V2)] {
+fn[V1, V2] andBind(self : Parser[V1], parser2 : Parser[V2]) -> Parser[(V1, V2)] {
   // and返回值为一个函数（输入input，成功则输出为((value1, value2), rest2)）
   // 调用bind者，本身为None时，直接返回None；否则则表示parser1解析成功,解析结果为value1和rest1,继续使用parser2解析rest1,解析结果为value2,rest2
   // 最后解析结果为((value1, value2), rest2)
-  fn {
+  x => match x {
     input =>
       self
       .parse(input)
-      .bind(fn {
+      .bind(x => match x {
         (value1, rest1) =>
           parser2
           .parse(rest1)
-          .map(fn { (value2, rest2) => ((value1, value2), rest2) })
+          .map(x => match x {
+            (value2, rest2) => ((value1, value2), rest2)
+          })
       })
   }
 }
@@ -67,7 +69,7 @@ fn and[V1, V2](self : Parser[V1], parser2 : Parser[V2]) -> Parser[(V1, V2)] {
 
 ///|
 fn[Value] or(self : Parser[Value], parser2 : Parser[Value]) -> Parser[Value] {
-  fn {
+  x => match x {
     input =>
       match self.parse(input) {
         None => parser2.parse(input)
@@ -119,51 +121,51 @@ fn[Value : Show] many(self : Parser[Value]) -> Parser[Array[Value]] {
 }
 
 ///|
-fn[Value : Show] zero_one(self : Parser[Value]) -> Parser[Array[Value]] {
-  fn(input) {
-    // println("Many 1")
-    // println("input: \{input}")
-    // println("self.parse(input): \{self.parse(input)}")
-    let cumul = []
-    let mut rest = input
+// fn[Value : Show] zero_one(self : Parser[Value]) -> Parser[Array[Value]] {
+//   fn(input) {
+//     // println("Many 1")
+//     // println("input: \{input}")
+//     // println("self.parse(input): \{self.parse(input)}")
+//     let cumul = []
+//     let mut rest = input
 
-    // 方法1
-    while true {
-      match self.parse(rest) {
-        None => break
-        Some((v, rest_)) => {
-          cumul.push(v)
-          rest = rest_
-        }
-      }
-    }
-    // println("many()成功解析: \{cumul}")
-    // println("many()尚未解析: \{rest}")
-    Some((cumul, rest))
+//     // 方法1
+//     while true {
+//       match self.parse(rest) {
+//         None => break
+//         Some((v, rest_)) => {
+//           cumul.push(v)
+//           rest = rest_
+//         }
+//       }
+//     }
+//     // println("many()成功解析: \{cumul}")
+//     // println("many()尚未解析: \{rest}")
+//     Some((cumul, rest))
 
-    // 方法2
-    // loop self.parse(rest) {
-    //   None => break Some((cumul, rest))
-    //   Some((v, rest_)) => {
-    //     println("Many 2")
-    //     println("value: \{v}")
-    //     println("rest_: \{rest_}")
-    //     println("self.parse(rest_): \{self.parse(rest_)}")
-    //     cumul.push(v)
-    //     rest = rest_
-    //     continue self.parse(rest) // to drop
-    //   }
-    // }
+//     // 方法2
+//     // loop self.parse(rest) {
+//     //   None => break Some((cumul, rest))
+//     //   Some((v, rest_)) => {
+//     //     println("Many 2")
+//     //     println("value: \{v}")
+//     //     println("rest_: \{rest_}")
+//     //     println("self.parse(rest_): \{self.parse(rest_)}")
+//     //     cumul.push(v)
+//     //     rest = rest_
+//     //     continue self.parse(rest) // to drop
+//     //   }
+//     // }
 
-  }
-}
+//   }
+// }
 
 // 递归定义：延迟定义并未使用
 
 ///|
-fn[Value] Parser::reference(reference : Ref[Parser[Value]]) -> Parser[Value] {
-  fn(input) { reference.val.parse(input) }
-}
+// fn[Value] Parser::reference(reference : Ref[Parser[Value]]) -> Parser[Value] {
+//   fn(input) { reference.val.parse(input) }
+// }
 
 // if语句解析器
 
@@ -171,21 +173,21 @@ fn[Value] Parser::reference(reference : Ref[Parser[Value]]) -> Parser[Value] {
 fn if_statement(
   tokens : ArrayView[@lex.Token]
 ) -> (@types.Syntax, ArrayView[@lex.Token])? {
-  ptoken(fn {
+  ptoken(x => match x {
     @lex.Token::If => true
     _ => false
   })
-  .and(expression) // 解析条件表达式
-  // .and(statements) // 解析多语句
-  .and(block) // 解析 then 分支
-  .and(
-    ptoken(fn {
+  .andBind(expression) // 解析条件表达式
+  // .andBind(statements) // 解析多语句
+  .andBind(block) // 解析 then 分支
+  .andBind(
+    ptoken(x => match x {
       @lex.Token::Else => true
       _ => false
     }),
   )
-  .and(block) // 解析 else 分支
-  .map(fn {
+  .andBind(block) // 解析 else 分支
+  .map(x => match x {
     ((((_, condition), then_branch), _), else_branch) =>
       @types.Syntax::If(condition, then_branch, else_branch)
   })
@@ -198,7 +200,12 @@ fn if_statement(
 fn lparen_rparen_stmt(
   tokens : ArrayView[@lex.Token]
 ) -> (@types.Syntax, ArrayView[@lex.Token])? {
-  lparen.and(rparen).map(fn { _ => @types.Syntax::Unit }).parse(tokens)
+  lparen
+  .andBind(rparen)
+  .map(x => match x {
+    _ => @types.Syntax::Unit
+  })
+  .parse(tokens)
 }
 
 // fn newline_stmt(tokens: ArrayView[@lex.Token]) -> Option[(@types.Syntax, ArrayView[@lex.Token])] {
@@ -218,12 +225,12 @@ fn block(
   // println("block: \{parser_context}")
   lbrace
   // lbrace.many().map(fn {_ => None})
-  // .and(expression)
-  // .and(statement()) // 解析单个语句
-  .and(statements) // 解析多个语句
-  .and(separator.many())
-  .and(rbrace)
-  .map(fn {
+  // .andBind(expression)
+  // .andBind(statement()) // 解析单个语句
+  .andBind(statements) // 解析多个语句
+  .andBind(separator.many())
+  .andBind(rbrace)
+  .map(x => match x {
     (((_, stmts), _), _rbrace) => {
       // println("消耗了： \{rbrace}")
       // println("block内语法是 \{stmts}")
@@ -274,11 +281,13 @@ fn statements(
   tokens : ArrayView[@lex.Token]
 ) -> (@types.Syntax, ArrayView[@lex.Token])? {
   statement()
-  .and(separator_skip.and(statement()).many())
-  .map(fn {
+  .andBind(separator_skip.andBind(statement()).many())
+  .map(x => match x {
     (first_stmt, list) => {
       let stmts = [first_stmt]
-      list.each(fn { (_, stmt) => stmts.push(stmt) })
+      list.each(x => match x {
+        (_, stmt) => stmts.push(stmt)
+      })
       @types.Syntax::Seq(stmts)
     }
   })

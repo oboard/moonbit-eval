@@ -4,19 +4,19 @@
 fn for_statement(
   tokens : ArrayView[@lex.Token]
 ) -> (@types.Syntax, ArrayView[@lex.Token])? {
-  ptoken(fn {
+  ptoken(x => match x {
     @lex.Token::For =>
       // println(tokens)
       true
     _ => false
   })
-  .and(assign_statement)
-  .and(semicolon_skip)
-  .and(expression)
-  .and(semicolon_skip)
-  .and(assign_statement)
-  .and(block)
-  .map(fn {
+  .andBind(assign_statement)
+  .andBind(semicolon_skip)
+  .andBind(expression)
+  .andBind(semicolon_skip)
+  .andBind(assign_statement)
+  .andBind(block)
+  .map(x => match x {
     ((((((_, initialization), _), condition), _), iteration), statements) =>
       @types.Syntax::For(initialization, condition, iteration, statements)
   })
