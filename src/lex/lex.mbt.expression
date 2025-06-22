@@ -87,14 +87,14 @@ fn lex_number_rest(context : Context, number : String) -> Unit {
 test {
   let array = []
   lex({ str: "-10123 -+ - 523 103 (5))", offset: 0, array })
-  inspect!(
+  inspect(
     array,
     content="[Sub, Number(10123), Sub, Add, Sub, Number(523), Number(103), LParen, Number(5), RParen, RParen]",
   )
   // todo
   // let array = []
   // lex({ str: "let a=1", offset: 0, array })
-  // inspect!(
+  // inspect(
   //   array,
   //   content="[let, a, ",
   // )

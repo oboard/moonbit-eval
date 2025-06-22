@@ -24,7 +24,7 @@ MoonBit Eval is a interpreter of MoonBit language.
 ```moonbit
 test "fibonacci" {
   let vm = MoonBitVM::new(log=true)
-  inspect!(
+  inspect(
     vm.eval(
       #|fn fib(n : Int) -> Int {
       #|  if n <= 1 {
@@ -36,7 +36,7 @@ test "fibonacci" {
     ),
     content="Unit",
   )
-  inspect!(vm.eval("fib(10)"), content="Int(89)")
+  inspect(vm.eval("fib(10)"), content="Int(89)")
 }
 ```
 
@@ -44,9 +44,9 @@ test "fibonacci" {
 ```moonbit
 test "mutable variables" {
   let vm = MoonBitVM::new()
-  inspect!(vm.eval("let mut a = 1"), content="Unit")
-  inspect!(vm.eval("a = 12"), content="Unit")
-  inspect!(vm.eval("a"), content="Int(12)")
+  inspect(vm.eval("let mut a = 1"), content="Unit")
+  inspect(vm.eval("a = 12"), content="Unit")
+  inspect(vm.eval("a"), content="Int(12)")
 }
 ```
 
@@ -54,8 +54,8 @@ test "mutable variables" {
 ```moonbit
 test "function" {
   let vm = MoonBitVM::new()
-  inspect!(vm.eval("fn double(x: Int) -> Int { x*2 }"), content="Unit")
-  inspect!(vm.eval("double(2)"), content="Int(4)")
+  inspect(vm.eval("fn double(x: Int) -> Int { x*2 }"), content="Unit")
+  inspect(vm.eval("double(2)"), content="Int(4)")
 }
 ```
 

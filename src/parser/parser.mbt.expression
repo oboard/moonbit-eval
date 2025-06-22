@@ -203,21 +203,21 @@ test {
   // 词法解析
   let tokens = []
   @lex.lex({ str: input, offset: 0, array: tokens })
-  inspect!(tokens, content="[Number(1), Add, Number(2), Sub, Number(3)]")
+  inspect(tokens, content="[Number(1), Add, Number(2), Sub, Number(3)]")
   // 语法解析（自顶向下的解释器组合子）
   let (expr, _) = parser.parse(tokens[:]).unwrap()
   println(expr)
-  inspect!(expr, content="Minus(Plus(Number(1), Number(2)), Number(3))")
+  inspect(expr, content="Minus(Plus(Number(1), Number(2)), Number(3))")
 
   let input = "1 + 2 * 3 - 6"
   let tokens = []
   @lex.lex({ str: input, offset: 0, array: tokens })
-  inspect!(
+  inspect(
     tokens,
     content="[Number(1), Add, Number(2), Mul, Number(3), Sub, Number(6)]",
   )
   let (expr, _) = parser.parse(tokens[:]).unwrap()
-  inspect!(
+  inspect(
     expr,
     content="Minus(Plus(Number(1), Multiply(Number(2), Number(3))), Number(6))",
   )
@@ -225,12 +225,12 @@ test {
   let input = "1/2-(3)"
   let tokens = []
   @lex.lex({ str: input, offset: 0, array: tokens })
-  inspect!(
+  inspect(
     tokens,
     content="[Number(1), Div, Number(2), Sub, LParen, Number(3), RParen]",
   )
   let (expr, _) = parser.parse(tokens[:]).unwrap()
-  inspect!(
+  inspect(
     expr,
     content="Minus(Divide(Number(1), Number(2)), Number(3))",
   )
@@ -238,12 +238,12 @@ test {
   // let input = "+ + 2 * 3 - 6"  // 报错
   // let tokens = []
   // @lex.lex({ str: input, offset: 0, array: tokens })
-  // inspect!(
+  // inspect(
   //   tokens,
   //   content="[Add, Add, Number(2), Mul, Number(3), Sub, Number(6)]",
   // )
   // let (expr, _) = parser.parse(tokens[:]).unwrap()
-  // inspect!(
+  // inspect(
   //   expr,
   //   content="Minus(Plus(Add, Multiply(Number(2), Number(3))), Number(6))",
   // )

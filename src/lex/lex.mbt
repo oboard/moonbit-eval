@@ -313,28 +313,28 @@ pub fn lex(context : Context) -> Unit {
 test {
   let array = []
   lex({ str: "-10123 -+ - 523 103 (5))", offset: 0, array })
-  inspect!(
+  inspect(
     array,
     content="[Sub, Number(10123), Sub, Add, Sub, Number(523), Number(103), LParen, Number(5), RParen, RParen]",
   )
   let array = []
   lex({ str: "let a=1", offset: 0, array })
-  inspect!(array, content="[Let, Identifier(\"a\"), Assign, Number(1)]")
+  inspect(array, content="[Let, Identifier(\"a\"), Assign, Number(1)]")
   let array = []
   lex({ str: "let b1=11", offset: 0, array })
   // println(array)
-  inspect!(array, content="[Let, Identifier(\"b1\"), Assign, Number(11)]")
+  inspect(array, content="[Let, Identifier(\"b1\"), Assign, Number(11)]")
   let array = []
   lex({ str: "let a=Int(11)", offset: 0, array })
   // println(array)
-  inspect!(
+  inspect(
     array,
     content="[Let, Identifier(\"a\"), Assign, Int, LParen, Number(11), RParen]",
   )
   let array = []
   lex({ str: "let a=Int(11)\nlet b:Int =1", offset: 0, array })
   // println(array)
-  inspect!(
+  inspect(
     array,
     content="[Let, Identifier(\"a\"), Assign, Int, LParen, Number(11), RParen, Newline, Let, Identifier(\"b\"), Colon, Int, Assign, Number(1)]",
   )
@@ -344,7 +344,7 @@ test {
   let tokens = []
   lex({ str: input, offset: 0, array: tokens })
   // println(tokens)
-  inspect!(
+  inspect(
     tokens,
     content="[Number(1), Div, Number(2), Sub, Number(3), Newline, Number(4), Mul, Number(5), Add, Number(6)]",
   )
@@ -352,7 +352,7 @@ test {
   let array = []
   lex({ str: "let 1=Int(11)\nlet 2:Int =1", offset: 0, array })
   // println(array)
-  inspect!(
+  inspect(
     array,
     content="[Let, Number(1), Assign, Int, LParen, Number(11), RParen, Newline, Let, Number(2), Colon, Int, Assign, Number(1)]",
   )

@@ -1,13 +1,13 @@
 // For(Syntax, Syntax, Syntax, Syntax) // for _; _; _ { _ }
+
 ///|
 fn for_statement(
   tokens : ArrayView[@lex.Token]
 ) -> (@types.Syntax, ArrayView[@lex.Token])? {
   ptoken(fn {
-    @lex.Token::For => {
+    @lex.Token::For =>
       // println(tokens)
       true
-    }
     _ => false
   })
   .and(assign_statement)

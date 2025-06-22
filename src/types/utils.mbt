@@ -46,27 +46,27 @@ pub fn Type::from_json(self : Json) -> Type!Error {
 ///|
 test {
   // Type序列化和反序列化
-  inspect!(Type::from_json?(Type::Unit.to_json()), content="Ok(Unit)")
-  inspect!(Type::from_json?(Type::Bool.to_json()), content="Ok(Bool)")
-  inspect!(Type::from_json?(Type::Int.to_json()), content="Ok(Int)")
-  inspect!(Type::from_json?(Type::Double.to_json()), content="Ok(Double)")
-  inspect!(
+  inspect(Type::from_json?(Type::Unit.to_json()), content="Ok(Unit)")
+  inspect(Type::from_json?(Type::Bool.to_json()), content="Ok(Bool)")
+  inspect(Type::from_json?(Type::Int.to_json()), content="Ok(Int)")
+  inspect(Type::from_json?(Type::Double.to_json()), content="Ok(Double)")
+  inspect(
     Type::from_json?(Type::Fun([Type::Int, Type::Double], Type::Unit).to_json()),
     content="Ok(Fun([Int, Double], Unit))",
   )
-  inspect!(
+  inspect(
     Type::from_json?(Type::Tuple([Type::Int, Type::Double]).to_json()),
     content="Ok(Tuple([Int, Double]))",
   )
-  inspect!(
+  inspect(
     Type::from_json?(Type::Array(Type::Int).to_json()),
     content="Ok(Array(Int))",
   )
-  inspect!(
+  inspect(
     Type::from_json?(Type::Var({ val: None }).to_json()),
     content="Ok(Var({val: None}))",
   )
-  inspect!(
+  inspect(
     Type::from_json?(Type::Var({ val: Some(Type::Int) }).to_json()),
     content="Ok(Var({val: Some(Int)}))",
   )
@@ -309,43 +309,43 @@ pub fn Syntax::from_json(json : Json) -> Syntax! {
 ///|
 test {
   // 语法序列化和反序列化
-  inspect!(
+  inspect(
     Syntax::App(Syntax::Var("f"), []).to_dict().stringify(),
     content=
       #|["App",["Var","f"],[]]
     ,
   )
-  inspect!(
+  inspect(
     Syntax::App(Syntax::Var("f"), [Syntax::Int(1)]).to_dict().stringify(),
     content=
       #|["App",["Var","f"],[["Int",1]]]
     ,
   )
-  inspect!(
+  inspect(
     Syntax::Array([Syntax::Int(1), Syntax::Int(2)]).to_dict().stringify(),
     content=
       #|["Array",["Int",1],["Int",2]]
     ,
   )
-  inspect!(
+  inspect(
     Syntax::Bool(true).to_dict().stringify(),
     content=
       #|["Bool",true]
     ,
   )
-  inspect!(
+  inspect(
     Syntax::Double(1.0).to_dict().stringify(),
     content=
       #|["Double",1]
     ,
   )
-  inspect!(
+  inspect(
     Syntax::Get(Syntax::Int(1), Syntax::Int(2)).to_dict().stringify(),
     content=
       #|["Get",["Int",1],["Int",2]]
     ,
   )
-  inspect!(
+  inspect(
     Syntax::If(Syntax::Bool(true), Syntax::Int(1), Syntax::Int(2))
     .to_dict()
     .stringify(),
@@ -357,54 +357,54 @@ test {
 
 ///|
 test {
-  inspect!(Syntax::from_json!("Unit"), content="Unit")
-  inspect!(Syntax::from_json!(["Bool", true]), content="Bool(true)")
-  inspect!(Syntax::from_json!(["Bool", false]), content="Bool(false)")
-  inspect!(Syntax::from_json!(["Int", 1]), content="Int(1)")
-  inspect!(Syntax::from_json!(["Double", 1.0]), content="Double(1)")
-  inspect!(
+  inspect(Syntax::from_json!("Unit"), content="Unit")
+  inspect(Syntax::from_json!(["Bool", true]), content="Bool(true)")
+  inspect(Syntax::from_json!(["Bool", false]), content="Bool(false)")
+  inspect(Syntax::from_json!(["Int", 1]), content="Int(1)")
+  inspect(Syntax::from_json!(["Double", 1.0]), content="Double(1)")
+  inspect(
     Syntax::from_json!(["Not", ["Bool", true]]),
     content="Not(Bool(true))",
   )
-  inspect!(
+  inspect(
     Syntax::from_json!(["Neg", ["Int", 1]]),
     content="Neg(Int(1), kind=None)",
   )
-  inspect!(
+  inspect(
     Syntax::from_json!(["Add", ["Int", 1], ["Int", 2]]),
     content="Prim(Int(1), Int(2), Add, kind=None)",
   )
-  inspect!(
+  inspect(
     Syntax::from_json!(["Sub", ["Int", 1], ["Int", 2]]),
     content="Prim(Int(1), Int(2), Sub, kind=None)",
   )
-  inspect!(
+  inspect(
     Syntax::from_json!(["Mul", ["Int", 1], ["Int", 2]]),
     content="Prim(Int(1), Int(2), Mul, kind=None)",
   )
-  inspect!(
+  inspect(
     Syntax::from_json!(["Div", ["Int", 1], ["Int", 2]]),
     content="Prim(Int(1), Int(2), Div, kind=None)",
   )
-  inspect!(
+  inspect(
     Syntax::from_json!(["Eq", ["Int", 1], ["Int", 2]]),
     content="Eq(Int(1), Int(2))",
   )
-  inspect!(
+  inspect(
     Syntax::from_json!(["LE", ["Int", 1], ["Int", 2]]),
     content="LE(Int(1), Int(2))",
   )
-  inspect!(
+  inspect(
     Syntax::from_json!(["If", ["Bool", true], ["Int", 1], ["Int", 2]]),
     content="If(Bool(true), Int(1), Int(2))",
   )
-  inspect!(
+  inspect(
     Syntax::from_json!(["Let", ["x", "Int"], ["Int", 1], ["Int", 2]]),
     content=
       #|Let(("x", Int), Int(1), Int(2))
     ,
   )
-  inspect!(
+  inspect(
     Syntax::from_json!(["Var", "x"]),
     content=
       #|Var("x")
