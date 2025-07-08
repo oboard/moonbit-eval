@@ -70,7 +70,7 @@ test "if" {
 
 ///|
 test "for" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM::new(log=true)
   inspect(vm.eval("let mut output = 0"), content="Unit")
   inspect(vm.eval("for i = 0; i < 10; i += 1 { output += i }"), content="Unit")
   inspect(vm.eval("output"), content="Int(45)")
@@ -95,6 +95,30 @@ test "while" {
   inspect(vm2.eval("let mut count = 0"), content="Unit")
   inspect(vm2.eval("while false { count += 1 }"), content="Unit")
   inspect(vm2.eval("count"), content="Int(0)")
+}
+
+///|
+test "lambda" {
+  let vm = MoonBitVM::new()
+  // 测试基本的 lambda 函数
+  inspect(vm.eval("let f = x => x * 2"), content="Unit")
+  inspect(vm.eval("f(3)"), content="Int(6)")
+
+  // 测试 lambda 函数作为表达式
+  inspect(vm.eval("let g = y => y + 1"), content="Unit")
+  inspect(vm.eval("g(5)"), content="Int(6)")
+
+  // 测试 lambda 函数调用
+  inspect(vm.eval("let h = z => z * z"), content="Unit")
+  inspect(vm.eval("h(4)"), content="Int(16)")
+}
+
+///|
+test "lambda_simple" {
+  let vm = MoonBitVM::new(log=true)
+  // 测试简单的 lambda 表达式
+  inspect(vm.eval("let f = x => x"), content="Unit")
+  inspect(vm.eval("f(5)"), content="Int(5)")
 }
 
 ///|

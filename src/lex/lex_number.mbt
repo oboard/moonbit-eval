@@ -48,7 +48,7 @@ fn lex_number_rest(
     context.offset += 1
     if context_of_number.is_double {
       // 多个dot
-      @util.die("浮点数包含多个dot")
+      @util.die_with_error(@util.ErrorType::FloatMultiDot)
       return
     } else {
       context_of_number.is_double = true

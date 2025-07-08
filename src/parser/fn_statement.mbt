@@ -13,7 +13,7 @@ fn fn_main_statement(
         if column_start == 1 {
           true
         } else {
-          @util.die("顶级未左对齐")
+          @util.die_with_error(@util.ErrorType::MissingAlignment)
         }
       } else {
         true
@@ -85,7 +85,7 @@ fn fn_statement(
       _ => false
     }).map(x => match x {
       Fun_name(fun_name) => fun_name // 中间解析,可以简化最终解析
-      _ => @util.die("missing_fun_name")
+      _ => @util.function_name_error()
     }),
   )
   .andBind(lparen)
@@ -153,7 +153,7 @@ fn call_fn_stmt(
   })
   .map(x => match x {
     Fun_name(fun_name) => @types.Syntax::Var(fun_name) // 中间解析,可以简化最终解析; Letrec
-    _ => @util.die("missing_fun_name")
+    _ => @util.function_name_error()
   })
   .andBind(lparen)
   .andBind(

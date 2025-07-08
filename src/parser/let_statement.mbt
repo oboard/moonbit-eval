@@ -4,40 +4,51 @@
 fn let_statement(
   tokens : ArrayView[@lex.Token]
 ) -> (@types.Syntax, ArrayView[@lex.Token])? {
-  let mut mutable = false
   ptoken(x => match x {
-    @lex.Token::Let => true
+    Let => true
     _ => false
   })
   .andBind(
-    ptoken_skip(x => match x {
-      Mut => {
-        mutable = true
-        true
-      }
+    ptoken(x => match x {
+      Mut => true
       _ => false
-    }),
+    })
+    .map(_ => true)
+    .or(Parser(fn(tokens) { Some((false, tokens)) })),
   )
   .andBind(
     ptoken(x => match x {
       Identifier(_) => true
-      _ => @util.die("let identifier 标识符错误")
+      _ => false
     }).map(x => match x {
       @lex.Token::Identifier(name) => name
-      _ => @util.die("let identifier 标识符错误")
+      _ => @util.identifier_error("let name")
     }),
   )
-  .andBind(colon_skip.andBind(parse_type_skip)) // todo,skip2
+  .andBind(colon_skip.andBind(parse_type_skip))
   .andBind(assign)
-  .andBind(expression) // 暂时仅支持expression
-  // .andBind(statements)
-  // .andBind(separator)
-  // .andBind(statements) // 去掉连续语句
+  .andBind(let_right)
   .map(x => match x {
-    // ((((_, name), (_, ty)), _), expr1) =>
-    // ((((((@lex.Token, @lex.Token), String), (@lex.Token, @types.Type)), @lex.Token), @types.Syntax))
-    ((((_, name), (_, ty)), _), expr1) =>
-      @types.Syntax::Let((name, ty), expr1, @types.Syntax::Unit, mutable~)
+    (((((_, is_mutable), name), (_, ty)), _), expr1) =>
+      @types.Syntax::Let(
+        (name, ty),
+        expr1,
+        @types.Syntax::Unit,
+        mutable=is_mutable,
+      )
   })
   .parse(tokens)
+}
+
+///|
+fn let_right(
+  tokens : ArrayView[@lex.Token]
+) -> (@types.Syntax, ArrayView[@lex.Token])? {
+  let parser = fn(tokens) {
+    match lambda_expression(tokens) {
+      Some(res) => Some(res)
+      None => expression(tokens)
+    }
+  }
+  parser(tokens)
 }

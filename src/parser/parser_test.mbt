@@ -8,10 +8,9 @@ test {
     content="[Number(1), Add, Number(2), Mul, Number(3), Sub, Number(6), Semicolon]",
   )
   let (expr, _) = @parser.parse_syntax(tokens[:]).unwrap()
-  // inspect(expr,content="Prim(Prim(Int(1), Prim(Int(2), Int(3), Mul, kind=None), Add, kind=None), Int(6), Sub, kind=None)",)
   inspect(
     expr,
-    content="Seq([Prim(Prim(Int(1), Prim(Int(2), Int(3), Mul, kind=None), Add, kind=None), Int(6), Sub, kind=None)])",
+    content="Prim(Prim(Int(1), Prim(Int(2), Int(3), Mul), Add), Int(6), Sub)",
   )
   let input = "1/2-(3)"
   let tokens = []
@@ -21,10 +20,7 @@ test {
     content="[Number(1), Div, Number(2), Sub, LParen, Number(3), RParen]",
   )
   let (expr, _) = @parser.parse_syntax(tokens[:]).unwrap()
-  inspect(
-    expr,
-    content="Seq([Prim(Prim(Int(1), Int(2), Div, kind=None), Int(3), Sub, kind=None)])",
-  )
+  inspect(expr, content="Prim(Prim(Int(1), Int(2), Div), Int(3), Sub)")
 
   // 多行表达式
   // 字符串输入
@@ -39,10 +35,9 @@ test {
   // 语法解析（自顶向下的解释器组合子）
   let (expr, _) = @parser.parse_syntax(tokens[:]).unwrap()
   println(expr)
-  // inspect(expr, content="Prim(Prim(Int(1), Int(2), Add, kind=None), Int(3), Sub, kind=None)")
   inspect(
     expr,
-    content="Seq([Prim(Prim(Int(1), Int(2), Add, kind=None), Int(3), Sub, kind=None), Int(2)])",
+    content="Seq([Prim(Prim(Int(1), Int(2), Add), Int(3), Sub), Int(2)])",
   )
   let input = "1/2-3 \n4*5+6"
   let tokens = []
@@ -56,7 +51,7 @@ test {
   println(expr)
   inspect(
     expr,
-    content="Seq([Prim(Prim(Int(1), Int(2), Div, kind=None), Int(3), Sub, kind=None), Prim(Prim(Int(4), Int(5), Mul, kind=None), Int(6), Add, kind=None)])",
+    content="Seq([Prim(Prim(Int(1), Int(2), Div), Int(3), Sub), Prim(Prim(Int(4), Int(5), Mul), Int(6), Add)])",
   )
 
   // let input = "+ + 2 * 3 - 6"  // 暂时报错, moonbit支持不报错
@@ -82,7 +77,12 @@ test {
   )
   let (expr, _) = @parser.parse_syntax(tokens[:]).unwrap()
   println(expr)
-  inspect(expr, content="Seq([Let((\"a\", Int), Int(1), Unit), Int(2)])")
+  inspect(
+    expr,
+    content=
+      #|Seq([Let(("a", Int), Int(1), Unit, mutable=false), Int(2)])
+    ,
+  )
 
   // 多行let
   let tokens = []
@@ -96,7 +96,9 @@ test {
   println(expr)
   inspect(
     expr,
-    content="Seq([Let((\"a\", Int), Int(1), Unit), Let((\"b\", Int), Int(1), Unit)])",
+    content=
+      #|Seq([Let(("a", Int), Int(1), Unit, mutable=false), Let(("b", Int), Int(1), Unit, mutable=false)])
+    ,
   )
   let tokens = []
   @lex.lex({ str: "let a:Int=1\nlet b:Int=1", offset: 0, array: tokens })
@@ -109,7 +111,9 @@ test {
   println(expr)
   inspect(
     expr,
-    content="Seq([Let((\"a\", Int), Int(1), Unit), Let((\"b\", Int), Int(1), Unit)])",
+    content=
+      #|Seq([Let(("a", Int), Int(1), Unit, mutable=false), Let(("b", Int), Int(1), Unit, mutable=false)])
+    ,
   )
 
   // if in file

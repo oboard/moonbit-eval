@@ -1,4 +1,5 @@
 // 词法解析的上下文
+
 ///|
 struct ParserContext {
   mut is_top_level : Bool // 假定不在block中即为顶级

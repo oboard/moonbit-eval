@@ -13,6 +13,7 @@ MoonBit Eval is a interpreter of MoonBit language.
 - [x] Assign
 - [x] For
 - [x] While
+- [x] Lambda Fn
 - [ ] Match
 - [ ] Struct
 - [ ] Trait
@@ -70,6 +71,23 @@ test "while" {
 }
 ```
 
+### Lambda Fn
+```moonbit
+test "lambda" {
+  let vm = MoonBitVM::new()
+  // 测试基本的 lambda 函数
+  inspect(vm.eval("let f = x => x * 2"), content="Unit")
+  inspect(vm.eval("f(3)"), content="Int(6)")
+
+  // 测试 lambda 函数作为表达式
+  inspect(vm.eval("let g = y => y + 1"), content="Unit")
+  inspect(vm.eval("g(5)"), content="Int(6)")
+
+  // 测试 lambda 函数调用
+  inspect(vm.eval("let h = z => z * z"), content="Unit")
+  inspect(vm.eval("h(4)"), content="Int(16)")
+}
+```
 
 
 MoonBit Eval 是 MoonBit 语言的解释器，它宛如一颗待打磨的宝石，充满潜力。

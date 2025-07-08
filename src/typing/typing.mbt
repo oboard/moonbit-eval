@@ -90,6 +90,12 @@ fn infer(ctx : LocalCtx, e : @types.Syntax) -> @types.Type raise TyErr {
       unify(f_ty, Fun(args_ty, ret_ty))
       ret_ty
     }
+    Lambda(param, body) => {
+      let param_ty = new_tvar()
+      let ctx2 = ctx.add(param, param_ty)
+      let body_ty = infer(ctx2, body)
+      Fun([param_ty], body_ty)
+    }
     // 处理其他语法的匹配
     // _ => unimplemented() // 这里可以添加更多的处理逻辑
     _ => raise TyErr("类型推导错误")

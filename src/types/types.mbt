@@ -20,6 +20,7 @@ pub(all) enum Syntax {
   ForIn(Syntax, Syntax) // for _ in _ { _ }
   For(Syntax, Syntax, Syntax, Syntax) // for _; _; _ { _ }
   While(Syntax, Syntax) // while _ { _ }
+  Lambda(String, Syntax) // x => x * 2
   Prim(Syntax, Syntax, Op) // _+ - * / _
   Assign(String, Syntax) // _ = _
   Let((String, Type), Syntax, Syntax, mutable~ : Bool) // let _: _ = _; _
@@ -103,9 +104,9 @@ pub fn Type::size_of(self : Type, size_of_ptr : Int) -> Int {
     Var(t) =>
       match t.val {
         Some(t) => t.size_of(size_of_ptr)
-        None => @util.die("Uninstantiated type variable")
+        None => @util.die_with_error(@util.ErrorType::TypeInstantiationError)
       }
-    _ => @util.die("Invalid type")
+    _ => @util.die_with_error(@util.ErrorType::InvalidType)
   }
 }
 

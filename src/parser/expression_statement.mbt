@@ -2,27 +2,61 @@
 // atomic = "(" expression ")" | Value
 // 使用组合子构建的解析器atomic：从左到右解析表达式或数值tokens
 
+// Lambda(String, Syntax) // x => x * 2
+
+///|
+fn lambda_expression(
+  tokens : ArrayView[@lex.Token]
+) -> (@types.Syntax, ArrayView[@lex.Token])? {
+  ptoken(x => match x {
+    Identifier(_) => true
+    _ => false
+  })
+  .andBind(
+    ptoken(x => match x {
+      Arrow => true
+      _ => false
+    }),
+  )
+  .andBind(lambda_body)
+  .map(x => match x {
+    ((@lex.Token::Identifier(param_name), _), body) =>
+      @types.Syntax::Lambda(param_name, body)
+    _ => @util.lambda_pattern_error()
+  })
+  .parse(tokens)
+}
+
+///|
+fn lambda_body(
+  tokens : ArrayView[@lex.Token]
+) -> (@types.Syntax, ArrayView[@lex.Token])? {
+  expression(tokens)
+}
+
 ///|
 fn atomicExpression(
   tokens : ArrayView[@lex.Token]
 ) -> (@types.Syntax, ArrayView[@lex.Token])? {
-  lparen
-  .andBind(
-    // statements, // 引用函数,statements函数自动类型转换为Parser
-    expression, // 暂时仅支持
-  )
-  .andBind(rparen)
-  .map(x => match x {
-    ((_, expr), _) => expr
-  }) // 忽略括号
-  .or(string)
-  .or(number)
-  .or(add_sub_number)
-  .or(boolean)
-  .or(variable)
-  .or(add_sub_var)
-  .or(call_fn_stmt)
-  .parse(tokens)
+  // 优先尝试 lambda
+  match lambda_expression(tokens) {
+    Some(res) => Some(res)
+    None =>
+      lparen
+      .andBind(expression)
+      .andBind(rparen)
+      .map(x => match x {
+        ((_, expr), _) => expr
+      })
+      .or(string)
+      .or(number)
+      .or(add_sub_number)
+      .or(boolean)
+      .or(variable)
+      .or(add_sub_var)
+      .or(call_fn_stmt)
+      .parse(tokens)
+  }
 }
 
 ///|
@@ -43,9 +77,9 @@ fn compare(
             LessThan => Prim(e, expr, LessThan)
             GreaterEqual => Prim(e, expr, GreaterEqual)
             LessEqual => Prim(e, expr, LessEqual)
-            _ => @util.die("不应该出现在这里")
+            _ => @util.unreachable()
           }
-        (_, _) => @util.die("不应该出现在这里")
+        (_, _) => @util.unreachable()
       })
   })
   .parse(tokens)
@@ -67,9 +101,9 @@ fn combine(
           match op {
             Mul => Prim(e, expr, Mul)
             Div => Prim(e, expr, Div)
-            _ => @util.die("不应该出现在这里")
+            _ => @util.unreachable()
           }
-        (_, _) => @util.die("不应该出现在这里")
+        (_, _) => @util.unreachable()
       })
   })
   .parse(tokens)
@@ -91,9 +125,9 @@ fn expression(
           match op {
             Add => Prim(e, expr, Add)
             Sub => Prim(e, expr, Sub)
-            _ => @util.die("不应该出现在这里")
+            _ => @util.unreachable()
           }
-        (_, _) => @util.die("不应该出现在这里")
+        (_, _) => @util.unreachable()
       })
       // println("开始解析表达式 \{tokens}")
       // println("expression fold: \{e} \{list} -> \{result}")

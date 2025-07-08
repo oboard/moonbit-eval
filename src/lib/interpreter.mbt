@@ -55,17 +55,14 @@ pub fn ClosureInterpreter::add_extern_fn(
 
 ///|
 fn ClosureInterpreter::find(self : ClosureInterpreter, name : String) -> Value {
-  // println("find: \{name}")
   for value in self.extern_fns.keys() {
     if value == name {
-      // println("found extern fn: \{name}")
       return ExternFn(name)
     }
   }
   for value in self.values.rev() {
     match value.get(name) {
       Some(variable) =>
-        // println("found value: \{name}")
         return match variable {
           Immutable(value) => value
           Mutable(value) => value
@@ -109,9 +106,6 @@ fn ClosureInterpreter::visit(
     Prim(lhs, rhs, op) => {
       let result = self.visit(lhs)
       let y = self.visit(rhs)
-      // println("result: \{result}")
-      // println("y: \{y}")
-      // println("op: \{op}")
       match result {
         String(x) =>
           match y {
@@ -189,26 +183,40 @@ fn ClosureInterpreter::visit(
       while self.visit(condition) is Bool(true) {
         self.visit(statements) |> ignore
         self.visit(iteration) |> ignore
-      } else {
-        Unit
       }
+      Unit
     }
-    While(condition, statements) =>
+    While(condition, statements) => {
       while self.visit(condition) is Bool(true) {
         self.visit(statements) |> ignore
-      } else {
-        Unit
       }
+      Unit
+    }
+    Lambda(param_name, body) => {
+      // 创建一个匿名函数定义
+      let fundef : @types.Fundef = {
+        name: ("", @types.Type::Var({ val: None })), // 匿名函数，类型待推导
+        args: [(param_name, @types.Type::Var({ val: None }))], // 参数类型待推导
+        body,
+      }
+      Closure(fundef, [])
+    }
     Assign(name, value) => {
       let value_val = self.visit(value)
       for value in self.values.rev() {
         match value.get(name) {
           Some(variable) =>
             match variable {
-              Mutable(_) => value[name] = Mutable(value_val)
+              Mutable(_) => {
+                value[name] = Mutable(value_val)
+                return Unit
+              }
               _ => continue
             }
-          None => value[name] = Mutable(value_val)
+          None => {
+            value[name] = Mutable(value_val)
+            return Unit
+          }
         }
       }
       Unit

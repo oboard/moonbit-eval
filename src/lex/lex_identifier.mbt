@@ -24,7 +24,7 @@ fn lex_identifier(context : Context) -> Unit {
   }
   let ident = context.str.substring(start~, end=context.offset)
   if ident[0] == '_' && ident.length() > 1 {
-    @util.die("非法标识符'_' from \{ident}")
+    @util.die_with_context(@util.ErrorType::IllegalIdentifier, "_' from \{ident}")
   }
   let array = context.array
   array.push(

@@ -83,16 +83,21 @@ pub fn lex(context : Context) -> Unit {
         array.push(Div)
       }
     }
-    '=' => {
-      // ==
-      context.offset += 1
-      if context.offset < str.length() && str[context.offset] == '=' {
-        context.offset += 1
-        array.push(EqEq)
+    '=' =>
+      // 支持 =>
+      if context.offset + 1 < str.length() && str[context.offset + 1] == '>' {
+        context.offset += 2
+        array.push(Arrow)
       } else {
-        array.push(Assign)
+        // ==
+        context.offset += 1
+        if context.offset < str.length() && str[context.offset] == '=' {
+          context.offset += 1
+          array.push(EqEq)
+        } else {
+          array.push(Assign)
+        }
       }
-    }
     '>' => {
       context.offset += 1
       if context.offset < str.length() && str[context.offset] == '=' {

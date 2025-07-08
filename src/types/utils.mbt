@@ -331,7 +331,7 @@ test {
   inspect(
     Syntax::Array([Syntax::Int(1), Syntax::Int(2)]).to_dict().stringify(),
     content=
-      #|["Array",["Int",1],["Int",2]]
+      #|["Array",[["Int",1],["Int",2]]]
     ,
   )
   inspect(
@@ -370,25 +370,22 @@ test {
   inspect(Syntax::from_json(["Int", 1]), content="Int(1)")
   inspect(Syntax::from_json(["Double", 1.0]), content="Double(1)")
   inspect(Syntax::from_json(["Not", ["Bool", true]]), content="Not(Bool(true))")
-  inspect(
-    Syntax::from_json(["Neg", ["Int", 1]]),
-    content="Neg(Int(1), kind=None)",
-  )
+  inspect(Syntax::from_json(["Neg", ["Int", 1]]), content="Neg(Int(1))")
   inspect(
     Syntax::from_json(["Add", ["Int", 1], ["Int", 2]]),
-    content="Prim(Int(1), Int(2), Add, kind=None)",
+    content="Prim(Int(1), Int(2), Add)",
   )
   inspect(
     Syntax::from_json(["Sub", ["Int", 1], ["Int", 2]]),
-    content="Prim(Int(1), Int(2), Sub, kind=None)",
+    content="Prim(Int(1), Int(2), Sub)",
   )
   inspect(
     Syntax::from_json(["Mul", ["Int", 1], ["Int", 2]]),
-    content="Prim(Int(1), Int(2), Mul, kind=None)",
+    content="Prim(Int(1), Int(2), Mul)",
   )
   inspect(
     Syntax::from_json(["Div", ["Int", 1], ["Int", 2]]),
-    content="Prim(Int(1), Int(2), Div, kind=None)",
+    content="Prim(Int(1), Int(2), Div)",
   )
   inspect(
     Syntax::from_json(["Eq", ["Int", 1], ["Int", 2]]),
