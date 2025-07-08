@@ -1,6 +1,7 @@
 // Syntax枚举用于构建表达式抽象语法树
 // 多语句问题：Let、LetRec、LetTuple最后一个参数用来支持连续语句。虽然不存在mut变量，因此赋值之后无法修改，但是数组内容可以重复更改，这意味着必须有一个Seq
 // 注意：返回的语法结构，本身就可以自行构建一个Array[Syntax]  ：)，但是Array[Syntax]和Syntax类型验证时又不同！头大！
+
 ///|
 pub(all) enum Syntax {
   Unit
@@ -18,6 +19,7 @@ pub(all) enum Syntax {
   If(Syntax, Syntax, Syntax) // if _ { _ } else { _ }
   ForIn(Syntax, Syntax) // for _ in _ { _ }
   For(Syntax, Syntax, Syntax, Syntax) // for _; _; _ { _ }
+  While(Syntax, Syntax) // while _ { _ }
   Prim(Syntax, Syntax, Op) // _+ - * / _
   Assign(String, Syntax) // _ = _
   Let((String, Type), Syntax, Syntax, mutable~ : Bool) // let _: _ = _; _
@@ -124,6 +126,7 @@ pub impl Eq for Type with op_equal(self : Type, other : Type) -> Bool {
 }
 
 // 找到类型变量代表的实际类型：
+
 ///|
 pub fn Type::repr(self : Type) -> Type {
   match self {

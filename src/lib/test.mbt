@@ -82,6 +82,22 @@ test "for" {
 }
 
 ///|
+test "while" {
+  let vm = MoonBitVM::new()
+  inspect(vm.eval("let mut i = 0"), content="Unit")
+  inspect(vm.eval("let mut sum = 0"), content="Unit")
+  inspect(vm.eval("while i < 5 { sum += i; i += 1 }"), content="Unit")
+  inspect(vm.eval("sum"), content="Int(10)")
+  inspect(vm.eval("i"), content="Int(5)")
+
+  // 测试 while 循环不会执行的情况
+  let vm2 = MoonBitVM::new()
+  inspect(vm2.eval("let mut count = 0"), content="Unit")
+  inspect(vm2.eval("while false { count += 1 }"), content="Unit")
+  inspect(vm2.eval("count"), content="Int(0)")
+}
+
+///|
 test "fib" {
   let vm = MoonBitVM::new()
   inspect(

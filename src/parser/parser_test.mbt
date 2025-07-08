@@ -1,3 +1,4 @@
+///|
 test {
   let input = "1 + 2 * 3 - 6;"
   let tokens = []
@@ -8,8 +9,10 @@ test {
   )
   let (expr, _) = @parser.parse_syntax(tokens[:]).unwrap()
   // inspect(expr,content="Prim(Prim(Int(1), Prim(Int(2), Int(3), Mul, kind=None), Add, kind=None), Int(6), Sub, kind=None)",)
-  inspect(expr,content="Seq([Prim(Prim(Int(1), Prim(Int(2), Int(3), Mul, kind=None), Add, kind=None), Int(6), Sub, kind=None)])",)
-
+  inspect(
+    expr,
+    content="Seq([Prim(Prim(Int(1), Prim(Int(2), Int(3), Mul, kind=None), Add, kind=None), Int(6), Sub, kind=None)])",
+  )
   let input = "1/2-(3)"
   let tokens = []
   @lex.lex({ str: input, offset: 0, array: tokens })
@@ -29,13 +32,18 @@ test {
   // 词法解析
   let tokens = []
   @lex.lex({ str: input, offset: 0, array: tokens })
-  inspect(tokens, content="[Number(1), Add, Number(2), Sub, Number(3), Semicolon, Number(2), Semicolon]")
+  inspect(
+    tokens,
+    content="[Number(1), Add, Number(2), Sub, Number(3), Semicolon, Number(2), Semicolon]",
+  )
   // 语法解析（自顶向下的解释器组合子）
   let (expr, _) = @parser.parse_syntax(tokens[:]).unwrap()
   println(expr)
   // inspect(expr, content="Prim(Prim(Int(1), Int(2), Add, kind=None), Int(3), Sub, kind=None)")
-  inspect(expr, content="Seq([Prim(Prim(Int(1), Int(2), Add, kind=None), Int(3), Sub, kind=None), Int(2)])")
-
+  inspect(
+    expr,
+    content="Seq([Prim(Prim(Int(1), Int(2), Add, kind=None), Int(3), Sub, kind=None), Int(2)])",
+  )
   let input = "1/2-3 \n4*5+6"
   let tokens = []
   @lex.lex({ str: input, offset: 0, array: tokens })
@@ -63,14 +71,14 @@ test {
   //   expr,
   //   content="Minus(Plus(Add, Multiply(Number(2), Number(3))), Number(6))",
   // )
-  
+
   // let语句
   let tokens = []
   @lex.lex({ str: "let a:Int=1;2", offset: 0, array: tokens })
   println(tokens)
   inspect(
     tokens,
-    content="[Let, Identifier(\"a\"), Colon, Int, Assign, Number(1), Semicolon, Number(2)]"
+    content="[Let, Identifier(\"a\"), Colon, Int, Assign, Number(1), Semicolon, Number(2)]",
   )
   let (expr, _) = @parser.parse_syntax(tokens[:]).unwrap()
   println(expr)
@@ -82,22 +90,27 @@ test {
   println(tokens)
   inspect(
     tokens,
-    content="[Let, Identifier(\"a\"), Colon, Int, Assign, Number(1), Semicolon, Let, Identifier(\"b\"), Colon, Int, Assign, Number(1)]"
+    content="[Let, Identifier(\"a\"), Colon, Int, Assign, Number(1), Semicolon, Let, Identifier(\"b\"), Colon, Int, Assign, Number(1)]",
   )
   let (expr, _) = @parser.parse_syntax(tokens[:]).unwrap()
   println(expr)
-  inspect(expr, content="Seq([Let((\"a\", Int), Int(1), Unit), Let((\"b\", Int), Int(1), Unit)])")
-
+  inspect(
+    expr,
+    content="Seq([Let((\"a\", Int), Int(1), Unit), Let((\"b\", Int), Int(1), Unit)])",
+  )
   let tokens = []
   @lex.lex({ str: "let a:Int=1\nlet b:Int=1", offset: 0, array: tokens })
   println(tokens)
   inspect(
     tokens,
-    content="[Let, Identifier(\"a\"), Colon, Int, Assign, Number(1), Newline, Let, Identifier(\"b\"), Colon, Int, Assign, Number(1)]"
+    content="[Let, Identifier(\"a\"), Colon, Int, Assign, Number(1), Newline, Let, Identifier(\"b\"), Colon, Int, Assign, Number(1)]",
   )
   let (expr, _) = @parser.parse_syntax(tokens[:]).unwrap()
   println(expr)
-  inspect(expr, content="Seq([Let((\"a\", Int), Int(1), Unit), Let((\"b\", Int), Int(1), Unit)])")
+  inspect(
+    expr,
+    content="Seq([Let((\"a\", Int), Int(1), Unit), Let((\"b\", Int), Int(1), Unit)])",
+  )
 
   // if in file
   // moon run src/bin/main.mbt -- --end-stage parse test/test_simple_src/if_else.mbt  // success

@@ -4,6 +4,7 @@
 // issues
 // 1、暂时保留所有token，等待删除部分token
 // 2、minimoonbit中token部分命名和moonbit关键词相同
+///|
 pub(all) enum Token {
   // 数据
   Number(Int) //  整数
@@ -87,6 +88,8 @@ pub(all) enum Token {
 } derive(Show, Eq)
 
 // todo support debug etc.
+
+///|
 pub(all) struct TokenPosition {
   mut token_number : Int
   mut line : Int // 行号

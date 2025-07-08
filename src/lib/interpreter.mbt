@@ -193,6 +193,12 @@ fn ClosureInterpreter::visit(
         Unit
       }
     }
+    While(condition, statements) =>
+      while self.visit(condition) is Bool(true) {
+        self.visit(statements) |> ignore
+      } else {
+        Unit
+      }
     Assign(name, value) => {
       let value_val = self.visit(value)
       for value in self.values.rev() {

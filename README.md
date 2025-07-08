@@ -12,7 +12,7 @@ MoonBit Eval is a interpreter of MoonBit language.
 - [x] Let (Mut)
 - [x] Assign
 - [x] For
-- [ ] While
+- [x] While
 - [ ] Match
 - [ ] Struct
 - [ ] Trait
@@ -56,6 +56,17 @@ test "function" {
   let vm = MoonBitVM::new()
   inspect(vm.eval("fn double(x: Int) -> Int { x*2 }"), content="Unit")
   inspect(vm.eval("double(2)"), content="Int(4)")
+}
+```
+
+### While Loop Test
+```moonbit
+test "while" {
+  let vm = MoonBitVM::new()
+  inspect(vm.eval("let mut i = 0"), content="Unit")
+  inspect(vm.eval("let mut sum = 0"), content="Unit")
+  inspect(vm.eval("while i < 5 { sum += i; i += 1 }"), content="Unit")
+  inspect(vm.eval("sum"), content="Int(10)")
 }
 ```
 

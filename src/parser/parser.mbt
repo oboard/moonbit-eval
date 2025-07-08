@@ -255,8 +255,8 @@ fn statement() -> Parser[@types.Syntax] {
 
     // 按优先级排序的解析器
     let parsers = [
-      fn_main_statement, fn_statement, let_statement, for_statement, if_statement,
-      assign_statement, expression, // 使用expression_statement.mbt中定义的expression
+      fn_main_statement, fn_statement, let_statement, for_statement, while_statement,
+      if_statement, assign_statement, expression, // 使用expression_statement.mbt中定义的expression
        lparen_rparen_stmt, call_fn_stmt,
     ]
 
