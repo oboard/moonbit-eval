@@ -2,14 +2,14 @@
 // 判断字符是否为字母或下划线
 
 ///|
-fn is_alpha(ch : Char) -> Bool {
+fn is_alpha(ch : Int) -> Bool {
   (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || ch == '_'
 }
 
 // 判断字符是否为字母或数字或下划线
 
 ///|
-fn is_alphanumeric(ch : Char) -> Bool {
+fn is_alphanumeric(ch : Int) -> Bool {
   is_alpha(ch) || (ch >= '0' && ch <= '9')
 }
 
@@ -24,7 +24,10 @@ fn lex_identifier(context : Context) -> Unit {
   }
   let ident = context.str.substring(start~, end=context.offset)
   if ident[0] == '_' && ident.length() > 1 {
-    @util.die_with_context(@util.ErrorType::IllegalIdentifier, "_' from \{ident}")
+    @util.die_with_context(
+      @util.ErrorType::IllegalIdentifier,
+      "_' from \{ident}",
+    )
   }
   let array = context.array
   array.push(

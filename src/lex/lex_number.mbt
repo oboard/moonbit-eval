@@ -2,12 +2,12 @@
 // 整数和浮点数判断，在词法解析环节的实现
 
 ///|
-fn is_number(ch : Char) -> Bool {
+fn is_number(ch : Int) -> Bool {
   ch >= '0' && ch <= '9'
 }
 
 ///|
-fn is_dot(ch : Char) -> Bool {
+fn is_dot(ch : Int) -> Bool {
   ch == '.'
 }
 
@@ -20,7 +20,7 @@ priv struct ContextOfNumber {
 fn lex_number(context : Context) -> Unit {
   let { offset, str, .. } = context
   let context_of_number = { is_double: false }
-  let number = "\{str[offset]}"
+  let number = "\{str[offset].to_char().unwrap_or('0')}"
   context.offset += 1
   lex_number_rest(context, number, context_of_number)
 }
@@ -29,7 +29,7 @@ fn lex_number(context : Context) -> Unit {
 fn lex_number_rest(
   context : Context,
   number : String,
-  context_of_number : ContextOfNumber
+  context_of_number : ContextOfNumber,
 ) -> Unit {
   let { offset, str, array } = context
   if offset >= str.length() {
