@@ -6,9 +6,9 @@ test "basic" {
   inspect(vm.eval("2-1"), content="Int(1)")
   inspect(
     vm.eval("\"hello\""),
-    content=
+    content=(
       #|String("hello")
-    ,
+    ),
   )
   inspect(vm.eval("println(\"hello\")"), content="Unit")
 }
@@ -55,9 +55,9 @@ test "str" {
   inspect(vm.eval("let str2: String = \"hello\""), content="Unit")
   inspect(
     vm.eval("str1 + str2"),
-    content=
+    content=(
       #|String("hahahello")
-    ,
+    ),
   )
 }
 
@@ -126,14 +126,15 @@ test "fib" {
   let vm = MoonBitVM::new()
   inspect(
     vm.eval(
-      #|fn fib(n : Int) -> Int {
-      #|  if n <= 1 {
-      #|    1
-      #|  } else {
-      #|    fib(n - 1) + fib(n - 2)
-      #|  }
-      #|}
-      ,
+      (
+        #|fn fib(n : Int) -> Int {
+        #|  if n <= 1 {
+        #|    1
+        #|  } else {
+        #|    fib(n - 1) + fib(n - 2)
+        #|  }
+        #|}
+      ),
     ),
     content="Unit",
   )

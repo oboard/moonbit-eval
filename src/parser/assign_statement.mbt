@@ -1,6 +1,6 @@
 ///|
 fn assign_statement(
-  tokens : ArrayView[@lex.Token]
+  tokens : ArrayView[@lex.Token],
 ) -> (@types.Syntax, ArrayView[@lex.Token])? {
   ptoken(x => match x {
     Identifier(_) => true
@@ -38,7 +38,7 @@ fn assign_statement(
 
 ///|
 fn assign_right(
-  tokens : ArrayView[@lex.Token]
+  tokens : ArrayView[@lex.Token],
 ) -> (@types.Syntax, ArrayView[@lex.Token])? {
   let parser = fn(tokens) {
     match lambda_expression(tokens) {

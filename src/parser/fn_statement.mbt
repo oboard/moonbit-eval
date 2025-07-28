@@ -1,6 +1,6 @@
 ///|
 fn fn_main_statement(
-  tokens : ArrayView[@lex.Token]
+  tokens : ArrayView[@lex.Token],
 ) -> (@types.Syntax, ArrayView[@lex.Token])? {
   ptoken(x => match x {
     Fn => {
@@ -53,7 +53,7 @@ fn fn_main_statement(
 
 ///|
 fn fn_statement(
-  tokens : ArrayView[@lex.Token]
+  tokens : ArrayView[@lex.Token],
 ) -> (@types.Syntax, ArrayView[@lex.Token])? {
   ptoken(x => match x {
     Fn => {
@@ -144,7 +144,7 @@ fn fn_statement(
 
 ///|
 fn call_fn_stmt(
-  tokens : ArrayView[@lex.Token]
+  tokens : ArrayView[@lex.Token],
 ) -> (@types.Syntax, ArrayView[@lex.Token])? {
   // 调用函数暂且支持单参数或无参数
   ptoken(x => match x {

@@ -22,7 +22,7 @@ fn map_op(token : @lex.Token) -> @types.Op? {
 ///|
 pub fn[V] parse(
   self : Parser[V],
-  tokens : ArrayView[@lex.Token]
+  tokens : ArrayView[@lex.Token],
 ) -> (V, ArrayView[@lex.Token])? {
   // match tokens{
   //   []=> None
@@ -171,7 +171,7 @@ fn[Value : Show] many(self : Parser[Value]) -> Parser[Array[Value]] {
 
 ///|
 fn if_statement(
-  tokens : ArrayView[@lex.Token]
+  tokens : ArrayView[@lex.Token],
 ) -> (@types.Syntax, ArrayView[@lex.Token])? {
   ptoken(x => match x {
     @lex.Token::If => true
@@ -198,7 +198,7 @@ fn if_statement(
 
 ///|
 fn lparen_rparen_stmt(
-  tokens : ArrayView[@lex.Token]
+  tokens : ArrayView[@lex.Token],
 ) -> (@types.Syntax, ArrayView[@lex.Token])? {
   lparen
   .andBind(rparen)
@@ -219,7 +219,7 @@ fn lparen_rparen_stmt(
 
 ///|
 fn block(
-  tokens : ArrayView[@lex.Token]
+  tokens : ArrayView[@lex.Token],
 ) -> (@types.Syntax, ArrayView[@lex.Token])? {
   parser_context.is_top_level = false
   // println("block: \{parser_context}")
@@ -247,7 +247,7 @@ fn block(
 ///|
 fn statement() -> Parser[@types.Syntax] {
   fn(
-    tokens : ArrayView[@lex.Token]
+    tokens : ArrayView[@lex.Token],
   ) -> (@types.Syntax, ArrayView[@lex.Token])? {
     if tokens.length() == 0 {
       return None
@@ -278,7 +278,7 @@ fn statement() -> Parser[@types.Syntax] {
 
 ///|
 fn statements(
-  tokens : ArrayView[@lex.Token]
+  tokens : ArrayView[@lex.Token],
 ) -> (@types.Syntax, ArrayView[@lex.Token])? {
   statement()
   .andBind(separator_skip.andBind(statement()).many())
@@ -300,7 +300,7 @@ fn statements(
 
 ///|
 pub fn parse_syntax(
-  tokens : ArrayView[@lex.Token]
+  tokens : ArrayView[@lex.Token],
 ) -> (@types.Syntax, ArrayView[@lex.Token])? {
   parser_context.token_length = tokens.length()
   statements(tokens)
@@ -374,9 +374,9 @@ test {
   println(expr)
   inspect(
     expr,
-    content=
+    content=(
       #|Seq([Let(("a", Int), Int(1), Unit, mutable=false), Int(2)])
-    ,
+    ),
   )
 
   // 多行let
@@ -391,9 +391,9 @@ test {
   println(expr)
   inspect(
     expr,
-    content=
+    content=(
       #|Seq([Let(("a", Int), Int(1), Unit, mutable=false), Let(("b", Int), Int(1), Unit, mutable=false)])
-    ,
+    ),
   )
   let tokens = []
   @lex.lex({ str: "let a:Int=1\nlet b:Int=1", offset: 0, array: tokens })
@@ -406,8 +406,8 @@ test {
   println(expr)
   inspect(
     expr,
-    content=
+    content=(
       #|Seq([Let(("a", Int), Int(1), Unit, mutable=false), Let(("b", Int), Int(1), Unit, mutable=false)])
-    ,
+    ),
   )
 }

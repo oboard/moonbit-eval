@@ -318,47 +318,47 @@ test {
   // 语法序列化和反序列化
   inspect(
     Syntax::App(Syntax::Var("f"), []).to_dict().stringify(),
-    content=
+    content=(
       #|["App",["Var","f"],[]]
-    ,
+    ),
   )
   inspect(
     Syntax::App(Syntax::Var("f"), [Syntax::Int(1)]).to_dict().stringify(),
-    content=
+    content=(
       #|["App",["Var","f"],[["Int",1]]]
-    ,
+    ),
   )
   inspect(
     Syntax::Array([Syntax::Int(1), Syntax::Int(2)]).to_dict().stringify(),
-    content=
+    content=(
       #|["Array",[["Int",1],["Int",2]]]
-    ,
+    ),
   )
   inspect(
     Syntax::Bool(true).to_dict().stringify(),
-    content=
+    content=(
       #|["Bool",true]
-    ,
+    ),
   )
   inspect(
     Syntax::Double(1.0).to_dict().stringify(),
-    content=
+    content=(
       #|["Double",1]
-    ,
+    ),
   )
   inspect(
     Syntax::Get(Syntax::Int(1), Syntax::Int(2)).to_dict().stringify(),
-    content=
+    content=(
       #|["Get",["Int",1],["Int",2]]
-    ,
+    ),
   )
   inspect(
     Syntax::If(Syntax::Bool(true), Syntax::Int(1), Syntax::Int(2))
     .to_dict()
     .stringify(),
-    content=
+    content=(
       #|["If",["Bool",true],["Int",1],["Int",2]]
-    ,
+    ),
   )
 }
 
@@ -401,14 +401,14 @@ test {
   )
   inspect(
     Syntax::from_json(["Let", ["x", "Int"], ["Int", 1], ["Int", 2]]),
-    content=
+    content=(
       #|Let(("x", Int), Int(1), Int(2))
-    ,
+    ),
   )
   inspect(
     Syntax::from_json(["Var", "x"]),
-    content=
+    content=(
       #|Var("x")
-    ,
+    ),
   )
 }

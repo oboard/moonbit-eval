@@ -27,7 +27,7 @@ suberror NameFromStringError {
 ///|
 pub impl Show for NameFromStringError with output(
   self : NameFromStringError,
-  logger : &Logger
+  logger : &Logger,
 ) -> Unit {
   match self {
     NameFromStringError::InvalidSlotNumber(e, slot_s) =>

@@ -79,9 +79,9 @@ test {
   println(expr)
   inspect(
     expr,
-    content=
+    content=(
       #|Seq([Let(("a", Int), Int(1), Unit, mutable=false), Int(2)])
-    ,
+    ),
   )
 
   // 多行let
@@ -96,9 +96,9 @@ test {
   println(expr)
   inspect(
     expr,
-    content=
+    content=(
       #|Seq([Let(("a", Int), Int(1), Unit, mutable=false), Let(("b", Int), Int(1), Unit, mutable=false)])
-    ,
+    ),
   )
   let tokens = []
   @lex.lex({ str: "let a:Int=1\nlet b:Int=1", offset: 0, array: tokens })
@@ -111,9 +111,9 @@ test {
   println(expr)
   inspect(
     expr,
-    content=
+    content=(
       #|Seq([Let(("a", Int), Int(1), Unit, mutable=false), Let(("b", Int), Int(1), Unit, mutable=false)])
-    ,
+    ),
   )
 
   // if in file

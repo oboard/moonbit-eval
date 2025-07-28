@@ -1,12 +1,18 @@
-package moonbitlang/minimbt/typing
+// Generated using `moon info`, DON'T EDIT IT
+package "oboard/moonbit-eval/typing"
+
+import(
+  "oboard/moonbit-eval/types"
+)
 
 // Values
+let extenv : Map[String, @types.Type]
+
+fn typing(@types.Syntax) -> @types.Syntax raise
 
 // Types and methods
 
 // Type aliases
 
 // Traits
-
-// Extension Methods
 

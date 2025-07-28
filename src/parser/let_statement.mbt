@@ -2,7 +2,7 @@
 
 ///|
 fn let_statement(
-  tokens : ArrayView[@lex.Token]
+  tokens : ArrayView[@lex.Token],
 ) -> (@types.Syntax, ArrayView[@lex.Token])? {
   ptoken(x => match x {
     Let => true
@@ -42,7 +42,7 @@ fn let_statement(
 
 ///|
 fn let_right(
-  tokens : ArrayView[@lex.Token]
+  tokens : ArrayView[@lex.Token],
 ) -> (@types.Syntax, ArrayView[@lex.Token])? {
   let parser = fn(tokens) {
     match lambda_expression(tokens) {

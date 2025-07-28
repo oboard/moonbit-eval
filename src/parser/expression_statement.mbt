@@ -6,7 +6,7 @@
 
 ///|
 fn lambda_expression(
-  tokens : ArrayView[@lex.Token]
+  tokens : ArrayView[@lex.Token],
 ) -> (@types.Syntax, ArrayView[@lex.Token])? {
   ptoken(x => match x {
     Identifier(_) => true
@@ -29,14 +29,14 @@ fn lambda_expression(
 
 ///|
 fn lambda_body(
-  tokens : ArrayView[@lex.Token]
+  tokens : ArrayView[@lex.Token],
 ) -> (@types.Syntax, ArrayView[@lex.Token])? {
   expression(tokens)
 }
 
 ///|
 fn atomicExpression(
-  tokens : ArrayView[@lex.Token]
+  tokens : ArrayView[@lex.Token],
 ) -> (@types.Syntax, ArrayView[@lex.Token])? {
   // 优先尝试 lambda
   match lambda_expression(tokens) {
@@ -61,7 +61,7 @@ fn atomicExpression(
 
 ///|
 fn compare(
-  tokens : ArrayView[@lex.Token]
+  tokens : ArrayView[@lex.Token],
 ) -> (@types.Syntax, ArrayView[@lex.Token])? {
   Parser(atomicExpression)
   .andBind(compares.map(map_op).andBind(atomicExpression).many())
@@ -89,7 +89,7 @@ fn compare(
 
 ///|
 fn combine(
-  tokens : ArrayView[@lex.Token]
+  tokens : ArrayView[@lex.Token],
 ) -> (@types.Syntax, ArrayView[@lex.Token])? {
   Parser(compare)
   .andBind(mul_div.map(map_op).andBind(compare).many())
@@ -113,7 +113,7 @@ fn combine(
 
 ///|
 fn expression(
-  tokens : ArrayView[@lex.Token]
+  tokens : ArrayView[@lex.Token],
 ) -> (@types.Syntax, ArrayView[@lex.Token])? {
   Parser(combine)
   .andBind(add_sub.map(map_op).andBind(combine).many())

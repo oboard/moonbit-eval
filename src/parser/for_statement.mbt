@@ -2,7 +2,7 @@
 
 ///|
 fn for_statement(
-  tokens : ArrayView[@lex.Token]
+  tokens : ArrayView[@lex.Token],
 ) -> (@types.Syntax, ArrayView[@lex.Token])? {
   ptoken(x => match x {
     @lex.Token::For =>

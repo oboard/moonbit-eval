@@ -48,7 +48,7 @@ pub fn ClosureInterpreter::new() -> ClosureInterpreter {
 pub fn ClosureInterpreter::add_extern_fn(
   self : ClosureInterpreter,
   name : String,
-  f : (Array[Value]) -> Value
+  f : (Array[Value]) -> Value,
 ) -> Unit {
   self.extern_fns.set(name, f)
 }
@@ -76,7 +76,7 @@ fn ClosureInterpreter::find(self : ClosureInterpreter, name : String) -> Value {
 ///|
 fn ClosureInterpreter::visit(
   self : ClosureInterpreter,
-  node : @types.Syntax
+  node : @types.Syntax,
 ) -> Value {
   match node {
     Int(i) => Int(i)
