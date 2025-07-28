@@ -8,7 +8,7 @@ struct ClosureInterpreter {
 priv enum Variable {
   Immutable(Value)
   Mutable(Value)
-} derive(Show)
+}
 
 ///|
 enum Value {

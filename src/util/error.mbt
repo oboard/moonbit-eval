@@ -1,4 +1,5 @@
 // 错误类型定义
+
 ///|
 pub(all) enum ErrorType {
   UnreachableCode
@@ -71,7 +72,7 @@ pub fn[T] die_with_context(error_type : ErrorType, context : String) -> T {
 // 常用的快捷函数
 
 ///|
-pub fn[T] unreachable() -> T {
+pub fn[T] unreachable_error() -> T {
   die_with_error(UnreachableCode)
 }
 

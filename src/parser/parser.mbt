@@ -81,7 +81,7 @@ fn[Value] or(self : Parser[Value], parser2 : Parser[Value]) -> Parser[Value] {
 // 重复解析：0次或多次，直到失败为止。
 
 ///|
-fn[Value : Show] many(self : Parser[Value]) -> Parser[Array[Value]] {
+fn[Value] many(self : Parser[Value]) -> Parser[Array[Value]] {
   fn(input) {
     // println("Many 1")
     // println("input: \{input}")

@@ -77,9 +77,9 @@ fn compare(
             LessThan => Prim(e, expr, LessThan)
             GreaterEqual => Prim(e, expr, GreaterEqual)
             LessEqual => Prim(e, expr, LessEqual)
-            _ => @util.unreachable()
+            _ => @util.unreachable_error()
           }
-        (_, _) => @util.unreachable()
+        (_, _) => @util.unreachable_error()
       })
   })
   .parse(tokens)
@@ -101,9 +101,9 @@ fn combine(
           match op {
             Mul => Prim(e, expr, Mul)
             Div => Prim(e, expr, Div)
-            _ => @util.unreachable()
+            _ => @util.unreachable_error()
           }
-        (_, _) => @util.unreachable()
+        (_, _) => @util.unreachable_error()
       })
   })
   .parse(tokens)
@@ -125,9 +125,9 @@ fn expression(
           match op {
             Add => Prim(e, expr, Add)
             Sub => Prim(e, expr, Sub)
-            _ => @util.unreachable()
+            _ => @util.unreachable_error()
           }
-        (_, _) => @util.unreachable()
+        (_, _) => @util.unreachable_error()
       })
       // println("开始解析表达式 \{tokens}")
       // println("expression fold: \{e} \{list} -> \{result}")

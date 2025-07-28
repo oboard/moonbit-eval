@@ -24,7 +24,7 @@ fn[T] lambda_pattern_error() -> T
 
 fn[T] operator_pattern_error() -> T
 
-fn[T] unreachable() -> T
+fn[T] unreachable_error() -> T
 
 // Types and methods
 pub(all) enum ErrorType {
