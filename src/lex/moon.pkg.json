@@ -1,5 +1,6 @@
 {
   "import": [
-    "oboard/moonbit-eval/util"
+    "oboard/moonbit-eval/util",
+    "oboard/moonbit-eval/types"
   ]
 }

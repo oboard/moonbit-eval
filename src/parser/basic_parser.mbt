@@ -168,9 +168,13 @@ let assign : Parser[@lex.Token] = ptoken(x => match x {
 ///|
 let string : Parser[@types.Syntax] = ptoken(x => match x {
   StringLiteral(_) => true
+  TemplateString(_) => true
   _ => false
 }).map(x => match x {
   StringLiteral(value) => @types.Syntax::String(value)
+  TemplateString(parts) => {
+    @types.Syntax::TemplateString(parts)
+  }
   _ => @util.die("")
 })
 

@@ -9,6 +9,7 @@ pub(all) enum Syntax {
   Int(Int) // Int(1)
   Double(Double) // Double(1.1)
   String(String) // "hello"
+  TemplateString(Array[(String, Syntax?)]) // "hello \{expr}"
   Var(String) // _
   Tuple(Array[Syntax]) // Tuple(_, _, _)
   Not(Syntax) // not(_)
@@ -28,7 +29,7 @@ pub(all) enum Syntax {
   LetTuple(Array[(String, Type)], Syntax, Syntax) // let (_ , _) : (_, _)= _; _
   Put(Syntax, Syntax, Syntax) // _[_] = _
   Seq(Array[Syntax]) // Seq(_,_,_):未来弃用：目前其等同于Tuple(Array[Syntax])，本质上是一个函数，输入为语法数组，输出为语法，且无法取出任意一条语法。
-} derive(Show)
+} derive(Show, Eq)
 
 ///|
 pub(all) enum Op {
@@ -51,7 +52,7 @@ pub(all) struct Fundef {
   name : (String, Type)
   args : Array[(String, Type)]
   body : Syntax
-} derive(Show)
+} derive(Show, Eq)
 
 ///|
 pub(all) enum Type {

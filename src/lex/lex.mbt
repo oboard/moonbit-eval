@@ -203,17 +203,7 @@ pub fn lex(context : Context) -> Unit {
     '"' => {
       // context.array.push(DoubleQuote)
       context.offset += 1
-      let start = context.offset
-
-      // 字符串字面量
-      while context.offset < context.str.length() &&
-            context.str[context.offset] != '"' {
-        context.offset += 1
-      }
-      let literal = context.str.substring(start~, end=context.offset)
-      context.array.push(StringLiteral(literal))
-      // context.array.push(DoubleQuote)
-      context.offset += 1
+      lex_string_or_template(context)
     }
     '\'' => {
       context.array.push(SingleQuote)
@@ -362,4 +352,111 @@ test {
     array,
     content="[Let, Number(1), Assign, Int, LParen, Number(11), RParen, Newline, Let, Number(2), Colon, Int, Assign, Number(1)]",
   )
+  
+}
+
+///|
+fn lex_string_or_template(context : Context) -> Unit {
+  let parts : Array[(String, @types.Syntax?)] = []
+  let mut current_text = ""
+  
+  while context.offset < context.str.length() && context.str[context.offset] != '"' {
+    if context.str[context.offset] == '\\' && 
+       context.offset + 1 < context.str.length() && 
+       context.str[context.offset + 1] == '{' {
+      // 找到模板字符串插值开始
+      if current_text.length() > 0 {
+        parts.push((current_text, None))
+        current_text = ""
+      }
+      
+      context.offset += 2 // 跳过 \{
+      let expr_start = context.offset
+      let mut brace_count = 1
+      
+      // 找到匹配的右大括号
+      while context.offset < context.str.length() && brace_count > 0 {
+        if context.str[context.offset] == '{' {
+          brace_count += 1
+        } else if context.str[context.offset] == '}' {
+          brace_count -= 1
+        }
+        if brace_count > 0 {
+          context.offset += 1
+        }
+      }
+      
+      if brace_count == 0 {
+        let expr_str = context.str.substring(start=expr_start, end=context.offset)
+        // 解析表达式字符串为 Syntax
+        let tokens = []
+        lex({ str: expr_str, offset: 0, array: tokens })
+        // 简单解析：尝试解析基本的二元表达式
+        let expr_syntax = match parse_simple_expression(tokens[:]) {
+          Some(syntax) => Some(syntax)
+          None => Some(@types.Syntax::Var(expr_str)) // fallback
+        }
+        parts.push(("", expr_syntax))
+        context.offset += 1 // 跳过 }
+      } else {
+        // 未匹配的大括号，当作普通文本处理
+        current_text += "\\{"
+        context.offset = expr_start
+      }
+    } else {
+      match context.str[context.offset].to_char() {
+        Some(ch) => current_text += ch.to_string()
+        None => current_text += "?"
+      }
+      context.offset += 1
+    }
+  }
+  
+  // 添加剩余的文本部分
+  if current_text.length() > 0 {
+    parts.push((current_text, None))
+  }
+  
+  // 判断是普通字符串还是模板字符串
+  let mut has_interpolation = false
+  for part in parts {
+    match part.1 {
+      Some(_) => {
+        has_interpolation = true
+        break
+      }
+      None => continue
+    }
+  }
+  
+  if has_interpolation {
+    context.array.push(TemplateString(parts))
+  } else {
+    // 普通字符串 - 如果没有插值，直接合并所有文本部分
+    let mut literal = ""
+    for part in parts {
+      literal += part.0
+    }
+    context.array.push(StringLiteral(literal))
+  }
+  
+  context.offset += 1 // 跳过结束的双引号
+}
+
+// 简单表达式解析器，用于模板字符串中的表达式
+fn parse_simple_expression(tokens : ArrayView[Token]) -> @types.Syntax? {
+  match tokens {
+    // 解析 "var + var" 形式
+    [Identifier(var1), Add, Identifier(var2)] => 
+      Some(@types.Syntax::Prim(@types.Syntax::Var(var1), @types.Syntax::Var(var2), @types.Op::Add))
+    // 解析 "var - var" 形式
+    [Identifier(var1), Sub, Identifier(var2)] => 
+      Some(@types.Syntax::Prim(@types.Syntax::Var(var1), @types.Syntax::Var(var2), @types.Op::Sub))
+    // 解析单个变量
+    [Identifier(variable)] => Some(@types.Syntax::Var(variable))
+    // 解析单个数字
+    [Number(num)] => Some(@types.Syntax::Int(num))
+    // 其他情况返回 None
+    _ => None
+  }
 }

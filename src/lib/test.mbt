@@ -14,6 +14,18 @@ test "basic" {
 }
 
 ///|
+test "string" {
+  let vm = MoonBitVM::new(log=true)
+  inspect(vm.eval("let str: String = \"hello\""), content="Unit")
+  inspect(vm.eval("str"), content="String(\"hello\")")
+  inspect(vm.eval("str + \" world\""), content="String(\"hello world\")")
+  inspect(
+    vm.eval("\"\\{str + str} world\""),
+    content="String(\"hellohello world\")",
+  )
+}
+
+///|
 test "variables" {
   let vm = MoonBitVM::new()
   inspect(vm.eval("let a = 1"), content="Unit")
@@ -175,6 +187,6 @@ test "fib" {
 ///|
 test "fn simple" {
   let vm = MoonBitVM::new()
-  inspect(vm.eval("fn a() -> Int { 1 }"), content="() -> Int")
+  inspect(vm.eval("fn a() { 1 }"), content="() -> Int")
   inspect(vm.eval("a()"), content="Int(1)")
 }

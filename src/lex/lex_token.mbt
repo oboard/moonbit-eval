@@ -15,6 +15,7 @@ pub(all) enum Token {
   Identifier(String) // 变量名
   Fun_name(String) // 函数名
   StringLiteral(String) // 字符串
+  TemplateString(Array[(String, @types.Syntax?)]) // 模板字符串: [(文本部分, 表达式部分?)]
 
   // 声明类型or调用函数
   Unit // Unit

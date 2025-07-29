@@ -159,6 +159,27 @@ fn ClosureInterpreter::visit(
     Int(i) => Int(i)
     Double(d) => Double(d)
     String(s) => String(s)
+    TemplateString(parts) => {
+      let mut result = ""
+      for part in parts {
+        match part {
+          (text, None) => result += text
+          (text, Some(expr)) => {
+          let value = self.visit(expr)
+          let expr_str = match value {
+            String(s) => s
+            Int(i) => i.to_string()
+            Bool(b) => b.to_string()
+            Double(d) => d.to_string()
+            Unit => "()"
+            _ => "[object]"
+          }
+          result += text + expr_str
+        }
+        }
+      }
+      String(result)
+    }
     Bool(b) => Bool(b)
     Unit => Unit
     Tuple(xs) => Tuple(xs.map(fn(x) { self.visit(x) }))
@@ -249,7 +270,23 @@ fn ClosureInterpreter::visit(
         let (_, t) = arg
         t
       })
-      let func_type = @types.Type::Fun(arg_types, return_type)
+      // If return_type is a type variable, try to infer it from the function body
+      let inferred_return_type = match return_type {
+        @types.Type::Var(_) => {
+          // Try to infer the return type by evaluating the body
+          let body_result = self.visit(body)
+          match body_result {
+            Int(_) => @types.Type::Int
+            Bool(_) => @types.Type::Bool
+            Double(_) => @types.Type::Double
+            String(_) => @types.Type::String
+            Unit => @types.Type::Unit
+            _ => return_type // fallback to original type
+          }
+        }
+        _ => return_type
+      }
+      let func_type = @types.Type::Fun(arg_types, inferred_return_type)
       FunctionType(type_to_string(func_type))
     }
     Array(xs) => Array(xs.map(fn(x) { self.visit(x) }))
