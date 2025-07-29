@@ -21,7 +21,56 @@ enum Value {
   Array(Array[Value])
   ExternFn(String)
   Closure(@types.Fundef, Array[Value])
-} derive(Show)
+  FunctionType(String)
+}
+
+///|
+pub impl Show for Value with output(self : Value, logger : &Logger) -> Unit {
+  match self {
+    Unit => logger.write_string("Unit")
+    Int(i) => {
+      logger.write_string("Int(")
+      logger.write_string(i.to_string())
+      logger.write_string(")")
+    }
+    Bool(b) => {
+      logger.write_string("Bool(")
+      logger.write_string(b.to_string())
+      logger.write_string(")")
+    }
+    Double(d) => {
+      logger.write_string("Double(")
+      logger.write_string(d.to_string())
+      logger.write_string(")")
+    }
+    String(s) => {
+      logger.write_string("String(")
+      logger.write_string("\"")
+      logger.write_string(s)
+      logger.write_string("\"")
+      logger.write_string(")")
+    }
+    Tuple(arr) => {
+      logger.write_string("Tuple(")
+      arr.output(logger)
+      logger.write_string(")")
+    }
+    Array(arr) => {
+      logger.write_string("Array(")
+      arr.output(logger)
+      logger.write_string(")")
+    }
+    ExternFn(name) => {
+      logger.write_string("ExternFn(")
+      logger.write_string("\"")
+      logger.write_string(name)
+      logger.write_string("\"")
+      logger.write_string(")")
+    }
+    Closure(_, _) => logger.write_string("Closure(...)")
+    FunctionType(type_str) => logger.write_string(type_str)
+  }
+}
 
 ///|
 pub impl Eq for Value with op_equal(self : Value, other : Value) -> Bool {
@@ -35,6 +84,7 @@ pub impl Eq for Value with op_equal(self : Value, other : Value) -> Bool {
     (Array(xs), Array(ys)) => xs == ys
     (ExternFn(x), ExternFn(y)) => x == y
     (Closure(_, _), Closure(_, _)) => false
+    (FunctionType(x), FunctionType(y)) => x == y
     _ => false
   }
 }
@@ -51,6 +101,33 @@ pub fn ClosureInterpreter::add_extern_fn(
   f : (Array[Value]) -> Value,
 ) -> Unit {
   self.extern_fns.set(name, f)
+}
+
+///|
+fn type_to_string(t : @types.Type) -> String {
+  match t {
+    @types.Type::Unit => "Unit"
+    @types.Type::Bool => "Bool"
+    @types.Type::Int => "Int"
+    @types.Type::Double => "Double"
+    @types.Type::String => "String"
+    @types.Type::Fun(args, ret) => {
+      let arg_strs = args.map(type_to_string)
+      let arg_str = if arg_strs.length() == 0 {
+        ""
+      } else {
+        arg_strs.join(", ")
+      }
+      "(" + arg_str + ") -> " + type_to_string(ret)
+    }
+    @types.Type::Tuple(types) => {
+      let type_strs = types.map(type_to_string)
+      "(" + type_strs.join(", ") + ")"
+    }
+    @types.Type::Array(t) => "Array[" + type_to_string(t) + "]"
+    @types.Type::Var(_) => "_"
+    @types.Type::Ptr => "Ptr"
+  }
 }
 
 ///|
@@ -161,13 +238,19 @@ fn ClosureInterpreter::visit(
         _ => Unit
       }
     }
-    LetRec({ name, args, body }, _return_type) => {
-      let (funcName, _) = name
+    LetRec({ name, args, body }, _next) => {
+      let (funcName, return_type) = name
       self.values
       .last()
       .unwrap()
       .set(funcName, Immutable(Closure({ name, args, body }, [])))
-      Unit
+      // Create function type representation
+      let arg_types = args.map(fn(arg) {
+        let (_, t) = arg
+        t
+      })
+      let func_type = @types.Type::Fun(arg_types, return_type)
+      FunctionType(type_to_string(func_type))
     }
     Array(xs) => Array(xs.map(fn(x) { self.visit(x) }))
     If(cond, then, else_) => {

@@ -20,7 +20,9 @@ priv struct ContextOfNumber {
 fn lex_number(context : Context) -> Unit {
   let { offset, str, .. } = context
   let context_of_number = { is_double: false }
-  let number = "\{str[offset].to_char().unwrap_or('0')}"
+  let number = str.get_char(offset).unwrap_or('0').to_string()
+  // println(str)
+  // println(offset)
   context.offset += 1
   lex_number_rest(context, number, context_of_number)
 }
@@ -31,6 +33,7 @@ fn lex_number_rest(
   number : String,
   context_of_number : ContextOfNumber,
 ) -> Unit {
+  // println(number)
   let { offset, str, array } = context
   if offset >= str.length() {
     if context_of_number.is_double {
@@ -42,8 +45,10 @@ fn lex_number_rest(
   }
   let ch = str[offset]
   if is_number(ch) {
-    context.offset += 1
-    lex_number_rest(context, number + ch.to_string(), context_of_number)
+    if ch.to_char() is Some(num) {
+      context.offset += 1
+      lex_number_rest(context, number + num.to_string(), context_of_number)
+    }
   } else if is_dot(ch) {
     context.offset += 1
     if context_of_number.is_double {
@@ -52,7 +57,9 @@ fn lex_number_rest(
       return
     } else {
       context_of_number.is_double = true
-      lex_number_rest(context, number + ch.to_string(), context_of_number)
+      if ch.to_char() is Some(num) {
+        lex_number_rest(context, number + num.to_string(), context_of_number)
+      }
     }
   } else if context_of_number.is_double {
     array.push(Number_Double((try? @strconv.parse_double(number)).unwrap()))

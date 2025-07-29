@@ -14,10 +14,6 @@ fn error_message(ErrorType) -> String
 
 fn[T] function_name_error() -> T
 
-fn i32_to_hex(Int) -> String
-
-fn i64_to_hex(Int64) -> String
-
 fn[T] identifier_error(String) -> T
 
 fn[T] lambda_pattern_error() -> T
