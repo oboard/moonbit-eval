@@ -190,3 +190,13 @@ test "fn simple" {
   inspect(vm.eval("fn a() { 1 }"), content="() -> Int")
   inspect(vm.eval("a()"), content="Int(1)")
 }
+
+///|
+test "fn add" {
+  let vm = MoonBitVM::new()
+  inspect(
+    vm.eval("fn add(a: Int, b: Int) -> Int { a + b }"),
+    content="(Int, Int) -> Int",
+  )
+  inspect(vm.eval("add(1,2)"), content="Int(3)")
+}

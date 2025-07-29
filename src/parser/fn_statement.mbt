@@ -157,14 +157,17 @@ fn call_fn_stmt(
   })
   .andBind(lparen)
   .andBind(
-    // var.many()
-    statement().many(),
-    // .andBind(comma).many()
+    // Parse function arguments as expressions separated by commas
+    Parser(expression)
+    .andBind(comma_skip)
+    .many()
+    .map(fn(args) { args.map(fn(arg) { arg.0 }) })
+    .or(Parser(expression).map(fn(arg) { [arg] }))
+    .or(Parser(fn(_) { Some(([], tokens)) })), // Handle empty parameter list
   )
   .andBind(rparen)
   .map(x => match x {
     (((fun_name, _), array_params), _) =>
-      // println("test")
       @types.Syntax::App(fun_name, array_params)
   })
   .parse(tokens)
