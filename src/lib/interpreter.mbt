@@ -165,17 +165,17 @@ fn ClosureInterpreter::visit(
         match part {
           (text, None) => result += text
           (text, Some(expr)) => {
-          let value = self.visit(expr)
-          let expr_str = match value {
-            String(s) => s
-            Int(i) => i.to_string()
-            Bool(b) => b.to_string()
-            Double(d) => d.to_string()
-            Unit => "()"
-            _ => "[object]"
+            let value = self.visit(expr)
+            let expr_str = match value {
+              String(s) => s
+              Int(i) => i.to_string()
+              Bool(b) => b.to_string()
+              Double(d) => d.to_string()
+              Unit => "()"
+              _ => "[object]"
+            }
+            result += text + expr_str
           }
-          result += text + expr_str
-        }
         }
       }
       String(result)

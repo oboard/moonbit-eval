@@ -45,7 +45,7 @@ pub(all) enum Op {
   GreaterEqual
   And
   Or
-} derive(Show, Eq, ToJson)
+} derive(Show, Eq)
 
 ///|
 pub(all) struct Fundef {

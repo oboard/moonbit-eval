@@ -352,28 +352,26 @@ test {
     array,
     content="[Let, Number(1), Assign, Int, LParen, Number(11), RParen, Newline, Let, Number(2), Colon, Int, Assign, Number(1)]",
   )
-  
 }
 
 ///|
 fn lex_string_or_template(context : Context) -> Unit {
   let parts : Array[(String, @types.Syntax?)] = []
   let mut current_text = ""
-  
-  while context.offset < context.str.length() && context.str[context.offset] != '"' {
-    if context.str[context.offset] == '\\' && 
-       context.offset + 1 < context.str.length() && 
-       context.str[context.offset + 1] == '{' {
+  while context.offset < context.str.length() &&
+        context.str[context.offset] != '"' {
+    if context.str[context.offset] == '\\' &&
+      context.offset + 1 < context.str.length() &&
+      context.str[context.offset + 1] == '{' {
       // 找到模板字符串插值开始
       if current_text.length() > 0 {
         parts.push((current_text, None))
         current_text = ""
       }
-      
       context.offset += 2 // 跳过 \{
       let expr_start = context.offset
       let mut brace_count = 1
-      
+
       // 找到匹配的右大括号
       while context.offset < context.str.length() && brace_count > 0 {
         if context.str[context.offset] == '{' {
@@ -385,9 +383,11 @@ fn lex_string_or_template(context : Context) -> Unit {
           context.offset += 1
         }
       }
-      
       if brace_count == 0 {
-        let expr_str = context.str.substring(start=expr_start, end=context.offset)
+        let expr_str = context.str.substring(
+          start=expr_start,
+          end=context.offset,
+        )
         // 解析表达式字符串为 Syntax
         let tokens = []
         lex({ str: expr_str, offset: 0, array: tokens })
@@ -411,12 +411,12 @@ fn lex_string_or_template(context : Context) -> Unit {
       context.offset += 1
     }
   }
-  
+
   // 添加剩余的文本部分
   if current_text.length() > 0 {
     parts.push((current_text, None))
   }
-  
+
   // 判断是普通字符串还是模板字符串
   let mut has_interpolation = false
   for part in parts {
@@ -428,7 +428,6 @@ fn lex_string_or_template(context : Context) -> Unit {
       None => continue
     }
   }
-  
   if has_interpolation {
     context.array.push(TemplateString(parts))
   } else {
@@ -439,19 +438,32 @@ fn lex_string_or_template(context : Context) -> Unit {
     }
     context.array.push(StringLiteral(literal))
   }
-  
   context.offset += 1 // 跳过结束的双引号
 }
 
 // 简单表达式解析器，用于模板字符串中的表达式
+
+///|
 fn parse_simple_expression(tokens : ArrayView[Token]) -> @types.Syntax? {
   match tokens {
     // 解析 "var + var" 形式
-    [Identifier(var1), Add, Identifier(var2)] => 
-      Some(@types.Syntax::Prim(@types.Syntax::Var(var1), @types.Syntax::Var(var2), @types.Op::Add))
+    [Identifier(var1), Add, Identifier(var2)] =>
+      Some(
+        @types.Syntax::Prim(
+          @types.Syntax::Var(var1),
+          @types.Syntax::Var(var2),
+          @types.Op::Add,
+        ),
+      )
     // 解析 "var - var" 形式
-    [Identifier(var1), Sub, Identifier(var2)] => 
-      Some(@types.Syntax::Prim(@types.Syntax::Var(var1), @types.Syntax::Var(var2), @types.Op::Sub))
+    [Identifier(var1), Sub, Identifier(var2)] =>
+      Some(
+        @types.Syntax::Prim(
+          @types.Syntax::Var(var1),
+          @types.Syntax::Var(var2),
+          @types.Op::Sub,
+        ),
+      )
     // 解析单个变量
     [Identifier(variable)] => Some(@types.Syntax::Var(variable))
     // 解析单个数字
