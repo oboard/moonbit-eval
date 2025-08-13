@@ -56,6 +56,11 @@ fn eval_int_op(left : Int, right : Int, op : String) -> @syntax.Constant {
     "*" => left * right
     "/" => if right == 0 { 0 } else { left / right }
     "%" => if right == 0 { 0 } else { left % right }
+    ">>" => left >> right
+    "<<" => left << right
+    "^" => left ^ right
+    "&" => left & right
+    "|" => left | right
     _ => 0
   }
   @syntax.Constant::Int(result.to_string())
@@ -162,110 +167,99 @@ fn eval_uint64_op(
 }
 
 ///|
+fn constant_infix(
+  name : String,
+  lhs : @syntax.Constant,
+  rhs : @syntax.Constant,
+) -> @syntax.Constant {
+  match (lhs, rhs) {
+    // Int 运算
+    (@syntax.Constant::Int(left_val), @syntax.Constant::Int(right_val)) => {
+      let left_int = @strconv.parse_int(left_val) catch { _ => 0 }
+      let right_int = @strconv.parse_int(right_val) catch { _ => 0 }
+      eval_int_op(left_int, right_int, name)
+    }
+    // Float 运算
+    (@syntax.Constant::Float(left_val), @syntax.Constant::Float(right_val)) => {
+      let left_float = @strconv.parse_double(left_val) catch { _ => 0.0 }
+      let right_float = @strconv.parse_double(right_val) catch { _ => 0.0 }
+      eval_float_op(left_float, right_float, name)
+    }
+    // Double 运算
+    (@syntax.Constant::Double(left_val), @syntax.Constant::Double(right_val)) => {
+      let left_double = @strconv.parse_double(left_val) catch { _ => 0.0 }
+      let right_double = @strconv.parse_double(right_val) catch { _ => 0.0 }
+      eval_double_op(left_double, right_double, name)
+    }
+    // Bool 运算
+    (@syntax.Constant::Bool(left_val), @syntax.Constant::Bool(right_val)) => {
+      let result = match name {
+        "&&" => left_val && right_val
+        "||" => left_val || right_val
+        "==" => left_val == right_val
+        "!=" => left_val != right_val
+        _ => false
+      }
+      @syntax.Constant::Bool(result)
+    }
+    // String 运算
+    (@syntax.Constant::String(left_val), @syntax.Constant::String(right_val)) =>
+      match name {
+        "+" => @syntax.Constant::String(left_val + right_val)
+        "==" => @syntax.Constant::Bool(left_val == right_val)
+        "!=" => @syntax.Constant::Bool(left_val != right_val)
+        _ => @syntax.Constant::String("")
+      }
+    // Int64 运算
+    (@syntax.Constant::Int64(left_val), @syntax.Constant::Int64(right_val)) => {
+      let left_int64 = @strconv.parse_int64(left_val) catch { _ => 0L }
+      let right_int64 = @strconv.parse_int64(right_val) catch { _ => 0L }
+      eval_int64_op(left_int64, right_int64, name)
+    }
+    // UInt 运算
+    (@syntax.Constant::UInt(left_val), @syntax.Constant::UInt(right_val)) => {
+      let left_uint = @strconv.parse_uint(left_val) catch { _ => 0U }
+      let right_uint = @strconv.parse_uint(right_val) catch { _ => 0U }
+      eval_uint_op(left_uint, right_uint, name)
+    }
+    // UInt64 运算
+    (@syntax.Constant::UInt64(left_val), @syntax.Constant::UInt64(right_val)) => {
+      let left_uint64 = @strconv.parse_uint64(left_val) catch { _ => 0UL }
+      let right_uint64 = @strconv.parse_uint64(right_val) catch { _ => 0UL }
+      eval_uint64_op(left_uint64, right_uint64, name)
+    }
+    // 混合类型或不支持的运算
+    _ => @syntax.Constant::Int("0")
+  }
+}
+
+///|
 fn ClosureInterpreter::visit(
   self : ClosureInterpreter,
   node : @syntax.Expr,
-) -> @syntax.Constant {
+) -> @syntax.Expr {
+  @basic.show_loc.val = true
+  // let loc = @basic.Location::{
+  //   start: { fname: "", lnum: 10, bol: 0, cnum: 0 },
+  //   end: { fname: "", lnum: 10, bol: 0, cnum: 0 },
+  // }
+  let loc = node.loc()
   match node {
     // 处理常量
-    @syntax.Expr::Constant(c~, ..) => c
+    @syntax.Expr::Constant(c~, ..) => @syntax.Expr::Constant(c~, loc~)
+
     // 处理中缀表达式（如 1+1）
     @syntax.Expr::Infix(op~, lhs~, rhs~, ..) =>
       // 检查操作符
       match op.name {
         @syntax.LongIdent::Ident(name~) =>
           match (self.visit(lhs), self.visit(rhs)) {
-            // Int 运算
-            (@syntax.Constant::Int(left_val), @syntax.Constant::Int(right_val)) => {
-              let left_int = @strconv.parse_int(left_val) catch { _ => 0 }
-              let right_int = @strconv.parse_int(right_val) catch { _ => 0 }
-              eval_int_op(left_int, right_int, name)
-            }
-            // Float 运算
-            (
-              @syntax.Constant::Float(left_val),
-              @syntax.Constant::Float(right_val),
-            ) => {
-              let left_float = @strconv.parse_double(left_val) catch {
-                _ => 0.0
-              }
-              let right_float = @strconv.parse_double(right_val) catch {
-                _ => 0.0
-              }
-              eval_float_op(left_float, right_float, name)
-            }
-            // Double 运算
-            (
-              @syntax.Constant::Double(left_val),
-              @syntax.Constant::Double(right_val),
-            ) => {
-              let left_double = @strconv.parse_double(left_val) catch {
-                _ => 0.0
-              }
-              let right_double = @strconv.parse_double(right_val) catch {
-                _ => 0.0
-              }
-              eval_double_op(left_double, right_double, name)
-            }
-            // Bool 运算
-            (@syntax.Constant::Bool(left_val), @syntax.Constant::Bool(right_val)
-            ) => {
-              let result = match name {
-                "&&" => left_val && right_val
-                "||" => left_val || right_val
-                "==" => left_val == right_val
-                "!=" => left_val != right_val
-                _ => false
-              }
-              @syntax.Constant::Bool(result)
-            }
-            // String 运算
-            (
-              @syntax.Constant::String(left_val),
-              @syntax.Constant::String(right_val),
-            ) =>
-              match name {
-                "+" => @syntax.Constant::String(left_val + right_val)
-                "==" => @syntax.Constant::Bool(left_val == right_val)
-                "!=" => @syntax.Constant::Bool(left_val != right_val)
-                _ => @syntax.Constant::String("")
-              }
-            // Int64 运算
-            (
-              @syntax.Constant::Int64(left_val),
-              @syntax.Constant::Int64(right_val),
-            ) => {
-              let left_int64 = @strconv.parse_int64(left_val) catch { _ => 0L }
-              let right_int64 = @strconv.parse_int64(right_val) catch {
-                _ => 0L
-              }
-              eval_int64_op(left_int64, right_int64, name)
-            }
-            // UInt 运算
-            (@syntax.Constant::UInt(left_val), @syntax.Constant::UInt(right_val)
-            ) => {
-              let left_uint = @strconv.parse_uint(left_val) catch { _ => 0U }
-              let right_uint = @strconv.parse_uint(right_val) catch { _ => 0U }
-              eval_uint_op(left_uint, right_uint, name)
-            }
-            // UInt64 运算
-            (
-              @syntax.Constant::UInt64(left_val),
-              @syntax.Constant::UInt64(right_val),
-            ) => {
-              let left_uint64 = @strconv.parse_uint64(left_val) catch {
-                _ => 0UL
-              }
-              let right_uint64 = @strconv.parse_uint64(right_val) catch {
-                _ => 0UL
-              }
-              eval_uint64_op(left_uint64, right_uint64, name)
-            }
-            // 混合类型或不支持的运算
-            _ => @syntax.Constant::Int("0")
+            (@syntax.Expr::Constant(c=l, ..), @syntax.Expr::Constant(c=r, ..)) =>
+              @syntax.Expr::Constant(c=constant_infix(name, l, r), loc~)
+            _ => @syntax.Expr::Unit(loc~, faked=true)
           }
-        _ => @syntax.Constant::Int("0")
+        _ => @syntax.Expr::Unit(loc~, faked=true)
       }
-    _ => @syntax.Constant::Int("0")
+    _ => @syntax.Expr::Unit(loc~, faked=true)
   }
 }
