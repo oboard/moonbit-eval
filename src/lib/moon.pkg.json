@@ -1,7 +1,5 @@
 {
     "import": [
-      "oboard/moonbit-eval/lex",
-      "oboard/moonbit-eval/types",
       "moonbitlang/parser",
       "moonbitlang/parser/basic",
       "moonbitlang/parser/syntax",
