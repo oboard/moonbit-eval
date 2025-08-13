@@ -1,7 +1,7 @@
 ///|
 struct ClosureInterpreter {
   extern_fns : Map[String, @syntax.Func]
-  values : Array[Map[String, @syntax.Type]]
+  values : Array[Map[String, @syntax.Expr]]
 }
 
 ///|
@@ -234,16 +234,43 @@ fn constant_infix(
 }
 
 ///|
+fn ClosureInterpreter::find(
+  self : ClosureInterpreter,
+  name : String,
+) -> @syntax.Expr {
+  // for value in self.extern_fns.keys() {
+  //   if value == name {
+  //     return @syntax.Expr::Function(name)
+  //   }
+  // }
+  for value in self.values.rev() {
+    match value.get(name) {
+      Some(variable) => return variable
+      None => continue
+    }
+  }
+  @syntax.Expr::Unit(
+    loc={
+      start: { fname: "", lnum: 10, bol: 0, cnum: 0 },
+      end: { fname: "", lnum: 10, bol: 0, cnum: 0 },
+    },
+    faked=true,
+  )
+}
+
+///|
 fn ClosureInterpreter::visit(
   self : ClosureInterpreter,
   node : @syntax.Expr,
 ) -> @syntax.Expr {
+  let level = 0
   @basic.show_loc.val = true
   // let loc = @basic.Location::{
   //   start: { fname: "", lnum: 10, bol: 0, cnum: 0 },
   //   end: { fname: "", lnum: 10, bol: 0, cnum: 0 },
   // }
   let loc = node.loc()
+  let unit = () => @syntax.Expr::Unit(loc~, faked=true)
   match node {
     // 处理常量
     @syntax.Expr::Constant(c~, ..) => @syntax.Expr::Constant(c~, loc~)
@@ -256,10 +283,22 @@ fn ClosureInterpreter::visit(
           match (self.visit(lhs), self.visit(rhs)) {
             (@syntax.Expr::Constant(c=l, ..), @syntax.Expr::Constant(c=r, ..)) =>
               @syntax.Expr::Constant(c=constant_infix(name, l, r), loc~)
-            _ => @syntax.Expr::Unit(loc~, faked=true)
+            _ => unit()
           }
-        _ => @syntax.Expr::Unit(loc~, faked=true)
+        _ => unit()
       }
-    _ => @syntax.Expr::Unit(loc~, faked=true)
+
+    // 处理变量
+    @syntax.Expr::Let(pattern=@syntax.Pattern::Var({ name, .. }), expr~, ..) => {
+      self.values[level].set(name, self.visit(expr))
+      unit()
+    }
+    // Handle variable identifiers
+    @syntax.Expr::Ident(id={ name, .. }, ..) =>
+      match name {
+        @syntax.LongIdent::Ident(name~) => self.find(name)
+        _ => unit()
+      }
+    _ => unit()
   }
 }

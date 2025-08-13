@@ -28,7 +28,7 @@ test "string" {
 test "variables" {
   let vm = MoonBitVM::new(log=true)
   inspect(vm.eval_to_str("let a = 1"), content="Unit")
-  inspect(vm.eval_to_str("a"), content="Int(1)")
+  inspect(vm.eval_to_str("a"), content="1")
 }
 
 // ///|

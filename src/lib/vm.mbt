@@ -43,6 +43,7 @@ pub fn MoonBitVM::eval_to_str(
         String(str) => str
         BigInt(str) => str
       }
+    Unit(..) => "Unit"
     _ => ""
   }
 }
