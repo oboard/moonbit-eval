@@ -27,15 +27,15 @@ test "string" {
 ///|
 test "variables" {
   let vm = MoonBitVM::new()
-  inspect(vm.eval_to_str("let a = 1"), content="Unit")
+  inspect(vm.eval_to_str("let a = 1"), content="()")
   inspect(vm.eval_to_str("a"), content="1")
 }
 
 ///|
 test "mutable variables" {
   let vm = MoonBitVM::new()
-  inspect(vm.eval_to_str("let mut a = 1"), content="Unit")
-  inspect(vm.eval_to_str("a = 12"), content="Unit")
+  inspect(vm.eval_to_str("let mut a = 1"), content="()")
+  inspect(vm.eval_to_str("a = 12"), content="()")
   inspect(vm.eval_to_str("a"), content="12")
 }
 
@@ -67,9 +67,9 @@ test "function" {
 ///|
 test "str" {
   let vm = MoonBitVM::new()
-  inspect(vm.eval_to_str("let str1: String = \"haha\""), content="Unit")
-  inspect(vm.eval_to_str("let str2: String = \"hello\""), content="Unit")
-  inspect(vm.eval_to_str("str1 + str2"), content="Unit")
+  inspect(vm.eval_to_str("let str1: String = \"haha\""), content="()")
+  inspect(vm.eval_to_str("let str2: String = \"hello\""), content="()")
+  inspect(vm.eval_to_str("str1 + str2"), content="()")
 }
 
 ///|
@@ -99,7 +99,7 @@ test "if" {
   )
 
   // Test if without else
-  inspect(vm.eval_to_str("if 3 < 2 { 1 }"), content="Unit")
+  inspect(vm.eval_to_str("if 3 < 2 { 1 }"), content="()")
 }
 
 ///|
@@ -112,10 +112,10 @@ test "for" {
   inspect(output, content="45")
   // test for loop
   let vm = MoonBitVM::new()
-  inspect(vm.eval_to_str("let mut output = 0"), content="Unit")
+  inspect(vm.eval_to_str("let mut output = 0"), content="()")
   inspect(
     vm.eval_to_str("for i = 0; i < 10; i = i + 1 { output += i }"),
-    content="Unit",
+    content="()",
   )
   inspect(vm.eval_to_str("output"), content="45")
   let mut output = 0
@@ -128,16 +128,16 @@ test "for" {
 ///|
 test "while" {
   let vm = MoonBitVM::new()
-  inspect(vm.eval_to_str("let mut i = 0"), content="Unit")
-  inspect(vm.eval_to_str("let mut sum = 0"), content="Unit")
-  inspect(vm.eval_to_str("while i < 5 { sum += i; i += 1 }"), content="Unit")
+  inspect(vm.eval_to_str("let mut i = 0"), content="()")
+  inspect(vm.eval_to_str("let mut sum = 0"), content="()")
+  inspect(vm.eval_to_str("while i < 5 { sum += i; i += 1 }"), content="()")
   inspect(vm.eval_to_str("sum"), content="10")
   inspect(vm.eval_to_str("i"), content="5")
 
   // 测试 while 循环不会执行的情况
   let vm2 = MoonBitVM::new()
-  inspect(vm2.eval_to_str("let mut count = 0"), content="Unit")
-  inspect(vm2.eval_to_str("while false { count += 1 }"), content="Unit")
+  inspect(vm2.eval_to_str("let mut count = 0"), content="()")
+  inspect(vm2.eval_to_str("while false { count += 1 }"), content="()")
   inspect(vm2.eval_to_str("count"), content="0")
 }
 
@@ -145,14 +145,14 @@ test "while" {
 test "lambda" {
   let vm = MoonBitVM::new()
   // 测试基本的 lambda 函数
-  inspect(vm.eval_to_str("let f = x => x * 2"), content="Unit")
+  inspect(vm.eval_to_str("let f = x => x * 2"), content="()")
   @json.inspect(vm.eval_to_str("f(3)"), content="6")
   // 测试 lambda 函数作为表达式
-  inspect(vm.eval_to_str("let g = y => y + 1"), content="Unit")
+  inspect(vm.eval_to_str("let g = y => y + 1"), content="()")
   inspect(vm.eval_to_str("g(5)"), content="6")
 
   // 测试 lambda 函数调用
-  inspect(vm.eval_to_str("let h = z => z * z"), content="Unit")
+  inspect(vm.eval_to_str("let h = z => z * z"), content="()")
   inspect(vm.eval_to_str("h(4)"), content="16")
 }
 
@@ -160,7 +160,7 @@ test "lambda" {
 test "lambda_simple" {
   let vm = MoonBitVM::new()
   // 测试简单的 lambda 表达式
-  inspect(vm.eval_to_str("let f = x => x"), content="Unit")
+  inspect(vm.eval_to_str("let f = x => x"), content="()")
   inspect(vm.eval_to_str("f(5)"), content="5")
 }
 
@@ -173,7 +173,10 @@ test "extern" {
     }
     unit()
   })
-  inspect(vm.eval_to_str("println(\"println from external function\")"), content="Unit")
+  inspect(
+    vm.eval_to_str("println(\"println from external function\")"),
+    content="()",
+  )
 }
 
 ///|
@@ -211,4 +214,26 @@ test "fn add" {
     content="(a: Int, b: Int) -> Int",
   )
   inspect(vm.eval_to_str("add(1,2)"), content="3")
+}
+
+///|
+test "struct" {
+  let vm = MoonBitVM::new()
+  inspect(
+    vm.eval_to_str(
+      (
+        #|struct S { 
+        #|  a: Int
+        #|  b: Int
+        #|}
+        #|fn S::sum(self: S) -> Int {
+        #|  self.a + self.b
+        #|}
+      ),
+      top=true,
+    ),
+    content="()",
+  )
+  inspect(vm.eval_to_str("let s = { a: 23, b: 32 }"), content="()")
+  inspect(vm.eval_to_str("s.sum()"), content="55")
 }

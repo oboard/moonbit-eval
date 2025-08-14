@@ -39,8 +39,9 @@ pub fn MoonBitVM::eval_to_str(
   self : MoonBitVM,
   code : String,
   log? : Bool,
+  top? : Bool,
 ) -> String raise Failure {
-  self.eval(code, log?) |> expr_to_string
+  self.eval(code, log?, top?) |> expr_to_string
 }
 
 ///|
@@ -61,7 +62,7 @@ pub fn expr_to_string(expr : @syntax.Expr) -> String {
         String(str) => str
         BigInt(str) => str
       }
-    Unit(..) => "Unit"
+    Unit(..) => "()"
     // parameters":[{"type":"Parameter::Positional","binder":{"type":"Binder","name":"a","loc":{"file":"","start":{"line":2,"column":8},"end":{"line":2,"column":9}}},"ty":{"type":"Type::Name","constr_id":{"type":"ConstrId","id":{"type":"LongIdent::Ident","0":"Int"},"loc":{"file":"","start":{"line":2,"column":11},"end":{"line":2,"column":14}}},"tys":[],"loc":{"file":"","start":{"line":2,"column":11},"end":{"line":2,"column":10}}}},{"type":"Parameter::Positional","binder":{"type":"Binder","name":"b","loc":{"file":"","start":{"line":2,"column":16},"end":{"line":2,"column":17}}
     Function(func=Lambda(parameters~, return_type~, ..), ..) => {
       // 辅助函数：将Type转换为字符串
@@ -136,13 +137,31 @@ pub fn MoonBitVM::eval(
   self : MoonBitVM,
   code : String,
   log? : Bool,
+  top~ : Bool = false,
 ) -> @syntax.Expr raise Failure {
   let buf = @buffer.new()
-  @encoding.encode_to("fn init {\n\{code}\n}", buf, encoding=UTF8)
+  @encoding.encode_to(
+    if top {
+      code
+    } else {
+      "fn init {\n\{code}\n}"
+    },
+    buf,
+    encoding=UTF8,
+  )
   let (impls, diagnostics) = @moonbitlang/parser.parse_bytes(
     buf.to_bytes(),
     parser=Handrolled,
   )
+  if top {
+    impls.each(node => {
+      if log.unwrap_or(self.log) {
+        println(node.to_json().stringify())
+      }
+      self.interpreter.top_visit(node)
+    })
+    return unit()
+  }
   match impls {
     @list.List::More(
       @syntax.Impl::TopFuncDef(fun_decl=_, decl_body~, loc=_),

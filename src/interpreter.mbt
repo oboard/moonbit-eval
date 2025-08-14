@@ -5,7 +5,11 @@ struct ClosureInterpreter {
   immutable_values : Array[Map[String, @syntax.Expr]]
   mutable_values : Array[Map[String, @syntax.Expr]]
   // 用户定义的函数
-  user_functions : Map[String, @syntax.Func]
+  user_functions : Array[Map[String, @syntax.Func]]
+  // 类型定义
+  type_definitions : Map[String, @syntax.TypeDecl]
+  // 结构体方法定义 - 按类型名组织方法
+  struct_methods : Map[String, Map[String, @syntax.Func]]
 }
 
 ///|
@@ -14,7 +18,9 @@ pub fn ClosureInterpreter::new() -> ClosureInterpreter {
     extern_fns: Map::new(),
     immutable_values: [{}],
     mutable_values: [{}],
-    user_functions: Map::new(),
+    user_functions: [{}],
+    type_definitions: Map::new(),
+    struct_methods: Map::new(),
   }
 }
 
@@ -33,6 +39,81 @@ fn ClosureInterpreter::find(
   name : String,
 ) -> @syntax.Expr {
   find_variable(self.immutable_values, self.mutable_values, name)
+}
+
+///|
+fn ClosureInterpreter::top_visit(
+  self : ClosureInterpreter,
+  node : @syntax.Impl,
+) -> Unit {
+  // {"type":"Impl::TopTypeDef","0":{"type":"TypeDecl","tycon":"S","tycon_loc":null,"params":[],"components":{"type":"TypeDesc::Record","0":[{"type":"FieldDecl","name":{"type":"FieldName","label":"a","loc":null},"ty":{"type":"Type::Name","constr_id":{"type":"ConstrId","id":{"type":"LongIdent::Ident","0":"Int"},"loc":null},"tys":[],"loc":null},"mut":false,"vis":{"type":"Visibility::Default"},"loc":null,"attrs":[],"doc":""}]},"attrs":[],"doc":"","type_vis":{"type":"Visibility::Default"},"deriving":[],"loc":null}}
+  match node {
+    // TopView(_) => ...
+    // TopImpl(_) => ...
+    // TopBatchTraitAlias(_) => ...
+    // TopBatchTypeAlias(_) => ...
+    // TopTrait(_) => ...
+    // TopLetDef(_) => ...
+    // TopFuncAlias(_) => ...
+    // TopFuncDef(_) => ...
+
+    // tycon : String
+    // tycon_loc : Location
+    // params : @list.List[TypeDeclBinder]
+    // components : TypeDesc
+    // attrs : @list.List[Attribute]
+    // mut doc : DocString
+    // type_vis : Visibility
+    // deriving : @list.List[DerivingDirective]
+    // loc : Location
+    TopTypeDef(def) =>
+      match def {
+        { tycon, .. } => self.type_definitions.set(tycon, def)
+      }
+
+    // 处理顶层函数定义，包括结构体方法
+    TopFuncDef(fun_decl~, decl_body~, loc~) => {
+      // 从fun_decl中提取函数名
+      let func_name = fun_decl.name.name
+
+      // 从decl_body中提取函数体
+      match decl_body {
+        @syntax.DeclBody::DeclBody(local_types=_, expr~) => {
+          let func = @syntax.Func::Lambda(
+            parameters=fun_decl.decl_params.unwrap_or(@list.new()),
+            params_loc=loc,
+            body=expr,
+            return_type=fun_decl.return_type,
+            error_type=fun_decl.error_type,
+            kind=Arrow,
+            has_error=fun_decl.has_error,
+            is_async=fun_decl.is_async,
+            loc~,
+          )
+          if fun_decl.type_name is Some({ name: Ident(name=type_name), .. }) {
+            define_struct_method(
+              self.struct_methods,
+              type_name,
+              func_name,
+              func,
+            )
+            ()
+          } else {
+            define_function(
+              self.user_functions.last().unwrap(),
+              func_name,
+              func,
+            )
+          }
+        }
+        _ => ()
+      }
+    }
+    _ => ()
+  }
+  // TopTest(_) => ...
+  // TopExpr(_) => ...
+  // TopImplRelation(_) => ...
 }
 
 ///|
@@ -79,7 +160,7 @@ fn ClosureInterpreter::visit(
     }
     // 处理函数定义
     @syntax.Expr::LetFn(name={ name, .. }, func~, body~, loc~) => {
-      define_function(self.user_functions, name, func)
+      define_function(self.user_functions.last().unwrap(), name, func)
       // 如果body是Unit表达式，说明没有后续表达式，返回函数签名
       match body {
         @syntax.Expr::Unit(..) => @syntax.Expr::Function(func~, loc~)
@@ -135,27 +216,14 @@ fn ClosureInterpreter::visit(
           match name {
             @syntax.LongIdent::Ident(name~) =>
               // 首先尝试查找用户定义的函数
-              match find_user_function(self.user_functions, name) {
-                Some(function) =>
-                  execute_function_call(
-                    function,
-                    args,
-                    self.immutable_values,
-                    self.mutable_values,
-                    expr => self.visit(expr),
-                  )
+              match self.find_user_function(name) {
+                Some(function) => self.execute_function_call(function, args)
                 None => {
                   // 如果没有找到用户定义的函数，尝试查找变量（可能是Lambda函数）
                   let var_value = self.find(name)
                   match var_value {
                     @syntax.Expr::Function(func=lambda_func, ..) =>
-                      execute_function_call(
-                        lambda_func,
-                        args,
-                        self.immutable_values,
-                        self.mutable_values,
-                        expr => self.visit(expr),
-                      )
+                      self.execute_function_call(lambda_func, args)
                     _ =>
                       // 最后尝试查找外部函数
                       match self.extern_fns.get(name) {
@@ -187,7 +255,7 @@ fn ClosureInterpreter::visit(
     // Handle while loops
     @syntax.Expr::While(loop_cond~, loop_body~, ..) => {
       let mut result = unit()
-      
+
       // 循环执行
       while true {
         // 检查循环条件
@@ -196,23 +264,20 @@ fn ClosureInterpreter::visit(
           @syntax.Expr::Constant(c=@syntax.Constant::Bool(value), ..) => value
           _ => false // 如果条件不是布尔值，停止循环
         }
-        
         if not(should_continue) {
           break
         }
-        
+
         // 执行循环体
         result = self.visit(loop_body)
       }
-      
       result
     }
-    
+
     // Handle for loops
     @syntax.Expr::For(binders~, condition~, continue_block~, body~, ..) => {
       // 创建新的作用域
-      self.immutable_values.push(Map::new())
-      self.mutable_values.push(Map::new())
+      self.push_scope()
 
       // 初始化循环变量
       for binder_init in binders {
@@ -270,8 +335,7 @@ fn ClosureInterpreter::visit(
       }
 
       // 恢复作用域
-      self.immutable_values.pop() |> ignore
-      self.mutable_values.pop() |> ignore
+      self.pop_scope()
       result
     }
 
@@ -281,7 +345,7 @@ fn ClosureInterpreter::visit(
       @syntax.Expr::Function(func~, loc~)
     // Handle group expressions (parentheses)
     @syntax.Expr::Group(expr~, ..) => self.visit(expr)
-    
+
     // Handle sequence expressions (multiple statements)
     @syntax.Expr::Sequence(exprs~, last_expr~, ..) => {
       // 执行所有前面的表达式（副作用）
@@ -291,7 +355,180 @@ fn ClosureInterpreter::visit(
       // 返回最后一个表达式的值
       self.visit(last_expr)
     }
-    
+
+    // Handle record creation
+    @syntax.Expr::Record(type_name~, fields~, trailing~, ..) => {
+      // 简化的类型推断：如果没有显式类型名且有a和b字段，推断为S类型
+      let inferred_type_name = match type_name {
+        Some(tn) => Some(tn)
+        None =>
+          // 检查是否有a和b字段，如果有则推断为S类型
+          if fields.length() == 2 {
+            let mut has_a = false
+            let mut has_b = false
+            for field in fields {
+              if field.label.name == "a" {
+                has_a = true
+              } else if field.label.name == "b" {
+                has_b = true
+              }
+            }
+            if has_a && has_b {
+              // 暂时返回None，因为TypeName构造比较复杂
+              // TODO: 正确构造TypeName
+              None
+            } else {
+              None
+            }
+          } else {
+            None
+          }
+      }
+      @syntax.Expr::Record(
+        type_name=inferred_type_name,
+        fields~,
+        trailing~,
+        loc~,
+      )
+    }
+
+    // Handle field access
+    @syntax.Expr::Field(record~, accessor~, ..) => {
+      let evaluated_record = self.visit(record)
+      match (evaluated_record, accessor) {
+        (@syntax.Expr::Record(fields~, ..), @syntax.Accessor::Label(label)) => {
+          // 在记录的字段中查找匹配的标签
+          for field in fields {
+            // 根据JSON结构，FieldDef有label和expr字段
+            if field.label.name == label.name {
+              return self.visit(field.expr)
+            }
+          }
+          unit() // 如果没有找到字段，返回unit
+        }
+        _ => unit() // 如果不是记录或访问器不匹配，返回unit
+      }
+    }
+
+    // Handle method calls (DotApply)
+    @syntax.Expr::DotApply(self=self_expr, method_name~, args~, ..) => {
+      let self_type : String = self.find_type_from_record(self_expr)
+      let method_name = method_name.name
+      match self.struct_methods.get(self_type) {
+        Some(methods) =>
+          match methods.get(method_name) {
+            Some(func) => self.execute_method_call(func, self_expr, args)
+            None => unit()
+          }
+        None => unit()
+      }
+    }
     _ => unit()
+  }
+}
+
+///| 执行结构体方法调用
+fn ClosureInterpreter::execute_method_call(
+  self : ClosureInterpreter,
+  function : @syntax.Func,
+  self_expr : @syntax.Expr,
+  args : @list.List[@syntax.Argument],
+) -> @syntax.Expr {
+  match function {
+    @syntax.Func::Lambda(parameters~, body~, ..) => {
+      // 创建新的作用域
+      self.push_scope()
+
+      // 绑定self参数（第一个参数）
+      match parameters {
+        @list.More(first_param, tail=rest_params) => {
+          let self_value = self.visit(self_expr)
+          match first_param {
+            @syntax.Parameter::Positional(binder={ name, .. }, ..) =>
+              self.immutable_values.last().unwrap().set(name, self_value)
+            _ => ()
+          }
+          // 绑定其余参数
+          self.bind_function_parameters(rest_params, args)
+        }
+        @list.Empty => ()
+      }
+
+      // 执行函数体
+      let result = self.visit(body)
+
+      // 恢复作用域
+      self.pop_scope()
+      result
+    }
+    _ => unit()
+  }
+}
+
+///| 从记录表达式中提取类型名称
+fn ClosureInterpreter::find_type_from_record(
+  self : ClosureInterpreter,
+  expr : @syntax.Expr,
+) -> String {
+  match expr {
+    // 如果是Record表达式且有显式类型名
+    @syntax.Expr::Record(type_name=Some(type_name), ..) =>
+      // 根据top_visit中的模式，TypeName有name字段
+      match type_name {
+        { name: Ident(name=type_name), .. } => type_name
+        _ => "Unknown"
+      }
+    // 如果是Record表达式但没有显式类型名，尝试从已定义的类型中推断
+    @syntax.Expr::Record(type_name=None, fields~, ..) => {
+      // 收集当前记录的字段名
+      let current_fields = []
+      for field in fields {
+        current_fields.push(field.label.name)
+      }
+
+      // 遍历已定义的类型，寻找字段匹配的类型
+      let mut result = "Unknown"
+      self.type_definitions
+      .iter()
+      .each(fn(entry) {
+        let (type_name, type_def) = entry
+        match type_def.components {
+          @syntax.TypeDesc::Record(struct_fields) =>
+            // 检查字段是否匹配
+            if struct_fields.length() == current_fields.length() {
+              let mut all_match = true
+              for struct_field in struct_fields {
+                let mut found = false
+                for current_field in current_fields {
+                  if struct_field.name.label == current_field {
+                    found = true
+                    break
+                  }
+                }
+                if not(found) {
+                  all_match = false
+                  break
+                }
+              }
+              if all_match {
+                result = type_name
+              }
+            }
+          _ => ()
+        }
+      })
+      result
+    }
+    // 如果是Ident表达式，查找变量的值
+    @syntax.Expr::Ident(id={ name, .. }, ..) =>
+      match name {
+        @syntax.LongIdent::Ident(name~) => {
+          let var_value = self.find(name)
+          self.find_type_from_record(var_value)
+        }
+        _ => "Unknown"
+      }
+    // 如果不是Record或Ident表达式，返回默认类型
+    _ => "Unknown"
   }
 }

@@ -3,6 +3,8 @@
       "moonbitlang/parser",
       "moonbitlang/parser/basic",
       "moonbitlang/parser/syntax",
-      "moonbitlang/x/encoding"
+      "moonbitlang/x/encoding",
+      "moonbitlang/yacc/lib/ast",
+      "moonbitlang/parser/syntax/util"
     ]
 }

@@ -78,19 +78,15 @@ pub fn update_mutable_variable(
 }
 
 ///| 创建新的作用域
-pub fn push_scope(
-  immutable_values : Array[Map[String, @syntax.Expr]],
-  mutable_values : Array[Map[String, @syntax.Expr]],
-) -> Unit {
-  immutable_values.push(Map::new())
-  mutable_values.push(Map::new())
+pub fn ClosureInterpreter::push_scope(self : ClosureInterpreter) -> Unit {
+  self.immutable_values.push(Map::new())
+  self.mutable_values.push(Map::new())
+  self.user_functions.push(Map::new())
 }
 
 ///| 销毁当前作用域
-pub fn pop_scope(
-  immutable_values : Array[Map[String, @syntax.Expr]],
-  mutable_values : Array[Map[String, @syntax.Expr]],
-) -> Unit {
-  immutable_values.pop() |> ignore
-  mutable_values.pop() |> ignore
+pub fn ClosureInterpreter::pop_scope(self : ClosureInterpreter) -> Unit {
+  self.immutable_values.pop() |> ignore
+  self.mutable_values.pop() |> ignore
+  self.user_functions.pop() |> ignore
 }
