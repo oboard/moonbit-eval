@@ -1,7 +1,9 @@
 # MoonBit Eval
 
 ## Introduction
-MoonBit Eval is a interpreter of MoonBit language.
+MoonBit Eval is an interpreter for the MoonBit language.
+
+Built on top of the [@moonbitlang/parser](https://github.com/moonbitlang/parser) library, it provides comprehensive and accurate MoonBit syntax support, capable of correctly parsing and executing complex MoonBit code structures including functions, structs, lambdas, loops, and more.
 
 
 ## Progress
@@ -14,17 +16,97 @@ MoonBit Eval is a interpreter of MoonBit language.
 - [x] For
 - [x] While
 - [x] Lambda Fn
+- [X] Struct
 - [ ] Match
-- [ ] Struct
 - [ ] Trait
 
 
 ## Examples
 
-### Fibonacci Test
+### Basic Operations
+```moonbit
+test "basic" {
+  let vm = MoonBitVM::new()
+  inspect(vm.eval("1 + 1"), content="2")
+  inspect(vm.eval("5 * 3"), content="15")
+  inspect(vm.eval("10 / 2"), content="5")
+  inspect(vm.eval("5 == 5"), content="true")
+  inspect(vm.eval("\"hello\" + \"world\""), content="helloworld")
+}
+```
+
+### Variables and Functions
+```moonbit
+test "variables and functions" {
+  let vm = MoonBitVM::new()
+  inspect(vm.eval("let a = 1"), content="()")
+  inspect(vm.eval("a"), content="1")
+  
+  inspect(vm.eval("fn add(a: Int, b: Int) -> Int { a + b }"), content="(a: Int, b: Int) -> Int")
+  inspect(vm.eval("add(1, 2)"), content="3")
+}
+```
+
+### Mutable Variables
+```moonbit
+test "mutable variables" {
+  let vm = MoonBitVM::new()
+  inspect(vm.eval("let mut a = 1"), content="()")
+  inspect(vm.eval("a = 12"), content="()")
+  inspect(vm.eval("a"), content="12")
+}
+```
+
+### Control Flow
+```moonbit
+test "control flow" {
+  let vm = MoonBitVM::new()
+  inspect(vm.eval("if 1 > 0 { 3 } else { 4 }"), content="3")
+  
+  inspect(vm.eval("let mut sum = 0"), content="()")
+  inspect(vm.eval("for i = 0; i < 5; i = i + 1 { sum += i }"), content="()")
+  inspect(vm.eval("sum"), content="10")
+}
+```
+
+### Lambda Functions
+```moonbit
+test "lambda" {
+  let vm = MoonBitVM::new()
+  inspect(vm.eval("let f = x => x * 2"), content="()")
+  inspect(vm.eval("f(3)"), content="6")
+  
+  inspect(vm.eval("let h = z => z * z"), content="()")
+  inspect(vm.eval("h(4)"), content="16")
+}
+```
+
+### Structs and Methods
+```moonbit
+test "struct" {
+  let vm = MoonBitVM::new()
+  inspect(
+    vm.eval(
+      #|struct S { 
+      #|  a: Int
+      #|  b: Int
+      #|}
+      #|fn S::sum(self: S) -> Int {
+      #|  self.a + self.b
+      #|}
+      top=true,
+    ),
+    content="()",
+  )
+  inspect(vm.eval("let s = { a: 23, b: 32 }"), content="()")
+  inspect(vm.eval("s.sum()"), content="55")
+}
+```
+
+### Fibonacci Recursion
 ```moonbit
 test "fibonacci" {
-  let vm = MoonBitVM::new(log=true)
+  let vm = MoonBitVM::new()
   inspect(
     vm.eval(
       #|fn fib(n : Int) -> Int {
@@ -35,73 +117,45 @@ test "fibonacci" {
       #|  }
       #|}
     ),
-    content="Unit",
+    content="(n: Int) -> Int",
   )
-  inspect(vm.eval("fib(10)"), content="Int(89)")
+  inspect(vm.eval("fib(10)"), content="89")
 }
 ```
 
-### Mutable Variables Test
+### External Functions
 ```moonbit
-test "mutable variables" {
+test "extern" {
   let vm = MoonBitVM::new()
-  inspect(vm.eval("let mut a = 1"), content="Unit")
-  inspect(vm.eval("a = 12"), content="Unit")
-  inspect(vm.eval("a"), content="Int(12)")
-}
-```
-
-### Function Test
-```moonbit
-test "function" {
-  let vm = MoonBitVM::new()
-  inspect(vm.eval("fn double(x: Int) -> Int { x*2 }"), content="Unit")
-  inspect(vm.eval("double(2)"), content="Int(4)")
-}
-```
-
-### While Loop Test
-```moonbit
-test "while" {
-  let vm = MoonBitVM::new()
-  inspect(vm.eval("let mut i = 0"), content="Unit")
-  inspect(vm.eval("let mut sum = 0"), content="Unit")
-  inspect(vm.eval("while i < 5 { sum += i; i += 1 }"), content="Unit")
-  inspect(vm.eval("sum"), content="Int(10)")
-}
-```
-
-### Lambda Fn
-```moonbit
-test "lambda" {
-  let vm = MoonBitVM::new()
-  // 测试基本的 lambda 函数
-  inspect(vm.eval("let f = x => x * 2"), content="Unit")
-  inspect(vm.eval("f(3)"), content="Int(6)")
-
-  // 测试 lambda 函数作为表达式
-  inspect(vm.eval("let g = y => y + 1"), content="Unit")
-  inspect(vm.eval("g(5)"), content="Int(6)")
-
-  // 测试 lambda 函数调用
-  inspect(vm.eval("let h = z => z * z"), content="Unit")
-  inspect(vm.eval("h(4)"), content="Int(16)")
+  vm.interpreter.add_extern_fn("println", params => {
+    if params is More(Constant(c=String(s), ..), ..) {
+      println(s)
+    }
+    unit()
+  })
+  inspect(vm.eval("println(\"Hello from external function\")"), content="()")
 }
 ```
 
 
-MoonBit Eval 是 MoonBit 语言的解释器，它宛如一颗待打磨的宝石，充满潜力。
+## Features
 
-感谢 `lijiajun3029` 提供的 `minimoonbit-public` 项目，它是 MoonBit Eval 的基础。
+- ✅ **Complete Expression Support**: Arithmetic, logical, and comparison operations
+- ✅ **Variable Management**: Immutable and mutable variable declarations
+- ✅ **Control Flow**: If-else statements, for loops, while loops
+- ✅ **Function Definitions**: Named functions with parameters and return types
+- ✅ **Lambda Expressions**: Anonymous functions with closure support
+- ✅ **Struct Definitions**: Custom data types with methods
+- ✅ **External Functions**: Integration with external function calls
+- ✅ **Type System**: Basic type checking and inference
 
-https://github.com/lijiajun3029/minimoonbit-public
+## Contributing
 
+We welcome contributions to the MoonBit Eval project! Whether it's bug fixes, feature additions, or documentation improvements, your contributions are valuable.
 
-🎉欢迎大家参与 MoonBit Eval 项目的代码贡献！🎉
+## Community
 
-
-🙌快来吧！🙌
-
-QQ 群号：**949886784**
+Join our community for discussions and support:
+- QQ Group: **949886784**
 
 ![QQ群](qrcode.jpg)
