@@ -31,36 +31,25 @@ test "variables" {
   inspect(vm.eval_to_str("a"), content="1")
 }
 
-// ///|
-// test "compare" {
-//   let vm = MoonBitVM::new()
-//   @json.inspect(vm.eval_to_str("let a = -1"), content="Unit")
-//   @json.inspect(vm.eval_to_str("a"), content="Int(-1)")
-//   @json.inspect(vm.eval_to_str("a == 2"), content="Bool(false)")
-//   @json.inspect(vm.eval_to_str("1 > 2"), content="Bool(false)")
-//   @json.inspect(vm.eval_to_str("1 < 2"), content="Bool(true)")
-//   @json.inspect(vm.eval_to_str("1 <= 2"), content="Bool(true)")
-//   @json.inspect(vm.eval_to_str("1 >= 2"), content="Bool(false)")
-//   @json.inspect(vm.eval_to_str("2 >= 2"), content="Bool(true)")
-// }
+///|
+test "mutable variables" {
+  let vm = MoonBitVM::new(log=true)
+  inspect(vm.eval_to_str("let mut a = 1"), content="Unit")
+  inspect(vm.eval_to_str("a = 12"), content="Unit")
+  inspect(vm.eval_to_str("a"), content="12")
+}
 
-// ///|
-// test "mutable variables" {
-//   let vm = MoonBitVM::new()
-//   @json.inspect(vm.eval_to_str("let mut a = 1"), content="Unit")
-//   @json.inspect(vm.eval_to_str("a = 12"), content="Unit")
-//   @json.inspect(vm.eval_to_str("a"), content="Int(12)")
-// }
-
-// ///|
-// test "function" {
-//   let vm = MoonBitVM::new()
-//   @json.inspect(
-//     vm.eval_to_str("fn double(x: Int) -> Int { x * 2 }"),
-//     content="(Int) -> Int",
-//   )
-//   @json.inspect(vm.eval_to_str("double(2)"), content="Int(4)")
-// }
+///|
+test "function" {
+  let vm = MoonBitVM::new(log=true)
+  inspect(vm.eval_to_str("fn double(x: Int) -> Int { x * 2 }"), content="Unit")
+  inspect(vm.eval_to_str("double(2)"), content="4")
+  inspect(
+    vm.eval_to_str("fn add(a: Int, b: Int) -> Int { a + b }"),
+    content="Unit",
+  )
+  inspect(vm.eval_to_str("add(1, 2)"), content="3")
+}
 
 // ///|
 // test "str" {

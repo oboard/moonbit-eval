@@ -1,12 +1,21 @@
 ///|
 struct ClosureInterpreter {
   extern_fns : Map[String, @syntax.Func]
-  values : Array[Map[String, @syntax.Expr]]
+  // 性能优化：区分可变和不可变变量
+  immutable_values : Array[Map[String, @syntax.Expr]]
+  mutable_values : Array[Map[String, @syntax.Expr]]
+  // 用户定义的函数
+  user_functions : Map[String, @syntax.Func]
 }
 
 ///|
 pub fn ClosureInterpreter::new() -> ClosureInterpreter {
-  { extern_fns: Map::new(), values: [{}] }
+  {
+    extern_fns: Map::new(),
+    immutable_values: [{}],
+    mutable_values: [{}],
+    user_functions: Map::new(),
+  }
 }
 
 ///|
@@ -238,12 +247,16 @@ fn ClosureInterpreter::find(
   self : ClosureInterpreter,
   name : String,
 ) -> @syntax.Expr {
-  // for value in self.extern_fns.keys() {
-  //   if value == name {
-  //     return @syntax.Expr::Function(name)
-  //   }
-  // }
-  for value in self.values.rev() {
+  // 性能优化：优先查找不可变变量（可以缓存和共享）
+  for value in self.immutable_values.rev() {
+    match value.get(name) {
+      Some(variable) => return variable
+      None => continue
+    }
+  }
+
+  // 然后查找可变变量
+  for value in self.mutable_values.rev() {
     match value.get(name) {
       Some(variable) => return variable
       None => continue
@@ -288,15 +301,103 @@ fn ClosureInterpreter::visit(
         _ => unit()
       }
 
-    // 处理变量
+    // 处理不可变变量（性能优化：存储到专门的不可变变量数组）
     @syntax.Expr::Let(pattern=@syntax.Pattern::Var({ name, .. }), expr~, ..) => {
-      self.values[level].set(name, self.visit(expr))
+      let evaluated_expr = self.visit(expr)
+      self.immutable_values[level].set(name, evaluated_expr)
       unit()
     }
+    // 处理可变变量声明（存储到专门的可变变量数组）
+    @syntax.Expr::LetMut(binder={ name, .. }, expr~, ..) => {
+      let evaluated_expr = self.visit(expr)
+      self.mutable_values[level].set(name, evaluated_expr)
+      unit()
+    }
+    // 处理函数定义
+    @syntax.Expr::LetFn(name={ name, .. }, func~, ..) => {
+      self.user_functions.set(name, func)
+      unit()
+    }
+    // 处理赋值操作（性能优化：只在可变变量中查找和更新）
+    @syntax.Expr::Assign(var_~, expr~, ..) =>
+      match var_.name {
+        @syntax.LongIdent::Ident(name~) => {
+          let new_value = self.visit(expr)
+          // 只在可变变量数组中查找和更新（性能优化）
+          for i = self.mutable_values.length() - 1; i >= 0; i = i - 1 {
+            match self.mutable_values[i].get(name) {
+              Some(_) => {
+                self.mutable_values[i].set(name, new_value)
+                return unit()
+              }
+              None => continue
+            }
+          }
+          unit()
+        }
+        _ => unit()
+      }
     // Handle variable identifiers
     @syntax.Expr::Ident(id={ name, .. }, ..) =>
       match name {
         @syntax.LongIdent::Ident(name~) => self.find(name)
+        _ => unit()
+      }
+    // 处理函数调用
+    @syntax.Expr::Apply(func~, args~, ..) =>
+      match func {
+        @syntax.Expr::Ident(id={ name, .. }, ..) =>
+          match name {
+            @syntax.LongIdent::Ident(name~) =>
+              match self.user_functions.get(name) {
+                Some(function) =>
+                  match function {
+                    @syntax.Func::Lambda(parameters~, body~, ..) => {
+                      // 创建新的作用域
+                      self.immutable_values.push(Map::new())
+                      self.mutable_values.push(Map::new())
+                      // 处理多个参数
+                      fn bind_params(
+                        params : @list.List[@syntax.Parameter],
+                        args : @list.List[@syntax.Argument],
+                        interpreter : ClosureInterpreter,
+                      ) -> Unit {
+                        match (params, args) {
+                          (
+                            @list.More(param, tail=rest_params),
+                            @list.More(arg, tail=rest_args),
+                          ) => {
+                            match param {
+                              @syntax.Parameter::Positional(
+                                binder={ name, .. },
+                                ..
+                              ) => {
+                                let arg_value = interpreter.visit(arg.value)
+                                interpreter.immutable_values[interpreter.immutable_values.length() -
+                                1].set(name, arg_value)
+                              }
+                              _ => ()
+                            }
+                            bind_params(rest_params, rest_args, interpreter)
+                          }
+                          _ => ()
+                        }
+                      }
+
+                      bind_params(parameters, args, self)
+                      // 执行函数体
+                      let result = self.visit(body)
+                      // 恢复作用域
+                      self.immutable_values.pop() |> ignore
+                      self.mutable_values.pop() |> ignore
+                      result
+                    }
+                    _ => unit()
+                  }
+                None => unit()
+              }
+            _ => unit()
+          }
         _ => unit()
       }
     _ => unit()
