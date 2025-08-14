@@ -186,7 +186,13 @@ pub fn MoonBitVM::eval(
         }
         _ => ()
       }
-    _ => fail(diagnostics.fold(init="", (acc, cur) => "\{acc}\n\{cur}"))
+    _ => {
+      if !top {
+        // try top eval
+        return self.eval(code, log?, top=true)
+      }
+      fail(diagnostics.fold(init="", (acc, cur) => "\{acc}\n\{cur}"))
+    }
   }
   { value: unit() }
 }
