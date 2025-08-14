@@ -20,7 +20,6 @@ test "basic" {
 ///|
 test "bool" {
   let vm = MoonBitVM::new()
-  println(!true)
   inspect(vm.eval("true"), content="true")
   inspect(vm.eval("false"), content="false")
   inspect(vm.eval("!false"), content="true")
@@ -239,4 +238,120 @@ test "struct" {
   )
   inspect(vm.eval("let s = { a: 23, b: 32 }"), content="()")
   inspect(vm.eval("s.sum()"), content="55")
+}
+
+///|
+test "match" {
+  let vm = MoonBitVM::new()
+  // 基本常量匹配
+  inspect(vm.eval("let s = 10"), content="()")
+  inspect(vm.eval("match s { 10 => 100 }"), content="100")
+
+  // 变量模式匹配
+  inspect(vm.eval("match 42 { x => x * 2 }"), content="84")
+
+  // 通配符模式匹配
+  inspect(vm.eval("match 123 { _ => 999 }"), content="999")
+
+  // Or模式匹配
+  inspect(vm.eval("match 5 { 1 | 5 | 10 => 100 }"), content="100")
+  inspect(vm.eval("match 3 { 1 | 5 | 10 => 100; _ => 200 }"), content="200")
+
+  // 测试简单变量绑定
+  inspect(vm.eval("match 42 { x => x }"), content="42")
+
+  // Tuple模式匹配 - 简化测试
+  inspect(vm.eval("match (1, 2) { (a, b) => a }"), content="1")
+  inspect(vm.eval("match (1, 2) { (a, b) => b }"), content="2")
+  inspect(vm.eval("match (1, 2) { (a, b) => a + b }"), content="3")
+
+  // Array模式匹配
+  inspect(vm.eval("match [1, 2, 3] { [a, b, c] => a + b + c }"), content="6")
+  inspect(vm.eval("match [5, 10] { [x, y] => x * y }"), content="50")
+
+  // Record模式匹配
+  inspect(vm.eval("match { x: 10, y: 20 } { { x, y } => x + y }"), content="30")
+  inspect(
+    vm.eval("match { name: \"Alice\", age: 25 } { { name, .. } => name }"),
+    content="Alice",
+  )
+  inspect(
+    vm.eval("match { name: \"Alice\", age: 25 } { { age, .. } => age }"),
+    content="25",
+  )
+  // 嵌套模式匹配
+  inspect(
+    vm.eval("match (1, [2, 3]) { (a, [b, c]) => a + b + c }"),
+    content="6",
+  )
+
+  // 多个case的匹配
+  inspect(vm.eval("match 2 { 1 => 10; 2 => 20; _ => 30 }"), content="20")
+  inspect(vm.eval("match 5 { 1 => 10; 2 => 20; _ => 30 }"), content="30")
+}
+
+///|
+test "match range" {
+  let vm = MoonBitVM::new()
+  inspect(
+    vm.eval(
+      (
+        #|const Zero = 0
+        #|fn sign(x : Int) -> Int {
+        #|  match x {
+        #|    _..<Zero => -1
+        #|    Zero => 0
+        #|    1..<_ => 1
+        #|  }
+        #|}
+        #|
+        #|fn classify_char(c : Char) -> String {
+        #|  match c {
+        #|    'a'..='z' => "lowercase"
+        #|    'A'..='Z' => "uppercase"
+        #|    '0'..='9' => "digit"
+        #|    _ => "other"
+        #|  }
+        #|}
+      ),
+      top=true,
+    ),
+    content="()",
+  )
+  inspect(vm.eval("sign(10)"), content="1")
+  inspect(vm.eval("sign(-10)"), content="-1")
+  inspect(vm.eval("sign(0)"), content="0")
+  inspect(vm.eval("classify_char('a')"), content="lowercase")
+  inspect(vm.eval("classify_char('A')"), content="uppercase")
+  inspect(vm.eval("classify_char('0')"), content="digit")
+  inspect(vm.eval("classify_char('!')"), content="other")
+}
+
+///|
+test "match constructor" {
+  let vm = MoonBitVM::new()
+  // 测试常量构造函数匹配
+  inspect(
+    vm.eval(
+      (
+        #|const Zero = 0
+        #|const One = 1
+        #|const Two = 2
+        #|fn test_constr(x : Int) -> String {
+        #|  match x {
+        #|    Zero => "zero"
+        #|    One => "one" 
+        #|    Two => "two"
+        #|    _ => "other"
+        #|  }
+        #|}
+      ),
+      top=true,
+    ),
+    content="()",
+  )
+  inspect(vm.eval("test_constr(0)"), content="zero")
+  inspect(vm.eval("test_constr(1)"), content="one")
+  inspect(vm.eval("test_constr(2)"), content="two")
+  inspect(vm.eval("test_constr(5)"), content="other")
 }

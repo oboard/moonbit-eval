@@ -53,9 +53,15 @@ fn ClosureInterpreter::top_visit(
     // TopBatchTraitAlias(_) => ...
     // TopBatchTypeAlias(_) => ...
     // TopTrait(_) => ...
-    // TopLetDef(_) => ...
     // TopFuncAlias(_) => ...
     // TopFuncDef(_) => ...
+
+    // 处理顶层常量定义（如 const Zero = 0）
+    TopLetDef(binder~, ty~, expr~, vis~, is_constant~, loc~, attrs~, doc~) => {
+      let name = binder.name
+      let evaluated_expr = self.visit(expr)
+      set_immutable_variable(self.immutable_values, 0, name, evaluated_expr)
+    }
 
     // tycon : String
     // tycon_loc : Location
@@ -389,31 +395,9 @@ fn ClosureInterpreter::visit(
 
     // Handle record creation
     @syntax.Expr::Record(type_name~, fields~, trailing~, ..) => {
-      // 简化的类型推断：如果没有显式类型名且有a和b字段，推断为S类型
       let inferred_type_name = match type_name {
         Some(tn) => Some(tn)
-        None =>
-          // 检查是否有a和b字段，如果有则推断为S类型
-          if fields.length() == 2 {
-            let mut has_a = false
-            let mut has_b = false
-            for field in fields {
-              if field.label.name == "a" {
-                has_a = true
-              } else if field.label.name == "b" {
-                has_b = true
-              }
-            }
-            if has_a && has_b {
-              // 暂时返回None，因为TypeName构造比较复杂
-              // TODO: 正确构造TypeName
-              None
-            } else {
-              None
-            }
-          } else {
-            None
-          }
+        None => None
       }
       @syntax.Expr::Record(
         type_name=inferred_type_name,
@@ -454,6 +438,34 @@ fn ClosureInterpreter::visit(
         None => unit()
       }
     }
+
+    // Handle match expressions
+    @syntax.Expr::Match(expr~, cases~, ..) => {
+      let evaluated_expr = self.visit(expr)
+      self.execute_match(evaluated_expr, cases)
+    }
+    // Handle Tuple expressions
+    @syntax.Expr::Tuple(exprs~, ..) => {
+      let evaluated_exprs = exprs.map(fn(expr) { self.visit(expr) })
+      @syntax.Expr::Tuple(exprs=evaluated_exprs, loc~)
+    }
+    // Handle Array expressions
+    @syntax.Expr::Array(exprs~, ..) => {
+      let evaluated_exprs = exprs.map(fn(expr) { self.visit(expr) })
+      @syntax.Expr::Array(exprs=evaluated_exprs, loc~)
+    }
+    // Handle Record expressions
+    // @syntax.Expr::Record(fields~, type_name~, trailing~, ..) => {
+    //   let evaluated_fields = fields.map(fn(field) {
+    //     @syntax.FieldDef::{
+    //       label: field.label,
+    //       expr: self.visit(field.expr),
+    //       is_pun: field.is_pun,
+    //       loc: field.loc,
+    //     }
+    //   })
+    //   @syntax.Expr::Record(type_name~, fields=evaluated_fields, trailing~, loc~)
+    // }
     _ => unit()
   }
 }

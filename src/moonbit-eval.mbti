@@ -48,11 +48,17 @@ fn update_mutable_variable(Array[Map[String, @syntax.Expr]], String, @syntax.Exp
 type ClosureInterpreter
 fn ClosureInterpreter::add_extern_fn(Self, String, (@list.List[@syntax.Expr]) -> @syntax.Expr) -> Unit
 fn ClosureInterpreter::bind_function_parameters(Self, @list.List[@syntax.Parameter], @list.List[@syntax.Argument]) -> Unit
+fn ClosureInterpreter::constants_equal(Self, @syntax.Constant, @syntax.Constant) -> Bool
+fn ClosureInterpreter::constants_equal_expr(Self, @syntax.Expr, @syntax.Expr) -> Bool
 fn ClosureInterpreter::execute_function_call(Self, @syntax.Func, @list.List[@syntax.Argument]) -> @syntax.Expr
+fn ClosureInterpreter::execute_match(Self, @syntax.Expr, @list.List[@syntax.Case]) -> @syntax.Expr
 fn ClosureInterpreter::find_user_function(Self, String) -> @syntax.Func?
 fn ClosureInterpreter::new() -> Self
+fn ClosureInterpreter::pattern_matches(Self, @syntax.Expr, @syntax.Pattern) -> Bool
+fn ClosureInterpreter::pattern_to_value(Self, @syntax.Pattern) -> @syntax.Expr?
 fn ClosureInterpreter::pop_scope(Self) -> Unit
 fn ClosureInterpreter::push_scope(Self) -> Unit
+fn ClosureInterpreter::value_in_range(Self, @syntax.Expr, @syntax.Pattern, @syntax.Pattern, Bool) -> Bool
 
 pub struct EvalResult {
   value : @syntax.Expr

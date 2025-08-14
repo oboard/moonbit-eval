@@ -16,8 +16,8 @@ Built on top of the [@moonbitlang/parser](https://github.com/moonbitlang/parser)
 - [x] For
 - [x] While
 - [x] Lambda Fn
-- [X] Struct
-- [ ] Match
+- [x] Struct
+- [x] Match
 - [ ] Trait
 
 
@@ -137,6 +137,58 @@ test "extern" {
 }
 ```
 
+### Match Expressions
+```moonbit
+test "match" {
+  let vm = MoonBitVM::new()
+  // 基本常量匹配
+  inspect(vm.eval("let s = 10"), content="()")
+  inspect(vm.eval("match s { 10 => 100 }"), content="100")
+
+  // 变量模式匹配
+  inspect(vm.eval("match 42 { x => x * 2 }"), content="84")
+
+  // 通配符模式匹配
+  inspect(vm.eval("match 123 { _ => 999 }"), content="999")
+
+  // Or模式匹配
+  inspect(vm.eval("match 5 { 1 | 5 | 10 => 100 }"), content="100")
+  inspect(vm.eval("match 3 { 1 | 5 | 10 => 100; _ => 200 }"), content="200")
+
+  // 测试简单变量绑定
+  inspect(vm.eval("match 42 { x => x }"), content="42")
+
+  // Tuple模式匹配 - 简化测试
+  inspect(vm.eval("match (1, 2) { (a, b) => a }"), content="1")
+  inspect(vm.eval("match (1, 2) { (a, b) => b }"), content="2")
+  inspect(vm.eval("match (1, 2) { (a, b) => a + b }"), content="3")
+
+  // Array模式匹配
+  inspect(vm.eval("match [1, 2, 3] { [a, b, c] => a + b + c }"), content="6")
+  inspect(vm.eval("match [5, 10] { [x, y] => x * y }"), content="50")
+
+  // Record模式匹配
+  inspect(vm.eval("match { x: 10, y: 20 } { { x, y } => x + y }"), content="30")
+  inspect(
+    vm.eval("match { name: \"Alice\", age: 25 } { { name, .. } => name }"),
+    content="Alice",
+  )
+  inspect(
+    vm.eval("match { name: \"Alice\", age: 25 } { { age, .. } => age }"),
+    content="25",
+  )
+  // 嵌套模式匹配
+  inspect(
+    vm.eval("match (1, [2, 3]) { (a, [b, c]) => a + b + c }"),
+    content="6",
+  )
+
+  // 多个case的匹配
+  inspect(vm.eval("match 2 { 1 => 10; 2 => 20; _ => 30 }"), content="20")
+  inspect(vm.eval("match 5 { 1 => 10; 2 => 20; _ => 30 }"), content="30")
+}
+```
+
 
 ## Features
 
@@ -146,6 +198,7 @@ test "extern" {
 - ✅ **Function Definitions**: Named functions with parameters and return types
 - ✅ **Lambda Expressions**: Anonymous functions with closure support
 - ✅ **Struct Definitions**: Custom data types with methods
+- ✅ **Match Expressions**: Pattern matching with constant and variable patterns
 - ✅ **External Functions**: Integration with external function calls
 - ✅ **Type System**: Basic type checking and inference
 
