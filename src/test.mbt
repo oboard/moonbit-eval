@@ -18,6 +18,18 @@ test "basic" {
 }
 
 ///|
+test "bool" {
+  let vm = MoonBitVM::new()
+  println(!true)
+  inspect(vm.eval("true"), content="true")
+  inspect(vm.eval("false"), content="false")
+  inspect(vm.eval("!false"), content="true")
+  inspect(vm.eval("!true"), content="false")
+  inspect(vm.eval("true && false"), content="false")
+  inspect(vm.eval("true || false"), content="true")
+}
+
+///|
 test "string" {
   let vm = MoonBitVM::new()
   inspect(vm.eval("\"hello\""), content="hello")

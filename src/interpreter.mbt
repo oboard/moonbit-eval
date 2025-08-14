@@ -145,6 +145,37 @@ fn ClosureInterpreter::visit(
           }
         _ => unit()
       }
+    // Handle unary expressions (like !false)
+    @syntax.Expr::Unary(op~, expr~, ..) =>
+      match op.name {
+        @syntax.LongIdent::Ident(name~) =>
+          match (name, self.visit(expr)) {
+            // Handle logical not operator
+            ("!", @syntax.Expr::Constant(c=@syntax.Constant::Bool(value), ..)) =>
+              @syntax.Expr::Constant(c=@syntax.Constant::Bool(!value), loc~)
+            // Handle numeric negation
+            ("-", @syntax.Expr::Constant(c=constant, ..)) =>
+              match constant {
+                @syntax.Constant::Int(value) =>
+                  @syntax.Expr::Constant(
+                    c=@syntax.Constant::Int(
+                      (-(@strconv.parse_int(value) catch { _ => 0 })).to_string(),
+                    ),
+                    loc~,
+                  )
+                @syntax.Constant::Double(value) =>
+                  @syntax.Expr::Constant(
+                    c=@syntax.Constant::Double(
+                      (-(@strconv.parse_double(value) catch { _ => 0.0 })).to_string(),
+                    ),
+                    loc~,
+                  )
+                _ => unit()
+              }
+            _ => unit()
+          }
+        _ => unit()
+      }
 
     // 处理不可变变量（性能优化：存储到专门的不可变变量数组）
     @syntax.Expr::Let(pattern=@syntax.Pattern::Var({ name, .. }), expr~, ..) => {
