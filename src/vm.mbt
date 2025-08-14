@@ -5,6 +5,26 @@ struct MoonBitVM {
 }
 
 ///|
+pub struct EvalResult {
+  value : @syntax.Expr
+}
+
+///|
+pub impl Show for EvalResult with output(self : EvalResult, logger : &Logger) -> Unit {
+  logger.write_string(expr_to_string(self.value))
+}
+
+///|
+pub impl Show for EvalResult with to_string(self : EvalResult) -> String {
+  expr_to_string(self.value)
+}
+
+///|
+pub impl ToJson for EvalResult with to_json(self : EvalResult) -> Json {
+  self.value.to_json()
+}
+
+///|
 pub fn MoonBitVM::new(log~ : Bool = false) -> MoonBitVM {
   let interpreter = ClosureInterpreter::new()
   interpreter.add_extern_fn("println", fn(parameters) {
@@ -32,16 +52,6 @@ pub fn MoonBitVM::new(log~ : Bool = false) -> MoonBitVM {
     }
   })
   { interpreter, log }
-}
-
-///|
-pub fn MoonBitVM::eval_to_str(
-  self : MoonBitVM,
-  code : String,
-  log? : Bool,
-  top? : Bool,
-) -> String raise Failure {
-  self.eval(code, log?, top?) |> expr_to_string
 }
 
 ///|
@@ -138,7 +148,7 @@ pub fn MoonBitVM::eval(
   code : String,
   log? : Bool,
   top~ : Bool = false,
-) -> @syntax.Expr raise Failure {
+) -> EvalResult raise Failure {
   let buf = @buffer.new()
   @encoding.encode_to(
     if top {
@@ -160,7 +170,7 @@ pub fn MoonBitVM::eval(
       }
       self.interpreter.top_visit(node)
     })
-    return unit()
+    return { value: unit() }
   }
   match impls {
     @list.List::More(
@@ -172,20 +182,11 @@ pub fn MoonBitVM::eval(
           if log.unwrap_or(self.log) {
             println(expr.to_json().stringify())
           }
-          return self.interpreter.visit(expr)
+          return { value: self.interpreter.visit(expr) }
         }
         _ => ()
       }
     _ => fail(diagnostics.fold(init="", (acc, cur) => "\{acc}\n\{cur}"))
   }
-  unit()
-  // match @parser.parse_syntax(tokens) {
-  //   Some((expr, _)) => {
-  //     if log.unwrap_or(self.log) {
-  //       println(expr)
-  //     }
-  //     self.interpreter.visit(expr)
-  //   }
-  //   None => @syntax.Constant::Int("0")
-  // }
+  { value: unit() }
 }
