@@ -184,6 +184,30 @@ fn ClosureInterpreter::visit(
           }
         _ => unit()
       }
+    // Handle while loops
+    @syntax.Expr::While(loop_cond~, loop_body~, ..) => {
+      let mut result = unit()
+      
+      // 循环执行
+      while true {
+        // 检查循环条件
+        let condition_result = self.visit(loop_cond)
+        let should_continue = match condition_result {
+          @syntax.Expr::Constant(c=@syntax.Constant::Bool(value), ..) => value
+          _ => false // 如果条件不是布尔值，停止循环
+        }
+        
+        if not(should_continue) {
+          break
+        }
+        
+        // 执行循环体
+        result = self.visit(loop_body)
+      }
+      
+      result
+    }
+    
     // Handle for loops
     @syntax.Expr::For(binders~, condition~, continue_block~, body~, ..) => {
       // 创建新的作用域
@@ -257,7 +281,17 @@ fn ClosureInterpreter::visit(
       @syntax.Expr::Function(func~, loc~)
     // Handle group expressions (parentheses)
     @syntax.Expr::Group(expr~, ..) => self.visit(expr)
-    // @syntax.Expr::Sequence(exprs~,last_expr~)
+    
+    // Handle sequence expressions (multiple statements)
+    @syntax.Expr::Sequence(exprs~, last_expr~, ..) => {
+      // 执行所有前面的表达式（副作用）
+      for expr in exprs {
+        self.visit(expr) |> ignore
+      }
+      // 返回最后一个表达式的值
+      self.visit(last_expr)
+    }
+    
     _ => unit()
   }
 }
