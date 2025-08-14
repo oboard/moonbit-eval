@@ -57,7 +57,7 @@ fn ClosureInterpreter::top_visit(
     // TopFuncDef(_) => ...
 
     // 处理顶层常量定义（如 const Zero = 0）
-    TopLetDef(binder~, ty~, expr~, vis~, is_constant~, loc~, attrs~, doc~) => {
+    TopLetDef(binder~, expr~, ..) => {
       let name = binder.name
       let evaluated_expr = self.visit(expr)
       set_immutable_variable(self.immutable_values, 0, name, evaluated_expr)
