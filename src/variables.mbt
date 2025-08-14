@@ -1,7 +1,9 @@
 ///| 变量管理模块
+
 ///| 处理变量查找、设置和作用域管理
 
 ///| 在解释器中查找变量
+
 ///| 优先查找不可变变量（性能优化），然后查找可变变量
 pub fn find_variable(
   immutable_values : Array[Map[String, @syntax.Expr]],
@@ -23,7 +25,7 @@ pub fn find_variable(
       None => continue
     }
   }
-  
+
   // 如果找不到变量，返回Unit表达式
   @syntax.Expr::Unit(
     loc={
@@ -55,6 +57,7 @@ pub fn set_mutable_variable(
 }
 
 ///| 更新可变变量的值
+
 ///| 在可变变量数组中查找并更新指定变量
 pub fn update_mutable_variable(
   mutable_values : Array[Map[String, @syntax.Expr]],

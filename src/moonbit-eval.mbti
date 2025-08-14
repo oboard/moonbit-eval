@@ -1,0 +1,68 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "oboard/moonbit-eval"
+
+import(
+  "moonbitlang/core/list"
+  "moonbitlang/parser/basic"
+  "moonbitlang/parser/syntax"
+)
+
+// Values
+fn bind_function_parameters(@list.List[@syntax.Parameter], @list.List[@syntax.Argument], Array[Map[String, @syntax.Expr]], (@syntax.Expr) -> @syntax.Expr) -> Unit
+
+fn[T : Compare] compare(T, T, String) -> @syntax.Constant
+
+fn constant_infix(String, @syntax.Constant, @syntax.Constant) -> @syntax.Constant
+
+fn define_function(Map[String, @syntax.Func], String, @syntax.Func) -> Unit
+
+fn eval_double_op(Double, Double, String) -> @syntax.Constant
+
+fn eval_float_op(Double, Double, String) -> @syntax.Constant
+
+fn eval_int64_op(Int64, Int64, String) -> @syntax.Constant
+
+fn eval_int_op(Int, Int, String) -> @syntax.Constant
+
+fn eval_uint64_op(UInt64, UInt64, String) -> @syntax.Constant
+
+fn eval_uint_op(UInt, UInt, String) -> @syntax.Constant
+
+fn execute_function_call(@syntax.Func, @list.List[@syntax.Argument], Array[Map[String, @syntax.Expr]], Array[Map[String, @syntax.Expr]], (@syntax.Expr) -> @syntax.Expr) -> @syntax.Expr
+
+fn expr_to_string(@syntax.Expr) -> String
+
+fn find_user_function(Map[String, @syntax.Func], String) -> @syntax.Func?
+
+fn find_variable(Array[Map[String, @syntax.Expr]], Array[Map[String, @syntax.Expr]], String) -> @syntax.Expr
+
+fn is_comparison_op(String) -> Bool
+
+fn pop_scope(Array[Map[String, @syntax.Expr]], Array[Map[String, @syntax.Expr]]) -> Unit
+
+fn push_scope(Array[Map[String, @syntax.Expr]], Array[Map[String, @syntax.Expr]]) -> Unit
+
+fn set_immutable_variable(Array[Map[String, @syntax.Expr]], Int, String, @syntax.Expr) -> Unit
+
+fn set_mutable_variable(Array[Map[String, @syntax.Expr]], Int, String, @syntax.Expr) -> Unit
+
+fn unit(loc? : @basic.Location) -> @syntax.Expr
+
+fn update_mutable_variable(Array[Map[String, @syntax.Expr]], String, @syntax.Expr) -> Bool
+
+// Errors
+
+// Types and methods
+type ClosureInterpreter
+fn ClosureInterpreter::add_extern_fn(Self, String, (@list.List[@syntax.Expr]) -> @syntax.Expr) -> Unit
+fn ClosureInterpreter::new() -> Self
+
+type MoonBitVM
+fn MoonBitVM::eval(Self, String, log? : Bool) -> @syntax.Expr raise Failure
+fn MoonBitVM::eval_to_str(Self, String, log? : Bool) -> String raise Failure
+fn MoonBitVM::new(log? : Bool) -> Self
+
+// Type aliases
+
+// Traits
+

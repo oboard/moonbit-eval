@@ -2,6 +2,7 @@
 // 处理各种数据类型的运算操作
 
 // 辅助函数：检查是否为比较运算符
+///|
 pub fn is_comparison_op(op : String) -> Bool {
   match op {
     "==" | "!=" | "<" | ">" | "<=" | ">=" => true
@@ -10,7 +11,13 @@ pub fn is_comparison_op(op : String) -> Bool {
 }
 
 // 辅助函数：执行比较运算
-pub fn[T : Compare] compare(left : T, right : T, op : String) -> @syntax.Constant {
+
+///|
+pub fn[T : Compare] compare(
+  left : T,
+  right : T,
+  op : String,
+) -> @syntax.Constant {
   match op {
     "==" => @syntax.Constant::Bool(left == right)
     "!=" => @syntax.Constant::Bool(left != right)
@@ -23,6 +30,8 @@ pub fn[T : Compare] compare(left : T, right : T, op : String) -> @syntax.Constan
 }
 
 // 辅助函数：执行整数运算
+
+///|
 pub fn eval_int_op(left : Int, right : Int, op : String) -> @syntax.Constant {
   if is_comparison_op(op) {
     return compare(left, right, op)
@@ -44,6 +53,8 @@ pub fn eval_int_op(left : Int, right : Int, op : String) -> @syntax.Constant {
 }
 
 // 辅助函数：执行浮点数运算
+
+///|
 pub fn eval_float_op(
   left : Double,
   right : Double,
@@ -63,6 +74,8 @@ pub fn eval_float_op(
 }
 
 // 辅助函数：执行Double运算
+
+///|
 pub fn eval_double_op(
   left : Double,
   right : Double,
@@ -82,7 +95,13 @@ pub fn eval_double_op(
 }
 
 // 辅助函数：执行Int64运算
-pub fn eval_int64_op(left : Int64, right : Int64, op : String) -> @syntax.Constant {
+
+///|
+pub fn eval_int64_op(
+  left : Int64,
+  right : Int64,
+  op : String,
+) -> @syntax.Constant {
   if is_comparison_op(op) {
     return compare(left, right, op)
   }
@@ -98,6 +117,8 @@ pub fn eval_int64_op(left : Int64, right : Int64, op : String) -> @syntax.Consta
 }
 
 // 辅助函数：执行UInt运算
+
+///|
 pub fn eval_uint_op(left : UInt, right : UInt, op : String) -> @syntax.Constant {
   if is_comparison_op(op) {
     return compare(left, right, op)
@@ -114,6 +135,8 @@ pub fn eval_uint_op(left : UInt, right : UInt, op : String) -> @syntax.Constant 
 }
 
 // 辅助函数：执行UInt64运算
+
+///|
 pub fn eval_uint64_op(
   left : UInt64,
   right : UInt64,
@@ -134,6 +157,8 @@ pub fn eval_uint64_op(
 }
 
 // 主要的常量中缀运算函数
+
+///|
 pub fn constant_infix(
   name : String,
   lhs : @syntax.Constant,

@@ -75,39 +75,55 @@ test "str" {
 ///|
 test "if" {
   let vm = MoonBitVM::new()
-  @json.inspect(vm.eval_to_str("if true { 1 } else { 2 }"), content="Int(1)")
-  @json.inspect(vm.eval_to_str("if false { 1 } else { 2 }"), content="Int(2)")
+  // Test nested if expressions
+  inspect(
+    vm.eval_to_str("if 1 > 0 { if 2 > 1 { 3 } else { 4 } } else { 5 }"),
+    content="3",
+  )
+
+  // Test complex conditions
+  inspect(vm.eval_to_str("if (5 + 3) * 2 > 15 { 1 } else { 2 }"), content="1")
+
+  // Test boolean expressions in conditions
+  inspect(
+    vm.eval_to_str("if true && false || true { 1 } else { 2 }"),
+    content="1",
+  )
+
+  // Test if expression with function calls
+  inspect(
+    vm.eval_to_str(
+      "fn double(x: Int) -> Int { x * 2 }\n if double(5) > 8 { 3 } else { 4 }",
+    ),
+    content="3",
+  )
+
+  // Test if without else
+  inspect(vm.eval_to_str("if 3 < 2 { 1 }"), content="Unit")
 }
 
-// ///|
-// test "for" {
-//   let tokens = []
-//   @json.inspect(
-//     tokens,
-//     content=(
-//       #|[For, Identifier("i"), Assign, Number(0), Semicolon, Identifier("i"), LessThan, Number(10), Semicolon, Identifier("i"), Assign, Identifier("i"), Add, Number(1), LBrace, Identifier("output"), AddEqual, Identifier("i"), RBrace]
-//     ),
-//   )
-//   // let mut output = 0
-//   // for i = 0; i < 10; i = i + 1 {
-//   //   output += i
-//   //   // println(output)
-//   // }
-//   //  @json.inspect(output, content="45")
-//   // // test for loop
-//   // let vm = MoonBitVM::new(log=true)
-//   //  @json.inspect(vm.eval_to_str("let mut output = 0"), content="Unit")
-//   //  @json.inspect(
-//   //   vm.eval_to_str("for i = 0; i < 10; i = i + 1 { output += i }"),
-//   //   content="Unit",
-//   // )
-//   //  @json.inspect(vm.eval_to_str("output"), content="Int(45)")
-//   // let mut output = 0
-//   // for i = 0; i < 10; i = i + 1 {
-//   //   output += i
-//   // }
-//   //  @json.inspect(output, content="45")
-// }
+///|
+test "for" {
+  let mut output = 0
+  for i = 0; i < 10; i = i + 1 {
+    output += i
+    // println(output)
+  }
+  inspect(output, content="45")
+  // test for loop
+  let vm = MoonBitVM::new(log=true)
+  inspect(vm.eval_to_str("let mut output = 0"), content="Unit")
+  inspect(
+    vm.eval_to_str("for i = 0; i < 10; i = i + 1 { output += i }"),
+    content="Unit",
+  )
+  inspect(vm.eval_to_str("output"), content="45")
+  let mut output = 0
+  for i = 0; i < 10; i = i + 1 {
+    output += i
+  }
+  inspect(output, content="45")
+}
 
 // ///|
 // test "while" {
@@ -141,14 +157,25 @@ test "if" {
 //   @json.inspect(vm.eval_to_str("h(4)"), content="Int(16)")
 // }
 
-// ///|
-// test "lambda_simple" {
-//   let vm = MoonBitVM::new(log=true)
-//   // 测试简单的 lambda 表达式
-//   @json.inspect(vm.eval_to_str("let f = x => x"), content="Unit")
-//   @json.inspect(vm.eval_to_str("f(5)"), content="Int(5)")
-// }
+///|
+test "lambda_simple" {
+  let vm = MoonBitVM::new()
+  // 测试简单的 lambda 表达式
+  inspect(vm.eval_to_str("let f = x => x"), content="Unit")
+  inspect(vm.eval_to_str("f(5)"), content="5")
+}
 
+///|
+test "extern" {
+  let vm = MoonBitVM::new()
+  vm.interpreter.add_extern_fn("println", params => {
+    if params is More(Constant(c=String(s), ..), ..) {
+      println(s)
+    }
+    unit()
+  })
+  inspect(vm.eval_to_str("println(\"hello\")"), content="Unit")
+}
 // ///|
 // test "fib" {
 //   let vm = MoonBitVM::new()
@@ -178,19 +205,19 @@ test "if" {
 //   @json.inspect(fib(10), content="89")
 // }
 
-// ///|
-// test "fn simple" {
-//   let vm = MoonBitVM::new()
-//   @json.inspect(vm.eval_to_str("fn a() { 1 }"), content="() -> Int")
-//   @json.inspect(vm.eval_to_str("a()"), content="Int(1)")
-// }
+///|
+test "fn simple" {
+  let vm = MoonBitVM::new()
+  @json.inspect(vm.eval_to_str("fn a() { 1 }"), content="()")
+  @json.inspect(vm.eval_to_str("a()"), content="1")
+}
 
-// ///|
-// test "fn add" {
-//   let vm = MoonBitVM::new()
-//   @json.inspect(
-//     vm.eval_to_str("fn add(a: Int, b: Int) -> Int { a + b }"),
-//     content="(Int, Int) -> Int",
-//   )
-//   @json.inspect(vm.eval_to_str("add(1,2)"), content="Int(3)")
-// }
+///|
+test "fn add" {
+  let vm = MoonBitVM::new()
+  @json.inspect(
+    vm.eval_to_str("fn add(a: Int, b: Int) -> Int { a + b }"),
+    content="(a: Int, b: Int) -> Int",
+  )
+  @json.inspect(vm.eval_to_str("add(1,2)"), content="3")
+}

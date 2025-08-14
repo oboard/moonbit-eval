@@ -7,16 +7,30 @@ struct MoonBitVM {
 ///|
 pub fn MoonBitVM::new(log~ : Bool = false) -> MoonBitVM {
   let interpreter = ClosureInterpreter::new()
-  // interpreter.add_extern_fn("println", fn(arr) {
-  //   match arr[0] {
-  //     Int(i) => println(i)
-  //     Double(i) => println(i)
-  //     Bool(i) => println(i)
-  //     String(i) => println(i)
-  //     _ => println("Unknown type")
-  //   }
-  //   @syntax.Constant::Int("0")
-  // })
+  interpreter.add_extern_fn("println", fn(parameters) {
+    match parameters {
+      @list.More(expr, ..) => {
+        println(expr_to_string(expr))
+        @syntax.Expr::Unit(
+          loc={
+            start: { fname: "", lnum: 0, bol: 0, cnum: 0 },
+            end: { fname: "", lnum: 0, bol: 0, cnum: 0 },
+          },
+          faked=true,
+        )
+      }
+      @list.Empty => {
+        println("")
+        @syntax.Expr::Unit(
+          loc={
+            start: { fname: "", lnum: 0, bol: 0, cnum: 0 },
+            end: { fname: "", lnum: 0, bol: 0, cnum: 0 },
+          },
+          faked=true,
+        )
+      }
+    }
+  })
   { interpreter, log }
 }
 
@@ -25,7 +39,7 @@ pub fn MoonBitVM::eval_to_str(
   self : MoonBitVM,
   code : String,
   log? : Bool,
-) -> String {
+) -> String raise Failure {
   self.eval(code, log?) |> expr_to_string
 }
 
@@ -122,15 +136,10 @@ pub fn MoonBitVM::eval(
   self : MoonBitVM,
   code : String,
   log? : Bool,
-) -> @syntax.Expr {
-  // let tokens = []
-  // @lex.lex({ str: code, offset: 0, array: tokens })
-  // if log.unwrap_or(self.log) {
-  //   println(tokens)
-  // }
+) -> @syntax.Expr raise Failure {
   let buf = @buffer.new()
   @encoding.encode_to("fn init {\n\{code}\n}", buf, encoding=UTF8)
-  let (impls, _diagnostics) = @moonbitlang/parser.parse_bytes(
+  let (impls, diagnostics) = @moonbitlang/parser.parse_bytes(
     buf.to_bytes(),
     parser=Handrolled,
   )
@@ -148,15 +157,9 @@ pub fn MoonBitVM::eval(
         }
         _ => ()
       }
-    _ => ()
+    _ => fail(diagnostics.fold(init="", (acc, cur) => "\{acc}\n\{cur}"))
   }
-  @syntax.Expr::Unit(
-    loc={
-      start: { fname: "", lnum: 10, bol: 0, cnum: 0 },
-      end: { fname: "", lnum: 10, bol: 0, cnum: 0 },
-    },
-    faked=true,
-  )
+  unit()
   // match @parser.parse_syntax(tokens) {
   //   Some((expr, _)) => {
   //     if log.unwrap_or(self.log) {

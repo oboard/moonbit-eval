@@ -27,7 +27,7 @@ pub fn bind_function_parameters(
           immutable_values.last().unwrap().set(name, arg_value)
         }
         // 可选参数：当有参数提供时绑定参数值，否则使用默认值
-        @syntax.Parameter::Optional(binder={ name, .. }, default~, ..) => {
+        @syntax.Parameter::Optional(binder={ name, .. }, ..) => {
           let arg_value = visit_fn(arg.value)
           immutable_values.last().unwrap().set(name, arg_value)
         }
@@ -102,13 +102,7 @@ pub fn execute_function_call(
     }
     _ =>
       // 返回Unit表达式作为默认值
-      @syntax.Expr::Unit(
-        loc={
-          start: { fname: "", lnum: 10, bol: 0, cnum: 0 },
-          end: { fname: "", lnum: 10, bol: 0, cnum: 0 },
-        },
-        faked=true,
-      )
+      unit()
   }
 }
 
