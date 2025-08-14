@@ -3,8 +3,6 @@
       "moonbitlang/parser",
       "moonbitlang/parser/basic",
       "moonbitlang/parser/syntax",
-      "moonbitlang/parser/lexer",
-      "moonbitlang/parser/tokens",
       "moonbitlang/x/encoding"
     ]
 }

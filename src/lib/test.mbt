@@ -19,21 +19,21 @@ test "basic" {
 
 ///|
 test "string" {
-  let vm = MoonBitVM::new(log=true)
+  let vm = MoonBitVM::new()
   inspect(vm.eval_to_str("\"hello\""), content="hello")
   inspect(vm.eval_to_str("\"hello\"+\"hello\""), content="hellohello")
 }
 
 ///|
 test "variables" {
-  let vm = MoonBitVM::new(log=true)
+  let vm = MoonBitVM::new()
   inspect(vm.eval_to_str("let a = 1"), content="Unit")
   inspect(vm.eval_to_str("a"), content="1")
 }
 
 ///|
 test "mutable variables" {
-  let vm = MoonBitVM::new(log=true)
+  let vm = MoonBitVM::new()
   inspect(vm.eval_to_str("let mut a = 1"), content="Unit")
   inspect(vm.eval_to_str("a = 12"), content="Unit")
   inspect(vm.eval_to_str("a"), content="12")
@@ -41,35 +41,43 @@ test "mutable variables" {
 
 ///|
 test "function" {
-  let vm = MoonBitVM::new(log=true)
-  inspect(vm.eval_to_str("fn double(x: Int) -> Int { x * 2 }"), content="Unit")
+  let vm = MoonBitVM::new()
+  inspect(
+    vm.eval_to_str("fn double(x: Int) -> Int { x * 2 }"),
+    content="(x: Int) -> Int",
+  )
   inspect(vm.eval_to_str("double(2)"), content="4")
   inspect(
     vm.eval_to_str("fn add(a: Int, b: Int) -> Int { a + b }"),
-    content="Unit",
+    content="(a: Int, b: Int) -> Int",
   )
   inspect(vm.eval_to_str("add(1, 2)"), content="3")
+  inspect(
+    vm.eval_to_str("fn add_named(a~: Int, b~: Int) -> Int { a + b }"),
+    content="(a~: Int, b~: Int) -> Int",
+  )
+  inspect(vm.eval_to_str("add_named(a=1, b=2)"), content="3")
+  inspect(
+    vm.eval_to_str("fn add_optional(a~: Int, b~: Int=2) -> Int { a + b }"),
+    content="(a~: Int, b~: Int = 2) -> Int",
+  )
+  inspect(vm.eval_to_str("add_optional(a=1)"), content="3")
 }
 
-// ///|
-// test "str" {
-//   let vm = MoonBitVM::new()
-//   @json.inspect(vm.eval_to_str("let str1: String = \"haha\""), content="Unit")
-//   @json.inspect(vm.eval_to_str("let str2: String = \"hello\""), content="Unit")
-//   @json.inspect(
-//     vm.eval_to_str("str1 + str2"),
-//     content=(
-//       #|String("hahahello")
-//     ),
-//   )
-// }
+///|
+test "str" {
+  let vm = MoonBitVM::new()
+  inspect(vm.eval_to_str("let str1: String = \"haha\""), content="Unit")
+  inspect(vm.eval_to_str("let str2: String = \"hello\""), content="Unit")
+  inspect(vm.eval_to_str("str1 + str2"), content="Unit")
+}
 
-// ///|
-// test "if" {
-//   let vm = MoonBitVM::new()
-//   @json.inspect(vm.eval_to_str("if true { 1 } else { 2 }"), content="Int(1)")
-//   @json.inspect(vm.eval_to_str("if false { 1 } else { 2 }"), content="Int(2)")
-// }
+///|
+test "if" {
+  let vm = MoonBitVM::new()
+  @json.inspect(vm.eval_to_str("if true { 1 } else { 2 }"), content="Int(1)")
+  @json.inspect(vm.eval_to_str("if false { 1 } else { 2 }"), content="Int(2)")
+}
 
 // ///|
 // test "for" {
