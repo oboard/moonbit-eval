@@ -18,16 +18,16 @@ pub fn ClosureInterpreter::bind_function_parameters(
       match param {
         // 位置参数：直接绑定参数值
         @syntax.Parameter::Positional(binder={ name, .. }, ..) =>
-          self.immutable_values.last().unwrap().set(name, arg_value)
+          self.current_immutable_scope().set(name, arg_value)
         // 标签参数：绑定带标签的参数值
         @syntax.Parameter::Labelled(binder={ name, .. }, ..) =>
-          self.immutable_values.last().unwrap().set(name, arg_value)
+          self.current_immutable_scope().set(name, arg_value)
         // 可选参数：当有参数提供时绑定参数值，否则使用默认值
         @syntax.Parameter::Optional(binder={ name, .. }, ..) =>
-          self.immutable_values.last().unwrap().set(name, arg_value)
+          self.current_immutable_scope().set(name, arg_value)
         // 问号可选参数：绑定参数值
         @syntax.Parameter::QuestionOptional(binder={ name, .. }, ..) =>
-          self.immutable_values.last().unwrap().set(name, arg_value)
+          self.current_immutable_scope().set(name, arg_value)
         // 丢弃位置参数：不绑定到任何变量，直接跳过
         @syntax.Parameter::DiscardPositional(..) =>
           // 丢弃参数不需要绑定，但仍需要求值以保持副作用
@@ -41,7 +41,7 @@ pub fn ClosureInterpreter::bind_function_parameters(
         // 可选参数没有对应实参时，使用默认值
         @syntax.Parameter::Optional(binder={ name, .. }, default~, ..) => {
           let default_value = self.visit(default)
-          self.immutable_values.last().unwrap().set(name, default_value)
+          self.current_immutable_scope().set(name, default_value)
           self.bind_function_parameters(rest_params, @list.new())
         }
         // 问号可选参数没有对应实参时，不绑定任何值
@@ -112,8 +112,7 @@ pub fn ClosureInterpreter::find_user_function(
   name : String,
 ) -> @syntax.Func? {
   // 从当前作用域开始查找
-  for i in 0..<self.user_functions.length() {
-    let functions = self.user_functions.get(i).unwrap()
+  for functions in self.user_functions {
     if functions.contains(name) {
       return functions.get(name)
     }

@@ -33,6 +33,22 @@ pub fn ClosureInterpreter::add_extern_fn(
   self.extern_fns.set(name, f)
 }
 
+///| 获取当前函数作用域
+fn ClosureInterpreter::current_scope(
+  self : ClosureInterpreter,
+) -> Map[String, @syntax.Func] {
+  // user_functions 数组永远非空（初始化为 [{}]），直接访问最后一个元素
+  self.user_functions[self.user_functions.length() - 1]
+}
+
+///| 获取当前不可变变量作用域
+fn ClosureInterpreter::current_immutable_scope(
+  self : ClosureInterpreter,
+) -> Map[String, @syntax.Expr] {
+  // immutable_values 数组永远非空（初始化为 [{}]），直接访问最后一个元素
+  self.immutable_values[self.immutable_values.length() - 1]
+}
+
 ///|
 fn ClosureInterpreter::find(
   self : ClosureInterpreter,
@@ -60,18 +76,8 @@ fn ClosureInterpreter::top_visit(
     TopLetDef(binder~, expr~, ..) => {
       let name = binder.name
       let evaluated_expr = self.visit(expr)
-      set_immutable_variable(self.immutable_values, 0, name, evaluated_expr)
+      self.set_immutable_variable(name, evaluated_expr)
     }
-
-    // tycon : String
-    // tycon_loc : Location
-    // params : @list.List[TypeDeclBinder]
-    // components : TypeDesc
-    // attrs : @list.List[Attribute]
-    // mut doc : DocString
-    // type_vis : Visibility
-    // deriving : @list.List[DerivingDirective]
-    // loc : Location
     TopTypeDef(def) =>
       match def {
         { tycon, .. } => self.type_definitions.set(tycon, def)
@@ -105,11 +111,7 @@ fn ClosureInterpreter::top_visit(
             )
             ()
           } else {
-            define_function(
-              self.user_functions.last().unwrap(),
-              func_name,
-              func,
-            )
+            define_function(self.current_scope(), func_name, func)
           }
         }
         _ => ()
@@ -127,7 +129,6 @@ fn ClosureInterpreter::visit(
   self : ClosureInterpreter,
   node : @syntax.Expr,
 ) -> @syntax.Expr {
-  let level = 0
   // @basic.show_loc.val = true
   // let loc = @basic.Location::{
   //   start: { fname: "", lnum: 10, bol: 0, cnum: 0 },
@@ -186,18 +187,18 @@ fn ClosureInterpreter::visit(
     // 处理不可变变量（性能优化：存储到专门的不可变变量数组）
     @syntax.Expr::Let(pattern=@syntax.Pattern::Var({ name, .. }), expr~, ..) => {
       let evaluated_expr = self.visit(expr)
-      set_immutable_variable(self.immutable_values, level, name, evaluated_expr)
+      self.set_immutable_variable(name, evaluated_expr)
       unit()
     }
     // 处理可变变量声明（存储到专门的可变变量数组）
     @syntax.Expr::LetMut(binder={ name, .. }, expr~, ..) => {
       let evaluated_expr = self.visit(expr)
-      set_mutable_variable(self.mutable_values, level, name, evaluated_expr)
+      self.set_mutable_variable(name, evaluated_expr)
       unit()
     }
     // 处理函数定义
     @syntax.Expr::LetFn(name={ name, .. }, func~, body~, loc~) => {
-      define_function(self.user_functions.last().unwrap(), name, func)
+      define_function(self.current_scope(), name, func)
       // 如果body是Unit表达式，说明没有后续表达式，返回函数签名
       match body {
         @syntax.Expr::Unit(..) => @syntax.Expr::Function(func~, loc~)
@@ -321,12 +322,7 @@ fn ClosureInterpreter::visit(
         match binder_init {
           (binder, init_expr) => {
             let init_value = self.visit(init_expr)
-            set_mutable_variable(
-              self.mutable_values,
-              self.mutable_values.length() - 1,
-              binder.name,
-              init_value,
-            )
+            self.set_mutable_variable(binder.name, init_value)
           }
         }
       }
@@ -488,7 +484,7 @@ fn ClosureInterpreter::execute_method_call(
           let self_value = self.visit(self_expr)
           match first_param {
             @syntax.Parameter::Positional(binder={ name, .. }, ..) =>
-              self.immutable_values.last().unwrap().set(name, self_value)
+              self.current_immutable_scope().set(name, self_value)
             _ => ()
           }
           // 绑定其余参数

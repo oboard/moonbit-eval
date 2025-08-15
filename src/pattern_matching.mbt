@@ -35,7 +35,7 @@ pub fn ClosureInterpreter::pattern_matches(
     // 变量模式匹配（总是匹配，并绑定变量）
     (_, @syntax.Pattern::Var({ name, .. })) => {
       // 绑定变量到当前作用域
-      self.immutable_values.last().unwrap().set(name, value)
+      self.current_immutable_scope().set(name, value)
       true
     }
 

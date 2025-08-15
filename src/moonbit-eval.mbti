@@ -34,10 +34,6 @@ fn find_variable(Array[Map[String, @syntax.Expr]], Array[Map[String, @syntax.Exp
 
 fn is_comparison_op(String) -> Bool
 
-fn set_immutable_variable(Array[Map[String, @syntax.Expr]], Int, String, @syntax.Expr) -> Unit
-
-fn set_mutable_variable(Array[Map[String, @syntax.Expr]], Int, String, @syntax.Expr) -> Unit
-
 fn unit(loc? : @basic.Location) -> @syntax.Expr
 
 fn update_mutable_variable(Array[Map[String, @syntax.Expr]], String, @syntax.Expr) -> Bool
@@ -58,6 +54,8 @@ fn ClosureInterpreter::pattern_matches(Self, @syntax.Expr, @syntax.Pattern) -> B
 fn ClosureInterpreter::pattern_to_value(Self, @syntax.Pattern) -> @syntax.Expr?
 fn ClosureInterpreter::pop_scope(Self) -> Unit
 fn ClosureInterpreter::push_scope(Self) -> Unit
+fn ClosureInterpreter::set_immutable_variable(Self, String, @syntax.Expr) -> Unit
+fn ClosureInterpreter::set_mutable_variable(Self, String, @syntax.Expr) -> Unit
 fn ClosureInterpreter::value_in_range(Self, @syntax.Expr, @syntax.Pattern, @syntax.Pattern, Bool) -> Bool
 
 pub struct EvalResult {
@@ -67,6 +65,7 @@ impl Show for EvalResult
 impl ToJson for EvalResult
 
 type MoonBitVM
+fn MoonBitVM::create(log? : Bool) -> Self
 fn MoonBitVM::eval(Self, String, log? : Bool, top? : Bool) -> EvalResult raise Failure
 fn MoonBitVM::new(log? : Bool) -> Self
 

@@ -37,23 +37,21 @@ pub fn find_variable(
 }
 
 ///| 设置不可变变量
-pub fn set_immutable_variable(
-  immutable_values : Array[Map[String, @syntax.Expr]],
-  level : Int,
+pub fn ClosureInterpreter::set_immutable_variable(
+  self : ClosureInterpreter,
   name : String,
   value : @syntax.Expr,
 ) -> Unit {
-  immutable_values[level].set(name, value)
+  self.immutable_values[self.immutable_values.length() - 1].set(name, value)
 }
 
 ///| 设置可变变量
-pub fn set_mutable_variable(
-  mutable_values : Array[Map[String, @syntax.Expr]],
-  level : Int,
+pub fn ClosureInterpreter::set_mutable_variable(
+  self : ClosureInterpreter,
   name : String,
   value : @syntax.Expr,
 ) -> Unit {
-  mutable_values[level].set(name, value)
+  self.mutable_values[self.mutable_values.length() - 1].set(name, value)
 }
 
 ///| 更新可变变量的值
