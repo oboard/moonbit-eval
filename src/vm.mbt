@@ -55,6 +55,11 @@ pub fn MoonBitVM::new(log~ : Bool = false) -> MoonBitVM {
 }
 
 ///|
+pub fn MoonBitVM::create(log~ : Bool = false) -> MoonBitVM {
+  MoonBitVM::new(log~)
+}
+
+///|
 pub fn expr_to_string(expr : @syntax.Expr) -> String {
   match expr {
     Constant(c~, ..) =>

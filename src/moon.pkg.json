@@ -4,5 +4,15 @@
     "moonbitlang/parser/basic",
     "moonbitlang/parser/syntax",
     "moonbitlang/x/encoding"
-  ]
+  ],
+  "link": {
+    "js": {
+      "exports": [
+        "create",
+        "eval",
+        "expr_to_string",
+        "add_extern_fn"
+      ]
+    }
+  }
 }
