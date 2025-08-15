@@ -1,6 +1,6 @@
 # MoonBit Eval
 
-🚀 **[Demo](https://moonrepl.oboard.eu.org/)**
+🚀 **[Demo https://moonrepl.oboard.eu.org/](https://moonrepl.oboard.eu.org/)**
 
 ## Introduction
 MoonBit Eval is an interpreter for the MoonBit language.
