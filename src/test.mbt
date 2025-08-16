@@ -437,6 +437,7 @@ test "array" {
   inspect(vm.eval("a"), content="[1, 4, 3]")
 }
 
+///|
 test "ref" {
   let vm = MoonBitVM::new()
   inspect(
@@ -445,13 +446,28 @@ test "ref" {
         #|struct RefInt {
         #|  mut value: Int
         #|}
-        #|let a = { value: 1 }
-        #|let b = a
-        #|b.value = 2
       ),
       top=true,
     ),
     content="()",
   )
-  inspect(vm.eval("a.value"), content="1")
+  inspect(
+    vm.eval(
+      (
+        #|let a = { value: 1 }
+        #|let b = a
+        #|b.value = 2
+      ),
+    ),
+    content="()",
+  )
+  inspect(
+    vm.eval("a"),
+    content=(
+      #|{
+      #|  value: 2
+      #|}
+    ),
+  )
+  inspect(vm.eval("a.value"), content="2")
 }

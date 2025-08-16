@@ -20,6 +20,12 @@ Built on top of the [@moonbitlang/parser](https://github.com/moonbitlang/parser)
 - [x] Lambda Fn
 - [x] Struct
 - [x] Match
+- [x] Array
+- [x] Tuple
+- [x] Embedded Functions
+- [x] Mutable Struct Fields
+- [x] Range Patterns
+- [x] Constructor Patterns
 - [ ] Trait
 
 
@@ -32,7 +38,11 @@ test "basic" {
   inspect(vm.eval("1 + 1"), content="2")
   inspect(vm.eval("5 * 3"), content="15")
   inspect(vm.eval("10 / 2"), content="5")
+  inspect(vm.eval("7 % 3"), content="1")
   inspect(vm.eval("5 == 5"), content="true")
+  inspect(vm.eval("5 != 3"), content="true")
+  inspect(vm.eval("3 < 5"), content="true")
+  inspect(vm.eval("5 > 3"), content="true")
   inspect(vm.eval("\"hello\" + \"world\""), content="helloworld")
 }
 ```
@@ -105,6 +115,45 @@ test "struct" {
 }
 ```
 
+### Arrays and Tuples
+```moonbit
+test "array and tuple" {
+  let vm = MoonBitVM::new()
+  // Array operations
+  inspect(vm.eval("let a = [1, 2, 3]"), content="()")
+  inspect(vm.eval("a[0]"), content="1")
+  inspect(vm.eval("a[1] = 4"), content="()")
+  inspect(vm.eval("a"), content="[1, 4, 3]")
+  
+  // Tuple operations
+  inspect(vm.eval("let t = (1, 2)"), content="()")
+  inspect(vm.eval("t.0"), content="1")
+  inspect(vm.eval("t.1"), content="2")
+  inspect(vm.eval("let (a, b) = t"), content="()")
+}
+```
+
+### Mutable Struct Fields
+```moonbit
+test "mutable fields" {
+  let vm = MoonBitVM::new()
+  inspect(
+    vm.eval(
+      #|struct Point {
+      #|  mut x : Int
+      #|  mut y : Int
+      #|}
+      top=true,
+    ),
+    content="()",
+  )
+  inspect(vm.eval("let p = { x: 1, y: 2 }"), content="()")
+  inspect(vm.eval("p.x = 3"), content="()")
+  inspect(vm.eval("p.y = 4"), content="()")
+  inspect(vm.eval("p.x"), content="3")
+}
+```
+
 ### Fibonacci Recursion
 ```moonbit
 test "fibonacci" {
@@ -136,6 +185,25 @@ test "extern" {
     unit()
   })
   inspect(vm.eval("println(\"Hello from external function\")"), content="()")
+}
+```
+
+### Embedded Functions
+```moonbit
+test "embedded" {
+  let vm = MoonBitVM::new()
+  vm.interpreter.add_embedded_fn("%string_length", params => 
+    if params is More(Constant(c=String(s), loc~), ..) {
+      Constant(c=Int(s.length().to_string()), loc~)
+    } else {
+      unit()
+    }
+  )
+  inspect(
+    vm.eval("pub fn String::length(self : String) -> Int = \"%string_length\""),
+    content="()",
+  )
+  inspect(vm.eval("\"hello\".length()"), content="5")
 }
 ```
 
@@ -199,9 +267,14 @@ test "match" {
 - ✅ **Control Flow**: If-else statements, for loops, while loops
 - ✅ **Function Definitions**: Named functions with parameters and return types
 - ✅ **Lambda Expressions**: Anonymous functions with closure support
-- ✅ **Struct Definitions**: Custom data types with methods
-- ✅ **Match Expressions**: Pattern matching with constant and variable patterns
+- ✅ **Struct Definitions**: Custom data types with methods and mutable fields
+- ✅ **Match Expressions**: Pattern matching with constant, variable, tuple, array, and record patterns
+- ✅ **Range Patterns**: Pattern matching with range expressions (e.g., `1..=10`, `'a'..='z'`)
+- ✅ **Constructor Patterns**: Pattern matching with constant constructors
+- ✅ **Array Operations**: Array creation, indexing, and element assignment
+- ✅ **Tuple Operations**: Tuple creation, field access, and destructuring
 - ✅ **External Functions**: Integration with external function calls
+- ✅ **Embedded Functions**: Native function integration with custom implementations
 - ✅ **Type System**: Basic type checking and inference
 
 ## Contributing

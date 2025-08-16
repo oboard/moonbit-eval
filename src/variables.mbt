@@ -6,10 +6,10 @@
 
 ///| 优先查找不可变变量（性能优化），然后查找可变变量
 pub fn find_variable(
-  immutable_values : Array[Map[String, @syntax.Expr]],
-  mutable_values : Array[Map[String, @syntax.Expr]],
+  immutable_values : Array[Map[String, RuntimeValue]],
+  mutable_values : Array[Map[String, RuntimeValue]],
   name : String,
-) -> @syntax.Expr {
+) -> RuntimeValue {
   // 性能优化：优先查找不可变变量（可以缓存和共享）
   for value in immutable_values.rev() {
     match value.get(name) {
@@ -26,21 +26,15 @@ pub fn find_variable(
     }
   }
 
-  // 如果找不到变量，返回Unit表达式
-  @syntax.Expr::Unit(
-    loc={
-      start: { fname: "", lnum: 10, bol: 0, cnum: 0 },
-      end: { fname: "", lnum: 10, bol: 0, cnum: 0 },
-    },
-    faked=true,
-  )
+  // 如果找不到变量，返回Unit值
+  RuntimeValue::Unit
 }
 
 ///| 设置不可变变量
 pub fn ClosureInterpreter::set_immutable_variable(
   self : ClosureInterpreter,
   name : String,
-  value : @syntax.Expr,
+  value : RuntimeValue,
 ) -> Unit {
   self.immutable_values[self.immutable_values.length() - 1].set(name, value)
 }
@@ -49,7 +43,7 @@ pub fn ClosureInterpreter::set_immutable_variable(
 pub fn ClosureInterpreter::set_mutable_variable(
   self : ClosureInterpreter,
   name : String,
-  value : @syntax.Expr,
+  value : RuntimeValue,
 ) -> Unit {
   self.mutable_values[self.mutable_values.length() - 1].set(name, value)
 }
@@ -58,9 +52,9 @@ pub fn ClosureInterpreter::set_mutable_variable(
 
 ///| 在可变变量数组中查找并更新指定变量
 pub fn update_mutable_variable(
-  mutable_values : Array[Map[String, @syntax.Expr]],
+  mutable_values : Array[Map[String, RuntimeValue]],
   name : String,
-  new_value : @syntax.Expr,
+  new_value : RuntimeValue,
 ) -> Bool {
   // 只在可变变量数组中查找和更新（性能优化）
   for i = mutable_values.length() - 1; i >= 0; i = i - 1 {

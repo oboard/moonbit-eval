@@ -205,6 +205,7 @@ pub fn expr_to_string(expr : @syntax.Expr) -> String {
       }
       "[" + joined + "]"
     }
+    // Ident表达式应该在求值时被解析，不应该出现在最终结果中
     _ => ""
   }
 }

@@ -1,4 +1,4 @@
-///|
+///| 支持引用系统的解释器
 struct ClosureInterpreter {
   extern_fns : Map[String, (@list.List[@syntax.Expr]) -> @syntax.Expr]
   // embedded函数存储 - 全局函数
@@ -10,9 +10,11 @@ struct ClosureInterpreter {
   ]
   // 函数别名存储 - 存储函数名到其实际实现的映射
   fn_aliases : Map[String, String]
-  // 性能优化：区分可变和不可变变量
-  immutable_values : Array[Map[String, @syntax.Expr]]
-  mutable_values : Array[Map[String, @syntax.Expr]]
+  // 性能优化：区分可变和不可变变量 - 现在存储RuntimeValue而非@syntax.Expr
+  immutable_values : Array[Map[String, RuntimeValue]]
+  mutable_values : Array[Map[String, RuntimeValue]]
+  // 运行时存储 - 管理可变对象的引用
+  runtime_store : RuntimeStore
   // 用户定义的函数
   user_functions : Array[Map[String, @syntax.Func]]
   // 类型定义
@@ -30,6 +32,7 @@ pub fn ClosureInterpreter::new() -> ClosureInterpreter {
     fn_aliases: Map::new(),
     immutable_values: [{}],
     mutable_values: [{}],
+    runtime_store: RuntimeStore::new(),
     user_functions: [{}],
     type_definitions: Map::new(),
     struct_methods: Map::new(),
@@ -78,17 +81,81 @@ fn ClosureInterpreter::current_user_function_scope(
 ///| 获取当前不可变变量作用域
 fn ClosureInterpreter::current_immutable_scope(
   self : ClosureInterpreter,
-) -> Map[String, @syntax.Expr] {
+) -> Map[String, RuntimeValue] {
   // immutable_values 数组永远非空（初始化为 [{}]），直接访问最后一个元素
   self.immutable_values[self.immutable_values.length() - 1]
 }
 
-///|
+///| 查找变量并返回其显示值（用于输出）
 fn ClosureInterpreter::find(
   self : ClosureInterpreter,
   name : String,
 ) -> @syntax.Expr {
-  find_variable(self.immutable_values, self.mutable_values, name)
+  let runtime_value = find_variable(
+    self.immutable_values,
+    self.mutable_values,
+    name,
+  )
+
+  // 调试：查看变量的实际值
+  match runtime_value {
+    RuntimeValue::RecordRef(id) => {
+      println(
+        "Found RecordRef with id: " +
+        id.0.to_string() +
+        " for variable: " +
+        name,
+      )
+      match self.runtime_store.get_record(id) {
+        Some(_) => println("Record exists in store")
+        None => println("ERROR: Record not found in store!")
+      }
+    }
+    _ => println("Variable " + name + " is not a RecordRef")
+  }
+
+  // 对于显示目的，返回实际内容而不是引用表达式
+  runtime_value.to_expr_with_store(self.runtime_store)
+}
+
+///| 查找变量并返回其引用值（用于赋值）
+fn ClosureInterpreter::find_reference(
+  self : ClosureInterpreter,
+  name : String,
+) -> @syntax.Expr {
+  let runtime_value = find_variable(
+    self.immutable_values,
+    self.mutable_values,
+    name,
+  )
+
+  // 调试：查看变量的实际值
+  match runtime_value {
+    RuntimeValue::RecordRef(id) =>
+      println(
+        "find_reference: Found RecordRef with id: " +
+        id.0.to_string() +
+        " for variable: " +
+        name,
+      )
+    _ => println("find_reference: Variable " + name + " is not a RecordRef")
+  }
+
+  // 对于引用传递，返回引用表达式
+  let result = runtime_value.to_reference_expr(self.runtime_store)
+
+  // 调试：查看返回的表达式
+  match result {
+    @syntax.Expr::Unit(loc={ start: { fname, .. }, .. }, faked~) =>
+      println(
+        "find_reference: Returning Unit with fname=" +
+        fname +
+        ", faked=" +
+        faked.to_string(),
+      )
+    _ => println("find_reference: Returning non-Unit expression")
+  }
+  result
 }
 
 ///|
@@ -108,7 +175,8 @@ fn ClosureInterpreter::top_visit(
     TopLetDef(binder~, expr~, ..) => {
       let name = binder.name
       let evaluated_expr = self.visit(expr)
-      self.set_immutable_variable(name, evaluated_expr)
+      let runtime_value = RuntimeValue::from_expr(evaluated_expr)
+      self.set_immutable_variable(name, runtime_value)
     }
     TopTypeDef(def) =>
       match def {
@@ -174,7 +242,7 @@ fn ClosureInterpreter::visit(
   let unit = () => @syntax.Expr::Unit(loc~, faked=true)
   match node {
     // 处理常量
-    Constant(c~, ..) => Constant(c~, loc~)
+    Constant(c~, ..) => @syntax.Expr::Constant(c~, loc~)
 
     // 处理中缀表达式（如 1+1）
     Infix(op~, lhs~, rhs~, ..) =>
@@ -182,8 +250,8 @@ fn ClosureInterpreter::visit(
       match op.name {
         Ident(name~) =>
           match (self.visit(lhs), self.visit(rhs)) {
-            (Constant(c=l, ..), Constant(c=r, ..)) =>
-              Constant(c=constant_infix(name, l, r), loc~)
+            (@syntax.Expr::Constant(c=l, ..), @syntax.Expr::Constant(c=r, ..)) =>
+              @syntax.Expr::Constant(c=constant_infix(name, l, r), loc~)
             _ => unit()
           }
         _ => unit()
@@ -194,42 +262,44 @@ fn ClosureInterpreter::visit(
         Ident(name~) =>
           match (name, self.visit(expr)) {
             // Handle logical not operator
-            ("!", Constant(c=Bool(value), ..)) => Constant(c=Bool(!value), loc~)
+            ("!", @syntax.Expr::Constant(c=@syntax.Constant::Bool(value), ..)) =>
+              @syntax.Expr::Constant(c=@syntax.Constant::Bool(!value), loc~)
             // Handle numeric negation
-            ("-", Constant(c=constant, ..)) =>
-              match constant {
-                Int(value) =>
-                  Constant(
-                    c=Int(
-                      (-(@strconv.parse_int(value) catch { _ => 0 })).to_string(),
-                    ),
-                    loc~,
-                  )
-                Double(value) =>
-                  Constant(
-                    c=Double(
-                      (-(@strconv.parse_double(value) catch { _ => 0.0 })).to_string(),
-                    ),
-                    loc~,
-                  )
-                _ => unit()
-              }
+            ("-", @syntax.Expr::Constant(c=@syntax.Constant::Int(value), ..)) => {
+              let negated = (-(@strconv.parse_int(value) catch { _ => 0 })).to_string()
+              @syntax.Expr::Constant(c=@syntax.Constant::Int(negated), loc~)
+            }
+            ("-", @syntax.Expr::Constant(c=@syntax.Constant::Double(value), ..)) => {
+              let negated = (-(@strconv.parse_double(value) catch { _ => 0.0 })).to_string()
+              @syntax.Expr::Constant(c=@syntax.Constant::Double(negated), loc~)
+            }
             _ => unit()
           }
         _ => unit()
       }
 
     // 处理不可变变量（性能优化：存储到专门的不可变变量数组）
-    Let(pattern~, expr~, ..) => {
-      let evaluated_expr = self.visit(expr)
+    Let(pattern~, expr~, body~, ..) => {
+      // 对于引用传递，我们需要特殊处理Ident表达式
+      let evaluated_expr = match expr {
+        @syntax.Expr::Ident(
+          id={ name: @syntax.LongIdent::Ident(name~), .. },
+          ..
+        ) =>
+          // 直接获取变量引用，用于引用传递
+          self.find_reference(name)
+        _ => self.visit(expr)
+      }
       // 使用模式匹配来绑定变量（不创建新作用域）
       ignore(self.pattern_matches(evaluated_expr, pattern))
-      unit()
+      // 处理body并返回其结果
+      self.visit(body)
     }
     // 处理可变变量声明（存储到专门的可变变量数组）
     LetMut(binder={ name, .. }, expr~, ..) => {
       let evaluated_expr = self.visit(expr)
-      self.set_mutable_variable(name, evaluated_expr)
+      let runtime_value = RuntimeValue::from_expr(evaluated_expr)
+      self.set_mutable_variable(name, runtime_value)
       unit()
     }
     // 处理函数定义
@@ -268,13 +338,17 @@ fn ClosureInterpreter::visit(
               // 普通赋值操作
               self.visit(expr)
           }
-          update_mutable_variable(self.mutable_values, name, new_value)
+          update_mutable_variable(
+            self.mutable_values,
+            name,
+            RuntimeValue::from_expr(new_value),
+          )
           |> ignore
           unit()
         }
         _ => unit()
       }
-    // Handle variable identifiers
+    // Handle variable identifiers - 简化的变量访问
     Ident(id={ name, .. }, ..) =>
       match name {
         @syntax.LongIdent::Ident(name~) => self.find(name)
@@ -332,7 +406,10 @@ fn ClosureInterpreter::visit(
         match binder_init {
           (binder, init_expr) => {
             let init_value = self.visit(init_expr)
-            self.set_mutable_variable(binder.name, init_value)
+            self.set_mutable_variable(
+              binder.name,
+              RuntimeValue::from_expr(init_value),
+            )
           }
         }
       }
@@ -368,7 +445,7 @@ fn ClosureInterpreter::visit(
               update_mutable_variable(
                 self.mutable_values,
                 binder.name,
-                new_value,
+                RuntimeValue::from_expr(new_value),
               )
               |> ignore
             }
@@ -398,19 +475,55 @@ fn ClosureInterpreter::visit(
       self.visit(last_expr)
     }
 
-    // Handle record creation
+    // Handle record creation - 使用RuntimeValue引用系统
     Record(type_name~, fields~, trailing~, ..) => {
-      let inferred_type_name = match type_name {
-        Some(tn) => Some(tn)
-        None => None
+      // 先求值所有字段
+      let evaluated_fields = Map::new()
+      for field in fields {
+        let field_value = self.visit(field.expr)
+        let runtime_value = RuntimeValue::from_expr(field_value)
+        evaluated_fields.set(field.label.name, runtime_value)
       }
-      Record(type_name=inferred_type_name, fields~, trailing~, loc~)
+
+      // 在RuntimeStore中分配记录
+      let ref_id = self.runtime_store.alloc_record(evaluated_fields)
+      let record_ref = RuntimeValue::RecordRef(ref_id)
+
+      // 调试：验证记录是否正确存储
+      match self.runtime_store.get_record(ref_id) {
+        Some(_) =>
+          println("Record stored successfully with id: " + ref_id.0.to_string())
+        None => println("ERROR: Record not found after allocation!")
+      }
+
+      // 返回记录引用表达式（用于变量绑定）
+      record_ref.to_reference_expr(self.runtime_store)
     }
 
-    // Handle field access
+    // Handle field access - 支持引用记录
     Field(record~, accessor~, ..) => {
       let evaluated_record = self.visit(record)
       match (evaluated_record, accessor) {
+        // 处理引用记录的字段访问
+        (
+          @syntax.Expr::Unit(
+            loc={ start: { fname: "record", lnum, .. }, .. },
+            faked=false
+          ),
+          @syntax.Accessor::Label(label),
+        ) => {
+          let ref_id = RefId(lnum)
+          match self.runtime_store.get_record(ref_id) {
+            Some(record) =>
+              match record.get(label.name) {
+                Some(field_value) =>
+                  field_value.to_expr_with_store(self.runtime_store)
+                None => unit()
+              }
+            None => unit()
+          }
+        }
+        // 处理普通记录的字段访问
         (Record(fields~, ..), @syntax.Accessor::Label(label)) => {
           // 在记录的字段中查找匹配的标签
           for field in fields {
@@ -502,11 +615,14 @@ fn ClosureInterpreter::visit(
                         update_mutable_variable(
                           self.mutable_values,
                           name,
-                          new_array,
+                          RuntimeValue::from_expr(new_array),
                         ),
                       ) {
                       // 如果在可变变量中没找到，尝试更新不可变变量
-                      self.set_immutable_variable(name, new_array)
+                      self.set_immutable_variable(
+                        name,
+                        RuntimeValue::from_expr(new_array),
+                      )
                     }
                     unit()
                   } else {
@@ -534,90 +650,144 @@ fn ClosureInterpreter::visit(
     //   Record(type_name~, fields=evaluated_fields, trailing~, loc~)
     // }
 
-    // Handle record field mutation (record.field = value)
+    // Handle record field mutation (record.field = value) - 支持引用记录
     Mutate(record~, accessor~, field~, augmented_by~, ..) =>
       // 对于记录字段修改，我们需要找到变量名并更新整个记录
       match record {
         Ident(id={ name, .. }, ..) =>
           match name {
             @syntax.LongIdent::Ident(name~) => {
-              // 获取当前记录值
-              let current_record = self.find(name)
-              let new_field_value = match augmented_by {
-                Some(op) => {
-                  // 增强赋值操作（如 +=, -=, *=, /= 等）
-                  let current_field_value = match (current_record, accessor) {
-                    (
-                      @syntax.Expr::Record(fields~, ..),
-                      @syntax.Accessor::Label(label),
-                    ) => {
-                      // 在记录的字段中查找当前值
-                      let mut current_value = unit()
-                      for field_def in fields {
-                        if field_def.label.name == label.name {
-                          current_value = field_def.expr
-                          break
+              // 获取当前记录的引用表达式
+              let current_record = self.find_reference(name)
+
+              // 检查是否为引用记录
+              match current_record {
+                @syntax.Expr::Unit(
+                  loc={ start: { fname: "record", lnum, .. }, .. },
+                  faked=false
+                ) => {
+                  // 处理引用记录的字段修改
+                  let ref_id = RefId(lnum)
+                  let record_value = RuntimeValue::RecordRef(ref_id)
+
+                  // 计算新字段值
+                  let new_field_value = match augmented_by {
+                    Some(op) =>
+                      // 增强赋值操作（如 +=, -=, *=, /= 等）
+                      match accessor {
+                        @syntax.Accessor::Label(label) => {
+                          // TODO: 需要实现RuntimeValue的字段访问
+                          let current_field_value = RuntimeValue::Unit
+                          match op.name {
+                            Ident(name~) => {
+                              let rhs_value = self.visit(field)
+                              let rhs_val = RuntimeValue::from_expr(rhs_value)
+                              // 这里需要实现RuntimeValue级别的运算，暂时简化处理
+                              rhs_val
+                            }
+                            _ => {
+                              let rhs_value = self.visit(field)
+                              RuntimeValue::from_expr(rhs_value)
+                            }
+                          }
+                        }
+                        _ => {
+                          let rhs_value = self.visit(field)
+                          RuntimeValue::from_expr(rhs_value)
                         }
                       }
-                      current_value
+                    None => {
+                      let rhs_value = self.visit(field)
+                      RuntimeValue::from_expr(rhs_value)
+                    }
+                  }
+
+                  // 更新RuntimeStore中的记录字段
+                  match accessor {
+                    @syntax.Accessor::Label(label) => {
+                      // 将新字段值转换为RuntimeValue
+                      let runtime_value = RuntimeValue::from_expr(
+                        self.visit(field),
+                      )
+                      // 更新记录字段
+                      self.runtime_store.update_record_field(
+                        ref_id,
+                        label.name,
+                        runtime_value,
+                      )
+                      |> ignore
+                      current_record // 返回原引用
                     }
                     _ => unit()
                   }
-                  match op.name {
-                    Ident(name~) => {
-                      let rhs_value = self.visit(field)
-                      match (current_field_value, rhs_value) {
-                        (Constant(c=l, ..), Constant(c=r, ..)) =>
-                          @syntax.Expr::Constant(
-                            c=constant_infix(name, l, r),
-                            loc~,
-                          )
+                }
+                // 处理普通记录的字段修改（保持原有逻辑）
+                @syntax.Expr::Record(type_name~, fields~, trailing~, ..) => {
+                  let new_field_value = match augmented_by {
+                    Some(op) => {
+                      // 增强赋值操作（如 +=, -=, *=, /= 等）
+                      let current_field_value = match accessor {
+                        @syntax.Accessor::Label(label) => {
+                          // 在记录的字段中查找当前值
+                          let mut current_value = unit()
+                          for field_def in fields {
+                            if field_def.label.name == label.name {
+                              current_value = field_def.expr
+                              break
+                            }
+                          }
+                          current_value
+                        }
+                        _ => unit()
+                      }
+                      match op.name {
+                        Ident(name~) => {
+                          let rhs_value = self.visit(field)
+                          match (current_field_value, rhs_value) {
+                            (Constant(c=l, ..), Constant(c=r, ..)) =>
+                              @syntax.Expr::Constant(
+                                c=constant_infix(name, l, r),
+                                loc~,
+                              )
+                            _ => rhs_value
+                          }
+                        }
                         _ => self.visit(field)
                       }
                     }
-                    _ => self.visit(field)
+                    None => self.visit(field)
                   }
-                }
-                None => self.visit(field)
-              }
 
-              // 更新记录中的字段值
-              match (current_record, accessor) {
-                (
-                  @syntax.Expr::Record(type_name~, fields~, trailing~, ..),
-                  @syntax.Accessor::Label(label),
-                ) => {
-                  let updated_fields = fields.map(fn(field_def) {
-                    if field_def.label.name == label.name {
-                      @syntax.FieldDef::{
-                        label: field_def.label,
-                        expr: new_field_value,
-                        is_pun: field_def.is_pun,
-                        loc: field_def.loc,
-                      }
-                    } else {
-                      field_def
+                  // 更新记录中的字段值
+                  match accessor {
+                    @syntax.Accessor::Label(label) => {
+                      let updated_fields = fields.map(fn(field_def) {
+                        if field_def.label.name == label.name {
+                          @syntax.FieldDef::{
+                            label: field_def.label,
+                            expr: new_field_value,
+                            is_pun: field_def.is_pun,
+                            loc: field_def.loc,
+                          }
+                        } else {
+                          field_def
+                        }
+                      })
+                      let updated_record = @syntax.Expr::Record(
+                        type_name~,
+                        fields=updated_fields,
+                        trailing~,
+                        loc~,
+                      )
+
+                      // 对于普通记录，我们不应该到达这里，因为所有记录都应该是引用记录
+                      // 这是一个设计错误的标志
+                      println(
+                        "WARNING: Mutating non-reference record, this should not happen!",
+                      )
+                      updated_record
                     }
-                  })
-                  let updated_record = @syntax.Expr::Record(
-                    type_name~,
-                    fields=updated_fields,
-                    trailing~,
-                    loc~,
-                  )
-
-                  // 更新变量存储的记录（可能在可变变量或不可变变量中）
-                  if update_mutable_variable(
-                      self.mutable_values,
-                      name,
-                      updated_record,
-                    ) {
-                    unit()
-                  } else {
-                    // 如果在可变变量中没找到，尝试更新不可变变量
-                    // 注意：这里我们允许修改不可变变量中的可变字段
-                    self.set_immutable_variable(name, updated_record)
-                    unit()
+                    _ => unit()
                   }
                 }
                 _ => unit()
