@@ -169,10 +169,11 @@ pub fn expr_to_string(expr : @syntax.Expr) -> String {
       }
       let mut joined = ""
       for i = 0; i < field_strs.length(); i = i + 1 {
-        if i > 0 {
-          joined = joined + ", "
+        if i == 0 {
+          joined = field_strs[i]
+        } else {
+          joined = joined + ",\n  " + field_strs[i]
         }
-        joined = joined + field_strs[i]
       }
       let type_prefix = match type_name {
         Some(name) =>
@@ -182,7 +183,11 @@ pub fn expr_to_string(expr : @syntax.Expr) -> String {
           }
         None => ""
       }
-      type_prefix + "{ " + joined + " }"
+      if joined == "" {
+        type_prefix + "{}"
+      } else {
+        type_prefix + "{\n  " + joined + "\n}"
+      }
     }
     _ => ""
   }

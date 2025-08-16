@@ -220,9 +220,10 @@ fn ClosureInterpreter::visit(
       }
 
     // 处理不可变变量（性能优化：存储到专门的不可变变量数组）
-    Let(pattern=@syntax.Pattern::Var({ name, .. }), expr~, ..) => {
+    Let(pattern~, expr~, ..) => {
       let evaluated_expr = self.visit(expr)
-      self.set_immutable_variable(name, evaluated_expr)
+      // 使用模式匹配来绑定变量（不创建新作用域）
+      ignore(self.pattern_matches(evaluated_expr, pattern))
       unit()
     }
     // 处理可变变量声明（存储到专门的可变变量数组）
@@ -419,6 +420,15 @@ fn ClosureInterpreter::visit(
             }
           }
           unit() // 如果没有找到字段，返回unit
+        }
+        (Tuple(exprs~, ..), @syntax.Accessor::Index(tuple_index~, ..)) => {
+          // 处理 tuple 的索引访问
+          let exprs_array = exprs.to_array()
+          if tuple_index >= 0 && tuple_index < exprs_array.length() {
+            self.visit(exprs_array[tuple_index])
+          } else {
+            unit() // 索引越界返回 unit
+          }
         }
         _ => unit() // 如果不是记录或访问器不匹配，返回unit
       }
