@@ -182,6 +182,24 @@ test "extern" {
 }
 
 ///|
+test "embedded_code" {
+  let vm = MoonBitVM::new()
+  // 注册 embedded_code
+  vm.interpreter.add_embedded_fn("%string_length", params => if params
+    is @list.More(Constant(c=String(s), loc~), ..) {
+    Constant(c=Int(s.length().to_string()), loc~)
+  } else {
+    unit()
+  })
+  inspect(
+    vm.eval("pub fn String::length(self : String) -> Int = \"%string_length\""),
+    content="()",
+  )
+  inspect(vm.eval("let s = \"hello\""), content="()")
+  inspect(vm.eval("s.length()"), content="5")
+}
+
+///|
 test "fib" {
   let vm = MoonBitVM::new()
   inspect(

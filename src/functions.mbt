@@ -85,25 +85,25 @@ pub fn ClosureInterpreter::execute_function_call(
 ///| 处理函数定义
 
 ///| 将函数存储到用户函数映射中
-pub fn define_function(
-  user_functions : Map[String, @syntax.Func],
+pub fn ClosureInterpreter::define_function(
+  self : ClosureInterpreter,
   name : String,
   func : @syntax.Func,
 ) -> Unit {
-  user_functions.set(name, func)
+  self.current_user_function_scope().set(name, func)
 }
 
 ///|
-pub fn define_struct_method(
-  struct_methods : Map[String, Map[String, @syntax.Func]],
+pub fn ClosureInterpreter::define_struct_method(
+  self : ClosureInterpreter,
   type_name : String,
   method_name : String,
   func : @syntax.Func,
 ) -> Unit {
-  if !struct_methods.contains(type_name) {
-    struct_methods.set(type_name, Map::new())
+  if !self.struct_methods.contains(type_name) {
+    self.struct_methods.set(type_name, Map::new())
   }
-  struct_methods.get(type_name).unwrap().set(method_name, func)
+  self.struct_methods.get(type_name).unwrap().set(method_name, func)
 }
 
 ///| 查找用户定义的函数
