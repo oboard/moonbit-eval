@@ -418,4 +418,9 @@ test "tuple" {
   inspect(vm.eval("a"), content="1")
   inspect(vm.eval("b"), content="2")
   inspect(vm.eval("c"), content="3")
+
+  inspect(vm.eval("let a = 1"), content="()")
+  inspect(vm.eval("let a = (a, a)"), content="()")
+  inspect(vm.eval("let a = (a, a)"), content="()")
+  inspect(vm.eval("a"), content="((1, 1), (1, 1))")
 }
