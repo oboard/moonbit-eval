@@ -1,22 +1,5 @@
 ///| 模式匹配模块 - 专门处理各种模式匹配逻辑
 
-///| 检查表达式是否为Ident类型
-fn is_ident_expr(expr : @syntax.Expr) -> Bool {
-  match expr {
-    @syntax.Expr::Ident(..) => true
-    _ => false
-  }
-}
-
-///| 从Ident表达式中提取变量名
-fn extract_ident_name(expr : @syntax.Expr) -> String {
-  match expr {
-    @syntax.Expr::Ident(id={ name: @syntax.LongIdent::Ident(name~), .. }, ..) =>
-      name
-    _ => ""
-  }
-}
-
 ///| 执行match表达式的模式匹配
 pub fn ClosureInterpreter::execute_match(
   self : ClosureInterpreter,
@@ -53,13 +36,7 @@ pub fn ClosureInterpreter::pattern_matches(
     (_, @syntax.Pattern::Var({ name, .. })) => {
       // 直接使用 from_expr 转换，它已经正确处理了记录引用
       let runtime_value = RuntimeValue::from_expr(value)
-      
-      // 调试：查看模式匹配的结果
-      match runtime_value {
-        RuntimeValue::RecordRef(id) => println("Pattern matching result for " + name + ": RecordRef(" + id.0.to_string() + ")")
-        _ => println("Pattern matching result for " + name + ": Not a RecordRef")
-      }
-      
+
       // 直接绑定RuntimeValue
       self.current_immutable_scope().set(name, runtime_value)
       true
@@ -152,10 +129,7 @@ pub fn ClosureInterpreter::pattern_matches(
       self.pattern_matches(value, pat1) || self.pattern_matches(value, pat2)
 
     // Record模式匹配
-    (
-      value,
-      @syntax.Pattern::Record(fields=pat_fields, ..),
-    ) => {
+    (value, @syntax.Pattern::Record(fields=pat_fields, ..)) => {
       // 处理引用记录和普通记录
       let record_fields = match value {
         // 处理引用记录
@@ -169,20 +143,27 @@ pub fn ClosureInterpreter::pattern_matches(
             Some(runtime_fields) => {
               // 将RuntimeValue字段转换为表达式字段
               let expr_fields = []
-              runtime_fields.iter().each(fn(entry) {
+              runtime_fields
+              .iter()
+              .each(fn(entry) {
                 let (field_name, field_value) = entry
-                let field_expr = field_value.to_expr_with_store(self.runtime_store)
+                let field_expr = field_value.to_expr_with_store(
+                  self.runtime_store,
+                )
                 expr_fields.push(@syntax.FieldDef::{
-                  label: @syntax.Label::{ name: field_name, loc: @basic.Location::{
-                    start: { fname: "", lnum: 0, bol: 0, cnum: 0 },
-                    end: { fname: "", lnum: 0, bol: 0, cnum: 0 },
-                  }},
+                  label: @syntax.Label::{
+                    name: field_name,
+                    loc: @basic.Location::{
+                      start: { fname: "", lnum: 0, bol: 0, cnum: 0 },
+                      end: { fname: "", lnum: 0, bol: 0, cnum: 0 },
+                    },
+                  },
                   expr: field_expr,
                   is_pun: false,
                   loc: @basic.Location::{
                     start: { fname: "", lnum: 0, bol: 0, cnum: 0 },
                     end: { fname: "", lnum: 0, bol: 0, cnum: 0 },
-                  }
+                  },
                 })
               })
               Some(expr_fields)
@@ -194,7 +175,6 @@ pub fn ClosureInterpreter::pattern_matches(
         @syntax.Expr::Record(fields~, ..) => Some(fields.to_array())
         _ => None
       }
-      
       match record_fields {
         Some(fields) => {
           // 检查所有模式字段是否都能在值中找到匹配

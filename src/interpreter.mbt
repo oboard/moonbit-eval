@@ -97,23 +97,6 @@ fn ClosureInterpreter::find(
     name,
   )
 
-  // 调试：查看变量的实际值
-  match runtime_value {
-    RuntimeValue::RecordRef(id) => {
-      println(
-        "Found RecordRef with id: " +
-        id.0.to_string() +
-        " for variable: " +
-        name,
-      )
-      match self.runtime_store.get_record(id) {
-        Some(_) => println("Record exists in store")
-        None => println("ERROR: Record not found in store!")
-      }
-    }
-    _ => println("Variable " + name + " is not a RecordRef")
-  }
-
   // 对于显示目的，返回实际内容而不是引用表达式
   runtime_value.to_expr_with_store(self.runtime_store)
 }
@@ -129,32 +112,8 @@ fn ClosureInterpreter::find_reference(
     name,
   )
 
-  // 调试：查看变量的实际值
-  match runtime_value {
-    RuntimeValue::RecordRef(id) =>
-      println(
-        "find_reference: Found RecordRef with id: " +
-        id.0.to_string() +
-        " for variable: " +
-        name,
-      )
-    _ => println("find_reference: Variable " + name + " is not a RecordRef")
-  }
-
   // 对于引用传递，返回引用表达式
   let result = runtime_value.to_reference_expr(self.runtime_store)
-
-  // 调试：查看返回的表达式
-  match result {
-    @syntax.Expr::Unit(loc={ start: { fname, .. }, .. }, faked~) =>
-      println(
-        "find_reference: Returning Unit with fname=" +
-        fname +
-        ", faked=" +
-        faked.to_string(),
-      )
-    _ => println("find_reference: Returning non-Unit expression")
-  }
   result
 }
 
@@ -476,7 +435,7 @@ fn ClosureInterpreter::visit(
     }
 
     // Handle record creation - 使用RuntimeValue引用系统
-    Record(type_name~, fields~, trailing~, ..) => {
+    Record(fields~, ..) => {
       // 先求值所有字段
       let evaluated_fields = Map::new()
       for field in fields {
@@ -488,13 +447,6 @@ fn ClosureInterpreter::visit(
       // 在RuntimeStore中分配记录
       let ref_id = self.runtime_store.alloc_record(evaluated_fields)
       let record_ref = RuntimeValue::RecordRef(ref_id)
-
-      // 调试：验证记录是否正确存储
-      match self.runtime_store.get_record(ref_id) {
-        Some(_) =>
-          println("Record stored successfully with id: " + ref_id.0.to_string())
-        None => println("ERROR: Record not found after allocation!")
-      }
 
       // 返回记录引用表达式（用于变量绑定）
       record_ref.to_reference_expr(self.runtime_store)
@@ -668,28 +620,15 @@ fn ClosureInterpreter::visit(
                 ) => {
                   // 处理引用记录的字段修改
                   let ref_id = RefId(lnum)
-                  let record_value = RuntimeValue::RecordRef(ref_id)
-
                   // 计算新字段值
-                  let new_field_value = match augmented_by {
-                    Some(op) =>
+                  let _new_field_value = match augmented_by {
+                    Some(_op) =>
                       // 增强赋值操作（如 +=, -=, *=, /= 等）
                       match accessor {
-                        @syntax.Accessor::Label(label) => {
+                        @syntax.Accessor::Label(_label) => {
                           // TODO: 需要实现RuntimeValue的字段访问
-                          let current_field_value = RuntimeValue::Unit
-                          match op.name {
-                            Ident(name~) => {
-                              let rhs_value = self.visit(field)
-                              let rhs_val = RuntimeValue::from_expr(rhs_value)
-                              // 这里需要实现RuntimeValue级别的运算，暂时简化处理
-                              rhs_val
-                            }
-                            _ => {
-                              let rhs_value = self.visit(field)
-                              RuntimeValue::from_expr(rhs_value)
-                            }
-                          }
+                          let rhs_value = self.visit(field)
+                          RuntimeValue::from_expr(rhs_value)
                         }
                         _ => {
                           let rhs_value = self.visit(field)
@@ -781,10 +720,6 @@ fn ClosureInterpreter::visit(
                       )
 
                       // 对于普通记录，我们不应该到达这里，因为所有记录都应该是引用记录
-                      // 这是一个设计错误的标志
-                      println(
-                        "WARNING: Mutating non-reference record, this should not happen!",
-                      )
                       updated_record
                     }
                     _ => unit()

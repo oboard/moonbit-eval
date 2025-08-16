@@ -21,11 +21,11 @@ pub enum RuntimeValue {
 
   // 引用类型（可变对象的引用）
   RecordRef(RefId)
-  ArrayRef(RefId)
+  // ArrayRef(RefId) // 暂未实现
 
   // 函数值
   Function(@syntax.Func)
-  Closure(@syntax.Func, Map[String, RuntimeValue])
+  // Closure(@syntax.Func, Map[String, RuntimeValue]) // 暂未实现
 }
 
 ///| 运行时存储 - 统一管理所有可变对象
@@ -126,7 +126,7 @@ pub fn RuntimeStore::update_array_element(
 ///| 检查值是否为引用类型
 pub fn RuntimeValue::is_reference(self : RuntimeValue) -> Bool {
   match self {
-    RecordRef(_) | ArrayRef(_) => true
+    RecordRef(_) => true
     _ => false
   }
 }
@@ -134,49 +134,48 @@ pub fn RuntimeValue::is_reference(self : RuntimeValue) -> Bool {
 ///| 检查值是否为可变类型
 pub fn RuntimeValue::is_mutable(self : RuntimeValue) -> Bool {
   match self {
-    RecordRef(_) | ArrayRef(_) => true
+    RecordRef(_) => true
     _ => false
   }
 }
 
 ///| 将RuntimeValue转换为表达式（用于输出）
 pub fn RuntimeValue::to_expr(self : RuntimeValue) -> @syntax.Expr {
-  let dummy_loc = @basic.Location::{
+  let _dummy_loc = @basic.Location::{
     start: { fname: "", lnum: 0, bol: 0, cnum: 0 },
     end: { fname: "", lnum: 0, bol: 0, cnum: 0 },
   }
   match self {
-    Unit => @syntax.Expr::Unit(loc=dummy_loc, faked=true)
+    Unit => @syntax.Expr::Unit(loc=_dummy_loc, faked=true)
     Bool(b) =>
-      @syntax.Expr::Constant(c=@syntax.Constant::Bool(b), loc=dummy_loc)
-    Int(i) => @syntax.Expr::Constant(c=@syntax.Constant::Int(i), loc=dummy_loc)
+      @syntax.Expr::Constant(c=@syntax.Constant::Bool(b), loc=_dummy_loc)
+    Int(i) => @syntax.Expr::Constant(c=@syntax.Constant::Int(i), loc=_dummy_loc)
     Double(d) =>
-      @syntax.Expr::Constant(c=@syntax.Constant::Double(d), loc=dummy_loc)
+      @syntax.Expr::Constant(c=@syntax.Constant::Double(d), loc=_dummy_loc)
     Char(c) =>
-      @syntax.Expr::Constant(c=@syntax.Constant::Char(c), loc=dummy_loc)
+      @syntax.Expr::Constant(c=@syntax.Constant::Char(c), loc=_dummy_loc)
     String(s) =>
-      @syntax.Expr::Constant(c=@syntax.Constant::String(s), loc=dummy_loc)
+      @syntax.Expr::Constant(c=@syntax.Constant::String(s), loc=_dummy_loc)
     Tuple(values) => {
       let exprs = values.map(fn(v) { v.to_expr() })
-      @syntax.Expr::Tuple(exprs~, loc=dummy_loc)
+      @syntax.Expr::Tuple(exprs~, loc=_dummy_loc)
     }
     Array(values) => {
       let exprs = values.map(fn(v) { v.to_expr() })
-      @syntax.Expr::Array(exprs~, loc=dummy_loc)
+      @syntax.Expr::Array(exprs~, loc=_dummy_loc)
     }
     // 引用类型需要通过store解析
-    RecordRef(_) | ArrayRef(_) => @syntax.Expr::Unit(loc=dummy_loc, faked=true)
-    Function(func) => @syntax.Expr::Function(func~, loc=dummy_loc)
-    Closure(_, _) => @syntax.Expr::Unit(loc=dummy_loc, faked=true)
+    RecordRef(_) => @syntax.Expr::Unit(loc=_dummy_loc, faked=true)
+    Function(func) => @syntax.Expr::Function(func~, loc=_dummy_loc)
   }
 }
 
 ///| 将RuntimeValue转换为引用表达式（保持引用语义）
 pub fn RuntimeValue::to_reference_expr(
   self : RuntimeValue,
-  store : RuntimeStore,
+  _store : RuntimeStore,
 ) -> @syntax.Expr {
-  let dummy_loc = @basic.Location::{
+  let _dummy_loc = @basic.Location::{
     start: { fname: "", lnum: 0, bol: 0, cnum: 0 },
     end: { fname: "", lnum: 0, bol: 0, cnum: 0 },
   }
@@ -184,10 +183,6 @@ pub fn RuntimeValue::to_reference_expr(
     RecordRef(id) => {
       // 返回特殊的Unit表达式来保持引用信息
       let RefId(ref_num) = id
-      println(
-        "to_reference_expr: Creating Unit with fname=record, lnum=" +
-        ref_num.to_string(),
-      )
       @syntax.Expr::Unit(
         loc=@basic.Location::{
           start: { fname: "record", lnum: ref_num, bol: 0, cnum: 0 },
@@ -205,7 +200,7 @@ pub fn RuntimeValue::to_expr_with_store(
   self : RuntimeValue,
   store : RuntimeStore,
 ) -> @syntax.Expr {
-  let dummy_loc = @basic.Location::{
+  let _dummy_loc = @basic.Location::{
     start: { fname: "", lnum: 0, bol: 0, cnum: 0 },
     end: { fname: "", lnum: 0, bol: 0, cnum: 0 },
   }
@@ -216,29 +211,22 @@ pub fn RuntimeValue::to_expr_with_store(
           let field_defs = []
           record.each(fn(field_name, field_value) {
             field_defs.push(@syntax.FieldDef::{
-              label: @syntax.Label::{ name: field_name, loc: dummy_loc },
+              label: @syntax.Label::{ name: field_name, loc: _dummy_loc },
               expr: field_value.to_expr_with_store(store),
               is_pun: false,
-              loc: dummy_loc,
+              loc: _dummy_loc,
             })
           })
           @syntax.Expr::Record(
             type_name=None,
             fields=@list.from_array(field_defs),
             trailing=None,
-            loc=dummy_loc,
+            loc=_dummy_loc,
           )
         }
-        None => @syntax.Expr::Unit(loc=dummy_loc, faked=true)
+        None => @syntax.Expr::Unit(loc=_dummy_loc, faked=true)
       }
-    ArrayRef(id) =>
-      match store.get_array(id) {
-        Some(array) => {
-          let exprs = array.map(fn(v) { v.to_expr_with_store(store) })
-          @syntax.Expr::Array(exprs~, loc=dummy_loc)
-        }
-        None => @syntax.Expr::Unit(loc=dummy_loc, faked=true)
-      }
+    // ArrayRef(id) => // 暂未实现
     _ => self.to_expr()
   }
 }
@@ -247,24 +235,19 @@ pub fn RuntimeValue::to_expr_with_store(
 pub fn RuntimeValue::from_expr(expr : @syntax.Expr) -> RuntimeValue {
   // 调试：查看所有Unit表达式的详细信息
   match expr {
-    @syntax.Expr::Unit(loc~, faked~) => {
-      println("from_expr: Unit with faked=" + faked.to_string())
+    @syntax.Expr::Unit(loc~, faked~) =>
       // 检查是否是记录引用Unit表达式
       if not(faked) {
         // 这是一个特殊的记录引用Unit表达式
         // 从loc中提取RefId
         if loc.start.fname == "record" {
-          println("from_expr: Found record reference Unit with id=" + loc.start.lnum.to_string())
           RecordRef(RefId(loc.start.lnum))
         } else {
-          println("from_expr: Found non-faked Unit but not record reference")
           Unit
         }
       } else {
-        println("from_expr: Found regular/faked Unit expression")
         Unit
       }
-    }
     @syntax.Expr::Constant(c~, ..) =>
       match c {
         @syntax.Constant::Bool(b) => Bool(b)
