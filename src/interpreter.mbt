@@ -455,6 +455,84 @@ fn ClosureInterpreter::visit(
     //   })
     //   Record(type_name~, fields=evaluated_fields, trailing~, loc~)
     // }
+
+    // Handle record field mutation (record.field = value)
+    Mutate(record~, accessor~, field~, augmented_by~, ..) => {
+      // 对于记录字段修改，我们需要找到变量名并更新整个记录
+      match record {
+        Ident(id={ name, .. }, ..) => {
+          match name {
+            @syntax.LongIdent::Ident(name~) => {
+              // 获取当前记录值
+              let current_record = self.find(name)
+              let new_field_value = match augmented_by {
+                Some(op) => {
+                  // 增强赋值操作（如 +=, -=, *=, /= 等）
+                  let current_field_value = match (current_record, accessor) {
+                    (@syntax.Expr::Record(fields~, ..), @syntax.Accessor::Label(label)) => {
+                      // 在记录的字段中查找当前值
+                      let mut current_value = unit()
+                      for field_def in fields {
+                        if field_def.label.name == label.name {
+                          current_value = field_def.expr
+                          break
+                        }
+                      }
+                      current_value
+                    }
+                    _ => unit()
+                  }
+                  match op.name {
+                    Ident(name~) => {
+                      let rhs_value = self.visit(field)
+                      match (current_field_value, rhs_value) {
+                        (Constant(c=l, ..), Constant(c=r, ..)) =>
+                          @syntax.Expr::Constant(c=constant_infix(name, l, r), loc~)
+                        _ => self.visit(field)
+                      }
+                    }
+                    _ => self.visit(field)
+                  }
+                }
+                None => self.visit(field)
+              }
+              
+              // 更新记录中的字段值
+              match (current_record, accessor) {
+                (@syntax.Expr::Record(type_name~, fields~, trailing~, ..), @syntax.Accessor::Label(label)) => {
+                  let updated_fields = fields.map(fn(field_def) {
+                    if field_def.label.name == label.name {
+                      @syntax.FieldDef::{
+                        label: field_def.label,
+                        expr: new_field_value,
+                        is_pun: field_def.is_pun,
+                        loc: field_def.loc,
+                      }
+                    } else {
+                      field_def
+                    }
+                  })
+                  let updated_record = @syntax.Expr::Record(type_name~, fields=updated_fields, trailing~, loc~)
+                  
+                  // 更新变量存储的记录（可能在可变变量或不可变变量中）
+                  if update_mutable_variable(self.mutable_values, name, updated_record) {
+                    unit()
+                  } else {
+                    // 如果在可变变量中没找到，尝试更新不可变变量
+                    // 注意：这里我们允许修改不可变变量中的可变字段
+                    self.set_immutable_variable(name, updated_record)
+                    unit()
+                  }
+                }
+                _ => unit()
+              }
+            }
+            _ => unit()
+          }
+        }
+        _ => unit()
+      }
+    }
     _ => unit()
   }
 }

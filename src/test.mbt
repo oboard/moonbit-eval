@@ -373,3 +373,28 @@ test "match constructor" {
   inspect(vm.eval("test_constr(2)"), content="two")
   inspect(vm.eval("test_constr(5)"), content="other")
 }
+
+///|
+test "mutate" {
+  let vm = MoonBitVM::new()
+  inspect(
+    vm.eval(
+      (
+        #|struct Point {
+        #|  mut x : Int
+        #|  mut y : Int
+        #|}
+      ),
+      top=true,
+    ),
+    content="()",
+  )
+  inspect(vm.eval("let p = { x: 1, y: 2 }"), content="()")
+  inspect(vm.eval("p.x"), content="1")
+  inspect(vm.eval("p.y"), content="2")
+  inspect(vm.eval("p.x = 3"), content="()")
+  inspect(vm.eval("p.y = 4"), content="()")
+  inspect(vm.eval("p.x"), content="3")
+  inspect(vm.eval("p.y"), content="4")
+  inspect(vm.eval("p"), content="{ x: 3, y: 4 }")
+}

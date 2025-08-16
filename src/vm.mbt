@@ -143,6 +143,47 @@ pub fn expr_to_string(expr : @syntax.Expr) -> String {
       }
       params_str + return_str
     }
+
+    // 处理 Tuple 表达式
+    Tuple(exprs~, ..) => {
+      let expr_strs = []
+      for expr in exprs {
+        expr_strs.push(expr_to_string(expr))
+      }
+      let mut joined = ""
+      for i = 0; i < expr_strs.length(); i = i + 1 {
+        if i > 0 {
+          joined = joined + ", "
+        }
+        joined = joined + expr_strs[i]
+      }
+      "(" + joined + ")"
+    }
+
+    // 处理 Record 表达式
+    Record(type_name~, fields~, ..) => {
+      let field_strs = []
+      for field in fields {
+        let field_str = field.label.name + ": " + expr_to_string(field.expr)
+        field_strs.push(field_str)
+      }
+      let mut joined = ""
+      for i = 0; i < field_strs.length(); i = i + 1 {
+        if i > 0 {
+          joined = joined + ", "
+        }
+        joined = joined + field_strs[i]
+      }
+      let type_prefix = match type_name {
+        Some(name) =>
+          match name.name {
+            @syntax.LongIdent::Ident(name~) => name + " "
+            _ => ""
+          }
+        None => ""
+      }
+      type_prefix + "{ " + joined + " }"
+    }
     _ => ""
   }
 }
