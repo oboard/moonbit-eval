@@ -396,12 +396,15 @@ test "mutate" {
   inspect(vm.eval("p.y = 4"), content="()")
   inspect(vm.eval("p.x"), content="3")
   inspect(vm.eval("p.y"), content="4")
-  inspect(vm.eval("p"), content=(
-    #|{
-    #|  x: 3,
-    #|  y: 4
-    #|}
-  ))
+  inspect(
+    vm.eval("p"),
+    content=(
+      #|{
+      #|  x: 3,
+      #|  y: 4
+      #|}
+    ),
+  )
 }
 
 ///|
@@ -418,9 +421,18 @@ test "tuple" {
   inspect(vm.eval("a"), content="1")
   inspect(vm.eval("b"), content="2")
   inspect(vm.eval("c"), content="3")
-
   inspect(vm.eval("let a = 1"), content="()")
   inspect(vm.eval("let a = (a, a)"), content="()")
   inspect(vm.eval("let a = (a, a)"), content="()")
   inspect(vm.eval("a"), content="((1, 1), (1, 1))")
+}
+
+///|
+test "array" {
+  let vm = MoonBitVM::new()
+  inspect(vm.eval("let a = [1, 2, 3]"), content="()")
+  inspect(vm.eval("a"), content="[1, 2, 3]")
+  inspect(vm.eval("a[0]"), content="1")
+  inspect(vm.eval("a[1] = 4"), content="()")
+  inspect(vm.eval("a"), content="[1, 4, 3]")
 }

@@ -430,6 +430,15 @@ fn ClosureInterpreter::visit(
             unit() // 索引越界返回 unit
           }
         }
+        (Array(exprs~, ..), @syntax.Accessor::Index(tuple_index~, ..)) => {
+          // 处理 array 的索引访问
+          let exprs_array = exprs.to_array()
+          if tuple_index >= 0 && tuple_index < exprs_array.length() {
+            self.visit(exprs_array[tuple_index])
+          } else {
+            unit() // 索引越界返回 unit
+          }
+        }
         _ => unit() // 如果不是记录或访问器不匹配，返回unit
       }
     }
@@ -453,6 +462,65 @@ fn ClosureInterpreter::visit(
       let evaluated_exprs = exprs.map(fn(expr) { self.visit(expr) })
       Array(exprs=evaluated_exprs, loc~)
     }
+
+    // Handle ArrayGet expressions (array[index])
+    ArrayGet(array~, index~, ..) => {
+      let evaluated_array = self.visit(array)
+      let evaluated_index = self.visit(index)
+      match (evaluated_array, evaluated_index) {
+        (Array(exprs~, ..), Constant(c=Int(index_str), ..)) => {
+          let index_val = @strconv.parse_int(index_str) catch { _ => 0 }
+          let exprs_array = exprs.to_array()
+          if index_val >= 0 && index_val < exprs_array.length() {
+            exprs_array[index_val]
+          } else {
+            unit() // 索引越界返回 unit
+          }
+        }
+        _ => unit() // 如果不是数组或索引不是整数，返回unit
+      }
+    }
+
+    // Handle ArraySet expressions (array[index] = value)
+    ArraySet(array~, index~, value~, ..) => {
+      let evaluated_value = self.visit(value)
+      match array {
+        Ident(id={ name, .. }, ..) =>
+          match name {
+            Ident(name~) => {
+              let current_array = self.find(name)
+              let evaluated_index = self.visit(index)
+              match (current_array, evaluated_index) {
+                (Array(exprs~, ..), Constant(c=Int(index_str), ..)) => {
+                  let index_val = @strconv.parse_int(index_str) catch { _ => 0 }
+                  let exprs_array = exprs.to_array()
+                  if index_val >= 0 && index_val < exprs_array.length() {
+                    exprs_array[index_val] = evaluated_value
+                    let new_exprs = @list.from_array(exprs_array)
+                    let new_array = @syntax.Expr::Array(exprs=new_exprs, loc~)
+                    if not(
+                        update_mutable_variable(
+                          self.mutable_values,
+                          name,
+                          new_array,
+                        ),
+                      ) {
+                      // 如果在可变变量中没找到，尝试更新不可变变量
+                      self.set_immutable_variable(name, new_array)
+                    }
+                    unit()
+                  } else {
+                    unit() // 索引越界
+                  }
+                }
+                _ => unit()
+              }
+            }
+            _ => unit()
+          }
+        _ => unit()
+      }
+    }
     // Handle Record expressions
     // Record(fields~, type_name~, trailing~, ..) => {
     //   let evaluated_fields = fields.map(fn(field) {
@@ -467,10 +535,10 @@ fn ClosureInterpreter::visit(
     // }
 
     // Handle record field mutation (record.field = value)
-    Mutate(record~, accessor~, field~, augmented_by~, ..) => {
+    Mutate(record~, accessor~, field~, augmented_by~, ..) =>
       // 对于记录字段修改，我们需要找到变量名并更新整个记录
       match record {
-        Ident(id={ name, .. }, ..) => {
+        Ident(id={ name, .. }, ..) =>
           match name {
             @syntax.LongIdent::Ident(name~) => {
               // 获取当前记录值
@@ -479,7 +547,10 @@ fn ClosureInterpreter::visit(
                 Some(op) => {
                   // 增强赋值操作（如 +=, -=, *=, /= 等）
                   let current_field_value = match (current_record, accessor) {
-                    (@syntax.Expr::Record(fields~, ..), @syntax.Accessor::Label(label)) => {
+                    (
+                      @syntax.Expr::Record(fields~, ..),
+                      @syntax.Accessor::Label(label),
+                    ) => {
                       // 在记录的字段中查找当前值
                       let mut current_value = unit()
                       for field_def in fields {
@@ -497,7 +568,10 @@ fn ClosureInterpreter::visit(
                       let rhs_value = self.visit(field)
                       match (current_field_value, rhs_value) {
                         (Constant(c=l, ..), Constant(c=r, ..)) =>
-                          @syntax.Expr::Constant(c=constant_infix(name, l, r), loc~)
+                          @syntax.Expr::Constant(
+                            c=constant_infix(name, l, r),
+                            loc~,
+                          )
                         _ => self.visit(field)
                       }
                     }
@@ -506,10 +580,13 @@ fn ClosureInterpreter::visit(
                 }
                 None => self.visit(field)
               }
-              
+
               // 更新记录中的字段值
               match (current_record, accessor) {
-                (@syntax.Expr::Record(type_name~, fields~, trailing~, ..), @syntax.Accessor::Label(label)) => {
+                (
+                  @syntax.Expr::Record(type_name~, fields~, trailing~, ..),
+                  @syntax.Accessor::Label(label),
+                ) => {
                   let updated_fields = fields.map(fn(field_def) {
                     if field_def.label.name == label.name {
                       @syntax.FieldDef::{
@@ -522,10 +599,19 @@ fn ClosureInterpreter::visit(
                       field_def
                     }
                   })
-                  let updated_record = @syntax.Expr::Record(type_name~, fields=updated_fields, trailing~, loc~)
-                  
+                  let updated_record = @syntax.Expr::Record(
+                    type_name~,
+                    fields=updated_fields,
+                    trailing~,
+                    loc~,
+                  )
+
                   // 更新变量存储的记录（可能在可变变量或不可变变量中）
-                  if update_mutable_variable(self.mutable_values, name, updated_record) {
+                  if update_mutable_variable(
+                      self.mutable_values,
+                      name,
+                      updated_record,
+                    ) {
                     unit()
                   } else {
                     // 如果在可变变量中没找到，尝试更新不可变变量
@@ -539,10 +625,8 @@ fn ClosureInterpreter::visit(
             }
             _ => unit()
           }
-        }
         _ => unit()
       }
-    }
     _ => unit()
   }
 }
@@ -716,8 +800,6 @@ fn ClosureInterpreter::find_type(
       }
     // 如果是Array表达式，返回Array类型
     Array(..) => "Array"
-    // 如果是Tuple表达式，返回Tuple类型
-    Tuple(..) => "Tuple"
     // 如果不是已知表达式类型，返回默认类型
     _ => "Unknown"
   }

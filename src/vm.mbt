@@ -189,6 +189,22 @@ pub fn expr_to_string(expr : @syntax.Expr) -> String {
         type_prefix + "{\n  " + joined + "\n}"
       }
     }
+
+    // 处理 Array 表达式
+    Array(exprs~, ..) => {
+      let expr_strs = []
+      for expr in exprs {
+        expr_strs.push(expr_to_string(expr))
+      }
+      let mut joined = ""
+      for i = 0; i < expr_strs.length(); i = i + 1 {
+        if i > 0 {
+          joined = joined + ", "
+        }
+        joined = joined + expr_strs[i]
+      }
+      "[" + joined + "]"
+    }
     _ => ""
   }
 }
