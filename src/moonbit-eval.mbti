@@ -12,10 +12,6 @@ fn[T : Compare] compare(T, T, String) -> @syntax.Constant
 
 fn constant_infix(String, @syntax.Constant, @syntax.Constant) -> @syntax.Constant
 
-fn define_function(Map[String, @syntax.Func], String, @syntax.Func) -> Unit
-
-fn define_struct_method(Map[String, Map[String, @syntax.Func]], String, String, @syntax.Func) -> Unit
-
 fn eval_double_op(Double, Double, String) -> @syntax.Constant
 
 fn eval_float_op(Double, Double, String) -> @syntax.Constant
@@ -42,10 +38,14 @@ fn update_mutable_variable(Array[Map[String, @syntax.Expr]], String, @syntax.Exp
 
 // Types and methods
 type ClosureInterpreter
+fn ClosureInterpreter::add_embedded_fn(Self, String, (@list.List[@syntax.Expr]) -> @syntax.Expr) -> Unit
+fn ClosureInterpreter::add_embedded_method(Self, String, String, (@list.List[@syntax.Expr]) -> @syntax.Expr) -> Unit
 fn ClosureInterpreter::add_extern_fn(Self, String, (@list.List[@syntax.Expr]) -> @syntax.Expr) -> Unit
 fn ClosureInterpreter::bind_function_parameters(Self, @list.List[@syntax.Parameter], @list.List[@syntax.Argument]) -> Unit
 fn ClosureInterpreter::constants_equal(Self, @syntax.Constant, @syntax.Constant) -> Bool
 fn ClosureInterpreter::constants_equal_expr(Self, @syntax.Expr, @syntax.Expr) -> Bool
+fn ClosureInterpreter::define_function(Self, String, @syntax.Func) -> Unit
+fn ClosureInterpreter::define_struct_method(Self, String, String, @syntax.Func) -> Unit
 fn ClosureInterpreter::execute_function_call(Self, @syntax.Func, @list.List[@syntax.Argument]) -> @syntax.Expr
 fn ClosureInterpreter::execute_match(Self, @syntax.Expr, @list.List[@syntax.Case]) -> @syntax.Expr
 fn ClosureInterpreter::find_user_function(Self, String) -> @syntax.Func?
