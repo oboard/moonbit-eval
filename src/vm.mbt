@@ -233,14 +233,8 @@ pub fn MoonBitVM::eval(
           if log.unwrap_or(self.log) {
             println(expr.to_json().stringify())
           }
-          let result_expr = self.interpreter.visit(expr)
-          return {
-            value: RuntimeValue::from_expr_with_store(
-              result_expr,
-              self.interpreter.runtime_store,
-            ),
-            store: self.interpreter.runtime_store,
-          }
+          let result_value = self.interpreter.visit_runtime(expr)
+          return { value: result_value, store: self.interpreter.runtime_store }
         }
         _ => ()
       }

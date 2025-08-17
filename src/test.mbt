@@ -282,11 +282,31 @@ test "match" {
   inspect(vm.eval("match (1, 2) { (a, b) => a + b }"), content="3")
 
   // Array模式匹配
+  // 调试：测试数组创建
+  let array_create_result = vm.eval("[1, 2, 3]")
+  println("Array create result: " + array_create_result.to_string())
+  // 调试：测试数组元素访问
+  let array_result = vm.eval("[1, 2, 3][0]", log=true)
+  println("Array access result: " + array_result.to_string())
+  println("Array access value: " + array_result.value.to_string())
+  println("Array access with store: " + array_result.value.to_string_with_store(array_result.store))
+  inspect(array_result, content="1")
+  // 调试：测试简单的常量匹配
+  inspect(vm.eval("match 1 { a => a }"), content="1")
+  // 调试：测试数组创建
+  inspect(vm.eval("[1, 2, 3]"), content="[1, 2, 3]")
+  // 调试：测试数组第一个元素
+  inspect(vm.eval("let arr = [1, 2, 3]; arr[0]"), content="1")
+  inspect(vm.eval("match [1, 2, 3] { [a, b, c] => a }"), content="1")
   inspect(vm.eval("match [1, 2, 3] { [a, b, c] => a + b + c }"), content="6")
   inspect(vm.eval("match [5, 10] { [x, y] => x * y }"), content="50")
 
   // Record模式匹配
-  inspect(vm.eval("match { x: 10, y: 20 } { { x, y } => x + y }"), content="30")
+  let match_result = vm.eval("match { x: 10, y: 20 } { { x, y } => x + y }")
+  println("Match result: " + match_result.to_string())
+  println("Match value: " + match_result.value.to_string())
+  println("Match with store: " + match_result.value.to_string_with_store(match_result.store))
+  inspect(match_result, content="30")
   inspect(
     vm.eval("match { name: \"Alice\", age: 25 } { { name, .. } => name }"),
     content="Alice",

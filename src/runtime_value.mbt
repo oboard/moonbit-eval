@@ -284,10 +284,10 @@ pub fn RuntimeValue::to_expr(self : RuntimeValue) -> @syntax.Expr {
       let exprs = values.map(fn(v) { v.to_expr() })
       @syntax.Expr::Tuple(exprs=@list.from_array(exprs), loc=_dummy_loc)
     }
-    Array(_) =>
-      // let exprs = values.map(fn(v) { v.to_expr() })
-      // @syntax.Expr::Array(exprs=@list.from_array(exprs), loc=_dummy_loc)
-      @syntax.Expr::Unit(loc=_dummy_loc, faked=true)
+    Array(values) => {
+      let exprs = values.map(fn(v) { v.to_expr() })
+      @syntax.Expr::Array(exprs=@list.from_array(exprs), loc=_dummy_loc)
+    }
     // 引用类型需要通过store解析
     StructRef(_) => @syntax.Expr::Unit(loc=_dummy_loc, faked=true)
     Function(func) => @syntax.Expr::Function(func~, loc=_dummy_loc)
@@ -418,5 +418,68 @@ pub fn RuntimeValue::from_expr_with_store(
       StructRef(ref_id)
     }
     _ => RuntimeValue::from_expr(expr)
+  }
+}
+
+///| RuntimeValue 之间的中缀运算 - 消除对 constant_infix 的依赖
+pub fn runtime_value_infix(
+  op : String,
+  lhs : RuntimeValue,
+  rhs : RuntimeValue,
+) -> RuntimeValue {
+  match (lhs, rhs) {
+    // Int 运算
+    (Int(left), Int(right)) => {
+      match op {
+        "+" => Int(left + right)
+        "-" => Int(left - right)
+        "*" => Int(left * right)
+        "/" => Int(left / right)
+        "%" => Int(left % right)
+        "==" => Bool(left == right)
+        "!=" => Bool(left != right)
+        "<" => Bool(left < right)
+        ">" => Bool(left > right)
+        "<=" => Bool(left <= right)
+        ">=" => Bool(left >= right)
+        _ => Unit
+      }
+    }
+    // Double 运算
+    (Double(left), Double(right)) => {
+      match op {
+        "+" => Double(left + right)
+        "-" => Double(left - right)
+        "*" => Double(left * right)
+        "/" => Double(left / right)
+        "==" => Bool(left == right)
+        "!=" => Bool(left != right)
+        "<" => Bool(left < right)
+        ">" => Bool(left > right)
+        "<=" => Bool(left <= right)
+        ">=" => Bool(left >= right)
+        _ => Unit
+      }
+    }
+    // Bool 运算
+    (Bool(left), Bool(right)) => {
+      match op {
+        "&&" => Bool(left && right)
+        "||" => Bool(left || right)
+        "==" => Bool(left == right)
+        "!=" => Bool(left != right)
+        _ => Unit
+      }
+    }
+    // String 运算
+    (String(left), String(right)) => {
+      match op {
+        "+" => String(left + right)
+        "==" => Bool(left == right)
+        "!=" => Bool(left != right)
+        _ => Unit
+      }
+    }
+    _ => Unit
   }
 }

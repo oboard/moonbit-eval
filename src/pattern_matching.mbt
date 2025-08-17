@@ -19,6 +19,25 @@ pub fn ClosureInterpreter::execute_match(
   unit() // 如果没有匹配的模式，返回unit
 }
 
+///| 执行match表达式的模式匹配（返回RuntimeValue）
+pub fn ClosureInterpreter::execute_match_runtime(
+  self : ClosureInterpreter,
+  value : RuntimeValue,
+  cases : @list.List[@syntax.Case],
+) -> RuntimeValue {
+  for case in cases {
+    // 为每个case创建新的作用域
+    self.push_scope()
+    if self.pattern_matches_runtime(value, case.pattern) {
+      let result = self.visit_runtime(case.body)
+      self.pop_scope()
+      return result
+    }
+    self.pop_scope()
+  }
+  RuntimeValue::Unit // 如果没有匹配的模式，返回unit
+}
+
 ///| 检查值是否匹配模式
 pub fn ClosureInterpreter::pattern_matches(
   self : ClosureInterpreter,
@@ -32,10 +51,24 @@ pub fn ClosureInterpreter::pattern_matches(
       @syntax.Pattern::Constant(c=pattern_const, ..),
     ) => self.constants_equal(value_const, pattern_const)
 
+    // 标识符与常量模式匹配
+    (
+      @syntax.Expr::Ident(id={ name: @syntax.LongIdent::Ident(name~), .. }, ..),
+      @syntax.Pattern::Constant(c=pattern_const, ..),
+    ) => {
+      let runtime_value = self.find_runtime(name)
+      let value_expr = runtime_value.to_expr_with_store(self.runtime_store)
+      match value_expr {
+        @syntax.Expr::Constant(c=value_const, ..) =>
+          self.constants_equal(value_const, pattern_const)
+        _ => false
+      }
+    }
+
     // 变量模式匹配（总是匹配，并绑定变量）
     (_, @syntax.Pattern::Var({ name, .. })) => {
-      // 直接使用 from_expr 转换，它已经正确处理了记录引用
-      let runtime_value = RuntimeValue::from_expr(value)
+      // 使用 visit_runtime 来正确计算表达式的值
+      let runtime_value = self.visit_runtime(value)
 
       // 直接绑定RuntimeValue
       self.current_immutable_scope().set(name, runtime_value)
@@ -55,7 +88,8 @@ pub fn ClosureInterpreter::pattern_matches(
       while true {
         match (expr_list, pat_list) {
           (@list.More(expr, tail=expr_tail), @list.More(pat, tail=pat_tail)) => {
-            if not(self.pattern_matches(expr, pat)) {
+            let expr_runtime = RuntimeValue::from_expr(expr)
+            if not(self.pattern_matches_runtime(expr_runtime, pat)) {
               return false
             }
             expr_list = expr_tail
@@ -84,10 +118,12 @@ pub fn ClosureInterpreter::pattern_matches(
                 @list.More(array_pat, tail=pat_tail),
               ) => {
                 match array_pat {
-                  @syntax.ArrayPattern::Pattern(pat) =>
-                    if not(self.pattern_matches(expr, pat)) {
+                  @syntax.ArrayPattern::Pattern(pat) => {
+                    let expr_runtime = RuntimeValue::from_expr(expr)
+                    if not(self.pattern_matches_runtime(expr_runtime, pat)) {
                       return false
                     }
+                  }
                   @syntax.ArrayPattern::StringSpread(string_literal) =>
                     match expr {
                       @syntax.Expr::Constant(
@@ -125,8 +161,10 @@ pub fn ClosureInterpreter::pattern_matches(
       }
 
     // Or模式匹配（任一模式匹配即可）
-    (_, @syntax.Pattern::Or(pat1~, pat2~, ..)) =>
-      self.pattern_matches(value, pat1) || self.pattern_matches(value, pat2)
+    (_, @syntax.Pattern::Or(pat1~, pat2~, ..)) => {
+      let value_runtime = RuntimeValue::from_expr(value)
+      self.pattern_matches_runtime(value_runtime, pat1) || self.pattern_matches_runtime(value_runtime, pat2)
+    }
 
     // Record模式匹配
     (value, @syntax.Pattern::Record(fields=pat_fields, ..)) => {
@@ -182,7 +220,8 @@ pub fn ClosureInterpreter::pattern_matches(
             let mut found = false
             for field in fields {
               if field.label.name == pat_field.label.name {
-                if not(self.pattern_matches(field.expr, pat_field.pattern)) {
+                let field_runtime = RuntimeValue::from_expr(field.expr)
+                if not(self.pattern_matches_runtime(field_runtime, pat_field.pattern)) {
                   return false
                 }
                 found = true
@@ -206,11 +245,15 @@ pub fn ClosureInterpreter::pattern_matches(
     // Constructor模式匹配
     (value, @syntax.Pattern::Constr(constr~, ..)) => {
       // 查找构造函数对应的值
-      let constr_value = self.find(constr.name.name)
-      match (value, constr_value) {
+      let constr_runtime_value = self.find_runtime(constr.name.name)
+      let value_runtime = RuntimeValue::from_expr(value)
+      match (value_runtime, constr_runtime_value) {
         // 如果构造函数是常量值，直接比较
-        (@syntax.Expr::Constant(..), @syntax.Expr::Constant(..)) =>
-          self.constants_equal_expr(value, constr_value)
+        (RuntimeValue::Int(v1), RuntimeValue::Int(v2)) => v1 == v2
+        (RuntimeValue::Bool(v1), RuntimeValue::Bool(v2)) => v1 == v2
+        (RuntimeValue::String(v1), RuntimeValue::String(v2)) => v1 == v2
+        (RuntimeValue::Double(v1), RuntimeValue::Double(v2)) => v1 == v2
+        (RuntimeValue::Char(v1), RuntimeValue::Char(v2)) => v1 == v2
         _ => false
       }
     }
@@ -336,8 +379,8 @@ pub fn ClosureInterpreter::pattern_to_value(
       )
     @syntax.Pattern::Constr(constr~, ..) => {
       // 查找构造函数的值
-      let value = self.find(constr.name.name)
-      Some(value)
+      let runtime_value = self.find_runtime(constr.name.name)
+      Some(runtime_value.to_expr_with_store(self.runtime_store))
     }
     @syntax.Pattern::Any(..) => None // 通配符表示开放边界
     _ => None
