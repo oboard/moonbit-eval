@@ -10,7 +10,7 @@ pub fn ClosureInterpreter::execute_match(
     // 为每个case创建新的作用域
     self.push_scope()
     if self.pattern_matches(value, case.pattern) {
-      let result = self.visit(case.body)
+      let result = self.visit_runtime(case.body).to_expr_with_store(self.runtime_store)
       self.pop_scope()
       return result
     }

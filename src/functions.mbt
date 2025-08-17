@@ -35,7 +35,7 @@ pub fn ClosureInterpreter::bind_function_parameters(
         // 丢弃位置参数：不绑定到任何变量，直接跳过
         @syntax.Parameter::DiscardPositional(..) =>
           // 丢弃参数不需要绑定，但仍需要求值以保持副作用
-          self.visit(arg.value) |> ignore
+          self.visit_runtime(arg.value) |> ignore
       }
       self.bind_function_parameters(rest_params, rest_args)
     }
@@ -126,7 +126,7 @@ pub fn ClosureInterpreter::execute_function_call(
       self.bind_function_parameters(parameters, args)
 
       // 执行函数体
-      let result = self.visit(body)
+      let result = self.visit_runtime(body).to_expr_with_store(self.runtime_store)
 
       // 恢复作用域
       self.pop_scope()

@@ -284,12 +284,10 @@ test "match" {
   // Array模式匹配
   // 调试：测试数组创建
   let array_create_result = vm.eval("[1, 2, 3]")
-  println("Array create result: " + array_create_result.to_string())
+  inspect(array_create_result.to_string(), content="[1, 2, 3]")
   // 调试：测试数组元素访问
-  let array_result = vm.eval("[1, 2, 3][0]", log=true)
-  println("Array access result: " + array_result.to_string())
-  println("Array access value: " + array_result.value.to_string())
-  println("Array access with store: " + array_result.value.to_string_with_store(array_result.store))
+  let array_result = vm.eval("[1, 2, 3][0]")
+  inspect(array_result.to_string(), content="1")
   inspect(array_result, content="1")
   // 调试：测试简单的常量匹配
   inspect(vm.eval("match 1 { a => a }"), content="1")
@@ -303,9 +301,6 @@ test "match" {
 
   // Record模式匹配
   let match_result = vm.eval("match { x: 10, y: 20 } { { x, y } => x + y }")
-  println("Match result: " + match_result.to_string())
-  println("Match value: " + match_result.value.to_string())
-  println("Match with store: " + match_result.value.to_string_with_store(match_result.store))
   inspect(match_result, content="30")
   inspect(
     vm.eval("match { name: \"Alice\", age: 25 } { { name, .. } => name }"),

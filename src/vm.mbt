@@ -59,7 +59,6 @@ pub fn expr_to_string(expr : @syntax.Expr) -> String {
         BigInt(str) => str
       }
     Unit(..) => "()"
-    // parameters":[{"type":"Parameter::Positional","binder":{"type":"Binder","name":"a","loc":{"file":"","start":{"line":2,"column":8},"end":{"line":2,"column":9}}},"ty":{"type":"Type::Name","constr_id":{"type":"ConstrId","id":{"type":"LongIdent::Ident","0":"Int"},"loc":{"file":"","start":{"line":2,"column":11},"end":{"line":2,"column":14}}},"tys":[],"loc":{"file":"","start":{"line":2,"column":11},"end":{"line":2,"column":10}}}},{"type":"Parameter::Positional","binder":{"type":"Binder","name":"b","loc":{"file":"","start":{"line":2,"column":16},"end":{"line":2,"column":17}}
     Function(func=Lambda(parameters~, return_type~, ..), ..) => {
       // 辅助函数：将Type转换为字符串
       fn type_to_string(ty : @syntax.Type) -> String {

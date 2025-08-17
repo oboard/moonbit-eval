@@ -1,7 +1,5 @@
 ///| 运行时值系统 - 彻底分离值和引用的概念
 
-///| 这是Linus式的"好品味"重构：消除所有特殊情况
-
 ///| 引用ID类型 - 用于标识可变对象
 pub struct RefId(Int) derive(Eq, Hash, Show)
 
@@ -81,19 +79,23 @@ pub fn RuntimeStore::update_struct_field(
   }
 }
 
+///| 从常量推导类型
+fn infer_type_from_constant(c : @syntax.Constant) -> String {
+  match c {
+    @syntax.Constant::Int(_) => "Int"
+    @syntax.Constant::Double(_) => "Double"
+    @syntax.Constant::String(_) => "String"
+    @syntax.Constant::Bool(_) => "Bool"
+    @syntax.Constant::Char(_) => "Char"
+    @syntax.Constant::Bytes(_) => "Bytes"
+    _ => "Unit"
+  }
+}
+
 ///| 从函数体推导返回类型
 fn infer_return_type_from_body(body : @syntax.Expr) -> String {
   match body {
-    @syntax.Expr::Constant(c~, ..) =>
-      match c {
-        @syntax.Constant::Int(_) => "Int"
-        @syntax.Constant::Double(_) => "Double"
-        @syntax.Constant::String(_) => "String"
-        @syntax.Constant::Bool(_) => "Bool"
-        @syntax.Constant::Char(_) => "Char"
-        @syntax.Constant::Bytes(_) => "Bytes"
-        _ => "Unit"
-      }
+    @syntax.Expr::Constant(c~, ..) => infer_type_from_constant(c)
     @syntax.Expr::Unit(..) => "Unit"
     @syntax.Expr::Array(..) => "Array"
     @syntax.Expr::Tuple(..) => "Tuple"
@@ -429,7 +431,7 @@ pub fn runtime_value_infix(
 ) -> RuntimeValue {
   match (lhs, rhs) {
     // Int 运算
-    (Int(left), Int(right)) => {
+    (Int(left), Int(right)) =>
       match op {
         "+" => Int(left + right)
         "-" => Int(left - right)
@@ -444,9 +446,8 @@ pub fn runtime_value_infix(
         ">=" => Bool(left >= right)
         _ => Unit
       }
-    }
     // Double 运算
-    (Double(left), Double(right)) => {
+    (Double(left), Double(right)) =>
       match op {
         "+" => Double(left + right)
         "-" => Double(left - right)
@@ -460,9 +461,8 @@ pub fn runtime_value_infix(
         ">=" => Bool(left >= right)
         _ => Unit
       }
-    }
     // Bool 运算
-    (Bool(left), Bool(right)) => {
+    (Bool(left), Bool(right)) =>
       match op {
         "&&" => Bool(left && right)
         "||" => Bool(left || right)
@@ -470,16 +470,14 @@ pub fn runtime_value_infix(
         "!=" => Bool(left != right)
         _ => Unit
       }
-    }
     // String 运算
-    (String(left), String(right)) => {
+    (String(left), String(right)) =>
       match op {
         "+" => String(left + right)
         "==" => Bool(left == right)
         "!=" => Bool(left != right)
         _ => Unit
       }
-    }
     _ => Unit
   }
 }
