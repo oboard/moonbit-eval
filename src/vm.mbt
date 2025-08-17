@@ -8,21 +8,32 @@ struct MoonBitVM {
 pub struct EvalResult {
   value : RuntimeValue
   store : RuntimeStore
+  interpreter : ClosureInterpreter
 }
 
 ///|
 pub impl Show for EvalResult with output(self : EvalResult, logger : &Logger) -> Unit {
-  logger.write_string(self.value.to_string_with_store(self.store))
+  match self.value {
+    RuntimeValue::Function(_) =>
+      logger.write_string(
+        self.value.to_string_with_interpreter(self.interpreter),
+      )
+    _ => logger.write_string(self.value.to_string_with_store(self.store))
+  }
 }
 
 ///|
 pub impl Show for EvalResult with to_string(self : EvalResult) -> String {
-  self.value.to_string_with_store(self.store)
+  match self.value {
+    RuntimeValue::Function(_) =>
+      self.value.to_string_with_interpreter(self.interpreter)
+    _ => self.value.to_string_with_store(self.store)
+  }
 }
 
 ///|
-pub fn MoonBitVM::new(log~ : Bool = false) -> MoonBitVM {
-  let interpreter = ClosureInterpreter::new()
+pub fn MoonBitVM::new(log~ : Bool = false, core~ : Bool = true) -> MoonBitVM {
+  let interpreter = ClosureInterpreter::new(core~)
   interpreter.add_extern_fn("println", fn(parameters) {
     match parameters {
       [{ value, .. }, ..] => {
@@ -36,8 +47,8 @@ pub fn MoonBitVM::new(log~ : Bool = false) -> MoonBitVM {
 }
 
 ///|
-pub fn MoonBitVM::create(log~ : Bool = false) -> MoonBitVM {
-  MoonBitVM::new(log~)
+pub fn MoonBitVM::create(log~ : Bool = false, core~ : Bool = true) -> MoonBitVM {
+  MoonBitVM::new(log~, core~)
 }
 
 ///|
@@ -220,7 +231,11 @@ pub fn MoonBitVM::eval(
       }
       self.interpreter.top_visit(node)
     })
-    return { value: RuntimeValue::Unit, store: self.interpreter.runtime_store }
+    return {
+      value: RuntimeValue::Unit,
+      store: self.interpreter.runtime_store,
+      interpreter: self.interpreter,
+    }
   }
   match impls {
     @list.List::More(
@@ -232,8 +247,12 @@ pub fn MoonBitVM::eval(
           if log.unwrap_or(self.log) {
             println(expr.to_json().stringify())
           }
-          let result_value = self.interpreter.visit_runtime(expr)
-          return { value: result_value, store: self.interpreter.runtime_store }
+          let result_value = self.interpreter.visit(expr)
+          return {
+            value: result_value,
+            store: self.interpreter.runtime_store,
+            interpreter: self.interpreter,
+          }
         }
         _ => ()
       }
@@ -245,5 +264,9 @@ pub fn MoonBitVM::eval(
       fail(diagnostics.fold(init="", (acc, cur) => "\{acc}\n\{cur}"))
     }
   }
-  { value: RuntimeValue::Unit, store: self.interpreter.runtime_store }
+  {
+    value: RuntimeValue::Unit,
+    store: self.interpreter.runtime_store,
+    interpreter: self.interpreter,
+  }
 }

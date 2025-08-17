@@ -9,8 +9,13 @@ pub enum RuntimeValue {
   Unit
   Bool(Bool)
   Int(Int)
+  UInt(UInt)
+  Int64(Int64)
+  UInt64(UInt64)
+  Float(Float)
   Double(Double)
   Char(Char)
+  Byte(Byte)
   String(String)
 
   // 复合值类型（不可变）
@@ -83,24 +88,52 @@ pub fn RuntimeStore::update_struct_field(
 fn infer_type_from_constant(c : @syntax.Constant) -> String {
   match c {
     @syntax.Constant::Int(_) => "Int"
+    @syntax.Constant::UInt(_) => "UInt"
+    @syntax.Constant::Int64(_) => "Int64"
+    @syntax.Constant::UInt64(_) => "UInt64"
+    @syntax.Constant::Float(_) => "Float"
     @syntax.Constant::Double(_) => "Double"
+    @syntax.Constant::Byte(_) => "Byte"
+    @syntax.Constant::Char(_) => "Char"
     @syntax.Constant::String(_) => "String"
     @syntax.Constant::Bool(_) => "Bool"
-    @syntax.Constant::Char(_) => "Char"
     @syntax.Constant::Bytes(_) => "Bytes"
     _ => "Unit"
   }
 }
 
 ///| 从函数体推导返回类型
-fn infer_return_type_from_body(body : @syntax.Expr) -> String {
+fn infer_return_type_from_body(
+  body : @syntax.Expr,
+  interpreter : ClosureInterpreter,
+) -> String {
   match body {
     @syntax.Expr::Constant(c~, ..) => infer_type_from_constant(c)
     @syntax.Expr::Unit(..) => "Unit"
     @syntax.Expr::Array(..) => "Array"
     @syntax.Expr::Tuple(..) => "Tuple"
     @syntax.Expr::Record(..) => "Record"
-    // 对于复杂表达式，默认返回Unit
+    // 处理函数调用表达式
+    @syntax.Expr::Apply(func~, ..) =>
+      match func {
+        @syntax.Expr::Ident(
+          id={ name: @syntax.LongIdent::Ident(name~), .. },
+          ..
+        ) =>
+          // 查找函数定义并获取其返回类型
+          match interpreter.find_user_function(name) {
+            Some(@syntax.Func::Lambda(return_type=Some(ret_type), ..)) =>
+              type_to_string(ret_type)
+            Some(@syntax.Func::Lambda(return_type=None, body~, ..)) =>
+              // 递归推导函数体的返回类型
+              infer_return_type_from_body(body, interpreter)
+            Some(@syntax.Func::Match(..)) => "Unit"
+            None => "Unit"
+          }
+        _ => "Unit"
+      }
+    // 处理 match 表达式
+    @syntax.Expr::Match(..) => "Unit"
     _ => "Unit"
   }
 }
@@ -132,8 +165,13 @@ pub impl Show for RuntimeValue with to_string(self) -> String {
     Unit => "()"
     Bool(b) => b.to_string()
     Int(i) => i.to_string()
+    UInt(u) => u.to_string()
+    Int64(i64) => i64.to_string()
+    UInt64(u64) => u64.to_string()
+    Float(f) => f.to_string()
     Double(d) => d.to_string()
     Char(c) => c.to_string()
+    Byte(b) => b.to_int().to_string()
     String(s) => s
     Tuple(values) => {
       let parts = values.map(fn(v) { v.to_string() })
@@ -147,7 +185,7 @@ pub impl Show for RuntimeValue with to_string(self) -> String {
     Function(func) =>
       // 从函数中提取参数和返回类型信息
       match func {
-        @syntax.Func::Lambda(parameters~, return_type~, ..) => {
+        @syntax.Func::Lambda(parameters~, return_type~, body~, ..) => {
           let param_strs = []
           for param in parameters {
             let param_str = match param {
@@ -185,10 +223,15 @@ pub impl Show for RuntimeValue with to_string(self) -> String {
           match return_type {
             Some(t) => "(" + param_strs.join(", ") + ") -> " + type_to_string(t)
             None => {
-              // 从函数体推导返回类型
-              let inferred_type = match func {
-                @syntax.Func::Lambda(body~, ..) =>
-                  infer_return_type_from_body(body)
+              // 对于没有显式返回类型的函数，无法在这里进行复杂的类型推导
+              // 因为这里没有解释器上下文，所以只能进行简单的推导
+              let inferred_type = match body {
+                @syntax.Expr::Constant(c~, ..) => infer_type_from_constant(c)
+                @syntax.Expr::Unit(..) => "Unit"
+                @syntax.Expr::Array(..) => "Array"
+                @syntax.Expr::Tuple(..) => "Tuple"
+                @syntax.Expr::Record(..) => "Record"
+                @syntax.Expr::Apply(..) => "Unknown" // 无法在没有解释器上下文的情况下推导
                 _ => "Unit"
               }
               "(" + param_strs.join(", ") + ") -> " + inferred_type
@@ -221,10 +264,15 @@ pub fn type_to_string(ty : @syntax.Type) -> String {
       }
     @syntax.Type::Name(constr_id={ id: Dot(pkg~, id~), .. }, tys~, ..) =>
       if tys.is_empty() {
-        pkg + "." + id
+        if pkg == "" {
+          id // 对于空包名，直接返回类型名
+        } else {
+          pkg + "." + id
+        }
       } else {
         let type_strs = tys.map(fn(t) { type_to_string(t) })
-        pkg + "." + id + "<" + type_strs.to_array().join(", ") + ">"
+        let prefix = if pkg == "" { id } else { pkg + "." + id }
+        prefix + "<" + type_strs.to_array().join(", ") + ">"
       }
     @syntax.Type::Option(ty~, ..) => type_to_string(ty) + "?"
     @syntax.Type::Object(_) => "Object"
@@ -255,6 +303,64 @@ pub fn RuntimeValue::to_string_with_store(
   }
 }
 
+///| 将RuntimeValue转换为字符串表示（带解释器支持，用于正确的类型推导）
+pub fn RuntimeValue::to_string_with_interpreter(
+  self : RuntimeValue,
+  interpreter : ClosureInterpreter,
+) -> String {
+  match self {
+    Function(func) =>
+      // 从函数中提取参数和返回类型信息
+      match func {
+        @syntax.Func::Lambda(parameters~, return_type~, body~, ..) => {
+          let param_strs = []
+          for param in parameters {
+            let param_str = match param {
+              @syntax.Parameter::Positional(binder~, ty~) =>
+                match ty {
+                  Some(t) => binder.name + ": " + type_to_string(t)
+                  None => binder.name
+                }
+              @syntax.Parameter::Labelled(binder~, ty~) =>
+                match ty {
+                  Some(t) => binder.name + "~: " + type_to_string(t)
+                  None => binder.name + "~"
+                }
+              @syntax.Parameter::Optional(binder~, ty~, default~) => {
+                let type_str = match ty {
+                  Some(t) => binder.name + "~: " + type_to_string(t)
+                  None => binder.name + "~"
+                }
+                match default {
+                  @syntax.Expr::Constant(c=@syntax.Constant::Int(val), ..) =>
+                    type_str + " = " + val
+                  _ => type_str
+                }
+              }
+              @syntax.Parameter::QuestionOptional(binder~, ty~) =>
+                match ty {
+                  Some(t) => binder.name + "?: " + type_to_string(t)
+                  None => binder.name + "?"
+                }
+              @syntax.Parameter::DiscardPositional(..) => "_"
+            }
+            param_strs.push(param_str)
+          }
+          match return_type {
+            Some(t) => "(" + param_strs.join(", ") + ") -> " + type_to_string(t)
+            None => {
+              // 使用解释器上下文进行正确的类型推导
+              let inferred_type = infer_return_type_from_body(body, interpreter)
+              "(" + param_strs.join(", ") + ") -> " + inferred_type
+            }
+          }
+        }
+        _ => "<function>"
+      }
+    _ => self.to_string()
+  }
+}
+
 ///| 将RuntimeValue转换为表达式（用于输出）
 pub fn RuntimeValue::to_expr(self : RuntimeValue) -> @syntax.Expr {
   let _dummy_loc = @basic.Location::{
@@ -270,6 +376,26 @@ pub fn RuntimeValue::to_expr(self : RuntimeValue) -> @syntax.Expr {
         c=@syntax.Constant::Int(i.to_string()),
         loc=_dummy_loc,
       )
+    UInt(u) =>
+      @syntax.Expr::Constant(
+        c=@syntax.Constant::Int(u.to_string()),
+        loc=_dummy_loc,
+      )
+    Int64(i64) =>
+      @syntax.Expr::Constant(
+        c=@syntax.Constant::Int64(i64.to_string()),
+        loc=_dummy_loc,
+      )
+    UInt64(u64) =>
+      @syntax.Expr::Constant(
+        c=@syntax.Constant::UInt64(u64.to_string()),
+        loc=_dummy_loc,
+      )
+    Float(f) =>
+      @syntax.Expr::Constant(
+        c=@syntax.Constant::Float(f.to_string()),
+        loc=_dummy_loc,
+      )
     Double(d) =>
       @syntax.Expr::Constant(
         c=@syntax.Constant::Double(d.to_string()),
@@ -278,6 +404,11 @@ pub fn RuntimeValue::to_expr(self : RuntimeValue) -> @syntax.Expr {
     Char(c) =>
       @syntax.Expr::Constant(
         c=@syntax.Constant::Char(c.to_string()),
+        loc=_dummy_loc,
+      )
+    Byte(b) =>
+      @syntax.Expr::Constant(
+        c=@syntax.Constant::Int(b.to_int().to_string()),
         loc=_dummy_loc,
       )
     String(s) =>

@@ -10,7 +10,7 @@ pub fn ClosureInterpreter::execute_match(
     // 为每个case创建新的作用域
     self.push_scope()
     if self.pattern_matches(value, case.pattern) {
-      let result = self.visit_runtime(case.body).to_expr_with_store(self.runtime_store)
+      let result = self.visit(case.body).to_expr_with_store(self.runtime_store)
       self.pop_scope()
       return result
     }
@@ -29,7 +29,7 @@ pub fn ClosureInterpreter::execute_match_runtime(
     // 为每个case创建新的作用域
     self.push_scope()
     if self.pattern_matches_runtime(value, case.pattern) {
-      let result = self.visit_runtime(case.body)
+      let result = self.visit(case.body)
       self.pop_scope()
       return result
     }
@@ -67,8 +67,8 @@ pub fn ClosureInterpreter::pattern_matches(
 
     // 变量模式匹配（总是匹配，并绑定变量）
     (_, @syntax.Pattern::Var({ name, .. })) => {
-      // 使用 visit_runtime 来正确计算表达式的值
-      let runtime_value = self.visit_runtime(value)
+      // 计算表达式的值
+      let runtime_value = self.visit(value)
 
       // 直接绑定RuntimeValue
       self.current_immutable_scope().set(name, runtime_value)
@@ -163,7 +163,8 @@ pub fn ClosureInterpreter::pattern_matches(
     // Or模式匹配（任一模式匹配即可）
     (_, @syntax.Pattern::Or(pat1~, pat2~, ..)) => {
       let value_runtime = RuntimeValue::from_expr(value)
-      self.pattern_matches_runtime(value_runtime, pat1) || self.pattern_matches_runtime(value_runtime, pat2)
+      self.pattern_matches_runtime(value_runtime, pat1) ||
+      self.pattern_matches_runtime(value_runtime, pat2)
     }
 
     // Record模式匹配
@@ -221,7 +222,12 @@ pub fn ClosureInterpreter::pattern_matches(
             for field in fields {
               if field.label.name == pat_field.label.name {
                 let field_runtime = RuntimeValue::from_expr(field.expr)
-                if not(self.pattern_matches_runtime(field_runtime, pat_field.pattern)) {
+                if not(
+                    self.pattern_matches_runtime(
+                      field_runtime,
+                      pat_field.pattern,
+                    ),
+                  ) {
                   return false
                 }
                 found = true

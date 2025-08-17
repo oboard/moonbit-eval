@@ -14,28 +14,24 @@ pub fn ClosureInterpreter::bind_function_parameters(
 ) -> Unit {
   match (params, args) {
     (@list.More(param, tail=rest_params), @list.More(arg, tail=rest_args)) => {
-      let runtime_value = self.visit_runtime(arg.value)
+      let runtime_value = self.visit(arg.value)
       match param {
         // 位置参数：直接绑定参数值
-        @syntax.Parameter::Positional(binder={ name, .. }, ..) => {
+        @syntax.Parameter::Positional(binder={ name, .. }, ..) =>
           self.current_immutable_scope().set(name, runtime_value)
-        }
         // 标签参数：绑定带标签的参数值
-        @syntax.Parameter::Labelled(binder={ name, .. }, ..) => {
+        @syntax.Parameter::Labelled(binder={ name, .. }, ..) =>
           self.current_immutable_scope().set(name, runtime_value)
-        }
         // 可选参数：当有参数提供时绑定参数值，否则使用默认值
-        @syntax.Parameter::Optional(binder={ name, .. }, ..) => {
+        @syntax.Parameter::Optional(binder={ name, .. }, ..) =>
           self.current_immutable_scope().set(name, runtime_value)
-        }
         // 问号可选参数：绑定参数值
-        @syntax.Parameter::QuestionOptional(binder={ name, .. }, ..) => {
+        @syntax.Parameter::QuestionOptional(binder={ name, .. }, ..) =>
           self.current_immutable_scope().set(name, runtime_value)
-        }
         // 丢弃位置参数：不绑定到任何变量，直接跳过
         @syntax.Parameter::DiscardPositional(..) =>
           // 丢弃参数不需要绑定，但仍需要求值以保持副作用
-          self.visit_runtime(arg.value) |> ignore
+          self.visit(arg.value) |> ignore
       }
       self.bind_function_parameters(rest_params, rest_args)
     }
@@ -44,7 +40,7 @@ pub fn ClosureInterpreter::bind_function_parameters(
       match param {
         // 可选参数没有对应实参时，使用默认值
         @syntax.Parameter::Optional(binder={ name, .. }, default~, ..) => {
-          let runtime_value = self.visit_runtime(default)
+          let runtime_value = self.visit(default)
           self.current_immutable_scope().set(name, runtime_value)
           self.bind_function_parameters(rest_params, @list.new())
         }
@@ -58,6 +54,7 @@ pub fn ClosureInterpreter::bind_function_parameters(
   }
 }
 
+///|
 pub fn ClosureInterpreter::bind_function_parameters_runtime(
   self : ClosureInterpreter,
   params : @list.List[@syntax.Parameter],
@@ -65,28 +62,24 @@ pub fn ClosureInterpreter::bind_function_parameters_runtime(
 ) -> Unit {
   match (params, args) {
     (@list.More(param, tail=rest_params), @list.More(arg, tail=rest_args)) => {
-      let arg_value = self.visit_runtime(arg.value)
+      let arg_value = self.visit(arg.value)
       match param {
         // 位置参数：直接绑定参数值
-        @syntax.Parameter::Positional(binder={ name, .. }, ..) => {
+        @syntax.Parameter::Positional(binder={ name, .. }, ..) =>
           self.current_immutable_scope().set(name, arg_value)
-        }
         // 标签参数：绑定带标签的参数值
-        @syntax.Parameter::Labelled(binder={ name, .. }, ..) => {
+        @syntax.Parameter::Labelled(binder={ name, .. }, ..) =>
           self.current_immutable_scope().set(name, arg_value)
-        }
         // 可选参数：当有参数提供时绑定参数值，否则使用默认值
-        @syntax.Parameter::Optional(binder={ name, .. }, ..) => {
+        @syntax.Parameter::Optional(binder={ name, .. }, ..) =>
           self.current_immutable_scope().set(name, arg_value)
-        }
         // 问号可选参数：绑定参数值
-        @syntax.Parameter::QuestionOptional(binder={ name, .. }, ..) => {
+        @syntax.Parameter::QuestionOptional(binder={ name, .. }, ..) =>
           self.current_immutable_scope().set(name, arg_value)
-        }
         // 丢弃位置参数：不绑定到任何变量，直接跳过
         @syntax.Parameter::DiscardPositional(..) =>
           // 丢弃参数不需要绑定，但仍需要求值以保持副作用
-          self.visit_runtime(arg.value) |> ignore
+          self.visit(arg.value) |> ignore
       }
       self.bind_function_parameters_runtime(rest_params, rest_args)
     }
@@ -95,7 +88,7 @@ pub fn ClosureInterpreter::bind_function_parameters_runtime(
       match param {
         // 可选参数没有对应实参时，使用默认值
         @syntax.Parameter::Optional(binder={ name, .. }, default~, ..) => {
-          let default_value = self.visit_runtime(default)
+          let default_value = self.visit(default)
           self.current_immutable_scope().set(name, default_value)
           self.bind_function_parameters_runtime(rest_params, @list.new())
         }
@@ -126,7 +119,7 @@ pub fn ClosureInterpreter::execute_function_call(
       self.bind_function_parameters(parameters, args)
 
       // 执行函数体
-      let result = self.visit_runtime(body).to_expr_with_store(self.runtime_store)
+      let result = self.visit(body).to_expr_with_store(self.runtime_store)
 
       // 恢复作用域
       self.pop_scope()
@@ -138,6 +131,7 @@ pub fn ClosureInterpreter::execute_function_call(
   }
 }
 
+///|
 pub fn ClosureInterpreter::execute_function_call_runtime(
   self : ClosureInterpreter,
   function : @syntax.Func,
@@ -152,7 +146,7 @@ pub fn ClosureInterpreter::execute_function_call_runtime(
       self.bind_function_parameters_runtime(parameters, args)
 
       // 执行函数体
-      let result = self.visit_runtime(body)
+      let result = self.visit(body)
 
       // 恢复作用域
       self.pop_scope()

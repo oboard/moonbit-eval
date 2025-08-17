@@ -24,12 +24,24 @@ struct ClosureInterpreter {
 }
 
 ///|
-pub fn ClosureInterpreter::new() -> ClosureInterpreter {
+pub fn ClosureInterpreter::new(core~ : Bool = true) -> ClosureInterpreter {
   {
     extern_fns: Map::new(),
-    embedded_fns: Map::new(),
-    embedded_methods: Map::new(),
-    fn_aliases: Map::new(),
+    embedded_fns: if core {
+      core_embedded_code
+    } else {
+      Map::new()
+    },
+    embedded_methods: if core {
+      core_embedded_methods
+    } else {
+      Map::new()
+    },
+    fn_aliases: if core {
+      core_fn_aliases
+    } else {
+      Map::new()
+    },
     immutable_values: [{}],
     mutable_values: [{}],
     runtime_store: RuntimeStore::new(),
@@ -109,7 +121,7 @@ fn ClosureInterpreter::top_visit(
 
     // 处理顶层常量定义（如 const Zero = 0）
     TopLetDef(binder~, expr~, ..) =>
-      self.set_immutable_variable(binder.name, self.visit_runtime(expr))
+      self.set_immutable_variable(binder.name, self.visit(expr))
     TopTypeDef(def) =>
       match def {
         { tycon, .. } => self.type_definitions.set(tycon, def)
@@ -127,11 +139,13 @@ fn ClosureInterpreter::top_visit(
       // 从decl_body中提取函数体
       match decl_body {
         DeclBody(local_types=_, expr~) => {
+          // 保持原始的返回类型，不在这里进行推导
+          let inferred_return_type = fun_decl.return_type
           let func = @syntax.Func::Lambda(
             parameters=fun_decl.decl_params.unwrap_or(@list.new()),
             params_loc=loc,
             body=expr,
-            return_type=fun_decl.return_type,
+            return_type=inferred_return_type,
             error_type=fun_decl.error_type,
             kind=Arrow,
             has_error=fun_decl.has_error,
@@ -165,7 +179,7 @@ fn ClosureInterpreter::top_visit(
 }
 
 ///| 新的优化版本：直接返回 RuntimeValue
-fn ClosureInterpreter::visit_runtime(
+fn ClosureInterpreter::visit(
   self : ClosureInterpreter,
   node : @syntax.Expr,
 ) -> RuntimeValue {
@@ -176,8 +190,22 @@ fn ClosureInterpreter::visit_runtime(
         @syntax.Constant::Bool(b) => RuntimeValue::Bool(b)
         @syntax.Constant::Int(s) =>
           RuntimeValue::Int(@strconv.parse_int(s) catch { _ => 0 })
+        @syntax.Constant::UInt(s) =>
+          RuntimeValue::UInt(@strconv.parse_uint(s) catch { _ => 0U })
+        @syntax.Constant::Int64(s) =>
+          RuntimeValue::Int64(@strconv.parse_int64(s) catch { _ => 0L })
+        @syntax.Constant::UInt64(s) =>
+          RuntimeValue::UInt64(@strconv.parse_uint64(s) catch { _ => 0UL })
+        @syntax.Constant::Float(s) =>
+          RuntimeValue::Float(
+            (@strconv.parse_double(s) catch { _ => 0.0 }).to_float(),
+          )
         @syntax.Constant::Double(s) =>
           RuntimeValue::Double(@strconv.parse_double(s) catch { _ => 0.0 })
+        @syntax.Constant::Byte(s) => {
+          let int_val = @strconv.parse_int(s) catch { _ => 0 }
+          RuntimeValue::Byte(int_val.to_byte())
+        }
         @syntax.Constant::Char(s) =>
           RuntimeValue::Char(s.get_char(0).unwrap_or(' '))
         @syntax.Constant::String(s) => RuntimeValue::String(s)
@@ -195,8 +223,8 @@ fn ClosureInterpreter::visit_runtime(
     Infix(op~, lhs~, rhs~, ..) =>
       match op.name {
         @syntax.LongIdent::Ident(name~) => {
-          let left_val = self.visit_runtime(lhs)
-          let right_val = self.visit_runtime(rhs)
+          let left_val = self.visit(lhs)
+          let right_val = self.visit(rhs)
           match (left_val, right_val) {
             (RuntimeValue::Bool(l), RuntimeValue::Bool(r)) =>
               match name {
@@ -265,7 +293,7 @@ fn ClosureInterpreter::visit_runtime(
     Unary(op~, expr~, ..) =>
       match op.name {
         @syntax.LongIdent::Ident(name~) => {
-          let val = self.visit_runtime(expr)
+          let val = self.visit(expr)
           match (name, val) {
             ("!", Bool(value)) => Bool(!value)
             ("-", Int(value)) => Int(-value)
@@ -280,7 +308,7 @@ fn ClosureInterpreter::visit_runtime(
     Record(fields~, ..) => {
       let evaluated_fields = Map::new()
       for field in fields {
-        let field_value = self.visit_runtime(field.expr)
+        let field_value = self.visit(field.expr)
         evaluated_fields.set(field.label.name, field_value)
       }
       let ref_id = self.runtime_store.alloc_struct(evaluated_fields)
@@ -289,17 +317,13 @@ fn ClosureInterpreter::visit_runtime(
 
     // 处理元组
     Tuple(exprs~, ..) => {
-      let evaluated_values = exprs
-        .map(fn(expr) { self.visit_runtime(expr) })
-        .to_array()
+      let evaluated_values = exprs.map(fn(expr) { self.visit(expr) }).to_array()
       RuntimeValue::Tuple(evaluated_values)
     }
 
     // 处理数组
     Array(exprs~, ..) => {
-      let evaluated_values = exprs
-        .map(fn(expr) { self.visit_runtime(expr) })
-        .to_array()
+      let evaluated_values = exprs.map(fn(expr) { self.visit(expr) }).to_array()
       RuntimeValue::Array(evaluated_values)
     }
 
@@ -313,15 +337,15 @@ fn ClosureInterpreter::visit_runtime(
           id={ name: @syntax.LongIdent::Ident(name~), .. },
           ..
         ) => self.find_runtime(name)
-        _ => self.visit_runtime(expr)
+        _ => self.visit(expr)
       }
       ignore(self.pattern_matches_runtime(evaluated_expr, pattern))
-      self.visit_runtime(body)
+      self.visit(body)
     }
 
     // 处理可变变量声明
     LetMut(binder={ name, .. }, expr~, ..) => {
-      let runtime_value = self.visit_runtime(expr)
+      let runtime_value = self.visit(expr)
       self.set_mutable_variable(name, runtime_value)
       RuntimeValue::Unit
     }
@@ -331,7 +355,7 @@ fn ClosureInterpreter::visit_runtime(
       self.define_function(name, func)
       match body {
         Unit(..) => RuntimeValue::Function(func)
-        _ => self.visit_runtime(body)
+        _ => self.visit(body)
       }
     }
 
@@ -344,7 +368,7 @@ fn ClosureInterpreter::visit_runtime(
               let current_value = self.find_runtime(name)
               match op.name {
                 @syntax.LongIdent::Ident(name=op_name) => {
-                  let rhs_value = self.visit_runtime(expr)
+                  let rhs_value = self.visit(expr)
                   match (current_value, rhs_value) {
                     (RuntimeValue::Int(l), RuntimeValue::Int(r)) =>
                       match op_name {
@@ -352,15 +376,15 @@ fn ClosureInterpreter::visit_runtime(
                         "-" => Int(l - r)
                         "*" => Int(l * r)
                         "/" => if r != 0 { Int(l / r) } else { Unit }
-                        _ => self.visit_runtime(expr)
+                        _ => self.visit(expr)
                       }
-                    _ => self.visit_runtime(expr)
+                    _ => self.visit(expr)
                   }
                 }
-                _ => self.visit_runtime(expr)
+                _ => self.visit(expr)
               }
             }
-            None => self.visit_runtime(expr)
+            None => self.visit(expr)
           }
           update_mutable_variable(self.mutable_values, name, new_value)
           |> ignore
@@ -374,17 +398,25 @@ fn ClosureInterpreter::visit_runtime(
       match func {
         Ident(id={ name: @syntax.LongIdent::Ident(name~), .. }, ..) =>
           self.execute_function_by_name(name, args)
+        // 处理静态方法调用，如 Bool::default()
+        Method(type_name~, method_name~, ..) => {
+          let type_str = match type_name.name {
+            @syntax.LongIdent::Ident(name~) => name
+            _ => "Unknown"
+          }
+          self.execute_static_method_call(type_str, method_name.name, args)
+        }
         _ => RuntimeValue::Unit
       }
 
     // 处理 if 表达式
     If(cond~, ifso~, ifnot~, ..) => {
-      let cond_val = self.visit_runtime(cond)
+      let cond_val = self.visit(cond)
       match cond_val {
-        RuntimeValue::Bool(true) => self.visit_runtime(ifso)
+        RuntimeValue::Bool(true) => self.visit(ifso)
         RuntimeValue::Bool(false) =>
           match ifnot {
-            Some(else_expr) => self.visit_runtime(else_expr)
+            Some(else_expr) => self.visit(else_expr)
             None => RuntimeValue::Unit
           }
         _ => RuntimeValue::Unit
@@ -393,13 +425,13 @@ fn ClosureInterpreter::visit_runtime(
 
     // 处理 match 表达式
     Match(expr~, cases~, ..) => {
-      let expr_runtime = self.visit_runtime(expr)
+      let expr_runtime = self.visit(expr)
       self.execute_match_runtime(expr_runtime, cases)
     }
 
     // 处理字段访问
     Field(record~, accessor~, ..) => {
-      let record_val = self.visit_runtime(record)
+      let record_val = self.visit(record)
       match (record_val, accessor) {
         (RuntimeValue::StructRef(ref_id), @syntax.Accessor::Label(label)) =>
           match self.runtime_store.get_struct(ref_id) {
@@ -432,8 +464,8 @@ fn ClosureInterpreter::visit_runtime(
 
     // 处理数组索引访问 (ArrayGet)
     ArrayGet(array~, index~, ..) => {
-      let array_val = self.visit_runtime(array)
-      let index_val = self.visit_runtime(index)
+      let array_val = self.visit(array)
+      let index_val = self.visit(index)
       match (array_val, index_val) {
         (RuntimeValue::Array(values), RuntimeValue::Int(index_num)) =>
           if index_num >= 0 && index_num < values.length() {
@@ -448,13 +480,13 @@ fn ClosureInterpreter::visit_runtime(
     // 处理序列表达式
     Sequence(exprs~, last_expr~, ..) => {
       for expr in exprs {
-        self.visit_runtime(expr) |> ignore
+        self.visit(expr) |> ignore
       }
-      self.visit_runtime(last_expr)
+      self.visit(last_expr)
     }
 
     // 处理分组表达式
-    Group(expr~, ..) => self.visit_runtime(expr)
+    Group(expr~, ..) => self.visit(expr)
 
     // 处理 For 循环
     For(binders~, condition~, continue_block~, body~, ..) => {
@@ -465,7 +497,7 @@ fn ClosureInterpreter::visit_runtime(
       for binder_init in binders {
         match binder_init {
           (binder, init_expr) => {
-            let init_value = self.visit_runtime(init_expr)
+            let init_value = self.visit(init_expr)
             self.set_mutable_variable(binder.name, init_value)
           }
         }
@@ -476,7 +508,7 @@ fn ClosureInterpreter::visit_runtime(
         // 检查循环条件
         let should_continue = match condition {
           Some(cond) => {
-            let condition_result = self.visit_runtime(cond)
+            let condition_result = self.visit(cond)
             match condition_result {
               RuntimeValue::Bool(value) => value
               _ => false
@@ -489,13 +521,13 @@ fn ClosureInterpreter::visit_runtime(
         }
 
         // 执行循环体
-        self.visit_runtime(body) |> ignore
+        self.visit(body) |> ignore
 
         // 执行 continue 块（更新循环变量）
         for update_tuple in continue_block {
           match update_tuple {
             (binder, update_expr) => {
-              let new_value = self.visit_runtime(update_expr)
+              let new_value = self.visit(update_expr)
               self.set_mutable_variable(binder.name, new_value)
             }
           }
@@ -510,12 +542,12 @@ fn ClosureInterpreter::visit_runtime(
     // 处理 While 循环
     While(loop_cond~, loop_body~, ..) => {
       while true {
-        let cond_result = self.visit_runtime(loop_cond)
+        let cond_result = self.visit(loop_cond)
         match cond_result {
           RuntimeValue::Bool(false) => break
           _ => ()
         }
-        self.visit_runtime(loop_body) |> ignore
+        self.visit(loop_body) |> ignore
       }
       RuntimeValue::Unit
     }
@@ -545,7 +577,7 @@ fn ClosureInterpreter::visit_runtime(
                               .unwrap_or(RuntimeValue::Unit)
                             None => RuntimeValue::Unit
                           }
-                          let rhs_value = self.visit_runtime(field)
+                          let rhs_value = self.visit(field)
                           match op.name {
                             @syntax.LongIdent::Ident(name=op_name) =>
                               runtime_value_infix(
@@ -554,9 +586,9 @@ fn ClosureInterpreter::visit_runtime(
                             _ => rhs_value
                           }
                         }
-                        _ => self.visit_runtime(field)
+                        _ => self.visit(field)
                       }
-                    None => self.visit_runtime(field)
+                    None => self.visit(field)
                   }
 
                   // 更新RuntimeStore中的记录字段
@@ -846,10 +878,7 @@ fn ClosureInterpreter::execute_function_by_name(
             Ident(name=embedded_name) => {
               // 这是embedded函数标记，调用对应的embedded函数
               let evaluated_args = args
-                .map(arg => {
-                  value: self.visit_runtime(arg.value),
-                  kind: arg.kind,
-                })
+                .map(arg => { value: self.visit(arg.value), kind: arg.kind })
                 .to_array()
               match self.embedded_fns.get(embedded_name) {
                 Some(embedded_func) => embedded_func(evaluated_args)
@@ -867,7 +896,7 @@ fn ClosureInterpreter::execute_function_by_name(
           self.execute_function_call_runtime(lambda_func, args)
         _ => {
           let evaluated_args = args
-            .map(arg => { value: self.visit_runtime(arg.value), kind: arg.kind })
+            .map(arg => { value: self.visit(arg.value), kind: arg.kind })
             .to_array()
           match self.extern_fns.get(name) {
             Some(extern_func) => extern_func(evaluated_args)
@@ -892,7 +921,7 @@ fn ClosureInterpreter::execute_method_call_runtime(
   args : @list.List[@syntax.Argument],
 ) -> RuntimeValue {
   // 先获取self的运行时值
-  let self_value = self.visit_runtime(self_expr)
+  let self_value = self.visit(self_expr)
 
   // 根据运行时值推断类型
   let self_type = match self_value {
@@ -938,7 +967,7 @@ fn ClosureInterpreter::execute_method_call_runtime(
               }
 
               // 执行函数体
-              let result = self.visit_runtime(body)
+              let result = self.visit(body)
 
               // 恢复作用域
               self.pop_scope()
@@ -959,8 +988,8 @@ fn ClosureInterpreter::execute_method_call_runtime(
             Some(embedded_method) => {
               // 准备参数：self_value + 其他参数的求值结果
               let evaluated_args = @list.construct(
-                self.visit_runtime(self_expr),
-                args.map(fn(arg) { self.visit_runtime(arg.value) }),
+                self_value,
+                args.map(fn(arg) { self.visit(arg.value) }),
               )
               embedded_method(
                 evaluated_args
@@ -1011,8 +1040,33 @@ fn ClosureInterpreter::find_type(
       }
     // 如果是Array表达式，返回Array类型
     Array(..) => "Array"
+    // 如果是Group表达式（括号表达式），递归处理内部表达式
+    Group(expr~, ..) => self.find_type(expr)
     // 如果不是已知表达式类型，返回默认类型
     _ => "Unknown"
+  }
+}
+
+///| 执行静态方法调用（如 Bool::default()）
+fn ClosureInterpreter::execute_static_method_call(
+  self : ClosureInterpreter,
+  type_name : String,
+  method_name : String,
+  args : @list.List[@syntax.Argument],
+) -> RuntimeValue {
+  // 查找嵌入式方法
+  match self.embedded_methods.get(type_name) {
+    Some(methods) =>
+      match methods.get(method_name) {
+        Some(embedded_func) => {
+          let evaluated_args = args
+            .map(arg => { value: self.visit(arg.value), kind: arg.kind })
+            .to_array()
+          embedded_func(evaluated_args)
+        }
+        None => RuntimeValue::Unit
+      }
+    None => RuntimeValue::Unit
   }
 }
 
@@ -1063,8 +1117,13 @@ fn ClosureInterpreter::find_runtime_type(
     RuntimeValue::Unit => "Unit"
     RuntimeValue::Bool(_) => "Bool"
     RuntimeValue::Int(_) => "Int"
+    RuntimeValue::UInt(_) => "UInt"
+    RuntimeValue::Int64(_) => "Int64"
+    RuntimeValue::UInt64(_) => "UInt64"
+    RuntimeValue::Float(_) => "Float"
     RuntimeValue::Double(_) => "Double"
     RuntimeValue::Char(_) => "Char"
+    RuntimeValue::Byte(_) => "Byte"
     RuntimeValue::String(_) => "String"
     RuntimeValue::Tuple(_) => "Tuple"
     RuntimeValue::Array(_) => "Array"
