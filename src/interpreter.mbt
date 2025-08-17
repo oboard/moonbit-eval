@@ -522,24 +522,10 @@ fn ClosureInterpreter::visit(
       let evaluated_exprs = exprs.map(fn(expr) { self.visit(expr) })
       Tuple(exprs=evaluated_exprs, loc~)
     }
-    // Handle Array expressions - 使用RuntimeValue引用系统
+    // Handle Array expressions
     Array(exprs~, ..) => {
-      // 先求值所有元素
-      let evaluated_fields = Map::new()
-      let mut index = 0
-      for expr in exprs {
-        let element_value = self.visit(expr)
-        let runtime_value = RuntimeValue::from_expr(element_value)
-        evaluated_fields.set(index.to_string(), runtime_value)
-        index = index + 1
-      }
-
-      // 在RuntimeStore中分配数组
-      let ref_id = self.runtime_store.alloc_struct(evaluated_fields)
-      let array_ref = RuntimeValue::StructRef(ref_id)
-
-      // 返回数组引用表达式（用于变量绑定）
-      array_ref.to_reference_expr(self.runtime_store)
+      let evaluated_exprs = exprs.map(fn(expr) { self.visit(expr) })
+      Array(exprs=evaluated_exprs, loc~)
     }
 
     // Handle ArrayGet expressions (array[index])
@@ -669,77 +655,16 @@ fn ClosureInterpreter::visit(
                         runtime_value,
                       )
                       |> ignore
-                      current_record // 返回原引用
+                      unit()
                     }
                     _ => unit()
                   }
                 }
-                // 处理普通记录的字段修改（保持原有逻辑）
-                @syntax.Expr::Record(type_name~, fields~, trailing~, ..) => {
-                  let new_field_value = match augmented_by {
-                    Some(op) => {
-                      // 增强赋值操作（如 +=, -=, *=, /= 等）
-                      let current_field_value = match accessor {
-                        @syntax.Accessor::Label(label) => {
-                          // 在记录的字段中查找当前值
-                          let mut current_value = unit()
-                          for field_def in fields {
-                            if field_def.label.name == label.name {
-                              current_value = field_def.expr
-                              break
-                            }
-                          }
-                          current_value
-                        }
-                        _ => unit()
-                      }
-                      match op.name {
-                        Ident(name~) => {
-                          let rhs_value = self.visit(field)
-                          match (current_field_value, rhs_value) {
-                            (Constant(c=l, ..), Constant(c=r, ..)) =>
-                              @syntax.Expr::Constant(
-                                c=constant_infix(name, l, r),
-                                loc~,
-                              )
-                            _ => rhs_value
-                          }
-                        }
-                        _ => self.visit(field)
-                      }
-                    }
-                    None => self.visit(field)
-                  }
-
-                  // 更新记录中的字段值
-                  match accessor {
-                    @syntax.Accessor::Label(label) => {
-                      let updated_fields = fields.map(fn(field_def) {
-                        if field_def.label.name == label.name {
-                          @syntax.FieldDef::{
-                            label: field_def.label,
-                            expr: new_field_value,
-                            is_pun: field_def.is_pun,
-                            loc: field_def.loc,
-                          }
-                        } else {
-                          field_def
-                        }
-                      })
-                      let updated_record = @syntax.Expr::Record(
-                        type_name~,
-                        fields=updated_fields,
-                        trailing~,
-                        loc~,
-                      )
-
-                      // 对于普通记录，我们不应该到达这里，因为所有记录都应该是引用记录
-                      updated_record
-                    }
-                    _ => unit()
-                  }
+                // 所有记录都应该是引用记录，如果到达这里说明有问题
+                _ => {
+                  // 记录应该总是引用记录，如果不是则返回unit
+                  unit()
                 }
-                _ => unit()
               }
             }
             _ => unit()

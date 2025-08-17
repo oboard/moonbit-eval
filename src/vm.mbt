@@ -6,22 +6,18 @@ struct MoonBitVM {
 
 ///|
 pub struct EvalResult {
-  value : @syntax.Expr
+  value : RuntimeValue
+  store : RuntimeStore
 }
 
 ///|
 pub impl Show for EvalResult with output(self : EvalResult, logger : &Logger) -> Unit {
-  logger.write_string(expr_to_string(self.value))
+  logger.write_string(self.value.to_string_with_store(self.store))
 }
 
 ///|
 pub impl Show for EvalResult with to_string(self : EvalResult) -> String {
-  expr_to_string(self.value)
-}
-
-///|
-pub impl ToJson for EvalResult with to_json(self : EvalResult) -> Json {
-  self.value.to_json()
+  self.value.to_string_with_store(self.store)
 }
 
 ///|
@@ -205,6 +201,8 @@ pub fn expr_to_string(expr : @syntax.Expr) -> String {
       }
       "[" + joined + "]"
     }
+    // 处理Sequence表达式 - 只显示最后一个表达式的结果
+    Sequence(last_expr~, ..) => expr_to_string(last_expr)
     // Ident表达式应该在求值时被解析，不应该出现在最终结果中
     _ => ""
   }
@@ -238,7 +236,7 @@ pub fn MoonBitVM::eval(
       }
       self.interpreter.top_visit(node)
     })
-    return { value: unit() }
+    return { value: RuntimeValue::Unit, store: self.interpreter.runtime_store }
   }
   match impls {
     @list.List::More(
@@ -250,7 +248,11 @@ pub fn MoonBitVM::eval(
           if log.unwrap_or(self.log) {
             println(expr.to_json().stringify())
           }
-          return { value: self.interpreter.visit(expr) }
+          let result_expr = self.interpreter.visit(expr)
+          return {
+            value: RuntimeValue::from_expr_with_store(result_expr, self.interpreter.runtime_store),
+            store: self.interpreter.runtime_store,
+          }
         }
         _ => ()
       }
@@ -262,5 +264,5 @@ pub fn MoonBitVM::eval(
       fail(diagnostics.fold(init="", (acc, cur) => "\{acc}\n\{cur}"))
     }
   }
-  { value: unit() }
+  { value: RuntimeValue::Unit, store: self.interpreter.runtime_store }
 }
