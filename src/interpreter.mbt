@@ -445,8 +445,8 @@ fn ClosureInterpreter::visit(
       }
 
       // 在RuntimeStore中分配记录
-      let ref_id = self.runtime_store.alloc_record(evaluated_fields)
-      let record_ref = RuntimeValue::RecordRef(ref_id)
+      let ref_id = self.runtime_store.alloc_struct(evaluated_fields)
+      let record_ref = RuntimeValue::StructRef(ref_id)
 
       // 返回记录引用表达式（用于变量绑定）
       record_ref.to_reference_expr(self.runtime_store)
@@ -465,7 +465,7 @@ fn ClosureInterpreter::visit(
           @syntax.Accessor::Label(label),
         ) => {
           let ref_id = RefId(lnum)
-          match self.runtime_store.get_record(ref_id) {
+          match self.runtime_store.get_struct(ref_id) {
             Some(record) =>
               match record.get(label.name) {
                 Some(field_value) =>
@@ -522,10 +522,24 @@ fn ClosureInterpreter::visit(
       let evaluated_exprs = exprs.map(fn(expr) { self.visit(expr) })
       Tuple(exprs=evaluated_exprs, loc~)
     }
-    // Handle Array expressions
+    // Handle Array expressions - 使用RuntimeValue引用系统
     Array(exprs~, ..) => {
-      let evaluated_exprs = exprs.map(fn(expr) { self.visit(expr) })
-      Array(exprs=evaluated_exprs, loc~)
+      // 先求值所有元素
+      let evaluated_fields = Map::new()
+      let mut index = 0
+      for expr in exprs {
+        let element_value = self.visit(expr)
+        let runtime_value = RuntimeValue::from_expr(element_value)
+        evaluated_fields.set(index.to_string(), runtime_value)
+        index = index + 1
+      }
+
+      // 在RuntimeStore中分配数组
+      let ref_id = self.runtime_store.alloc_struct(evaluated_fields)
+      let array_ref = RuntimeValue::StructRef(ref_id)
+
+      // 返回数组引用表达式（用于变量绑定）
+      array_ref.to_reference_expr(self.runtime_store)
     }
 
     // Handle ArrayGet expressions (array[index])
@@ -649,7 +663,7 @@ fn ClosureInterpreter::visit(
                         self.visit(field),
                       )
                       // 更新记录字段
-                      self.runtime_store.update_record_field(
+                      self.runtime_store.update_struct_field(
                         ref_id,
                         label.name,
                         runtime_value,

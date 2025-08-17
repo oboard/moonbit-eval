@@ -431,10 +431,12 @@ test "tuple" {
 test "array" {
   let vm = MoonBitVM::new()
   inspect(vm.eval("let a = [1, 2, 3]"), content="()")
+  inspect(vm.eval("let b = a"), content="()")
   inspect(vm.eval("a"), content="[1, 2, 3]")
   inspect(vm.eval("a[0]"), content="1")
   inspect(vm.eval("a[1] = 4"), content="()")
   inspect(vm.eval("a"), content="[1, 4, 3]")
+  inspect(vm.eval("b"), content="[1, 4, 3]")
 }
 
 ///|

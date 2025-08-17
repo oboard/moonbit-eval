@@ -19,105 +19,57 @@ pub enum RuntimeValue {
   Tuple(@list.List[RuntimeValue])
   Array(@list.List[RuntimeValue])
 
-  // 引用类型（可变对象的引用）
-  RecordRef(RefId)
-  // ArrayRef(RefId) // 暂未实现
+  // 统一的结构引用类型（可变对象的引用）
+  StructRef(RefId)
 
   // 函数值
   Function(@syntax.Func)
-  // Closure(@syntax.Func, Map[String, RuntimeValue]) // 暂未实现
 }
 
 ///| 运行时存储 - 统一管理所有可变对象
 pub struct RuntimeStore {
-  // 记录数据存储
-  records : Map[RefId, Map[String, RuntimeValue]]
-  // 数组数据存储  
-  arrays : Map[RefId, @list.List[RuntimeValue]]
+  // 统一的结构化数据存储 - 可以是Record或Array
+  structs : Map[RefId, Map[String, RuntimeValue]]
   // 引用计数器
   mut next_id : RefId
 }
 
 ///|
 pub fn RuntimeStore::new() -> RuntimeStore {
-  { records: Map::new(), arrays: Map::new(), next_id: RefId(1) }
+  { structs: Map::new(), next_id: RefId(1) }
 }
 
-///| 分配新的记录引用
-pub fn RuntimeStore::alloc_record(
+///| 分配新的结构引用
+pub fn RuntimeStore::alloc_struct(
   self : RuntimeStore,
   fields : Map[String, RuntimeValue],
 ) -> RefId {
   let id = self.next_id
   let RefId(current_id) = self.next_id
   self.next_id = RefId(current_id + 1)
-  self.records.set(id, fields)
+  self.structs.set(id, fields)
   id
 }
 
-///| 分配新的数组引用
-pub fn RuntimeStore::alloc_array(
-  self : RuntimeStore,
-  elements : @list.List[RuntimeValue],
-) -> RefId {
-  let id = self.next_id
-  let RefId(current_id) = self.next_id
-  self.next_id = RefId(current_id + 1)
-  self.arrays.set(id, elements)
-  id
-}
-
-///| 获取记录数据
-pub fn RuntimeStore::get_record(
+///| 获取结构数据
+pub fn RuntimeStore::get_struct(
   self : RuntimeStore,
   id : RefId,
 ) -> Map[String, RuntimeValue]? {
-  self.records.get(id)
+  self.structs.get(id)
 }
 
-///| 获取数组数据
-pub fn RuntimeStore::get_array(
-  self : RuntimeStore,
-  id : RefId,
-) -> @list.List[RuntimeValue]? {
-  self.arrays.get(id)
-}
-
-///| 更新记录字段
-pub fn RuntimeStore::update_record_field(
+///| 更新结构字段
+pub fn RuntimeStore::update_struct_field(
   self : RuntimeStore,
   id : RefId,
   field : String,
   value : RuntimeValue,
 ) -> Bool {
-  match self.records.get(id) {
-    Some(record) => {
-      record.set(field, value)
+  match self.structs.get(id) {
+    Some(struct_data) => {
+      struct_data.set(field, value)
       true
-    }
-    None => false
-  }
-}
-
-///| 更新数组元素
-pub fn RuntimeStore::update_array_element(
-  self : RuntimeStore,
-  id : RefId,
-  index : Int,
-  value : RuntimeValue,
-) -> Bool {
-  match self.arrays.get(id) {
-    Some(array) => {
-      // 将List转换为Array进行索引访问
-      let arr = array.to_array()
-      if index >= 0 && index < arr.length() {
-        arr[index] = value
-        // 将修改后的Array转换回List
-        self.arrays.set(id, @list.from_array(arr))
-        true
-      } else {
-        false
-      }
     }
     None => false
   }
@@ -126,7 +78,7 @@ pub fn RuntimeStore::update_array_element(
 ///| 检查值是否为引用类型
 pub fn RuntimeValue::is_reference(self : RuntimeValue) -> Bool {
   match self {
-    RecordRef(_) => true
+    StructRef(_) => true
     _ => false
   }
 }
@@ -134,7 +86,7 @@ pub fn RuntimeValue::is_reference(self : RuntimeValue) -> Bool {
 ///| 检查值是否为可变类型
 pub fn RuntimeValue::is_mutable(self : RuntimeValue) -> Bool {
   match self {
-    RecordRef(_) => true
+    StructRef(_) => true
     _ => false
   }
 }
@@ -165,7 +117,7 @@ pub fn RuntimeValue::to_expr(self : RuntimeValue) -> @syntax.Expr {
       @syntax.Expr::Array(exprs~, loc=_dummy_loc)
     }
     // 引用类型需要通过store解析
-    RecordRef(_) => @syntax.Expr::Unit(loc=_dummy_loc, faked=true)
+    StructRef(_) => @syntax.Expr::Unit(loc=_dummy_loc, faked=true)
     Function(func) => @syntax.Expr::Function(func~, loc=_dummy_loc)
   }
 }
@@ -180,7 +132,7 @@ pub fn RuntimeValue::to_reference_expr(
     end: { fname: "", lnum: 0, bol: 0, cnum: 0 },
   }
   match self {
-    RecordRef(id) => {
+    StructRef(id) => {
       // 返回特殊的Unit表达式来保持引用信息
       let RefId(ref_num) = id
       @syntax.Expr::Unit(
@@ -205,11 +157,11 @@ pub fn RuntimeValue::to_expr_with_store(
     end: { fname: "", lnum: 0, bol: 0, cnum: 0 },
   }
   match self {
-    RecordRef(id) =>
-      match store.get_record(id) {
-        Some(record) => {
+    StructRef(id) =>
+      match store.get_struct(id) {
+        Some(struct_data) => {
           let field_defs = []
-          record.each(fn(field_name, field_value) {
+          struct_data.each(fn(field_name, field_value) {
             field_defs.push(@syntax.FieldDef::{
               label: @syntax.Label::{ name: field_name, loc: _dummy_loc },
               expr: field_value.to_expr_with_store(store),
@@ -226,7 +178,6 @@ pub fn RuntimeValue::to_expr_with_store(
         }
         None => @syntax.Expr::Unit(loc=_dummy_loc, faked=true)
       }
-    // ArrayRef(id) => // 暂未实现
     _ => self.to_expr()
   }
 }
@@ -238,10 +189,10 @@ pub fn RuntimeValue::from_expr(expr : @syntax.Expr) -> RuntimeValue {
     @syntax.Expr::Unit(loc~, faked~) =>
       // 检查是否是记录引用Unit表达式
       if not(faked) {
-        // 这是一个特殊的记录引用Unit表达式
+        // 这是一个特殊的结构引用Unit表达式
         // 从loc中提取RefId
         if loc.start.fname == "record" {
-          RecordRef(RefId(loc.start.lnum))
+          StructRef(RefId(loc.start.lnum))
         } else {
           Unit
         }
@@ -263,6 +214,8 @@ pub fn RuntimeValue::from_expr(expr : @syntax.Expr) -> RuntimeValue {
     }
     @syntax.Expr::Array(exprs~, ..) => {
       let values = exprs.map(fn(e) { RuntimeValue::from_expr(e) })
+      // 数组应该是引用类型，但这里无法访问store，暂时返回Array
+      // 实际使用时需要通过带store的方法来处理
       Array(values)
     }
     @syntax.Expr::Function(func~, ..) => Function(func)

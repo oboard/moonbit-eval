@@ -139,7 +139,7 @@ pub fn ClosureInterpreter::pattern_matches(
         ) => {
           // 从RuntimeStore中获取记录数据
           let ref_id = RefId(lnum)
-          match self.runtime_store.get_record(ref_id) {
+          match self.runtime_store.get_struct(ref_id) {
             Some(runtime_fields) => {
               // 将RuntimeValue字段转换为表达式字段
               let expr_fields = []
