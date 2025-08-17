@@ -1,12 +1,12 @@
 ///| 支持引用系统的解释器
 struct ClosureInterpreter {
-  extern_fns : Map[String, (@list.List[@syntax.Expr]) -> @syntax.Expr]
+  extern_fns : Map[String, (Array[RuntimeArgument]) -> RuntimeValue]
   // embedded函数存储 - 全局函数
-  embedded_fns : Map[String, (@list.List[@syntax.Expr]) -> @syntax.Expr]
+  embedded_fns : Map[String, (Array[RuntimeArgument]) -> RuntimeValue]
   // embedded方法存储 - 按类型组织的embedded方法定义
   embedded_methods : Map[
     String,
-    Map[String, (@list.List[@syntax.Expr]) -> @syntax.Expr],
+    Map[String, (Array[RuntimeArgument]) -> RuntimeValue],
   ]
   // 函数别名存储 - 存储函数名到其实际实现的映射
   fn_aliases : Map[String, String]
@@ -43,7 +43,7 @@ pub fn ClosureInterpreter::new() -> ClosureInterpreter {
 pub fn ClosureInterpreter::add_extern_fn(
   self : ClosureInterpreter,
   name : String,
-  f : (@list.List[@syntax.Expr]) -> @syntax.Expr,
+  f : (Array[RuntimeArgument]) -> RuntimeValue,
 ) -> Unit {
   self.extern_fns.set(name, f)
 }
@@ -52,7 +52,7 @@ pub fn ClosureInterpreter::add_extern_fn(
 pub fn ClosureInterpreter::add_embedded_fn(
   self : ClosureInterpreter,
   name : String,
-  f : (@list.List[@syntax.Expr]) -> @syntax.Expr,
+  f : (Array[RuntimeArgument]) -> RuntimeValue,
 ) -> Unit {
   self.embedded_fns.set(name, f)
 }
@@ -62,7 +62,7 @@ pub fn ClosureInterpreter::add_embedded_method(
   self : ClosureInterpreter,
   type_name : String,
   method_name : String,
-  f : (@list.List[@syntax.Expr]) -> @syntax.Expr,
+  f : (Array[RuntimeArgument]) -> RuntimeValue,
 ) -> Unit {
   if not(self.embedded_methods.contains(type_name)) {
     self.embedded_methods.set(type_name, Map::new())
@@ -131,12 +131,11 @@ fn ClosureInterpreter::top_visit(
     // TopFuncAlias(_) =>
 
     // 处理顶层常量定义（如 const Zero = 0）
-    TopLetDef(binder~, expr~, ..) => {
-      let name = binder.name
-      let evaluated_expr = self.visit(expr)
-      let runtime_value = RuntimeValue::from_expr(evaluated_expr)
-      self.set_immutable_variable(name, runtime_value)
-    }
+    TopLetDef(binder~, expr~, ..) =>
+      self.set_immutable_variable(
+        binder.name,
+        self.visit(expr) |> RuntimeValue::from_expr,
+      )
     TopTypeDef(def) =>
       match def {
         { tycon, .. } => self.type_definitions.set(tycon, def)
@@ -661,10 +660,9 @@ fn ClosureInterpreter::visit(
                   }
                 }
                 // 所有记录都应该是引用记录，如果到达这里说明有问题
-                _ => {
+                _ =>
                   // 记录应该总是引用记录，如果不是则返回unit
                   unit()
-                }
               }
             }
             _ => unit()
@@ -694,9 +692,14 @@ fn ClosureInterpreter::execute_function_by_name(
           match id.name {
             Ident(name=embedded_name) => {
               // 这是embedded函数标记，调用对应的embedded函数
-              let evaluated_args = args.map(arg => self.visit(arg.value))
+              let evaluated_args = args
+                .map(arg => {
+                  value: self.visit(arg.value) |> RuntimeValue::from_expr,
+                  kind: arg.kind,
+                })
+                .to_array()
               match self.embedded_fns.get(embedded_name) {
-                Some(embedded_func) => embedded_func(evaluated_args)
+                Some(embedded_func) => embedded_func(evaluated_args).to_expr()
                 None => unit()
               }
             }
@@ -710,13 +713,18 @@ fn ClosureInterpreter::execute_function_by_name(
         Function(func=lambda_func, ..) =>
           self.execute_function_call(lambda_func, args)
         _ => {
-          let evaluated_args = args.map(arg => self.visit(arg.value))
+          let evaluated_args = args
+            .map(arg => {
+              value: self.visit(arg.value) |> RuntimeValue::from_expr,
+              kind: arg.kind,
+            })
+            .to_array()
           match self.extern_fns.get(name) {
-            Some(extern_func) => extern_func(evaluated_args)
+            Some(extern_func) => extern_func(evaluated_args).to_expr()
             None =>
               // 尝试查找全局embedded函数
               match self.embedded_fns.get(name) {
-                Some(embedded_func) => embedded_func(evaluated_args)
+                Some(embedded_func) => embedded_func(evaluated_args).to_expr()
                 None => unit()
               }
           }
@@ -759,7 +767,13 @@ fn ClosureInterpreter::execute_method_call(
                 self.visit(self_expr),
                 args.map(fn(arg) { self.visit(arg.value) }),
               )
-              embedded_method(evaluated_args)
+              embedded_method(
+                evaluated_args
+                .map(fn(arg) {
+                  { value: arg |> RuntimeValue::from_expr, kind: Positional }
+                })
+                .to_array(),
+              ).to_expr()
             }
             None => unit()
           }

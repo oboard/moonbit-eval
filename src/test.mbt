@@ -171,10 +171,10 @@ test "lambda_simple" {
 test "extern" {
   let vm = MoonBitVM::new()
   vm.interpreter.add_extern_fn("println", params => {
-    if params is More(Constant(c=String(s), ..), ..) {
+    if params is [{ value: String(s), .. }, ..] {
       println(s)
     }
-    unit()
+    Unit
   })
   inspect(vm.eval("println(\"println from external function\")"), content="()")
 }
@@ -184,10 +184,10 @@ test "embedded_code" {
   let vm = MoonBitVM::new()
   // 注册 embedded_code
   vm.interpreter.add_embedded_fn("%string_length", params => if params
-    is @list.More(Constant(c=String(s), loc~), ..) {
-    Constant(c=Int(s.length().to_string()), loc~)
+    is [{ value: String(s), .. }, ..] {
+    Int(s.length())
   } else {
-    unit()
+    Unit
   })
   inspect(
     vm.eval("pub fn String::length(self : String) -> Int = \"%string_length\""),

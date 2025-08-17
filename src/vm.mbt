@@ -25,26 +25,11 @@ pub fn MoonBitVM::new(log~ : Bool = false) -> MoonBitVM {
   let interpreter = ClosureInterpreter::new()
   interpreter.add_extern_fn("println", fn(parameters) {
     match parameters {
-      @list.More(expr, ..) => {
-        println(expr_to_string(expr))
-        @syntax.Expr::Unit(
-          loc={
-            start: { fname: "", lnum: 0, bol: 0, cnum: 0 },
-            end: { fname: "", lnum: 0, bol: 0, cnum: 0 },
-          },
-          faked=true,
-        )
+      [{ value, .. }, ..] => {
+        println(value)
+        Unit
       }
-      @list.Empty => {
-        println("")
-        @syntax.Expr::Unit(
-          loc={
-            start: { fname: "", lnum: 0, bol: 0, cnum: 0 },
-            end: { fname: "", lnum: 0, bol: 0, cnum: 0 },
-          },
-          faked=true,
-        )
-      }
+      _ => Unit
     }
   })
   { interpreter, log }
@@ -250,7 +235,10 @@ pub fn MoonBitVM::eval(
           }
           let result_expr = self.interpreter.visit(expr)
           return {
-            value: RuntimeValue::from_expr_with_store(result_expr, self.interpreter.runtime_store),
+            value: RuntimeValue::from_expr_with_store(
+              result_expr,
+              self.interpreter.runtime_store,
+            ),
             store: self.interpreter.runtime_store,
           }
         }

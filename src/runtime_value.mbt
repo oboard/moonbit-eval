@@ -26,6 +26,12 @@ pub enum RuntimeValue {
   Function(@syntax.Func)
 }
 
+///|
+pub struct RuntimeArgument {
+  value : RuntimeValue
+  kind : @syntax.ArgumentKind
+}
+
 ///| 运行时存储 - 统一管理所有可变对象
 pub struct RuntimeStore {
   // 统一的结构化数据存储 - 可以是Record或Array
@@ -113,8 +119,13 @@ pub fn RuntimeValue::is_mutable(self : RuntimeValue) -> Bool {
   }
 }
 
+///|
+pub impl Show for RuntimeValue with output(self, logger : &Logger) -> Unit {
+  logger.write_string(self.to_string())
+}
+
 ///| 将RuntimeValue转换为字符串表示
-pub fn RuntimeValue::to_string(self : RuntimeValue) -> String {
+pub impl Show for RuntimeValue with to_string(self) -> String {
   match self {
     Unit => "()"
     Bool(b) => b.to_string()
