@@ -306,7 +306,7 @@ pub fn ClosureInterpreter::visit(
     }
 
     // 处理函数
-    Function(func~, ..) => RuntimeValue::Function(func)
+    Function(func~, ..) => RuntimeValue::FuncRef(func)
 
     // 处理 Let 绑定
     Let(pattern~, expr~, body~, ..) => {
@@ -333,7 +333,7 @@ pub fn ClosureInterpreter::visit(
     LetFn(name={ name, .. }, func~, body~, ..) => {
       self.define_function(name, func)
       match body {
-        Unit(..) => RuntimeValue::Function(func)
+        Unit(..) => RuntimeValue::FuncRef(func)
         _ => self.visit(body)
       }
     }
@@ -1049,7 +1049,7 @@ fn ClosureInterpreter::find_method(
     None => {
       let var_runtime_value = self.find_runtime(name)
       match var_runtime_value {
-        RuntimeValue::Function(lambda_func) =>
+        RuntimeValue::FuncRef(lambda_func) =>
           MethodType::RuntimeFunction(lambda_func)
         _ =>
           match self.extern_fns.get(name) {
@@ -1360,7 +1360,7 @@ fn ClosureInterpreter::find_runtime_type(
         }
         None => "Struct"
       }
-    Function(_) => "Function"
+    FuncRef(_) => "Function"
     Break(_) => "Break"
     Continue(_) => "Continue"
     Constructor(name, _) =>
@@ -1441,7 +1441,7 @@ pub fn ClosureInterpreter::get_function_type_string(
   value : RuntimeValue,
 ) -> String {
   match value {
-    Function(func) =>
+    FuncRef(func) =>
       // 从函数中提取参数和返回类型信息
       match func {
         @syntax.Func::Lambda(parameters~, return_type~, body~, ..) => {

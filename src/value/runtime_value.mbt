@@ -25,8 +25,8 @@ pub(all) enum RuntimeValue {
   // 统一的结构引用类型（可变对象的引用）
   StructRef(RefId)
 
-  // 函数值
-  Function(@syntax.Func)
+  // 函数
+  FuncRef(@syntax.Func)
 
   // 构造函数调用
   Constructor(String, Array[RuntimeValue]) // 构造函数名称和参数
@@ -44,84 +44,10 @@ pub impl Eq for RuntimeValue with op_equal(
   other : RuntimeValue,
 ) -> Bool {
   match (self, other) {
-    // 基本类型的比较
-    (Unit, Unit) => true
-    (Bool(a), Bool(b)) => a == b
-    (Int(a), Int(b)) => a == b
-    (UInt(a), UInt(b)) => a == b
-    (Int64(a), Int64(b)) => a == b
-    (UInt64(a), UInt64(b)) => a == b
-    (Float(a), Float(b)) => a == b
-    (Double(a), Double(b)) => a == b
-    (Char(a), Char(b)) => a == b
-    (Byte(a), Byte(b)) => a == b
-    (String(a), String(b)) => a == b
-
-    // 复合类型的比较
-    (Tuple(a), Tuple(b)) => {
-      if a.length() != b.length() {
-        return false
-      }
-      for i = 0; i < a.length(); i = i + 1 {
-        if a[i] != b[i] {
-          return false
-        }
-      }
-      true
-    }
-    (Array(a), Array(b)) => {
-      if a.length() != b.length() {
-        return false
-      }
-      for i = 0; i < a.length(); i = i + 1 {
-        if a[i] != b[i] {
-          return false
-        }
-      }
-      true
-    }
-
-    // 引用类型的比较
-    (StructRef(a), StructRef(b)) => a == b
-
     // 函数类型的比较 - 通过函数签名比较
-    (Function(func_a), Function(func_b)) =>
+    (FuncRef(func_a), FuncRef(func_b)) =>
       compare_function_signatures(func_a, func_b)
-
-    // 构造函数的比较
-    (Constructor(name_a, args_a), Constructor(name_b, args_b)) => {
-      if name_a != name_b || args_a.length() != args_b.length() {
-        return false
-      }
-      for i = 0; i < args_a.length(); i = i + 1 {
-        if args_a[i] != args_b[i] {
-          return false
-        }
-      }
-      true
-    }
-
-    // 控制流异常的比较
-    (Break(a), Break(b)) =>
-      match (a, b) {
-        (Some(val_a), Some(val_b)) => val_a == val_b
-        (None, None) => true
-        _ => false
-      }
-    (Continue(a), Continue(b)) => {
-      if a.length() != b.length() {
-        return false
-      }
-      for i = 0; i < a.length(); i = i + 1 {
-        if a[i] != b[i] {
-          return false
-        }
-      }
-      true
-    }
-
-    // 不同类型之间不相等
-    _ => false
+    (a, b) => a == b
   }
 }
 
@@ -134,8 +60,8 @@ fn compare_function_signatures(
 ) -> Bool {
   match (func_a, func_b) {
     (
-      @syntax.Func::Lambda(parameters=params_a, return_type=ret_type_a, ..),
-      @syntax.Func::Lambda(parameters=params_b, return_type=ret_type_b, ..),
+      Lambda(parameters=params_a, return_type=ret_type_a, ..),
+      Lambda(parameters=params_b, return_type=ret_type_b, ..),
     ) => {
       // 比较参数列表长度
       if params_a.length() != params_b.length() {
@@ -209,16 +135,58 @@ fn compare_optional_types(ty_a : @syntax.Type?, ty_b : @syntax.Type?) -> Bool {
   }
 }
 
+///|
+fn compare_identifiers(a : @syntax.LongIdent, b : @syntax.LongIdent) -> Bool {
+  match (a, b) {
+    (
+      @syntax.LongIdent::Dot(pkg=pkg_a, id=id_a),
+      @syntax.LongIdent::Dot(pkg=pkg_b, id=id_b),
+    ) => pkg_a == pkg_b && id_a == id_b
+    (@syntax.LongIdent::Ident(name=a), @syntax.LongIdent::Ident(name=b)) =>
+      a == b
+    _ => false
+  }
+}
+
+///|
+fn compare_types(
+  a : @list.List[@syntax.Type],
+  b : @list.List[@syntax.Type],
+) -> Bool {
+  if a.length() != b.length() {
+    return false
+  }
+  let mut tys_a = a
+  let mut tys_b = b
+  while true {
+    match (tys_a, tys_b) {
+      (@list.More(ty_a, tail=tail_a), @list.More(ty_b, tail=tail_b)) => {
+        if not(compare_type_signatures(ty_a, ty_b)) {
+          return false
+        }
+        tys_a = tail_a
+        tys_b = tail_b
+      }
+      (@list.Empty, @list.Empty) => break
+      _ => return false
+    }
+  }
+  true
+}
+
 ///| 比较两个类型签名是否相等
 fn compare_type_signatures(ty_a : @syntax.Type, ty_b : @syntax.Type) -> Bool {
   // 简化实现：对于函数签名比较，我们只做基本的类型匹配
   match (ty_a, ty_b) {
-    (@syntax.Type::Name(..), @syntax.Type::Name(..)) => true
-    (@syntax.Type::Arrow(..), @syntax.Type::Arrow(..)) => true
-    (@syntax.Type::Tuple(..), @syntax.Type::Tuple(..)) => true
-    (@syntax.Type::Option(..), @syntax.Type::Option(..)) => true
-    (@syntax.Type::Any(..), @syntax.Type::Any(..)) => true
-    (@syntax.Type::Object(_), @syntax.Type::Object(_)) => true
+    (
+      Name(constr_id={ id: id_a, .. }, tys=tys_a, ..),
+      Name(constr_id={ id: id_b, .. }, tys=tys_b, ..),
+    ) => compare_identifiers(id_a, id_b) && compare_types(tys_a, tys_b)
+    (Arrow(..), Arrow(..)) => true
+    (Tuple(tys=a, ..), Tuple(tys=b, ..)) => compare_types(a, b)
+    (Option(ty=a, ..), Option(ty=b, ..)) => compare_type_signatures(a, b)
+    (Any(..), Any(..)) => true
+    (Object({ id: a, .. }), Object({ id: b, .. })) => compare_identifiers(a, b)
     _ => false
   }
 }
@@ -281,17 +249,17 @@ pub fn RuntimeStore::update_struct_field(
 ///| 从常量推导类型
 pub fn infer_type_from_constant(c : @syntax.Constant) -> String {
   match c {
-    @syntax.Constant::Int(_) => "Int"
-    @syntax.Constant::UInt(_) => "UInt"
-    @syntax.Constant::Int64(_) => "Int64"
-    @syntax.Constant::UInt64(_) => "UInt64"
-    @syntax.Constant::Float(_) => "Float"
-    @syntax.Constant::Double(_) => "Double"
-    @syntax.Constant::Byte(_) => "Byte"
-    @syntax.Constant::Char(_) => "Char"
-    @syntax.Constant::String(_) => "String"
-    @syntax.Constant::Bool(_) => "Bool"
-    @syntax.Constant::Bytes(_) => "Bytes"
+    Int(_) => "Int"
+    UInt(_) => "UInt"
+    Int64(_) => "Int64"
+    UInt64(_) => "UInt64"
+    Float(_) => "Float"
+    Double(_) => "Double"
+    Byte(_) => "Byte"
+    Char(_) => "Char"
+    String(_) => "String"
+    Bool(_) => "Bool"
+    Bytes(_) => "Bytes"
     _ => "Unit"
   }
 }
@@ -348,7 +316,7 @@ pub impl Show for RuntimeValue with to_string(self) -> String {
         let arg_strs = args.map(fn(v) { v.to_string() })
         name + "(" + arg_strs.join(", ") + ")"
       }
-    Function(func) =>
+    FuncRef(func) =>
       // 从函数中提取参数和返回类型信息
       match func {
         @syntax.Func::Lambda(parameters~, return_type~, body~, ..) => {
@@ -372,8 +340,7 @@ pub impl Show for RuntimeValue with to_string(self) -> String {
                 }
                 // 添加默认值显示
                 match default {
-                  @syntax.Expr::Constant(c=@syntax.Constant::Int(val), ..) =>
-                    type_str + " = " + val
+                  Constant(c=Int(val), ..) => type_str + " = " + val
                   _ => type_str
                 }
               }
@@ -392,12 +359,12 @@ pub impl Show for RuntimeValue with to_string(self) -> String {
               // 对于没有显式返回类型的函数，无法在这里进行复杂的类型推导
               // 因为这里没有解释器上下文，所以只能进行简单的推导
               let inferred_type = match body {
-                @syntax.Expr::Constant(c~, ..) => infer_type_from_constant(c)
-                @syntax.Expr::Unit(..) => "Unit"
-                @syntax.Expr::Array(..) => "Array"
-                @syntax.Expr::Tuple(..) => "Tuple"
-                @syntax.Expr::Record(..) => "Record"
-                @syntax.Expr::Apply(..) => "Unknown" // 无法在没有解释器上下文的情况下推导
+                Constant(c~, ..) => infer_type_from_constant(c)
+                Unit(..) => "Unit"
+                Array(..) => "Array"
+                Tuple(..) => "Tuple"
+                Record(..) => "Record"
+                Apply(..) => "Unknown" // 无法在没有解释器上下文的情况下推导
                 _ => "Unit"
               }
               "(" + param_strs.join(", ") + ") -> " + inferred_type
@@ -421,23 +388,23 @@ pub impl Show for RuntimeValue with to_string(self) -> String {
 ///|
 pub fn type_to_string(ty : @syntax.Type) -> String {
   match ty {
-    @syntax.Type::Any(..) => "Any"
-    @syntax.Type::Arrow(args~, res~, ..) => {
+    Any(..) => "Any"
+    Arrow(args~, res~, ..) => {
       let arg_strs = args.map(fn(arg) { type_to_string(arg) })
       "(" + arg_strs.to_array().join(", ") + ") -> " + type_to_string(res)
     }
-    @syntax.Type::Tuple(tys~, ..) => {
+    Tuple(tys~, ..) => {
       let type_strs = tys.map(fn(t) { type_to_string(t) })
       "(" + type_strs.to_array().join(", ") + ")"
     }
-    @syntax.Type::Name(constr_id={ id: Ident(name~), .. }, tys~, ..) =>
+    Name(constr_id={ id: Ident(name~), .. }, tys~, ..) =>
       if tys.is_empty() {
         name
       } else {
         let type_strs = tys.map(fn(t) { type_to_string(t) })
         name + "<" + type_strs.to_array().join(", ") + ">"
       }
-    @syntax.Type::Name(constr_id={ id: Dot(pkg~, id~), .. }, tys~, ..) =>
+    Name(constr_id={ id: Dot(pkg~, id~), .. }, tys~, ..) =>
       if tys.is_empty() {
         if pkg == "" {
           id // 对于空包名，直接返回类型名
@@ -449,8 +416,8 @@ pub fn type_to_string(ty : @syntax.Type) -> String {
         let prefix = if pkg == "" { id } else { pkg + "." + id }
         prefix + "<" + type_strs.to_array().join(", ") + ">"
       }
-    @syntax.Type::Option(ty~, ..) => type_to_string(ty) + "?"
-    @syntax.Type::Object(_) => "Object"
+    Option(ty~, ..) => type_to_string(ty) + "?"
+    Object(_) => "Object"
   }
 }
 
@@ -493,76 +460,34 @@ pub fn RuntimeValue::to_expr(self : RuntimeValue) -> @syntax.Expr {
     end: { fname: "", lnum: 0, bol: 0, cnum: 0 },
   }
   match self {
-    Unit => @syntax.Expr::Unit(loc=_dummy_loc, faked=true)
-    Bool(b) =>
-      @syntax.Expr::Constant(c=@syntax.Constant::Bool(b), loc=_dummy_loc)
-    Int(i) =>
-      @syntax.Expr::Constant(
-        c=@syntax.Constant::Int(i.to_string()),
-        loc=_dummy_loc,
-      )
-    UInt(u) =>
-      @syntax.Expr::Constant(
-        c=@syntax.Constant::Int(u.to_string()),
-        loc=_dummy_loc,
-      )
-    Int64(i64) =>
-      @syntax.Expr::Constant(
-        c=@syntax.Constant::Int64(i64.to_string()),
-        loc=_dummy_loc,
-      )
-    UInt64(u64) =>
-      @syntax.Expr::Constant(
-        c=@syntax.Constant::UInt64(u64.to_string()),
-        loc=_dummy_loc,
-      )
-    Float(f) =>
-      @syntax.Expr::Constant(
-        c=@syntax.Constant::Float(f.to_string()),
-        loc=_dummy_loc,
-      )
-    Double(d) =>
-      @syntax.Expr::Constant(
-        c=@syntax.Constant::Double(d.to_string()),
-        loc=_dummy_loc,
-      )
-    Char(c) =>
-      @syntax.Expr::Constant(
-        c=@syntax.Constant::Char(c.to_string()),
-        loc=_dummy_loc,
-      )
-    Byte(b) =>
-      @syntax.Expr::Constant(
-        c=@syntax.Constant::Int(b.to_int().to_string()),
-        loc=_dummy_loc,
-      )
-    String(s) =>
-      @syntax.Expr::Constant(c=@syntax.Constant::String(s), loc=_dummy_loc)
+    Unit => Unit(loc=_dummy_loc, faked=true)
+    Bool(b) => Constant(c=Bool(b), loc=_dummy_loc)
+    Int(i) => Constant(c=Int(i.to_string()), loc=_dummy_loc)
+    UInt(u) => Constant(c=Int(u.to_string()), loc=_dummy_loc)
+    Int64(i64) => Constant(c=Int64(i64.to_string()), loc=_dummy_loc)
+    UInt64(u64) => Constant(c=UInt64(u64.to_string()), loc=_dummy_loc)
+    Float(f) => Constant(c=Float(f.to_string()), loc=_dummy_loc)
+    Double(d) => Constant(c=Double(d.to_string()), loc=_dummy_loc)
+    Char(c) => Constant(c=Char(c.to_string()), loc=_dummy_loc)
+    Byte(b) => Constant(c=Int(b.to_int().to_string()), loc=_dummy_loc)
+    String(s) => Constant(c=String(s), loc=_dummy_loc)
     Tuple(values) => {
       let exprs = values.map(fn(v) { v.to_expr() })
-      @syntax.Expr::Tuple(exprs=@list.from_array(exprs), loc=_dummy_loc)
+      Tuple(exprs=@list.from_array(exprs), loc=_dummy_loc)
     }
     Array(values) => {
       let exprs = values.map(fn(v) { v.to_expr() })
-      @syntax.Expr::Array(exprs=@list.from_array(exprs), loc=_dummy_loc)
+      Array(exprs=@list.from_array(exprs), loc=_dummy_loc)
     }
     // 引用类型需要通过store解析
-    StructRef(_) => @syntax.Expr::Unit(loc=_dummy_loc, faked=true)
-    Function(func) => @syntax.Expr::Function(func~, loc=_dummy_loc)
-    Constructor(name, args) => @syntax.Expr::Unit(loc=_dummy_loc, faked=true)
+    StructRef(_) => Unit(loc=_dummy_loc, faked=true)
+    FuncRef(func) => Function(func~, loc=_dummy_loc)
+    Constructor(_) => Unit(loc=_dummy_loc, faked=true)
     Break(value) =>
-      @syntax.Expr::Break(
-        arg=value.map(fn(v) { v.to_expr() }),
-        label=None,
-        loc=_dummy_loc,
-      )
+      Break(arg=value.map(fn(v) { v.to_expr() }), label=None, loc=_dummy_loc)
     Continue(args) => {
       let expr_args = args.map(fn(v) { v.to_expr() })
-      @syntax.Expr::Continue(
-        args=@list.from_array(expr_args),
-        label=None,
-        loc=_dummy_loc,
-      )
+      Continue(args=@list.from_array(expr_args), label=None, loc=_dummy_loc)
     }
   }
 }
@@ -580,7 +505,7 @@ pub fn RuntimeValue::to_reference_expr(
     StructRef(id) => {
       // 返回特殊的Unit表达式来保持引用信息
       let RefId(ref_num) = id
-      @syntax.Expr::Unit(
+      Unit(
         loc=@basic.Location::{
           start: { fname: "record", lnum: ref_num, bol: 0, cnum: 0 },
           end: { fname: "record", lnum: ref_num, bol: 0, cnum: 0 },
@@ -614,14 +539,14 @@ pub fn RuntimeValue::to_expr_with_store(
               loc: _dummy_loc,
             })
           })
-          @syntax.Expr::Record(
+          Record(
             type_name=None,
             fields=@list.from_array(field_defs),
             trailing=None,
             loc=_dummy_loc,
           )
         }
-        None => @syntax.Expr::Unit(loc=_dummy_loc, faked=true)
+        None => Unit(loc=_dummy_loc, faked=true)
       }
     _ => self.to_expr()
   }
@@ -630,7 +555,7 @@ pub fn RuntimeValue::to_expr_with_store(
 ///| 将@syntax.Expr转换为RuntimeValue
 pub fn RuntimeValue::from_expr(expr : @syntax.Expr) -> RuntimeValue {
   match expr {
-    @syntax.Expr::Unit(loc~, faked~) =>
+    Unit(loc~, faked~) =>
       // 检查是否是记录引用Unit表达式
       if not(faked) {
         // 这是一个特殊的结构引用Unit表达式
@@ -643,30 +568,29 @@ pub fn RuntimeValue::from_expr(expr : @syntax.Expr) -> RuntimeValue {
       } else {
         Unit
       }
-    @syntax.Expr::Constant(c~, ..) =>
+    Constant(c~, ..) =>
       match c {
-        @syntax.Constant::Bool(b) => Bool(b)
-        @syntax.Constant::Int(i) => Int((try? @strconv.parse_int(i)).unwrap())
-        @syntax.Constant::Double(d) =>
-          Double((try? @strconv.parse_double(d)).unwrap())
-        @syntax.Constant::Char(c) => Char(c.get_char(0).unwrap())
-        @syntax.Constant::String(s) => String(s)
+        Bool(b) => Bool(b)
+        Int(i) => Int((try? @strconv.parse_int(i)).unwrap())
+        Double(d) => Double((try? @strconv.parse_double(d)).unwrap())
+        Char(c) => Char(c.get_char(0).unwrap())
+        String(s) => String(s)
         _ => Unit
       }
-    @syntax.Expr::Tuple(exprs~, ..) => {
+    Tuple(exprs~, ..) => {
       let values = exprs.map(fn(e) { RuntimeValue::from_expr(e) })
       Tuple(values.to_array())
     }
-    @syntax.Expr::Array(exprs~, ..) => {
+    Array(exprs~, ..) => {
       let values = exprs.map(fn(e) { RuntimeValue::from_expr(e) })
       // 数组应该是引用类型，但这里无法访问store，暂时返回Array
       // 实际使用时需要通过带store的方法来处理
       Array(values.to_array())
     }
-    @syntax.Expr::Function(func~, ..) => Function(func)
-    @syntax.Expr::Record(..) => Unit // Record表达式应该通过store处理，这里返回Unit作为占位符
-    @syntax.Expr::Ident(..) => Unit // Ident表达式需要通过环境查找，这里返回Unit作为占位符
-    @syntax.Expr::Sequence(last_expr~, ..) =>
+    Function(func~, ..) => FuncRef(func)
+    Record(..) => Unit // Record表达式应该通过store处理，这里返回Unit作为占位符
+    Ident(..) => Unit // Ident表达式需要通过环境查找，这里返回Unit作为占位符
+    Sequence(last_expr~, ..) =>
       // 对于Sequence表达式，只关心最后一个表达式的值
       RuntimeValue::from_expr(last_expr)
     _ => Unit
@@ -679,7 +603,7 @@ pub fn RuntimeValue::from_expr_with_store(
   store : RuntimeStore,
 ) -> RuntimeValue {
   match expr {
-    @syntax.Expr::Record(fields~, ..) => {
+    Record(fields~, ..) => {
       // 处理记录表达式，将其转换为StructRef
       let field_map = Map::new()
       for field in fields {

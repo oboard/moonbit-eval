@@ -26,7 +26,7 @@ let option_unwrap_fn : RuntimeFunction = ctx => match ctx.arguments {
 let option_map_fn : RuntimeFunction = ctx => match ctx.arguments {
   [
     { value: Constructor("Some", [inner_value]), .. },
-    { value: Function(func), .. },
+    { value: FuncRef(func), .. },
     ..,
   ] => {
     // 执行函数调用
@@ -48,7 +48,7 @@ let option_map_or_fn : RuntimeFunction = ctx => match ctx.arguments {
   [
     { value: Constructor("Some", [inner_value]), .. },
     _,
-    { value: Function(func), .. },
+    { value: FuncRef(func), .. },
     ..,
   ] =>
     // 对于Some值，执行函数调用
@@ -69,7 +69,7 @@ let option_map_or_else_fn : RuntimeFunction = ctx => match ctx.arguments {
   [
     { value: Constructor("Some", [inner_value]), .. },
     _,
-    { value: Function(map_func), .. },
+    { value: FuncRef(map_func), .. },
     ..,
   ] =>
     // 对于Some值，执行map函数
@@ -82,7 +82,7 @@ let option_map_or_else_fn : RuntimeFunction = ctx => match ctx.arguments {
     )
   [
     { value: Constructor("None", []), .. },
-    { value: Function(else_func), .. },
+    { value: FuncRef(else_func), .. },
     _,
     ..,
   ] =>
@@ -95,7 +95,7 @@ let option_map_or_else_fn : RuntimeFunction = ctx => match ctx.arguments {
 let option_bind_fn : RuntimeFunction = ctx => match ctx.arguments {
   [
     { value: Constructor("Some", [inner_value]), .. },
-    { value: Function(func), .. },
+    { value: FuncRef(func), .. },
     ..,
   ] =>
     // 执行函数调用，bind应该返回函数的结果（应该是Option类型）
@@ -131,7 +131,7 @@ let option_is_empty_fn : RuntimeFunction = ctx => match ctx.arguments {
 let option_filter_fn : RuntimeFunction = ctx => match ctx.arguments {
   [
     { value: Constructor("Some", [inner_value]), .. },
-    { value: Function(predicate), .. },
+    { value: FuncRef(predicate), .. },
     ..,
   ] => {
     // 执行谓词函数
@@ -177,7 +177,7 @@ let option_unwrap_or_else_fn : RuntimeFunction = ctx => match ctx.arguments {
   [{ value: Constructor("Some", [inner_value]), .. }, ..] => inner_value
   [
     { value: Constructor("None", []), .. },
-    { value: Function(else_func), .. },
+    { value: FuncRef(else_func), .. },
     ..,
   ] =>
     // 对于None值，执行else函数
