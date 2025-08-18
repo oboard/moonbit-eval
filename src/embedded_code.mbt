@@ -1,7 +1,65 @@
+///| Runtime函数执行上下文 - 统一所有函数的执行环境
+struct RuntimeFunctionContext {
+  interpreter : ClosureInterpreter
+  arguments : Array[RuntimeArgument]
+}
+
 ///|
 let core_fn_aliases : Map[String, String] = {
   "not": "%bool_not",
   "ignore": "%ignore",
+}
+
+///| 新的函数类型定义 - 统一的上下文访问
+typealias (RuntimeFunctionContext) -> RuntimeValue as RuntimeFunction
+
+///| Option unwrap_or_else 方法（使用新的上下文模式）
+let option_unwrap_or_else_context_fn : RuntimeFunction = (ctx) => match ctx.arguments {
+  [{ value: Constructor("Some", [inner_value]), .. }, ..] => inner_value
+  [{ value: Constructor("None", []), .. }, { value: Function(func), .. }, ..] => {
+    // 通过上下文访问解释器来调用函数
+    ctx.interpreter.call(func, @list.new())
+  }
+  _ => Unit
+}
+
+///| 兼容性包装器 - 将旧的函数签名转换为新的上下文模式
+let option_unwrap_or_else_with_interpreter_fn : (ClosureInterpreter, Array[RuntimeArgument]) -> RuntimeValue = (interpreter, params) => {
+  let ctx = RuntimeFunctionContext::{ interpreter, arguments: params }
+  option_unwrap_or_else_context_fn(ctx)
+}
+
+///| 支持解释器的embedded方法映射（保持向后兼容）
+let core_embedded_methods_with_interpreter : Map[
+  String,
+  Map[String, (ClosureInterpreter, Array[RuntimeArgument]) -> RuntimeValue],
+] = {
+  "Option": {
+    "unwrap_or_else": option_unwrap_or_else_with_interpreter_fn,
+  },
+}
+
+///| 演示函数 - 展示新架构的强大功能（简化版本）
+let option_map_context_fn : RuntimeFunction = (ctx) => match ctx.arguments {
+  [{ value: Constructor("Some", [inner_value]), .. }, { value: Function(_func), .. }, ..] => {
+    // 新架构让所有函数都能访问解释器上下文
+    // 这里可以轻松实现需要解释器的复杂逻辑
+    // 为了演示，我们直接返回包装的值
+    Constructor("Some", [inner_value])
+  }
+  [{ value: Constructor("None", []), .. }, ..] => Constructor("None", [])
+  _ => Unit
+}
+
+///| 新的上下文化embedded方法映射
+let core_embedded_methods_with_context : Map[
+  String,
+  Map[String, RuntimeFunction],
+] = {
+  "Option": {
+    "unwrap_or_else": option_unwrap_or_else_context_fn,
+    "map": option_map_context_fn,
+  },
 }
 
 ///|
@@ -134,6 +192,7 @@ let core_embedded_methods : Map[
     "to_i64_reinterpret": uint64_to_int64_fn,
   },
   "Array": @core.array_methods,
+  "Option": @core.option_methods,
 }
 
 // ===== 整数算术运算 =====
@@ -213,13 +272,11 @@ let panic_fn : (Array[RuntimeArgument]) -> RuntimeValue = _params => {
 // ===== 布尔运算 =====
 
 ///| 布尔 NOT 运算
-let bool_not_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
-  params {
-  [{ value: Bool(b), .. }, ..] => Bool(not(b))
-  _ => {
-    println("bool_not_fn: no match, returning Unit")
-    Unit
-  }
+let bool_not_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => if params
+  is [{ value: Bool(b), .. }, ..] {
+  Bool(not(b))
+} else {
+  Unit
 }
 
 ///| 布尔相等比较

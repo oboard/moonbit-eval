@@ -8,6 +8,16 @@ struct ClosureInterpreter {
     String,
     Map[String, (Array[RuntimeArgument]) -> RuntimeValue],
   ]
+  // 支持函数调用的embedded方法存储
+  embedded_methods_with_interpreter : Map[
+    String,
+    Map[String, (ClosureInterpreter, Array[RuntimeArgument]) -> RuntimeValue],
+  ]
+  // 新的上下文化embedded方法存储 - 统一的函数执行环境
+  embedded_methods_with_context : Map[
+    String,
+    Map[String, (RuntimeFunctionContext) -> RuntimeValue],
+  ]
   // 函数别名存储 - 存储函数名到其实际实现的映射
   fn_aliases : Map[String, String]
   // 性能优化：区分可变和不可变变量 - 现在存储RuntimeValue而非@syntax.Expr
@@ -34,6 +44,16 @@ pub fn ClosureInterpreter::new(core~ : Bool = true) -> ClosureInterpreter {
     },
     embedded_methods: if core {
       core_embedded_methods
+    } else {
+      Map::new()
+    },
+    embedded_methods_with_interpreter: if core {
+      core_embedded_methods_with_interpreter
+    } else {
+      Map::new()
+    },
+    embedded_methods_with_context: if core {
+      core_embedded_methods_with_context
     } else {
       Map::new()
     },
@@ -80,6 +100,32 @@ pub fn ClosureInterpreter::add_embedded_method(
     self.embedded_methods.set(type_name, Map::new())
   }
   self.embedded_methods.get(type_name).unwrap().set(method_name, f)
+}
+
+///| 添加支持解释器的embedded方法
+pub fn ClosureInterpreter::add_embedded_method_with_interpreter(
+  self : ClosureInterpreter,
+  type_name : String,
+  method_name : String,
+  f : (ClosureInterpreter, Array[RuntimeArgument]) -> RuntimeValue,
+) -> Unit {
+  if not(self.embedded_methods_with_interpreter.contains(type_name)) {
+    self.embedded_methods_with_interpreter.set(type_name, Map::new())
+  }
+  self.embedded_methods_with_interpreter.get(type_name).unwrap().set(method_name, f)
+}
+
+///| 添加上下文化的embedded方法 - 新的统一接口
+pub fn ClosureInterpreter::add_embedded_method_with_context(
+  self : ClosureInterpreter,
+  type_name : String,
+  method_name : String,
+  f : (RuntimeFunctionContext) -> RuntimeValue,
+) -> Unit {
+  if not(self.embedded_methods_with_context.contains(type_name)) {
+    self.embedded_methods_with_context.set(type_name, Map::new())
+  }
+  self.embedded_methods_with_context.get(type_name).unwrap().set(method_name, f)
 }
 
 ///| 获取当前函数作用域
@@ -330,6 +376,13 @@ fn ClosureInterpreter::visit(
       match func {
         Ident(id={ name: @syntax.LongIdent::Ident(name~), .. }, ..) =>
           self.execute_function_by_name(name, args)
+        // 处理构造函数调用，如 Some(5)
+        Constr(constr~, ..) => {
+          let arg_values = args
+            .map(fn(arg) { self.visit(arg.value) })
+            .to_array()
+          RuntimeValue::Constructor(constr.name.name, arg_values)
+        }
         // 处理静态方法调用，如 Bool::default()
         Method(type_name~, method_name~, ..) => {
           let type_str = match type_name.name {
@@ -642,6 +695,11 @@ fn ClosureInterpreter::visit(
       RuntimeValue::Continue(continue_args)
     }
 
+    // 处理单独的构造函数表达式，如 None
+    Constr(constr~, ..) =>
+      // 单独的构造函数没有参数
+      RuntimeValue::Constructor(constr.name.name, [])
+
     // 处理 Break 表达式
     Break(arg~, ..) =>
       match arg {
@@ -790,19 +848,61 @@ fn ClosureInterpreter::pattern_matches_runtime(
       self.runtime_value_in_range(value, lhs, rhs, inclusive)
 
     // Constructor模式匹配
-    @syntax.Pattern::Constr(constr~, ..) => {
-      // 查找构造函数对应的值
-      let constr_runtime_value = self.find_runtime(constr.name.name)
-      match (value, constr_runtime_value) {
-        // 如果构造函数是常量值，直接比较
-        (RuntimeValue::Int(v1), RuntimeValue::Int(v2)) => v1 == v2
-        (RuntimeValue::Bool(v1), RuntimeValue::Bool(v2)) => v1 == v2
-        (RuntimeValue::String(v1), RuntimeValue::String(v2)) => v1 == v2
-        (RuntimeValue::Double(v1), RuntimeValue::Double(v2)) => v1 == v2
-        (RuntimeValue::Char(v1), RuntimeValue::Char(v2)) => v1 == v2
-        _ => false
+    @syntax.Pattern::Constr(constr~, args=pattern_args, ..) =>
+      match value {
+        RuntimeValue::Constructor(name, runtime_args) =>
+          if name == constr.name.name {
+            // 检查参数匹配
+            match pattern_args {
+              Some(pat_args) => {
+                // 有参数的构造函数，需要递归匹配每个参数
+                if runtime_args.length() != pat_args.length() {
+                  return false
+                }
+                let mut pat_list = pat_args
+                let mut index = 0
+                while true {
+                  match pat_list {
+                    @list.More(pat_arg, tail=pat_tail) => {
+                      // 提取参数模式并递归匹配
+                      let arg_pattern = pat_arg.pat
+                      if not(
+                          self.pattern_matches_runtime(
+                            runtime_args[index],
+                            arg_pattern,
+                          ),
+                        ) {
+                        return false
+                      }
+                      pat_list = pat_tail
+                      index = index + 1
+                    }
+                    @list.Empty => break
+                  }
+                }
+                true
+              }
+              None =>
+                // 无参数的构造函数，只需要名称匹配
+                runtime_args.length() == 0
+            }
+          } else {
+            false
+          }
+        _ => {
+          // 查找构造函数对应的值
+          let constr_runtime_value = self.find_runtime(constr.name.name)
+          match (value, constr_runtime_value) {
+            // 如果构造函数是常量值，直接比较
+            (RuntimeValue::Int(v1), RuntimeValue::Int(v2)) => v1 == v2
+            (RuntimeValue::Bool(v1), RuntimeValue::Bool(v2)) => v1 == v2
+            (RuntimeValue::String(v1), RuntimeValue::String(v2)) => v1 == v2
+            (RuntimeValue::Double(v1), RuntimeValue::Double(v2)) => v1 == v2
+            (RuntimeValue::Char(v1), RuntimeValue::Char(v2)) => v1 == v2
+            _ => false
+          }
+        }
       }
-    }
 
     // 其他模式暂不支持
     _ => false
@@ -899,6 +999,30 @@ fn ClosureInterpreter::pattern_to_runtime_value(
   }
 }
 
+///| 检查函数是否为已知函数（存在于任何函数映射中）
+pub fn ClosureInterpreter::is_known_function(
+  self : ClosureInterpreter,
+  name : String,
+) -> Bool {
+  let actual_name = self.fn_aliases.get(name).unwrap_or(name)
+
+  // 检查外部函数
+  if self.extern_fns.contains(actual_name) {
+    return true
+  }
+
+  // 检查嵌入函数
+  if self.embedded_fns.contains(actual_name) {
+    return true
+  }
+
+  // 检查用户定义函数
+  if self.find_user_function(actual_name) is Some(_) {
+    return true
+  }
+  false
+}
+
 ///| 查找方法的类型和执行器
 priv enum MethodType {
   UserFunction(@syntax.Func)
@@ -965,14 +1089,14 @@ fn ClosureInterpreter::execute_function_by_name(
 
   match self.find_method(name) {
     MethodType::UserFunction(function) =>
-      self.execute_function_call_runtime(function, args)
+      self.call(function, args)
     MethodType::EmbeddedFunction(embedded_name) =>
       match self.embedded_fns.get(embedded_name) {
         Some(embedded_func) => embedded_func(get_evaluated_args())
         None => RuntimeValue::Unit
       }
     MethodType::RuntimeFunction(lambda_func) =>
-      self.execute_function_call_runtime(lambda_func, args)
+      self.call(lambda_func, args)
     MethodType::ExternFunction(extern_func) => extern_func(get_evaluated_args())
     MethodType::GlobalEmbedded(embedded_func) =>
       embedded_func(get_evaluated_args())
@@ -1004,7 +1128,7 @@ fn ClosureInterpreter::execute_method_call_runtime(
         }
         None => "Struct"
       }
-    _ => self.find_type(self_expr)
+    _ => self.find_runtime_type(self_value)
   }
   match self.struct_methods.get(self_type) {
     Some(methods) =>
@@ -1061,7 +1185,78 @@ fn ClosureInterpreter::execute_method_call_runtime(
                 .to_array(),
               )
             }
-            None => RuntimeValue::Unit
+            None => {
+              // 优先检查上下文化的embedded方法（新的统一接口）
+              match self.embedded_methods_with_context.get(self_type) {
+                Some(methods_with_context) =>
+                  match methods_with_context.get(method_name) {
+                    Some(embedded_method_with_context) => {
+                      // 使用新的上下文模式调用
+                      let evaluated_args = @list.construct(
+                        self_value,
+                        args.map(fn(arg) { self.visit(arg.value) }),
+                      )
+                      let ctx = RuntimeFunctionContext::{
+                        interpreter: self,
+                        arguments: evaluated_args
+                          .map(fn(arg) {
+                            @value.RuntimeArgument::{ value: arg, kind: Positional }
+                          })
+                          .to_array(),
+                      }
+                      embedded_method_with_context(ctx)
+                    }
+                    None => {
+                      // 回退到支持解释器的embedded方法（向后兼容）
+                      match self.embedded_methods_with_interpreter.get(self_type) {
+                        Some(methods_with_interpreter) =>
+                          match methods_with_interpreter.get(method_name) {
+                            Some(embedded_method_with_interpreter) => {
+                              let evaluated_args = @list.construct(
+                                self_value,
+                                args.map(fn(arg) { self.visit(arg.value) }),
+                              )
+                              embedded_method_with_interpreter(
+                                self,
+                                evaluated_args
+                                .map(fn(arg) {
+                                  @value.RuntimeArgument::{ value: arg, kind: Positional }
+                                })
+                                .to_array(),
+                              )
+                            }
+                            None => RuntimeValue::Unit
+                          }
+                        None => RuntimeValue::Unit
+                      }
+                    }
+                  }
+                None => {
+                  // 回退到支持解释器的embedded方法（向后兼容）
+                  match self.embedded_methods_with_interpreter.get(self_type) {
+                    Some(methods_with_interpreter) =>
+                      match methods_with_interpreter.get(method_name) {
+                        Some(embedded_method_with_interpreter) => {
+                          let evaluated_args = @list.construct(
+                            self_value,
+                            args.map(fn(arg) { self.visit(arg.value) }),
+                          )
+                          embedded_method_with_interpreter(
+                            self,
+                            evaluated_args
+                            .map(fn(arg) {
+                              @value.RuntimeArgument::{ value: arg, kind: Positional }
+                            })
+                            .to_array(),
+                          )
+                        }
+                        None => RuntimeValue::Unit
+                      }
+                    None => RuntimeValue::Unit
+                  }
+                }
+              }
+            }
           }
         None => RuntimeValue::Unit
       }
@@ -1168,20 +1363,20 @@ fn ClosureInterpreter::find_runtime_type(
   runtime_value : RuntimeValue,
 ) -> String {
   match runtime_value {
-    RuntimeValue::Unit => "Unit"
-    RuntimeValue::Bool(_) => "Bool"
-    RuntimeValue::Int(_) => "Int"
-    RuntimeValue::UInt(_) => "UInt"
-    RuntimeValue::Int64(_) => "Int64"
-    RuntimeValue::UInt64(_) => "UInt64"
-    RuntimeValue::Float(_) => "Float"
-    RuntimeValue::Double(_) => "Double"
-    RuntimeValue::Char(_) => "Char"
-    RuntimeValue::Byte(_) => "Byte"
-    RuntimeValue::String(_) => "String"
-    RuntimeValue::Tuple(_) => "Tuple"
-    RuntimeValue::Array(_) => "Array"
-    RuntimeValue::StructRef(ref_id) =>
+    Unit => "Unit"
+    Bool(_) => "Bool"
+    Int(_) => "Int"
+    UInt(_) => "UInt"
+    Int64(_) => "Int64"
+    UInt64(_) => "UInt64"
+    Float(_) => "Float"
+    Double(_) => "Double"
+    Char(_) => "Char"
+    Byte(_) => "Byte"
+    String(_) => "String"
+    Tuple(_) => "Tuple"
+    Array(_) => "Array"
+    StructRef(ref_id) =>
       // 对于StructRef，尝试从store中获取字段信息来推断类型
       match self.runtime_store.get_struct(ref_id) {
         Some(struct_data) => {
@@ -1193,9 +1388,15 @@ fn ClosureInterpreter::find_runtime_type(
         }
         None => "Struct"
       }
-    RuntimeValue::Function(_) => "Function"
-    RuntimeValue::Break(_) => "Break"
-    RuntimeValue::Continue(_) => "Continue"
+    Function(_) => "Function"
+    Break(_) => "Break"
+    Continue(_) => "Continue"
+    Constructor(name, _) =>
+      // 将Option构造函数映射到Option类型
+      match name {
+        "Some" | "None" => "Option"
+        _ => name
+      }
   }
 }
 

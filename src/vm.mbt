@@ -199,9 +199,33 @@ pub fn expr_to_string(expr : @syntax.Expr) -> String {
       }
       "[" + joined + "]"
     }
+    // 处理Apply表达式 - 包括构造函数调用如Some(5)
+    Apply(func~, args~, ..) => {
+      let func_str = expr_to_string(func)
+      let arg_strs = []
+      for arg in args {
+        arg_strs.push(expr_to_string(arg.value))
+      }
+      let args_joined = arg_strs.join(", ")
+      func_str + "(" + args_joined + ")"
+    }
+    
+    // 处理Constr表达式 - 构造函数
+    Constr(constr~, ..) => constr.name.name
+    
+    // 处理Ident表达式
+    Ident(id~, ..) => {
+      match id.name {
+        @syntax.LongIdent::Ident(name~) => name
+        @syntax.LongIdent::Dot(pkg~, id~) => 
+          if pkg == "" { id } else { pkg + "." + id }
+      }
+    }
+    
     // 处理Sequence表达式 - 只显示最后一个表达式的结果
     Sequence(last_expr~, ..) => expr_to_string(last_expr)
-    // Ident表达式应该在求值时被解析，不应该出现在最终结果中
+    
+    // 其他未处理的表达式
     _ => ""
   }
 }

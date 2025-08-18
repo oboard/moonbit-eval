@@ -28,9 +28,199 @@ pub(all) enum RuntimeValue {
   // 函数值
   Function(@syntax.Func)
 
+  // 构造函数调用
+  Constructor(String, Array[RuntimeValue]) // 构造函数名称和参数
+
   // 控制流异常 - 用于实现break和continue语句
   Break(RuntimeValue?) // break可以带返回值
   Continue(Array[RuntimeValue]) // continue可以带参数列表
+}
+
+///| 为 RuntimeValue 实现自定义的 Eq trait
+
+///| 特别处理 Function 类型，通过函数签名比较相等性
+pub impl Eq for RuntimeValue with op_equal(
+  self : RuntimeValue,
+  other : RuntimeValue,
+) -> Bool {
+  match (self, other) {
+    // 基本类型的比较
+    (Unit, Unit) => true
+    (Bool(a), Bool(b)) => a == b
+    (Int(a), Int(b)) => a == b
+    (UInt(a), UInt(b)) => a == b
+    (Int64(a), Int64(b)) => a == b
+    (UInt64(a), UInt64(b)) => a == b
+    (Float(a), Float(b)) => a == b
+    (Double(a), Double(b)) => a == b
+    (Char(a), Char(b)) => a == b
+    (Byte(a), Byte(b)) => a == b
+    (String(a), String(b)) => a == b
+
+    // 复合类型的比较
+    (Tuple(a), Tuple(b)) => {
+      if a.length() != b.length() {
+        return false
+      }
+      for i = 0; i < a.length(); i = i + 1 {
+        if a[i] != b[i] {
+          return false
+        }
+      }
+      true
+    }
+    (Array(a), Array(b)) => {
+      if a.length() != b.length() {
+        return false
+      }
+      for i = 0; i < a.length(); i = i + 1 {
+        if a[i] != b[i] {
+          return false
+        }
+      }
+      true
+    }
+
+    // 引用类型的比较
+    (StructRef(a), StructRef(b)) => a == b
+
+    // 函数类型的比较 - 通过函数签名比较
+    (Function(func_a), Function(func_b)) =>
+      compare_function_signatures(func_a, func_b)
+
+    // 构造函数的比较
+    (Constructor(name_a, args_a), Constructor(name_b, args_b)) => {
+      if name_a != name_b || args_a.length() != args_b.length() {
+        return false
+      }
+      for i = 0; i < args_a.length(); i = i + 1 {
+        if args_a[i] != args_b[i] {
+          return false
+        }
+      }
+      true
+    }
+
+    // 控制流异常的比较
+    (Break(a), Break(b)) =>
+      match (a, b) {
+        (Some(val_a), Some(val_b)) => val_a == val_b
+        (None, None) => true
+        _ => false
+      }
+    (Continue(a), Continue(b)) => {
+      if a.length() != b.length() {
+        return false
+      }
+      for i = 0; i < a.length(); i = i + 1 {
+        if a[i] != b[i] {
+          return false
+        }
+      }
+      true
+    }
+
+    // 不同类型之间不相等
+    _ => false
+  }
+}
+
+///| 比较两个函数的签名是否相等
+
+///| 通过参数类型、返回类型等信息判断函数是否相同
+fn compare_function_signatures(
+  func_a : @syntax.Func,
+  func_b : @syntax.Func,
+) -> Bool {
+  match (func_a, func_b) {
+    (
+      @syntax.Func::Lambda(parameters=params_a, return_type=ret_type_a, ..),
+      @syntax.Func::Lambda(parameters=params_b, return_type=ret_type_b, ..),
+    ) => {
+      // 比较参数列表长度
+      if params_a.length() != params_b.length() {
+        return false
+      }
+
+      // 比较每个参数的类型
+      let mut parameters_a = params_a
+      let mut parameters_b = params_b
+      while true {
+        match (parameters_a, parameters_b) {
+          (@list.More(param_a, tail=tail_a), @list.More(param_b, tail=tail_b)) => {
+            if not(compare_parameter_signatures(param_a, param_b)) {
+              return false
+            }
+            parameters_a = tail_a
+            parameters_b = tail_b
+          }
+          (@list.Empty, @list.Empty) => break
+          _ => return false
+        }
+      }
+
+      // 比较返回类型
+      match (ret_type_a, ret_type_b) {
+        (Some(ret_a), Some(ret_b)) => compare_type_signatures(ret_a, ret_b)
+        (None, None) => true
+        _ => false
+      }
+    }
+    _ => false // 其他函数类型暂不支持
+  }
+}
+
+///| 比较两个参数的签名是否相等
+fn compare_parameter_signatures(
+  param_a : @syntax.Parameter,
+  param_b : @syntax.Parameter,
+) -> Bool {
+  match (param_a, param_b) {
+    (
+      @syntax.Parameter::Positional(binder=binder_a, ty=ty_a),
+      @syntax.Parameter::Positional(binder=binder_b, ty=ty_b),
+    ) => binder_a.name == binder_b.name && compare_optional_types(ty_a, ty_b)
+    (
+      @syntax.Parameter::Labelled(binder=binder_a, ty=ty_a),
+      @syntax.Parameter::Labelled(binder=binder_b, ty=ty_b),
+    ) => binder_a.name == binder_b.name && compare_optional_types(ty_a, ty_b)
+    (
+      @syntax.Parameter::Optional(binder=binder_a, ty=ty_a, ..),
+      @syntax.Parameter::Optional(binder=binder_b, ty=ty_b, ..),
+    ) => binder_a.name == binder_b.name && compare_optional_types(ty_a, ty_b)
+    (
+      @syntax.Parameter::QuestionOptional(binder=binder_a, ty=ty_a),
+      @syntax.Parameter::QuestionOptional(binder=binder_b, ty=ty_b),
+    ) => binder_a.name == binder_b.name && compare_optional_types(ty_a, ty_b)
+    (
+      @syntax.Parameter::DiscardPositional(ty=ty_a, ..),
+      @syntax.Parameter::DiscardPositional(ty=ty_b, ..),
+    ) => compare_optional_types(ty_a, ty_b)
+    _ => false
+  }
+}
+
+///| 比较两个可选类型是否相等
+fn compare_optional_types(ty_a : @syntax.Type?, ty_b : @syntax.Type?) -> Bool {
+  match (ty_a, ty_b) {
+    (Some(t_a), Some(t_b)) => compare_type_signatures(t_a, t_b)
+    (None, None) => true
+    _ => false
+  }
+}
+
+///| 比较两个类型签名是否相等
+fn compare_type_signatures(ty_a : @syntax.Type, ty_b : @syntax.Type) -> Bool {
+  // 简化实现：对于函数签名比较，我们只做基本的类型匹配
+  match (ty_a, ty_b) {
+    (@syntax.Type::Name(..), @syntax.Type::Name(..)) => true
+    (@syntax.Type::Arrow(..), @syntax.Type::Arrow(..)) => true
+    (@syntax.Type::Tuple(..), @syntax.Type::Tuple(..)) => true
+    (@syntax.Type::Option(..), @syntax.Type::Option(..)) => true
+    (@syntax.Type::Any(..), @syntax.Type::Any(..)) => true
+    (@syntax.Type::Object(_), @syntax.Type::Object(_)) => true
+    _ => false
+  }
 }
 
 ///|
@@ -150,6 +340,14 @@ pub impl Show for RuntimeValue with to_string(self) -> String {
       "[" + parts.join(", ") + "]"
     }
     StructRef(RefId(id)) => "<ref:" + id.to_string() + ">"
+    Constructor(name, args) =>
+      // 格式化构造函数调用
+      if args.length() == 0 {
+        name
+      } else {
+        let arg_strs = args.map(fn(v) { v.to_string() })
+        name + "(" + arg_strs.join(", ") + ")"
+      }
     Function(func) =>
       // 从函数中提取参数和返回类型信息
       match func {
@@ -276,6 +474,14 @@ pub fn RuntimeValue::to_string_with_store(
         }
         None => "<invalid_ref>"
       }
+    Constructor(name, args) =>
+      // 处理构造函数调用
+      if args.length() == 0 {
+        name
+      } else {
+        let arg_strs = args.map(fn(v) { v.to_string_with_store(store) })
+        name + "(" + arg_strs.join(", ") + ")"
+      }
     _ => self.to_string()
   }
 }
@@ -343,6 +549,9 @@ pub fn RuntimeValue::to_expr(self : RuntimeValue) -> @syntax.Expr {
     // 引用类型需要通过store解析
     StructRef(_) => @syntax.Expr::Unit(loc=_dummy_loc, faked=true)
     Function(func) => @syntax.Expr::Function(func~, loc=_dummy_loc)
+    Constructor(_) =>
+      // 暂时返回Unit，避免复杂的语法构造
+      @syntax.Expr::Unit(loc=_dummy_loc, faked=true)
     Break(value) =>
       @syntax.Expr::Break(
         arg=value.map(fn(v) { v.to_expr() }),

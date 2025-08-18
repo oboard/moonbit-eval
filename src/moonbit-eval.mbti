@@ -113,6 +113,9 @@ pub enum RuntimeValue {
   Array(Array[RuntimeValue])
   StructRef(RefId)
   Function(@syntax.Func)
+  Constructor(String, Array[RuntimeValue])
+  Break(RuntimeValue?)
+  Continue(Array[RuntimeValue])
 }
 fn RuntimeValue::from_expr(@syntax.Expr) -> Self
 fn RuntimeValue::from_expr_with_store(@syntax.Expr, RuntimeStore) -> Self

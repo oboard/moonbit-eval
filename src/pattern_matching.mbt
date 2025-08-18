@@ -376,13 +376,8 @@ pub fn ClosureInterpreter::pattern_to_value(
   pattern : @syntax.Pattern,
 ) -> @syntax.Expr? {
   match pattern {
-    @syntax.Pattern::Constant(c~, ..) =>
-      Some(
-        @syntax.Expr::Constant(c~, loc={
-          start: { fname: "", lnum: 0, bol: 0, cnum: 0 },
-          end: { fname: "", lnum: 0, bol: 0, cnum: 0 },
-        }),
-      )
+    @syntax.Pattern::Constant(c~, loc~) =>
+      Some(@syntax.Expr::Constant(c~, loc~))
     @syntax.Pattern::Constr(constr~, ..) => {
       // 查找构造函数的值
       let runtime_value = self.find_runtime(constr.name.name)

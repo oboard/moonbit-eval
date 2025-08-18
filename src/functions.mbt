@@ -132,7 +132,7 @@ pub fn ClosureInterpreter::execute_function_call(
 }
 
 ///|
-pub fn ClosureInterpreter::execute_function_call_runtime(
+pub fn ClosureInterpreter::call(
   self : ClosureInterpreter,
   function : @syntax.Func,
   args : @list.List[@syntax.Argument],

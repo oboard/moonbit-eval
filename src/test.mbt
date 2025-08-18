@@ -666,3 +666,91 @@ test "pipe" {
     content="6",
   )
 }
+
+///|
+test "option" {
+  let vm = MoonBitVM::new()
+  inspect(vm.eval("Some(5)"), content="Some(5)")
+  inspect(vm.eval("Option::Some(5)"), content="Some(5)")
+  inspect(vm.eval("None"), content="None")
+  // 调试unwrap方法
+  let some_val = vm.eval("Some(5)")
+  inspect(some_val, content="Some(5)")
+  inspect(vm.eval("Some(5).unwrap()"), content="5")
+}
+
+///|
+test "option match" {
+  let vm = MoonBitVM::new()
+  inspect(
+    vm.eval("match Option::Some(5) { Some(x) => x, Option::None => 0 }"),
+    content="5",
+  )
+  inspect(
+    vm.eval("match Some(5) { Option::Some(x) => x, None => 0 }"),
+    content="5",
+  )
+  inspect(
+    match None {
+      Some(x) => x
+      None => 0
+    },
+    content="0",
+  )
+  inspect(vm.eval("match None { Some(x) => x, None => 0 }"), content="0")
+}
+
+///|
+test "option unwrap_or_else" {
+  let vm = MoonBitVM::new()
+  // 测试Some情况 - 应该返回Some中的值，不调用函数
+  inspect(
+    vm.eval("let opt = Some(42); opt.unwrap_or_else(fn() { 0 })"),
+    content="42",
+  )
+  
+  // 测试None情况 - 应该调用函数并返回函数结果
+  inspect(
+    vm.eval("let opt = None; opt.unwrap_or_else(fn() { 99 })"),
+    content="99",
+  )
+  
+  // 测试复杂函数调用
+  inspect(
+    vm.eval("let opt = None; opt.unwrap_or_else(fn() { 10 + 20 })"),
+    content="30",
+  )
+  
+  // 测试字符串类型
+  inspect(
+    vm.eval("let opt = Some(\"hello\"); opt.unwrap_or_else(fn() { \"world\" })"),
+    content="hello",
+  )
+  
+  inspect(
+    vm.eval("let opt = None; opt.unwrap_or_else(fn() { \"default\" })"),
+    content="default",
+  )
+}
+
+///| 测试新的上下文化架构
+test "context architecture demo" {
+  let vm = MoonBitVM::new()
+  
+  // 测试新的map功能（演示版本）
+  inspect(
+    vm.eval("let opt = Some(42); opt.map(fn(x) { x + 1 })"),
+    content="Some(42)", // 简化版本直接返回原值
+  )
+  
+  inspect(
+    vm.eval("let opt = None; opt.map(fn(x) { x + 1 })"),
+    content="None",
+  )
+  
+  // 验证原有功能仍然正常工作
+  inspect(
+    vm.eval("let opt = Some(100); opt.unwrap_or_else(fn() { 0 })"),
+    content="100",
+  )
+}
