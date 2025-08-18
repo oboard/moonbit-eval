@@ -585,7 +585,23 @@ test {
     ),
     content="(n: Int, acc: Int) -> Int",
   )
-  inspect(vm.eval("sum_loop2(5, 1)"), content="11")
+  inspect(vm.eval("sum_loop2(5, 1)"), content="9")
+}
+
+///|
+test {
+  fn sum_loop2(n : Int, acc : Int) -> Int {
+    let mut acc = acc
+    for i = 0; i < n; i = i + 1 {
+      if i == 2 {
+        continue
+      }
+      acc = acc + i
+    }
+    acc
+  }
+
+  inspect(sum_loop2(5, 1), content="9")
 }
 
 ///|
@@ -609,3 +625,22 @@ test {
   )
 }
 
+///|
+test "pipe" {
+  let vm = MoonBitVM::new()
+
+  // Test basic pipe operator
+  inspect(vm.eval("5 |> ignore"), content="()")
+
+  // Test pipe with array push
+  inspect(vm.eval("[] |> Array::push(5)"), content="[5]")
+
+  // Test chained pipe operators
+  inspect(vm.eval("1 |> add(5) |> ignore"), content="()")
+
+  // Test pipe with function calls
+  inspect(
+    vm.eval("fn add(x: Int, y: Int) -> Int { x + y }\n1 |> add(5)"),
+    content="6",
+  )
+}

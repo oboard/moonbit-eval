@@ -397,9 +397,74 @@ fn ClosureInterpreter::visit(
       }
     }
 
+    // 处理管道表达式 (Pipe) - 将左侧值作为右侧函数的第一个参数
+    Pipe(lhs~, rhs~, ..) => {
+      // 先评估左侧值
+      let left_val = self.visit(lhs)
+      match rhs {
+        // 处理简单函数调用，如 5 |> ignore
+        Ident(id={ name: @syntax.LongIdent::Ident(name~), .. }, ..) => {
+          // 创建包含左侧值的参数列表
+          let left_expr = left_val.to_expr_with_store(self.runtime_store)
+          let pipe_args = @list.construct(
+            @syntax.Argument::{
+              value: left_expr,
+              kind: @syntax.ArgumentKind::Positional,
+            },
+            @list.new(),
+          )
+          self.execute_function_by_name(name, pipe_args)
+        }
+        // 处理方法调用，如 [] |> Array::push(5)
+        Apply(func~, args~, ..) =>
+          match func {
+            Method(type_name~, method_name~, ..) => {
+              let type_str = match type_name.name {
+                @syntax.LongIdent::Ident(name~) => name
+                _ => "Unknown"
+              }
+              // 将左侧值添加到参数列表前面
+              let left_expr = left_val.to_expr_with_store(self.runtime_store)
+              let pipe_args = @list.construct(
+                @syntax.Argument::{
+                  value: left_expr,
+                  kind: @syntax.ArgumentKind::Positional,
+                },
+                args,
+              )
+              self.execute_static_method_call(
+                type_str,
+                method_name.name,
+                pipe_args,
+              )
+            }
+            Ident(id={ name: @syntax.LongIdent::Ident(name~), .. }, ..) => {
+              // 处理函数调用，如 5 |> func(arg1, arg2)
+              let left_expr = left_val.to_expr_with_store(self.runtime_store)
+              let pipe_args = @list.construct(
+                @syntax.Argument::{
+                  value: left_expr,
+                  kind: @syntax.ArgumentKind::Positional,
+                },
+                args,
+              )
+              self.execute_function_by_name(name, pipe_args)
+            }
+            _ => left_val
+          }
+        _ => left_val
+      }
+    }
+
     // 处理序列表达式
     Sequence(exprs~, last_expr~, ..) => {
-      exprs.each(fn(expr) { self.visit(expr) |> ignore })
+      for expr in exprs {
+        let result = self.visit(expr)
+        match result {
+          RuntimeValue::Break(_) | RuntimeValue::Continue(_) => return result
+          _ => () // 继续执行下一个表达式
+        }
+      }
       self.visit(last_expr)
     }
 
@@ -407,7 +472,7 @@ fn ClosureInterpreter::visit(
     Group(expr~, ..) => self.visit(expr)
 
     // 处理 For 循环
-    For(binders~, condition~, continue_block~, body~, ..) => {
+    For(binders~, condition~, continue_block~, body~, ..) =>
       self.with_scope(fn() {
         // 初始化循环变量
         for binder_init in binders {
@@ -439,11 +504,22 @@ fn ClosureInterpreter::visit(
           // 执行循环体，处理break和continue
           let body_result = self.visit(body)
           match body_result {
-            RuntimeValue::Break(value) => {
+            RuntimeValue::Break(value) =>
               return match value {
                 Some(v) => v
                 None => RuntimeValue::Unit
               }
+            RuntimeValue::Continue(_) => {
+              // continue时也要执行更新块，然后跳到下一次迭代
+              for update_tuple in continue_block {
+                match update_tuple {
+                  (binder, update_expr) => {
+                    let new_value = self.visit(update_expr)
+                    self.set_mutable_variable(binder.name, new_value)
+                  }
+                }
+              }
+              continue
             }
             _ => () // 正常执行，继续
           }
@@ -460,7 +536,6 @@ fn ClosureInterpreter::visit(
         }
         RuntimeValue::Unit
       })
-    }
 
     // 处理 While 循环
     While(loop_cond~, loop_body~, while_else~, ..) => {
@@ -824,58 +899,88 @@ fn ClosureInterpreter::pattern_to_runtime_value(
   }
 }
 
+///| 查找方法的类型和执行器
+priv enum MethodType {
+  UserFunction(@syntax.Func)
+  EmbeddedFunction(String)
+  RuntimeFunction(@syntax.Func)
+  ExternFunction((Array[RuntimeArgument]) -> RuntimeValue)
+  GlobalEmbedded((Array[RuntimeArgument]) -> RuntimeValue)
+  NotFound
+}
+
+///| 按名称查找方法
+fn ClosureInterpreter::find_method(
+  self : ClosureInterpreter,
+  name : String,
+) -> MethodType {
+  let name = self.fn_aliases.get(name).unwrap_or(name)
+
+  // 按优先级查找：用户函数 -> Lambda变量 -> 外部函数 -> embedded函数
+  match self.find_user_function(name) {
+    Some(function) =>
+      // 检查是否是embedded函数的标记函数
+      match function {
+        Lambda(body=Ident(id~, ..), ..) =>
+          match id.name {
+            Ident(name=embedded_name) =>
+              MethodType::EmbeddedFunction(embedded_name)
+            _ => MethodType::UserFunction(function)
+          }
+        _ => MethodType::UserFunction(function)
+      }
+    None => {
+      let var_runtime_value = self.find_runtime(name)
+      match var_runtime_value {
+        RuntimeValue::Function(lambda_func) =>
+          MethodType::RuntimeFunction(lambda_func)
+        _ =>
+          match self.extern_fns.get(name) {
+            Some(extern_func) => MethodType::ExternFunction(extern_func)
+            None =>
+              match self.embedded_fns.get(name) {
+                Some(embedded_func) => MethodType::GlobalEmbedded(embedded_func)
+                None => MethodType::NotFound
+              }
+          }
+      }
+    }
+  }
+}
+
 ///| 按名称执行函数调用
 fn ClosureInterpreter::execute_function_by_name(
   self : ClosureInterpreter,
   name : String,
   args : @list.List[@syntax.Argument],
 ) -> RuntimeValue {
-  let name = self.fn_aliases.get(name).unwrap_or(name)
-  // 按优先级查找函数：用户函数 -> Lambda变量 -> 外部函数 -> embedded函数
-  match self.find_user_function(name) {
-    Some(function) =>
-
-      // 检查是否是embedded函数的标记函数
-      match function {
-        Lambda(body=Ident(id~, ..), ..) =>
-          // 提取embedded函数名
-          match id.name {
-            Ident(name=embedded_name) => {
-
-              // 这是embedded函数标记，调用对应的embedded函数
-              let evaluated_args = args
-                .map(arg => { value: self.visit(arg.value), kind: arg.kind })
-                .to_array()
-              match self.embedded_fns.get(embedded_name) {
-                Some(embedded_func) => embedded_func(evaluated_args)
-                None => RuntimeValue::Unit
-              }
-            }
-            _ => self.execute_function_call_runtime(function, args)
-          }
-        _ => self.execute_function_call_runtime(function, args)
-      }
-    None => {
-      let var_runtime_value = self.find_runtime(name)
-      match var_runtime_value {
-        RuntimeValue::Function(lambda_func) =>
-          self.execute_function_call_runtime(lambda_func, args)
-        _ => {
-          let evaluated_args = args
-            .map(arg => { value: self.visit(arg.value), kind: arg.kind })
-            .to_array()
-          match self.extern_fns.get(name) {
-            Some(extern_func) => extern_func(evaluated_args)
-            None =>
-              // 尝试查找全局embedded函数
-              match self.embedded_fns.get(name) {
-                Some(embedded_func) => embedded_func(evaluated_args)
-                None => RuntimeValue::Unit
-              }
-          }
-        }
+  match self.find_method(name) {
+    MethodType::UserFunction(function) =>
+      self.execute_function_call_runtime(function, args)
+    MethodType::EmbeddedFunction(embedded_name) => {
+      let evaluated_args = args
+        .map(arg => { value: self.visit(arg.value), kind: arg.kind })
+        .to_array()
+      match self.embedded_fns.get(embedded_name) {
+        Some(embedded_func) => embedded_func(evaluated_args)
+        None => RuntimeValue::Unit
       }
     }
+    MethodType::RuntimeFunction(lambda_func) =>
+      self.execute_function_call_runtime(lambda_func, args)
+    MethodType::ExternFunction(extern_func) => {
+      let evaluated_args = args
+        .map(arg => { value: self.visit(arg.value), kind: arg.kind })
+        .to_array()
+      extern_func(evaluated_args)
+    }
+    MethodType::GlobalEmbedded(embedded_func) => {
+      let evaluated_args = args
+        .map(arg => { value: self.visit(arg.value), kind: arg.kind })
+        .to_array()
+      embedded_func(evaluated_args)
+    }
+    MethodType::NotFound => RuntimeValue::Unit
   }
 }
 
@@ -908,7 +1013,7 @@ fn ClosureInterpreter::execute_method_call_runtime(
   match self.struct_methods.get(self_type) {
     Some(methods) =>
       match methods.get(method_name) {
-        Some(func) => {
+        Some(func) =>
           // 普通函数，正常调用
           self.with_scope(fn() {
             // 手动绑定self参数和其他参数
@@ -940,7 +1045,6 @@ fn ClosureInterpreter::execute_method_call_runtime(
               _ => RuntimeValue::Unit
             }
           })
-        }
         None => RuntimeValue::Unit
       }
     None =>
@@ -1106,7 +1210,7 @@ fn safe_index_access(values : Array[RuntimeValue], index : Int) -> RuntimeValue 
 ///| 作用域管理辅助函数，确保作用域正确清理
 fn[T] ClosureInterpreter::with_scope(
   self : ClosureInterpreter,
-  f : () -> T
+  f : () -> T,
 ) -> T {
   self.push_scope()
   let result = f()

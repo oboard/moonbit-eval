@@ -1,5 +1,8 @@
 ///|
-let core_fn_aliases : Map[String, String] = { "not": "%bool_not" }
+let core_fn_aliases : Map[String, String] = {
+  "not": "%bool_not",
+  "ignore": "%ignore",
+}
 
 ///|
 let core_embedded_code : Map[String, (Array[RuntimeArgument]) -> RuntimeValue] = {
@@ -156,6 +159,11 @@ let core_embedded_methods : Map[
     "compare": uint64_compare_fn,
     "to_u32": uint64_to_uint_fn,
     "to_i64_reinterpret": uint64_to_int64_fn,
+  },
+  "Array": {
+    "length": array_length_fn,
+    "push": array_push_fn,
+    "pop": array_pop_fn,
   },
 }
 
@@ -841,5 +849,33 @@ let uint64_to_uint_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => mat
 let uint64_to_int64_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
   params {
   [{ value: UInt64(u64), .. }, ..] => Int64(u64.reinterpret_as_int64())
+  _ => Unit
+}
+
+///| 数组长度
+let array_length_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
+  params {
+  [{ value: Array(arr), .. }, ..] => Int(arr.length())
+  _ => Unit
+}
+
+///| 数组push操作
+let array_push_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
+  params {
+  [{ value: Array(arr), .. }, { value: val, .. }, ..] => {
+    arr.push(val)
+    Array(arr)
+  }
+  _ => Unit
+}
+
+///| 数组pop操作
+let array_pop_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
+  params {
+  [{ value: Array(arr), .. }, ..] =>
+    match arr.pop() {
+      Some(val) => val
+      None => Unit
+    }
   _ => Unit
 }

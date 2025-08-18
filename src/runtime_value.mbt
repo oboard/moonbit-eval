@@ -107,39 +107,44 @@ fn infer_type_from_constant(c : @syntax.Constant) -> String {
 }
 
 ///| 从函数体推导返回类型
-fn infer_return_type_from_body(
+fn ClosureInterpreter::infer_return_type_from_expr(
+  self : ClosureInterpreter,
   body : @syntax.Expr,
-  interpreter : ClosureInterpreter,
 ) -> String {
   match body {
-    @syntax.Expr::Constant(c~, ..) => infer_type_from_constant(c)
-    @syntax.Expr::Unit(..) => "Unit"
-    @syntax.Expr::Array(..) => "Array"
-    @syntax.Expr::Tuple(..) => "Tuple"
-    @syntax.Expr::Record(..) => "Record"
+    Constant(c~, ..) => infer_type_from_constant(c)
+    Unit(..) => "Unit"
+    Array(..) => "Array"
+    Tuple(..) => "Tuple"
+    Record(..) => "Record"
     // 处理函数调用表达式
-    @syntax.Expr::Apply(func~, ..) =>
+    Apply(func~, ..) =>
       match func {
         @syntax.Expr::Ident(
           id={ name: @syntax.LongIdent::Ident(name~), .. },
           ..
         ) =>
           // 查找函数定义并获取其返回类型
-          match interpreter.find_user_function(name) {
+          match self.find_user_function(name) {
             Some(@syntax.Func::Lambda(return_type=Some(ret_type), ..)) =>
               type_to_string(ret_type)
             Some(@syntax.Func::Lambda(return_type=None, body~, ..)) =>
               // 递归推导函数体的返回类型
-              infer_return_type_from_body(body, interpreter)
+              self.infer_return_type_from_expr(body)
             Some(@syntax.Func::Match(..)) => "Unit"
             None => "Unit"
           }
         _ => "Unit"
       }
     // 处理 match 表达式
-    @syntax.Expr::Match(..) => "Unit"
-    @syntax.Expr::Sequence(last_expr~, ..) =>
-      infer_return_type_from_body(last_expr, interpreter)
+    Match(..) => "Unit"
+    Sequence(last_expr~, ..) => self.infer_return_type_from_expr(last_expr)
+    Infix(op={ name: Ident(name=op_name), .. }, lhs~, ..) => {
+      let lhs_type = self.infer_return_type_from_expr(lhs)
+      match op_name {
+        _ => lhs_type
+      }
+    }
     _ => "Unit"
   }
 }
@@ -365,7 +370,7 @@ pub fn RuntimeValue::to_string_with_interpreter(
             Some(t) => "(" + param_strs.join(", ") + ") -> " + type_to_string(t)
             None => {
               // 使用解释器上下文进行正确的类型推导
-              let inferred_type = infer_return_type_from_body(body, interpreter)
+              let inferred_type = interpreter.infer_return_type_from_expr(body)
               "(" + param_strs.join(", ") + ") -> " + inferred_type
             }
           }
