@@ -44,10 +44,40 @@ pub impl Eq for RuntimeValue with op_equal(
   other : RuntimeValue,
 ) -> Bool {
   match (self, other) {
+    // 基本值类型比较
+    (Unit, Unit) => true
+    (Bool(a), Bool(b)) => a == b
+    (Int(a), Int(b)) => a == b
+    (UInt(a), UInt(b)) => a == b
+    (Int64(a), Int64(b)) => a == b
+    (UInt64(a), UInt64(b)) => a == b
+    (Float(a), Float(b)) => a == b
+    (Double(a), Double(b)) => a == b
+    (Char(a), Char(b)) => a == b
+    (Byte(a), Byte(b)) => a == b
+    (String(a), String(b)) => a == b
+
+    // 复合值类型比较
+    (Tuple(a), Tuple(b)) => a == b
+    (Array(a), Array(b)) => a == b
+
+    // 引用类型比较
+    (StructRef(a), StructRef(b)) => a == b
+
     // 函数类型的比较 - 通过函数签名比较
     (FuncRef(func_a), FuncRef(func_b)) =>
       compare_function_signatures(func_a, func_b)
-    (a, b) => a == b
+
+    // 构造函数比较
+    (Constructor(name_a, args_a), Constructor(name_b, args_b)) =>
+      name_a == name_b && args_a == args_b
+
+    // 控制流异常比较
+    (Break(a), Break(b)) => a == b
+    (Continue(a), Continue(b)) => a == b
+
+    // 不同类型之间不相等
+    _ => false
   }
 }
 

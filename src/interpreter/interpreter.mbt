@@ -353,7 +353,7 @@ pub fn ClosureInterpreter::visit(
             }
             None => self.visit(expr)
           }
-          self.set_variable(name, new_value)
+          self.update_variable(name, new_value)
           RuntimeValue::Unit
         }
         _ => RuntimeValue::Unit

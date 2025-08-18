@@ -7,35 +7,34 @@ pub fn find_variable(
   values : Array[Map[String, RuntimeValue]],
   name : String,
 ) -> RuntimeValue {
-  for value in values.rev() {
-    if value.contains(name) {
-      return value.get(name).unwrap()
+  for value in values.rev_iter() {
+    if value.get(name) is Some(x) {
+      return x
     }
   }
   RuntimeValue::Unit
 }
 
-///| 设置可变变量
+///| 更新变量
 pub fn ClosureInterpreter::set_variable(
   self : ClosureInterpreter,
   name : String,
   value : RuntimeValue,
 ) -> Unit {
-  self.values[self.values.length() - 1].set(name, value)
+  self.current_scope().set(name, value)
 }
 
 ///| 更新可变变量的值
 
 ///| 在可变变量数组中查找并更新指定变量
-pub fn update_variable(
-  values : Array[Map[String, RuntimeValue]],
+pub fn ClosureInterpreter::update_variable(
+  self : ClosureInterpreter,
   name : String,
   new_value : RuntimeValue,
 ) -> Unit {
-  // 只在可变变量数组中查找和更新（性能优化）
-  for i = values.length() - 1; i >= 0; i = i - 1 {
-    if values[i].contains(name) {
-      values[i].set(name, new_value)
+  for values in self.values.rev_iter() {
+    if values.contains(name) {
+      values.set(name, new_value)
     }
   }
 }
