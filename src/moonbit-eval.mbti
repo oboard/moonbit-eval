@@ -23,9 +23,9 @@ pub struct EvalResult {
 impl Show for EvalResult
 
 type MoonBitVM
-fn MoonBitVM::create(core? : Bool) -> Self
+fn MoonBitVM::create(log? : Bool, core? : Bool) -> Self
 fn MoonBitVM::eval(Self, String, log? : Bool, top? : Bool) -> EvalResult raise Failure
-fn MoonBitVM::new(core? : Bool) -> Self
+fn MoonBitVM::new(log? : Bool, core? : Bool) -> Self
 
 // Type aliases
 pub typealias (@interpreter.RuntimeFunctionContext) -> @value.RuntimeValue as RuntimeFunction

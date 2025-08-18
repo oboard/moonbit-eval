@@ -7,9 +7,8 @@ pub(all) struct ClosureInterpreter {
   embedded_methods : Map[String, Map[String, RuntimeFunction]]
   // 函数别名存储 - 存储函数名到其实际实现的映射
   fn_aliases : Map[String, String]
-  // 性能优化：区分可变和不可变变量 - 现在存储RuntimeValue而非@syntax.Expr
-  immutable_values : Array[Map[String, RuntimeValue]]
-  mutable_values : Array[Map[String, RuntimeValue]]
+  // 变量
+  values : Array[Map[String, RuntimeValue]]
   // 运行时存储 - 管理可变对象的引用
   runtime_store : RuntimeStore
   // 用户定义的函数
@@ -41,8 +40,7 @@ pub fn ClosureInterpreter::new(core~ : Bool = true) -> ClosureInterpreter {
     } else {
       Map::new()
     },
-    immutable_values: [{}],
-    mutable_values: [{}],
+    values: [{}],
     runtime_store: RuntimeStore::new(),
     user_functions: [{}],
     type_definitions: Map::new(),
@@ -90,12 +88,12 @@ fn ClosureInterpreter::current_user_function_scope(
   self.user_functions[self.user_functions.length() - 1]
 }
 
-///| 获取当前不可变变量作用域
-fn ClosureInterpreter::current_immutable_scope(
+///| 获取当前变量作用域
+fn ClosureInterpreter::current_scope(
   self : ClosureInterpreter,
 ) -> Map[String, RuntimeValue] {
-  // immutable_values 数组永远非空（初始化为 [{}]），直接访问最后一个元素
-  self.immutable_values[self.immutable_values.length() - 1]
+  // values 数组永远非空（初始化为 [{}]），直接访问最后一个元素
+  self.values[self.values.length() - 1]
 }
 
 ///| 查找变量并返回其 RuntimeValue（新的优化方法）
@@ -103,7 +101,7 @@ fn ClosureInterpreter::find_runtime(
   self : ClosureInterpreter,
   name : String,
 ) -> RuntimeValue {
-  find_variable(self.immutable_values, self.mutable_values, name)
+  find_variable(self.values, name)
 }
 
 ///|
@@ -121,7 +119,7 @@ pub fn ClosureInterpreter::top_visit(
 
     // 处理顶层常量定义（如 const Zero = 0）
     TopLetDef(binder~, expr~, ..) =>
-      self.set_immutable_variable(binder.name, self.visit(expr))
+      self.set_variable(binder.name, self.visit(expr))
     TopTypeDef(def) =>
       match def {
         { tycon, params, components, .. } => {
@@ -142,7 +140,7 @@ pub fn ClosureInterpreter::top_visit(
                 let constr_name = constr.name.name
                 // 将构造函数注册为无参数的Constructor
                 // TODO: 对于泛型类型，需要在实例化时处理类型参数
-                self.set_immutable_variable(
+                self.set_variable(
                   constr_name,
                   RuntimeValue::Constructor(constr_name, []),
                 )
@@ -324,7 +322,7 @@ pub fn ClosureInterpreter::visit(
     // 处理可变变量声明
     LetMut(binder={ name, .. }, expr~, body~, ..) => {
       let runtime_value = self.visit(expr)
-      self.set_mutable_variable(name, runtime_value)
+      self.set_variable(name, runtime_value)
       // 执行body部分，这是关键！
       self.visit(body)
     }
@@ -355,7 +353,7 @@ pub fn ClosureInterpreter::visit(
             }
             None => self.visit(expr)
           }
-          update_mutable_variable(self.mutable_values, name, new_value)
+          self.set_variable(name, new_value)
           RuntimeValue::Unit
         }
         _ => RuntimeValue::Unit
@@ -526,7 +524,7 @@ pub fn ClosureInterpreter::visit(
           match binder_init {
             (binder, init_expr) => {
               let init_value = self.visit(init_expr)
-              self.set_mutable_variable(binder.name, init_value)
+              self.set_variable(binder.name, init_value)
             }
           }
         }
@@ -562,7 +560,7 @@ pub fn ClosureInterpreter::visit(
                 match update_tuple {
                   (binder, update_expr) => {
                     let new_value = self.visit(update_expr)
-                    self.set_mutable_variable(binder.name, new_value)
+                    self.set_variable(binder.name, new_value)
                   }
                 }
               }
@@ -576,7 +574,7 @@ pub fn ClosureInterpreter::visit(
             match update_tuple {
               (binder, update_expr) => {
                 let new_value = self.visit(update_expr)
-                self.set_mutable_variable(binder.name, new_value)
+                self.set_variable(binder.name, new_value)
               }
             }
           }
@@ -718,7 +716,7 @@ fn ClosureInterpreter::pattern_matches_runtime(
   match pattern {
     // 变量模式匹配（总是匹配，并绑定变量）
     @syntax.Pattern::Var({ name, .. }) => {
-      self.set_immutable_variable(name, value)
+      self.set_variable(name, value)
       true
     }
 
@@ -1150,13 +1148,9 @@ fn ClosureInterpreter::execute_method_call_runtime(
                   @list.More(first_param, tail=rest_params) => {
                     match first_param {
                       @syntax.Parameter::Positional(binder={ name, .. }, ..) =>
-                        ignore(
-                          self.current_immutable_scope().set(name, self_value),
-                        )
+                        ignore(self.current_scope().set(name, self_value))
                       @syntax.Parameter::Labelled(binder={ name, .. }, ..) =>
-                        ignore(
-                          self.current_immutable_scope().set(name, self_value),
-                        )
+                        ignore(self.current_scope().set(name, self_value))
                       _ => ()
                     }
                     // 绑定其他参数

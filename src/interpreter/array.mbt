@@ -8,6 +8,22 @@ pub let array_methods : Map[String, RuntimeFunction] = {
   "copy": array_copy_fn,
   "join": array_join_fn,
   "swap": array_swap_fn,
+  "get": array_get_fn,
+  "append": array_append_fn,
+  "set": array_set_fn,
+  "pop": array_pop_fn,
+  "insert": array_insert_fn,
+  "remove": array_remove_fn,
+  "contains": array_contains_fn,
+  "search": array_search_fn,
+  "capacity": array_capacity_fn,
+  "resize": array_resize_fn,
+  "truncate": array_truncate_fn,
+  "reserve_capacity": array_reserve_capacity_fn,
+  "each": array_each_fn,
+  "map": array_map_fn,
+  "filter": array_filter_fn,
+  "fold": array_fold_fn,
 }
 
 ///| 数组长度
@@ -54,34 +70,8 @@ let array_copy_fn : RuntimeFunction = ctx => match ctx.arguments {
 
 ///| 数组join操作
 let array_join_fn : RuntimeFunction = ctx => match ctx.arguments {
-  [{ value: Array(arr), .. }, { value: String(sep), .. }, ..] => {
-    let string_arr = arr.map(v => match v {
-      String(s) => s
-      Int(n) => n.to_string()
-      Bool(b) => if b { "true" } else { "false" }
-      _ => "[object]"
-    })
-    String(string_arr.join(sep))
-  }
-  [{ value: Array(arr), .. }, ..] => {
-    // 默认用逗号分隔
-    if arr.is_empty() {
-      return String("")
-    }
-    let mut result = ""
-    for i = 0; i < arr.length(); i = i + 1 {
-      if i > 0 {
-        result = result + ","
-      }
-      match arr[i] {
-        String(s) => result = result + s
-        Int(n) => result = result + n.to_string()
-        Bool(b) => result = result + (if b { "true" } else { "false" })
-        _ => result = result + "[object]"
-      }
-    }
-    String(result)
-  }
+  [{ value: Array(arr), .. }, { value: String(sep), .. }, ..] =>
+    String(arr.map(v => v.to_string()).join(sep))
   _ => Unit
 }
 
@@ -91,5 +81,174 @@ let array_swap_fn : RuntimeFunction = ctx => match ctx.arguments {
     arr.swap(i, j)
     Unit
   }
+  _ => Unit
+}
+
+///| 数组get操作
+let array_get_fn : RuntimeFunction = ctx => match ctx.arguments {
+  [{ value: Array(arr), .. }, { value: Int(i), .. }, ..] =>
+    RuntimeValue::from_option(arr.get(i))
+  _ => Unit
+}
+
+///| 数组append操作
+let array_append_fn : RuntimeFunction = ctx => match ctx.arguments {
+  [{ value: Array(arr), .. }, { value: Array(arr2), .. }, ..] => {
+    arr.append(arr2)
+    Unit
+  }
+  _ => Unit
+}
+
+///| 数组set操作
+let array_set_fn : RuntimeFunction = ctx => match ctx.arguments {
+  [{ value: Array(arr), .. }, { value: Int(i), .. }, { value: val, .. }, ..] => {
+    arr[i] = val
+    Unit
+  }
+  _ => Unit
+}
+
+///| 数组pop操作
+let array_pop_fn : RuntimeFunction = ctx => match ctx.arguments {
+  [{ value: Array(arr), .. }, ..] => RuntimeValue::from_option(arr.pop())
+  _ => Unit
+}
+
+///| 数组insert操作
+let array_insert_fn : RuntimeFunction = ctx => match ctx.arguments {
+  [{ value: Array(arr), .. }, { value: Int(i), .. }, { value: val, .. }, ..] => {
+    arr.insert(i, val)
+    Unit
+  }
+  _ => Unit
+}
+
+///| 数组remove操作
+let array_remove_fn : RuntimeFunction = ctx => match ctx.arguments {
+  [{ value: Array(arr), .. }, { value: Int(i), .. }, ..] => arr.remove(i)
+  _ => Unit
+}
+
+///| 数组contains操作
+let array_contains_fn : RuntimeFunction = ctx => match ctx.arguments {
+  [{ value: Array(arr), .. }, { value: val, .. }, ..] => Bool(arr.contains(val))
+  _ => Unit
+}
+
+///| 数组search操作
+let array_search_fn : RuntimeFunction = ctx => match ctx.arguments {
+  [{ value: Array(arr), .. }, { value: val, .. }, ..] =>
+    RuntimeValue::from_option(
+      arr.search(val).map(fn(i) { RuntimeValue::Int(i) }),
+    )
+  _ => Unit
+}
+
+///| 数组capacity操作
+let array_capacity_fn : RuntimeFunction = ctx => match ctx.arguments {
+  [{ value: Array(arr), .. }, ..] => Int(arr.capacity())
+  _ => Unit
+}
+
+///| 数组resize操作
+let array_resize_fn : RuntimeFunction = ctx => match ctx.arguments {
+  [
+    { value: Array(arr), .. },
+    { value: Int(new_size), .. },
+    { value: fill_val, .. },
+    ..,
+  ] => {
+    arr.resize(new_size, fill_val)
+    Unit
+  }
+  _ => Unit
+}
+
+///| 数组truncate操作
+let array_truncate_fn : RuntimeFunction = ctx => match ctx.arguments {
+  [{ value: Array(arr), .. }, { value: Int(len), .. }, ..] => {
+    arr.truncate(len)
+    Unit
+  }
+  _ => Unit
+}
+
+///| 数组reserve_capacity操作
+let array_reserve_capacity_fn : RuntimeFunction = ctx => match ctx.arguments {
+  [{ value: Array(arr), .. }, { value: Int(additional), .. }, ..] => {
+    arr.reserve_capacity(additional)
+    Unit
+  }
+  _ => Unit
+}
+
+///| 数组each操作
+let array_each_fn : RuntimeFunction = ctx => match ctx.arguments {
+  [{ value: Array(arr), .. }, { value: FuncRef(f), .. }, ..] => {
+    arr.each(fn(val) {
+      let arg = @syntax.Argument::{
+        value: val.to_expr(),
+        kind: @syntax.ArgumentKind::Positional,
+      }
+      ctx.context.call(f, @list.from_array([arg])) |> ignore
+    })
+    Unit
+  }
+  _ => Unit
+}
+
+///| 数组map操作
+let array_map_fn : RuntimeFunction = ctx => match ctx.arguments {
+  [{ value: Array(arr), .. }, { value: FuncRef(f), .. }, ..] => {
+    let new_arr = arr.map(fn(val) {
+      let arg = @syntax.Argument::{
+        value: val.to_expr(),
+        kind: @syntax.ArgumentKind::Positional,
+      }
+      ctx.context.call(f, @list.from_array([arg]))
+    })
+    Array(new_arr)
+  }
+  _ => Unit
+}
+
+///| 数组filter操作
+let array_filter_fn : RuntimeFunction = ctx => match ctx.arguments {
+  [{ value: Array(arr), .. }, { value: FuncRef(f), .. }, ..] => {
+    let new_arr = arr.filter(fn(val) {
+      let arg = @syntax.Argument::{
+        value: val.to_expr(),
+        kind: @syntax.ArgumentKind::Positional,
+      }
+      match ctx.context.call(f, @list.from_array([arg])) {
+        Bool(true) => true
+        _ => false
+      }
+    })
+    Array(new_arr)
+  }
+  _ => Unit
+}
+
+///| 数组fold操作
+let array_fold_fn : RuntimeFunction = ctx => match ctx.arguments {
+  [
+    { value: Array(arr), .. },
+    { value: init_val, .. },
+    { value: FuncRef(f), .. },
+    ..,
+  ] =>
+    arr.fold(init=init_val, fn(acc, val) {
+      let acc_arg = @syntax.Argument::{
+        value: acc.to_expr(),
+        kind: @syntax.ArgumentKind::Positional,
+      }
+      let val_arg = @syntax.Argument::{
+        value: val.to_expr(),
+        kind: @syntax.ArgumentKind::Positional,
+      }
+      ctx.context.call(f, @list.from_array([acc_arg, val_arg]))
+    })
   _ => Unit
 }

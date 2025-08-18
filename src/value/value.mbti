@@ -50,13 +50,14 @@ pub(all) enum RuntimeValue {
   Tuple(Array[RuntimeValue])
   Array(Array[RuntimeValue])
   StructRef(RefId)
-  Function(@syntax.Func)
+  FuncRef(@syntax.Func)
   Constructor(String, Array[RuntimeValue])
   Break(RuntimeValue?)
   Continue(Array[RuntimeValue])
 }
 fn RuntimeValue::from_expr(@syntax.Expr) -> Self
 fn RuntimeValue::from_expr_with_store(@syntax.Expr, RuntimeStore) -> Self
+fn RuntimeValue::from_option(Self?) -> Self
 fn RuntimeValue::is_mutable(Self) -> Bool
 fn RuntimeValue::is_reference(Self) -> Bool
 fn RuntimeValue::to_expr(Self) -> @syntax.Expr

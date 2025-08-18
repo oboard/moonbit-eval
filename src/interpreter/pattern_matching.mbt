@@ -71,7 +71,7 @@ pub fn ClosureInterpreter::pattern_matches(
       let runtime_value = self.visit(value)
 
       // 直接绑定RuntimeValue
-      self.current_immutable_scope().set(name, runtime_value)
+      self.current_scope().set(name, runtime_value)
       true
     }
 

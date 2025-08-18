@@ -675,3 +675,11 @@ pub fn runtime_value_infix(
     _ => Unit
   }
 }
+
+///|
+pub fn RuntimeValue::from_option(self : RuntimeValue?) -> RuntimeValue {
+  match self {
+    Some(x) => RuntimeValue::Constructor("Some", [x])
+    None => RuntimeValue::Constructor("None", [])
+  }
+}

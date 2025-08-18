@@ -27,7 +27,7 @@ fn eval_uint64_op(UInt64, UInt64, String) -> @syntax.Constant
 
 fn eval_uint_op(UInt, UInt, String) -> @syntax.Constant
 
-fn find_variable(Array[Map[String, @value.RuntimeValue]], Array[Map[String, @value.RuntimeValue]], String) -> @value.RuntimeValue
+fn find_variable(Array[Map[String, @value.RuntimeValue]], String) -> @value.RuntimeValue
 
 let int_embedded_code : Map[String, (RuntimeFunctionContext) -> @value.RuntimeValue]
 
@@ -43,7 +43,7 @@ let string_methods : Map[String, (RuntimeFunctionContext) -> @value.RuntimeValue
 
 fn unit(loc? : @basic.Location) -> @syntax.Expr
 
-fn update_mutable_variable(Array[Map[String, @value.RuntimeValue]], String, @value.RuntimeValue) -> Unit
+fn update_variable(Array[Map[String, @value.RuntimeValue]], String, @value.RuntimeValue) -> Unit
 
 // Errors
 
@@ -53,12 +53,12 @@ pub(all) struct ClosureInterpreter {
   embedded_fns : Map[String, (RuntimeFunctionContext) -> @value.RuntimeValue]
   embedded_methods : Map[String, Map[String, (RuntimeFunctionContext) -> @value.RuntimeValue]]
   fn_aliases : Map[String, String]
-  immutable_values : Array[Map[String, @value.RuntimeValue]]
-  mutable_values : Array[Map[String, @value.RuntimeValue]]
+  values : Array[Map[String, @value.RuntimeValue]]
   runtime_store : @value.RuntimeStore
   user_functions : Array[Map[String, @syntax.Func]]
   type_definitions : Map[String, @syntax.TypeDecl]
   struct_methods : Map[String, Map[String, @syntax.Func]]
+  type_environments : Array[TypeEnvironment]
 }
 fn ClosureInterpreter::add_embedded_fn(Self, String, (RuntimeFunctionContext) -> @value.RuntimeValue) -> Unit
 fn ClosureInterpreter::add_embedded_method(Self, String, String, (RuntimeFunctionContext) -> @value.RuntimeValue) -> Unit
@@ -81,8 +81,7 @@ fn ClosureInterpreter::pattern_matches(Self, @syntax.Expr, @syntax.Pattern) -> B
 fn ClosureInterpreter::pattern_to_value(Self, @syntax.Pattern) -> @syntax.Expr?
 fn ClosureInterpreter::pop_scope(Self) -> Unit
 fn ClosureInterpreter::push_scope(Self) -> Unit
-fn ClosureInterpreter::set_immutable_variable(Self, String, @value.RuntimeValue) -> Unit
-fn ClosureInterpreter::set_mutable_variable(Self, String, @value.RuntimeValue) -> Unit
+fn ClosureInterpreter::set_variable(Self, String, @value.RuntimeValue) -> Unit
 fn ClosureInterpreter::top_visit(Self, @syntax.Impl) -> Unit
 fn ClosureInterpreter::value_in_range(Self, @syntax.Expr, @syntax.Pattern, @syntax.Pattern, Bool) -> Bool
 fn ClosureInterpreter::visit(Self, @syntax.Expr) -> @value.RuntimeValue
@@ -90,6 +89,11 @@ fn ClosureInterpreter::visit(Self, @syntax.Expr) -> @value.RuntimeValue
 pub(all) struct RuntimeFunctionContext {
   context : ClosureInterpreter
   arguments : Array[@value.RuntimeArgument]
+}
+
+pub struct TypeEnvironment {
+  type_bindings : Map[String, String]
+  parent : TypeEnvironment?
 }
 
 // Type aliases
