@@ -1,4 +1,4 @@
-///| 支持引用系统的解释器
+///| 支持引用系统和泛型的解释器
 pub(all) struct ClosureInterpreter {
   extern_fns : Map[String, RuntimeFunction]
   // embedded函数存储 - 全局函数
@@ -18,6 +18,8 @@ pub(all) struct ClosureInterpreter {
   type_definitions : Map[String, @syntax.TypeDecl]
   // 结构体方法定义 - 按类型名组织方法
   struct_methods : Map[String, Map[String, @syntax.Func]]
+  // 泛型类型环境栈
+  type_environments : Array[TypeEnvironment]
 }
 
 ///|
@@ -45,6 +47,7 @@ pub fn ClosureInterpreter::new(core~ : Bool = true) -> ClosureInterpreter {
     user_functions: [{}],
     type_definitions: Map::new(),
     struct_methods: Map::new(),
+    type_environments: [TypeEnvironment::new()],
   }
 }
 
@@ -121,7 +124,32 @@ pub fn ClosureInterpreter::top_visit(
       self.set_immutable_variable(binder.name, self.visit(expr))
     TopTypeDef(def) =>
       match def {
-        { tycon, .. } => self.type_definitions.set(tycon, def)
+        { tycon, params, components, .. } => {
+          self.type_definitions.set(tycon, def)
+
+          // 处理泛型类型参数
+          let type_params = []
+          for param in params {
+            match param {
+              { name, .. } => type_params.push(name)
+            }
+          }
+
+          // 注册枚举构造函数到运行时环境
+          match components {
+            Variant(constructors) =>
+              for constr in constructors {
+                let constr_name = constr.name.name
+                // 将构造函数注册为无参数的Constructor
+                // TODO: 对于泛型类型，需要在实例化时处理类型参数
+                self.set_immutable_variable(
+                  constr_name,
+                  RuntimeValue::Constructor(constr_name, []),
+                )
+              }
+            _ => () // Record类型不需要注册构造函数
+          }
+        }
       }
 
     // 处理顶层函数定义，包括结构体方法和embedded函数
@@ -133,9 +161,20 @@ pub fn ClosureInterpreter::top_visit(
         Some({ name: Dot(..), .. }) => None // 处理点号形式的类型名
         None => None
       }
+
+      // 处理泛型函数的类型参数
+      let type_params = []
+      for quantifier in fun_decl.quantifiers {
+        match quantifier {
+          { name, .. } => type_params.push(name)
+        }
+      }
+
       // 从decl_body中提取函数体
       match decl_body {
         DeclBody(local_types=_, expr~) => {
+          // 如果是泛型函数，需要在函数调用时进行类型参数绑定
+          // TODO: 实现泛型函数的类型参数推导机制
 
           // 保持原始的返回类型，不在这里进行推导
           let inferred_return_type = fun_decl.return_type
@@ -332,7 +371,11 @@ pub fn ClosureInterpreter::visit(
           let arg_values = args
             .map(fn(arg) { self.visit(arg.value) })
             .to_array()
-          RuntimeValue::Constructor(constr.name.name, arg_values)
+
+          // TODO: 对于泛型类型的构造函数，需要根据参数类型推导类型参数
+          // 例如：Cons(1, Nil) 应该推导出 List[Int]
+          let constr_name = constr.name.name
+          RuntimeValue::Constructor(constr_name, arg_values)
         }
         // 处理静态方法调用，如 Bool::default()
         Method(type_name~, method_name~, ..) => {
@@ -996,10 +1039,9 @@ fn ClosureInterpreter::find_method(
     Some(function) =>
       // 检查是否是embedded函数的标记函数
       match function {
-        Lambda(body=Ident(id~, ..), ..) =>
-          match id.name {
-            Ident(name=embedded_name) =>
-              MethodType::EmbeddedFunction(embedded_name)
+        Lambda(body=Ident(id={ name: Ident(name=embedded_name), .. }, ..), ..) =>
+          match embedded_name {
+            ['%', ..] => MethodType::EmbeddedFunction(embedded_name)
             _ => MethodType::UserFunction(function)
           }
         _ => MethodType::UserFunction(function)
@@ -1039,7 +1081,11 @@ fn ClosureInterpreter::execute_function_by_name(
   }
 
   match self.find_method(name) {
-    MethodType::UserFunction(function) => self.call(function, args)
+    MethodType::UserFunction(function) =>
+      // 检查是否为泛型函数，如果是则进行类型参数推导
+      // TODO: 实现基于参数类型的类型参数推导
+      // 目前先直接调用，后续可以根据实际参数类型推导类型参数
+      self.call(function, args)
     MethodType::EmbeddedFunction(embedded_name) =>
       match self.embedded_fns.get(embedded_name) {
         Some(embedded_func) =>
@@ -1190,7 +1236,40 @@ fn ClosureInterpreter::execute_static_method_call(
   method_name : String,
   args : @list.List[@syntax.Argument],
 ) -> RuntimeValue {
-  // 查找嵌入式方法
+  // 首先查找用户定义的struct方法
+  match self.struct_methods.get(type_name) {
+    Some(methods) =>
+      match methods.get(method_name) {
+        Some(func) =>
+          // 执行用户定义的静态方法
+          return self.with_scope(fn() {
+            match func {
+              @syntax.Func::Lambda(parameters~, body~, ..) => {
+                // 绑定参数（静态方法没有self参数）
+                self.bind_function_parameters_runtime(parameters, args)
+                // 执行函数体
+                self.visit(body)
+              }
+              _ => RuntimeValue::Unit
+            }
+          })
+        None =>
+          // 如果用户方法中没有找到，继续查找嵌入式方法
+          self.execute_embedded_static_method(type_name, method_name, args)
+      }
+    None =>
+      // 如果用户方法中没有找到，查找嵌入式方法
+      self.execute_embedded_static_method(type_name, method_name, args)
+  }
+}
+
+///| 执行嵌入式静态方法调用
+fn ClosureInterpreter::execute_embedded_static_method(
+  self : ClosureInterpreter,
+  type_name : String,
+  method_name : String,
+  args : @list.List[@syntax.Argument],
+) -> RuntimeValue {
   match self.embedded_methods.get(type_name) {
     Some(methods) =>
       match methods.get(method_name) {
@@ -1411,6 +1490,6 @@ pub fn ClosureInterpreter::get_function_type_string(
         }
         _ => "<function>"
       }
-    _ => value.to_string()
+    _ => value.to_string_with_store(self.runtime_store)
   }
 }

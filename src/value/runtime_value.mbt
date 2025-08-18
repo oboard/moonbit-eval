@@ -549,9 +549,7 @@ pub fn RuntimeValue::to_expr(self : RuntimeValue) -> @syntax.Expr {
     // 引用类型需要通过store解析
     StructRef(_) => @syntax.Expr::Unit(loc=_dummy_loc, faked=true)
     Function(func) => @syntax.Expr::Function(func~, loc=_dummy_loc)
-    Constructor(_) =>
-      // 暂时返回Unit，避免复杂的语法构造
-      @syntax.Expr::Unit(loc=_dummy_loc, faked=true)
+    Constructor(name, args) => @syntax.Expr::Unit(loc=_dummy_loc, faked=true)
     Break(value) =>
       @syntax.Expr::Break(
         arg=value.map(fn(v) { v.to_expr() }),

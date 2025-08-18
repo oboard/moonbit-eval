@@ -101,6 +101,33 @@ test "for_loops" {
   inspect(vm.eval("output"), content="45")
 }
 
+// ///|
+// test "for_in" {
+//   let vm = MoonBitVM::new(log=true)
+//   // Test array iteration
+//   inspect(vm.eval("let mut sum = 0"), content="()")
+//   inspect(vm.eval("for x in [1, 2, 3, 4, 5] { sum += x }"), content="()")
+//   inspect(vm.eval("sum"), content="15")
+
+//   // Test range iteration with exclusive upper bound
+//   inspect(vm.eval("let mut range_sum = 0"), content="()")
+//   inspect(vm.eval("for i in 0..<5 { range_sum += i }"), content="()")
+//   inspect(vm.eval("range_sum"), content="10")
+
+//   // Test range iteration with inclusive upper bound
+//   inspect(vm.eval("let mut inclusive_sum = 0"), content="()")
+//   inspect(vm.eval("for i in 0..=5 { inclusive_sum += i }"), content="()")
+//   inspect(vm.eval("inclusive_sum"), content="15")
+
+//   // Test iteration with index
+//   inspect(vm.eval("let mut indexed_sum = 0"), content="()")
+//   inspect(
+//     vm.eval("for idx, val in [10, 20, 30] { indexed_sum += idx + val }"),
+//     content="()",
+//   )
+//   inspect(vm.eval("indexed_sum"), content="63")
+// }
+
 ///|
 test "while_loops" {
   let vm = MoonBitVM::new()
@@ -601,4 +628,173 @@ test "embedded_code" {
   )
   inspect(vm.eval("let s = \"hello\""), content="()")
   inspect(vm.eval("s.length2()"), content="5")
+}
+
+// =============================================================================
+// 11. ENUM
+// =============================================================================
+
+///|
+test "basic_enum" {
+  let vm = MoonBitVM::new()
+  inspect(
+    vm.eval(
+      (
+        #|enum Relation {
+        #|  Smaller
+        #|  Greater
+        #|  Equal
+        #|}
+        #|fn compare_int(x: Int, y: Int) -> Relation {
+        #|  if x < y {
+        #|    Smaller
+        #|  } else if x > y {
+        #|    Relation::Greater
+        #|  } else {
+        #|    Equal
+        #|  }
+        #|}
+      ),
+      top=true,
+    ),
+    content="()",
+  )
+  inspect(vm.eval("compare_int(0, 1)"), content="Smaller")
+  inspect(vm.eval("compare_int(1, 1)"), content="Equal")
+  inspect(vm.eval("compare_int(2, 1)"), content="Greater")
+}
+
+///|
+test "enum_with_data" {
+  let vm = MoonBitVM::new()
+  inspect(
+    vm.eval(
+      (
+        #|enum List {
+        #|  Nil
+        #|  Cons(Int, List)
+        #|}
+        #|fn is_singleton(l: List) -> Bool {
+        #|  match l {
+        #|    Cons(_, Nil) => true
+        #|    _ => false
+        #|  }
+        #|}
+      ),
+      top=true,
+    ),
+    content="()",
+  )
+  inspect(vm.eval("let l = Cons(1, Cons(2, Nil))"), content="()")
+  inspect(vm.eval("is_singleton(l)"), content="false")
+  inspect(vm.eval("is_singleton(Cons(1, Nil))"), content="true")
+  inspect(vm.eval("is_singleton(Nil)"), content="false")
+}
+
+///|
+test "enum_pattern_matching" {
+  let vm = MoonBitVM::new()
+  inspect(
+    vm.eval(
+      (
+        #|enum Maybe {
+        #|  Just(Int)
+        #|  Nothing
+        #|}
+        #|fn get_or_default(m: Maybe, default: Int) -> Int {
+        #|  match m {
+        #|    Just(x) => x
+        #|    Nothing => default
+        #|  }
+        #|}
+      ),
+      top=true,
+    ),
+    content="()",
+  )
+  inspect(vm.eval("get_or_default(Just(5), 0)"), content="5")
+  inspect(vm.eval("get_or_default(Nothing, 0)"), content="0")
+}
+
+// =============================================================================
+// 12. GENERIC
+// =============================================================================
+
+///|
+test "generic_list" {
+  let vm = MoonBitVM::new(log=true)
+  inspect(
+    vm.eval(
+      (
+        #|enum List[T] {
+        #|  Nil
+        #|  Cons(T, List[T])
+        #|}
+        #|
+        #|fn[T] List::new() -> List[T] {
+        #|  Nil
+        #|}
+        #|
+        #|fn[T] List::cons(x: T, xs: List[T]) -> List[T] {
+        #|  Cons(x, xs)
+        #|}
+      ),
+      top=true,
+    ),
+    content="()",
+  )
+  // 先测试单独的Nil
+  inspect(vm.eval("Nil"), content="Nil")
+  // 再测试List::new()
+  inspect(vm.eval("List::new()"), content="Nil")
+  // 测试简单的Cons调用
+  inspect(vm.eval("List::cons(1, Nil)"), content="Cons(1, Nil)")
+  // 测试嵌套的Cons调用
+  inspect(vm.eval("List::cons(2, List::new())"), content="Cons(2, Nil)")
+  // 测试中间步骤
+  inspect(
+    vm.eval("let inner = List::cons(2, List::new()); inner"),
+    content="Cons(2, Nil)",
+  )
+  // 测试分步构建
+  inspect(
+    vm.eval("let step1 = List::new(); let step2 = List::cons(2, step1); step2"),
+    content="Cons(2, Nil)",
+  )
+  // 测试直接嵌套调用
+  inspect(vm.eval("List::cons(2, List::new())"), content="Cons(2, Nil)")
+  // 测试更深层嵌套
+  let result = vm.eval("List::cons(1, List::cons(2, List::new()))")
+  inspect(result, content="Cons(1, Cons(2, Nil))")
+  inspect(
+    vm.eval("let list = List::cons(1, List::cons(2, List::new()))"),
+    content="()",
+  )
+  inspect(
+    vm.eval(
+      (
+        #|fn[S, T] map(list: List[S], f: (S) -> T) -> List[T] {
+        #|  match list {
+        #|    Nil => Nil
+        #|    Cons(x, xs) => Cons(f(x), map(xs, f))
+        #|  }
+        #|}
+        #|
+        #|fn[T] sum(list: List[T]) -> T {
+        #|  match list {
+        #|    Nil => 0
+        #|    Cons(x, xs) => x + sum(xs)
+        #|  }
+        #|}
+      ),
+      top=true,
+    ),
+    content="()",
+  )
+  inspect(
+    vm.eval("let list = List::cons(1, List::cons(2, List::new()))"),
+    content="()",
+  )
+  inspect(vm.eval("map(list, x => x * 2)"), content="Cons(2, Cons(4, Nil))")
+  inspect(vm.eval("sum(list)"), content="3")
 }

@@ -114,6 +114,8 @@ pub fn ClosureInterpreter::execute_function_call(
     @syntax.Func::Lambda(parameters~, body~, ..) => {
       // 创建新的作用域
       self.push_scope()
+      // TODO: 类型环境管理暂时禁用，调试中
+      // self.push_type_environment()
 
       // 绑定参数
       self.bind_function_parameters(parameters, args)
@@ -122,6 +124,8 @@ pub fn ClosureInterpreter::execute_function_call(
       let result = self.visit(body).to_expr_with_store(self.runtime_store)
 
       // 恢复作用域
+      // TODO: 类型环境管理暂时禁用，调试中
+      // self.pop_type_environment()
       self.pop_scope()
       result
     }
@@ -142,6 +146,8 @@ pub fn ClosureInterpreter::call(
 
       // 创建新的作用域
       self.push_scope()
+      // TODO: 类型环境管理暂时禁用，调试中
+      // self.push_type_environment()
 
       // 绑定参数
 
@@ -152,6 +158,8 @@ pub fn ClosureInterpreter::call(
       let result = self.visit(body)
 
       // 恢复作用域
+      // TODO: 类型环境管理暂时禁用，调试中
+      // self.pop_type_environment()
       self.pop_scope()
       result
     }
@@ -193,13 +201,9 @@ pub fn ClosureInterpreter::find_user_function(
 ) -> @syntax.Func? {
 
   // 从当前作用域开始查找
-  for functions in self.user_functions {
+  for functions in self.user_functions.rev_iter() {
     if functions.contains(name) {
       let found_func = functions.get(name).unwrap()
-      match found_func {
-        @syntax.Func::Lambda(..) => ()
-        _ => ()
-      }
       return Some(found_func)
     }
   }
