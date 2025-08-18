@@ -722,7 +722,7 @@ test "enum_pattern_matching" {
 
 ///|
 test "generic_list" {
-  let vm = MoonBitVM::new(log=true)
+  let vm = MoonBitVM::new()
   inspect(
     vm.eval(
       (
