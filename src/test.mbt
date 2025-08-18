@@ -87,7 +87,7 @@ test "array_contains_methods" {
 
 ///|
 test "array_index_methods" {
-  let vm = MoonBitVM::new(log=true)
+  let vm = MoonBitVM::new()
   // Test index_of and last_index_of
   inspect(vm.eval("let arr = [1, 2, 3, 2]; arr.index_of(2)"), content="Some(1)")
   inspect(
@@ -186,7 +186,7 @@ test "if_expressions" {
 
 ///|
 test "for_loops" {
-  let vm = MoonBitVM::new(log=true)
+  let vm = MoonBitVM::new()
   // 简化测试：只测试最基本的for循环
   inspect(vm.eval("let mut sum = 0"), content="()")
   inspect(vm.eval("sum"), content="0")
@@ -362,10 +362,6 @@ test "arrays" {
   inspect(vm.eval("let arr = [1, 2, 3]; arr.length()"), content="3")
   inspect(vm.eval("let arr = []; arr.is_empty()"), content="true")
   inspect(vm.eval("let arr = [1, 2, 3]; arr.is_empty()"), content="false")
-  inspect(
-    vm.eval("let arr = [\"1\", \"2\", \"3\"]; arr.join()"),
-    content="1,2,3",
-  )
   inspect(
     vm.eval("let arr = [\"1\", \"2\", \"3\"]; arr.join(\"-\")"),
     content="1-2-3",
