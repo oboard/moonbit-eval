@@ -126,10 +126,7 @@ pub fn ClosureInterpreter::pattern_matches(
                   }
                   @syntax.ArrayPattern::StringSpread(string_literal) =>
                     match expr {
-                      @syntax.Expr::Constant(
-                        c=@syntax.Constant::String(string),
-                        ..
-                      ) =>
+                      @syntax.Expr::Constant(c=String(string), ..) =>
                         if not(string.contains(string_literal)) {
                           return false
                         }
@@ -137,10 +134,7 @@ pub fn ClosureInterpreter::pattern_matches(
                     }
                   @syntax.ArrayPattern::BytesSpread(bytes_literal) =>
                     match expr {
-                      @syntax.Expr::Constant(
-                        c=@syntax.Constant::Bytes(bytes),
-                        ..
-                      ) =>
+                      @syntax.Expr::Constant(c=Bytes(bytes), ..) =>
                         if not(bytes.contains(bytes_literal)) {
                           return false
                         }
@@ -274,11 +268,11 @@ pub fn ClosureInterpreter::constants_equal(
   c2 : @syntax.Constant,
 ) -> Bool {
   match (c1, c2) {
-    (@syntax.Constant::Int(v1), @syntax.Constant::Int(v2)) => v1 == v2
-    (@syntax.Constant::Double(v1), @syntax.Constant::Double(v2)) => v1 == v2
-    (@syntax.Constant::String(v1), @syntax.Constant::String(v2)) => v1 == v2
-    (@syntax.Constant::Char(v1), @syntax.Constant::Char(v2)) => v1 == v2
-    (@syntax.Constant::Bool(v1), @syntax.Constant::Bool(v2)) => v1 == v2
+    (Int(v1), Int(v2))
+    | (Double(v1), Double(v2))
+    | (String(v1), String(v2))
+    | (Char(v1), Char(v2)) => v1 == v2
+    (Bool(v1), Bool(v2)) => v1 == v2
     _ => false
   }
 }
@@ -310,9 +304,9 @@ pub fn ClosureInterpreter::value_in_range(
   match (value, lhs_value, rhs_value) {
     // 整数范围匹配
     (
-      @syntax.Expr::Constant(c=@syntax.Constant::Int(v), ..),
-      Some(@syntax.Expr::Constant(c=@syntax.Constant::Int(l), ..)),
-      Some(@syntax.Expr::Constant(c=@syntax.Constant::Int(r), ..)),
+      @syntax.Expr::Constant(c=Int(v), ..),
+      Some(@syntax.Expr::Constant(c=Int(l), ..)),
+      Some(@syntax.Expr::Constant(c=Int(r), ..)),
     ) => {
       let val = @strconv.parse_int(v) catch { _ => return false }
       let left = @strconv.parse_int(l) catch { _ => return false }
@@ -326,9 +320,9 @@ pub fn ClosureInterpreter::value_in_range(
 
     // 字符范围匹配
     (
-      @syntax.Expr::Constant(c=@syntax.Constant::Char(v), ..),
-      Some(@syntax.Expr::Constant(c=@syntax.Constant::Char(l), ..)),
-      Some(@syntax.Expr::Constant(c=@syntax.Constant::Char(r), ..)),
+      @syntax.Expr::Constant(c=Char(v), ..),
+      Some(@syntax.Expr::Constant(c=Char(l), ..)),
+      Some(@syntax.Expr::Constant(c=Char(r), ..)),
     ) =>
       if v.length() > 0 && l.length() > 0 && r.length() > 0 {
         let val = v.get(0)
@@ -345,9 +339,9 @@ pub fn ClosureInterpreter::value_in_range(
 
     // 处理开放范围（如 _..<Zero 或 1..<_）
     (
-      @syntax.Expr::Constant(c=@syntax.Constant::Int(v), ..),
+      @syntax.Expr::Constant(c=Int(v), ..),
       None, // 左边界是通配符
-      Some(@syntax.Expr::Constant(c=@syntax.Constant::Int(r), ..)),
+      Some(@syntax.Expr::Constant(c=Int(r), ..)),
     ) => {
       let val = @strconv.parse_int(v) catch { _ => return false }
       let right = @strconv.parse_int(r) catch { _ => return false }
@@ -358,8 +352,8 @@ pub fn ClosureInterpreter::value_in_range(
       }
     }
     (
-      @syntax.Expr::Constant(c=@syntax.Constant::Int(v), ..),
-      Some(@syntax.Expr::Constant(c=@syntax.Constant::Int(l), ..)), // 右边界是通配符
+      @syntax.Expr::Constant(c=Int(v), ..),
+      Some(@syntax.Expr::Constant(c=Int(l), ..)), // 右边界是通配符
       None,
     ) => {
       let val = @strconv.parse_int(v) catch { _ => return false }

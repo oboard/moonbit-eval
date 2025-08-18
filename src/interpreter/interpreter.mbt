@@ -339,12 +339,12 @@ pub fn ClosureInterpreter::visit(
     // 处理赋值操作
     Assign(var_~, expr~, augmented_by~, ..) =>
       match var_.name {
-        @syntax.LongIdent::Ident(name~) => {
+        Ident(name~) => {
           let new_value = match augmented_by {
             Some(op) => {
               let current_value = self.find_runtime(name)
               match op.name {
-                @syntax.LongIdent::Ident(name=op_name) => {
+                Ident(name=op_name) => {
                   let rhs_value = self.visit(expr)
                   @value.runtime_value_infix(op_name, current_value, rhs_value)
                 }
@@ -390,8 +390,8 @@ pub fn ClosureInterpreter::visit(
     If(cond~, ifso~, ifnot~, ..) => {
       let cond_val = self.visit(cond)
       match cond_val {
-        RuntimeValue::Bool(true) => self.visit(ifso)
-        RuntimeValue::Bool(false) =>
+        Bool(true) => self.visit(ifso)
+        Bool(false) =>
           match ifnot {
             Some(else_expr) => self.visit(else_expr)
             None => RuntimeValue::Unit

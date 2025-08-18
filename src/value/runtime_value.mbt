@@ -58,8 +58,8 @@ pub impl Eq for RuntimeValue with op_equal(
     (String(a), String(b)) => a == b
 
     // 复合值类型比较
-    (Tuple(a), Tuple(b)) => a == b
-    (Array(a), Array(b)) => a == b
+    (Tuple(a), Tuple(b)) | (Array(a), Array(b)) | (Continue(a), Continue(b)) =>
+      a == b
 
     // 引用类型比较
     (StructRef(a), StructRef(b)) => a == b
@@ -74,7 +74,6 @@ pub impl Eq for RuntimeValue with op_equal(
 
     // 控制流异常比较
     (Break(a), Break(b)) => a == b
-    (Continue(a), Continue(b)) => a == b
 
     // 不同类型之间不相等
     _ => false
@@ -135,18 +134,18 @@ fn compare_parameter_signatures(
     (
       @syntax.Parameter::Positional(binder=binder_a, ty=ty_a),
       @syntax.Parameter::Positional(binder=binder_b, ty=ty_b),
-    ) => binder_a.name == binder_b.name && compare_optional_types(ty_a, ty_b)
-    (
+    )
+    | (
       @syntax.Parameter::Labelled(binder=binder_a, ty=ty_a),
       @syntax.Parameter::Labelled(binder=binder_b, ty=ty_b),
+    )
+    | (
+      @syntax.Parameter::QuestionOptional(binder=binder_a, ty=ty_a),
+      @syntax.Parameter::QuestionOptional(binder=binder_b, ty=ty_b),
     ) => binder_a.name == binder_b.name && compare_optional_types(ty_a, ty_b)
     (
       @syntax.Parameter::Optional(binder=binder_a, ty=ty_a, ..),
       @syntax.Parameter::Optional(binder=binder_b, ty=ty_b, ..),
-    ) => binder_a.name == binder_b.name && compare_optional_types(ty_a, ty_b)
-    (
-      @syntax.Parameter::QuestionOptional(binder=binder_a, ty=ty_a),
-      @syntax.Parameter::QuestionOptional(binder=binder_b, ty=ty_b),
     ) => binder_a.name == binder_b.name && compare_optional_types(ty_a, ty_b)
     (
       @syntax.Parameter::DiscardPositional(ty=ty_a, ..),
