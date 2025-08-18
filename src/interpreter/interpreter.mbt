@@ -1,23 +1,10 @@
 ///| 支持引用系统的解释器
-struct ClosureInterpreter {
-  extern_fns : Map[String, (Array[RuntimeArgument]) -> RuntimeValue]
+pub(all) struct ClosureInterpreter {
+  extern_fns : Map[String, RuntimeFunction]
   // embedded函数存储 - 全局函数
-  embedded_fns : Map[String, (Array[RuntimeArgument]) -> RuntimeValue]
+  embedded_fns : Map[String, RuntimeFunction]
   // embedded方法存储 - 按类型组织的embedded方法定义
-  embedded_methods : Map[
-    String,
-    Map[String, (Array[RuntimeArgument]) -> RuntimeValue],
-  ]
-  // 支持函数调用的embedded方法存储
-  embedded_methods_with_interpreter : Map[
-    String,
-    Map[String, (ClosureInterpreter, Array[RuntimeArgument]) -> RuntimeValue],
-  ]
-  // 新的上下文化embedded方法存储 - 统一的函数执行环境
-  embedded_methods_with_context : Map[
-    String,
-    Map[String, (RuntimeFunctionContext) -> RuntimeValue],
-  ]
+  embedded_methods : Map[String, Map[String, RuntimeFunction]]
   // 函数别名存储 - 存储函数名到其实际实现的映射
   fn_aliases : Map[String, String]
   // 性能优化：区分可变和不可变变量 - 现在存储RuntimeValue而非@syntax.Expr
@@ -47,16 +34,6 @@ pub fn ClosureInterpreter::new(core~ : Bool = true) -> ClosureInterpreter {
     } else {
       Map::new()
     },
-    embedded_methods_with_interpreter: if core {
-      core_embedded_methods_with_interpreter
-    } else {
-      Map::new()
-    },
-    embedded_methods_with_context: if core {
-      core_embedded_methods_with_context
-    } else {
-      Map::new()
-    },
     fn_aliases: if core {
       core_fn_aliases
     } else {
@@ -75,7 +52,7 @@ pub fn ClosureInterpreter::new(core~ : Bool = true) -> ClosureInterpreter {
 pub fn ClosureInterpreter::add_extern_fn(
   self : ClosureInterpreter,
   name : String,
-  f : (Array[RuntimeArgument]) -> RuntimeValue,
+  f : RuntimeFunction,
 ) -> Unit {
   self.extern_fns.set(name, f)
 }
@@ -84,7 +61,7 @@ pub fn ClosureInterpreter::add_extern_fn(
 pub fn ClosureInterpreter::add_embedded_fn(
   self : ClosureInterpreter,
   name : String,
-  f : (Array[RuntimeArgument]) -> RuntimeValue,
+  f : RuntimeFunction,
 ) -> Unit {
   self.embedded_fns.set(name, f)
 }
@@ -94,38 +71,12 @@ pub fn ClosureInterpreter::add_embedded_method(
   self : ClosureInterpreter,
   type_name : String,
   method_name : String,
-  f : (Array[RuntimeArgument]) -> RuntimeValue,
+  f : RuntimeFunction,
 ) -> Unit {
   if not(self.embedded_methods.contains(type_name)) {
     self.embedded_methods.set(type_name, Map::new())
   }
   self.embedded_methods.get(type_name).unwrap().set(method_name, f)
-}
-
-///| 添加支持解释器的embedded方法
-pub fn ClosureInterpreter::add_embedded_method_with_interpreter(
-  self : ClosureInterpreter,
-  type_name : String,
-  method_name : String,
-  f : (ClosureInterpreter, Array[RuntimeArgument]) -> RuntimeValue,
-) -> Unit {
-  if not(self.embedded_methods_with_interpreter.contains(type_name)) {
-    self.embedded_methods_with_interpreter.set(type_name, Map::new())
-  }
-  self.embedded_methods_with_interpreter.get(type_name).unwrap().set(method_name, f)
-}
-
-///| 添加上下文化的embedded方法 - 新的统一接口
-pub fn ClosureInterpreter::add_embedded_method_with_context(
-  self : ClosureInterpreter,
-  type_name : String,
-  method_name : String,
-  f : (RuntimeFunctionContext) -> RuntimeValue,
-) -> Unit {
-  if not(self.embedded_methods_with_context.contains(type_name)) {
-    self.embedded_methods_with_context.set(type_name, Map::new())
-  }
-  self.embedded_methods_with_context.get(type_name).unwrap().set(method_name, f)
 }
 
 ///| 获取当前函数作用域
@@ -153,7 +104,7 @@ fn ClosureInterpreter::find_runtime(
 }
 
 ///|
-fn ClosureInterpreter::top_visit(
+pub fn ClosureInterpreter::top_visit(
   self : ClosureInterpreter,
   node : @syntax.Impl,
 ) -> Unit {
@@ -226,7 +177,7 @@ fn ClosureInterpreter::top_visit(
 }
 
 ///| 新的优化版本：直接返回 RuntimeValue
-fn ClosureInterpreter::visit(
+pub fn ClosureInterpreter::visit(
   self : ClosureInterpreter,
   node : @syntax.Expr,
 ) -> RuntimeValue {
@@ -1028,8 +979,8 @@ priv enum MethodType {
   UserFunction(@syntax.Func)
   EmbeddedFunction(String)
   RuntimeFunction(@syntax.Func)
-  ExternFunction((Array[RuntimeArgument]) -> RuntimeValue)
-  GlobalEmbedded((Array[RuntimeArgument]) -> RuntimeValue)
+  ExternFunction(RuntimeFunction)
+  GlobalEmbedded(RuntimeFunction)
   NotFound
 }
 
@@ -1088,18 +1039,27 @@ fn ClosureInterpreter::execute_function_by_name(
   }
 
   match self.find_method(name) {
-    MethodType::UserFunction(function) =>
-      self.call(function, args)
+    MethodType::UserFunction(function) => self.call(function, args)
     MethodType::EmbeddedFunction(embedded_name) =>
       match self.embedded_fns.get(embedded_name) {
-        Some(embedded_func) => embedded_func(get_evaluated_args())
+        Some(embedded_func) =>
+          embedded_func(RuntimeFunctionContext::{
+            context: self,
+            arguments: get_evaluated_args(),
+          })
         None => RuntimeValue::Unit
       }
-    MethodType::RuntimeFunction(lambda_func) =>
-      self.call(lambda_func, args)
-    MethodType::ExternFunction(extern_func) => extern_func(get_evaluated_args())
+    MethodType::RuntimeFunction(lambda_func) => self.call(lambda_func, args)
+    MethodType::ExternFunction(extern_func) =>
+      extern_func(RuntimeFunctionContext::{
+        context: self,
+        arguments: get_evaluated_args(),
+      })
     MethodType::GlobalEmbedded(embedded_func) =>
-      embedded_func(get_evaluated_args())
+      embedded_func(RuntimeFunctionContext::{
+        context: self,
+        arguments: get_evaluated_args(),
+      })
     MethodType::NotFound => RuntimeValue::Unit
   }
 }
@@ -1177,86 +1137,16 @@ fn ClosureInterpreter::execute_method_call_runtime(
                 self_value,
                 args.map(fn(arg) { self.visit(arg.value) }),
               )
-              embedded_method(
-                evaluated_args
+              embedded_method(RuntimeFunctionContext::{
+                context: self,
+                arguments: evaluated_args
                 .map(fn(arg) {
                   @value.RuntimeArgument::{ value: arg, kind: Positional }
                 })
                 .to_array(),
-              )
+              })
             }
-            None => {
-              // 优先检查上下文化的embedded方法（新的统一接口）
-              match self.embedded_methods_with_context.get(self_type) {
-                Some(methods_with_context) =>
-                  match methods_with_context.get(method_name) {
-                    Some(embedded_method_with_context) => {
-                      // 使用新的上下文模式调用
-                      let evaluated_args = @list.construct(
-                        self_value,
-                        args.map(fn(arg) { self.visit(arg.value) }),
-                      )
-                      let ctx = RuntimeFunctionContext::{
-                        interpreter: self,
-                        arguments: evaluated_args
-                          .map(fn(arg) {
-                            @value.RuntimeArgument::{ value: arg, kind: Positional }
-                          })
-                          .to_array(),
-                      }
-                      embedded_method_with_context(ctx)
-                    }
-                    None => {
-                      // 回退到支持解释器的embedded方法（向后兼容）
-                      match self.embedded_methods_with_interpreter.get(self_type) {
-                        Some(methods_with_interpreter) =>
-                          match methods_with_interpreter.get(method_name) {
-                            Some(embedded_method_with_interpreter) => {
-                              let evaluated_args = @list.construct(
-                                self_value,
-                                args.map(fn(arg) { self.visit(arg.value) }),
-                              )
-                              embedded_method_with_interpreter(
-                                self,
-                                evaluated_args
-                                .map(fn(arg) {
-                                  @value.RuntimeArgument::{ value: arg, kind: Positional }
-                                })
-                                .to_array(),
-                              )
-                            }
-                            None => RuntimeValue::Unit
-                          }
-                        None => RuntimeValue::Unit
-                      }
-                    }
-                  }
-                None => {
-                  // 回退到支持解释器的embedded方法（向后兼容）
-                  match self.embedded_methods_with_interpreter.get(self_type) {
-                    Some(methods_with_interpreter) =>
-                      match methods_with_interpreter.get(method_name) {
-                        Some(embedded_method_with_interpreter) => {
-                          let evaluated_args = @list.construct(
-                            self_value,
-                            args.map(fn(arg) { self.visit(arg.value) }),
-                          )
-                          embedded_method_with_interpreter(
-                            self,
-                            evaluated_args
-                            .map(fn(arg) {
-                              @value.RuntimeArgument::{ value: arg, kind: Positional }
-                            })
-                            .to_array(),
-                          )
-                        }
-                        None => RuntimeValue::Unit
-                      }
-                    None => RuntimeValue::Unit
-                  }
-                }
-              }
-            }
+            None => Unit
           }
         None => RuntimeValue::Unit
       }
@@ -1311,7 +1201,10 @@ fn ClosureInterpreter::execute_static_method_call(
               kind: arg.kind,
             })
             .to_array()
-          embedded_func(evaluated_args)
+          embedded_func(RuntimeFunctionContext::{
+            context: self,
+            arguments: evaluated_args,
+          })
         }
         None => RuntimeValue::Unit
       }

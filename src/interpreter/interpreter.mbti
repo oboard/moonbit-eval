@@ -1,0 +1,99 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "oboard/moonbit-eval/interpreter"
+
+import(
+  "moonbitlang/core/list"
+  "moonbitlang/parser/basic"
+  "moonbitlang/parser/syntax"
+  "oboard/moonbit-eval/value"
+)
+
+// Values
+let array_methods : Map[String, (RuntimeFunctionContext) -> @value.RuntimeValue]
+
+fn[T : Compare] compare(T, T, String) -> @syntax.Constant
+
+fn constant_infix(String, @syntax.Constant, @syntax.Constant) -> @syntax.Constant
+
+fn eval_double_op(Double, Double, String) -> @syntax.Constant
+
+fn eval_float_op(Double, Double, String) -> @syntax.Constant
+
+fn eval_int64_op(Int64, Int64, String) -> @syntax.Constant
+
+fn eval_int_op(Int, Int, String) -> @syntax.Constant
+
+fn eval_uint64_op(UInt64, UInt64, String) -> @syntax.Constant
+
+fn eval_uint_op(UInt, UInt, String) -> @syntax.Constant
+
+fn find_variable(Array[Map[String, @value.RuntimeValue]], Array[Map[String, @value.RuntimeValue]], String) -> @value.RuntimeValue
+
+let int_embedded_code : Map[String, (RuntimeFunctionContext) -> @value.RuntimeValue]
+
+let int_methods : Map[String, (RuntimeFunctionContext) -> @value.RuntimeValue]
+
+fn is_comparison_op(String) -> Bool
+
+let option_methods : Map[String, (RuntimeFunctionContext) -> @value.RuntimeValue]
+
+let string_embedded_code : Map[String, (RuntimeFunctionContext) -> @value.RuntimeValue]
+
+let string_methods : Map[String, (RuntimeFunctionContext) -> @value.RuntimeValue]
+
+fn unit(loc? : @basic.Location) -> @syntax.Expr
+
+fn update_mutable_variable(Array[Map[String, @value.RuntimeValue]], String, @value.RuntimeValue) -> Unit
+
+// Errors
+
+// Types and methods
+pub(all) struct ClosureInterpreter {
+  extern_fns : Map[String, (RuntimeFunctionContext) -> @value.RuntimeValue]
+  embedded_fns : Map[String, (RuntimeFunctionContext) -> @value.RuntimeValue]
+  embedded_methods : Map[String, Map[String, (RuntimeFunctionContext) -> @value.RuntimeValue]]
+  fn_aliases : Map[String, String]
+  immutable_values : Array[Map[String, @value.RuntimeValue]]
+  mutable_values : Array[Map[String, @value.RuntimeValue]]
+  runtime_store : @value.RuntimeStore
+  user_functions : Array[Map[String, @syntax.Func]]
+  type_definitions : Map[String, @syntax.TypeDecl]
+  struct_methods : Map[String, Map[String, @syntax.Func]]
+}
+fn ClosureInterpreter::add_embedded_fn(Self, String, (RuntimeFunctionContext) -> @value.RuntimeValue) -> Unit
+fn ClosureInterpreter::add_embedded_method(Self, String, String, (RuntimeFunctionContext) -> @value.RuntimeValue) -> Unit
+fn ClosureInterpreter::add_extern_fn(Self, String, (RuntimeFunctionContext) -> @value.RuntimeValue) -> Unit
+fn ClosureInterpreter::bind_function_parameters(Self, @list.List[@syntax.Parameter], @list.List[@syntax.Argument]) -> Unit
+fn ClosureInterpreter::bind_function_parameters_runtime(Self, @list.List[@syntax.Parameter], @list.List[@syntax.Argument]) -> Unit
+fn ClosureInterpreter::call(Self, @syntax.Func, @list.List[@syntax.Argument]) -> @value.RuntimeValue
+fn ClosureInterpreter::constants_equal(Self, @syntax.Constant, @syntax.Constant) -> Bool
+fn ClosureInterpreter::constants_equal_expr(Self, @syntax.Expr, @syntax.Expr) -> Bool
+fn ClosureInterpreter::define_function(Self, String, @syntax.Func) -> Unit
+fn ClosureInterpreter::define_struct_method(Self, String, String, @syntax.Func) -> Unit
+fn ClosureInterpreter::execute_function_call(Self, @syntax.Func, @list.List[@syntax.Argument]) -> @syntax.Expr
+fn ClosureInterpreter::execute_match(Self, @syntax.Expr, @list.List[@syntax.Case]) -> @syntax.Expr
+fn ClosureInterpreter::execute_match_runtime(Self, @value.RuntimeValue, @list.List[@syntax.Case]) -> @value.RuntimeValue
+fn ClosureInterpreter::find_user_function(Self, String) -> @syntax.Func?
+fn ClosureInterpreter::get_function_type_string(Self, @value.RuntimeValue) -> String
+fn ClosureInterpreter::is_known_function(Self, String) -> Bool
+fn ClosureInterpreter::new(core? : Bool) -> Self
+fn ClosureInterpreter::pattern_matches(Self, @syntax.Expr, @syntax.Pattern) -> Bool
+fn ClosureInterpreter::pattern_to_value(Self, @syntax.Pattern) -> @syntax.Expr?
+fn ClosureInterpreter::pop_scope(Self) -> Unit
+fn ClosureInterpreter::push_scope(Self) -> Unit
+fn ClosureInterpreter::set_immutable_variable(Self, String, @value.RuntimeValue) -> Unit
+fn ClosureInterpreter::set_mutable_variable(Self, String, @value.RuntimeValue) -> Unit
+fn ClosureInterpreter::top_visit(Self, @syntax.Impl) -> Unit
+fn ClosureInterpreter::value_in_range(Self, @syntax.Expr, @syntax.Pattern, @syntax.Pattern, Bool) -> Bool
+fn ClosureInterpreter::visit(Self, @syntax.Expr) -> @value.RuntimeValue
+
+pub(all) struct RuntimeFunctionContext {
+  context : ClosureInterpreter
+  arguments : Array[@value.RuntimeArgument]
+}
+
+// Type aliases
+pub typealias (RuntimeFunctionContext) -> @value.RuntimeValue as RuntimeFunction
+
+// Traits
+

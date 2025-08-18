@@ -631,7 +631,6 @@ pub fn RuntimeValue::to_expr_with_store(
 
 ///| 将@syntax.Expr转换为RuntimeValue
 pub fn RuntimeValue::from_expr(expr : @syntax.Expr) -> RuntimeValue {
-  // 调试：查看所有Unit表达式的详细信息
   match expr {
     @syntax.Expr::Unit(loc~, faked~) =>
       // 检查是否是记录引用Unit表达式

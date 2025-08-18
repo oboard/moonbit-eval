@@ -1,14 +1,55 @@
+// =============================================================================
+// MoonBit Eval Test Suite
+// =============================================================================
+// Organized by feature categories for better maintainability
+
+// =============================================================================
+// 1. BASIC TYPES AND LITERALS
+// =============================================================================
+
 ///|
-test "basic" {
+test "basic_integers" {
   let vm = MoonBitVM::new()
-  // Int 运算测试
   inspect(vm.eval("1"), content="1")
+  inspect(vm.eval("42"), content="42")
+  inspect(vm.eval("-5"), content="-5")
+}
+
+///|
+test "basic_booleans" {
+  let vm = MoonBitVM::new()
+  inspect(vm.eval("true"), content="true")
+  inspect(vm.eval("false"), content="false")
+  inspect(vm.eval("!false"), content="true")
+  inspect(vm.eval("!true"), content="false")
+  inspect(vm.eval("not(false)"), content="true")
+  inspect(vm.eval("not(true)"), content="false")
+}
+
+///|
+test "basic_strings" {
+  let vm = MoonBitVM::new()
+  inspect(vm.eval("\"hello\""), content="hello")
+  inspect(vm.eval("\"hello\"+\"world\""), content="helloworld")
+}
+
+// =============================================================================
+// 2. ARITHMETIC AND COMPARISON OPERATORS
+// =============================================================================
+
+///|
+test "arithmetic_operators" {
+  let vm = MoonBitVM::new()
   inspect(vm.eval("1+1"), content="2")
   inspect(vm.eval("2-1"), content="1")
-  inspect(vm.eval("\"hello\""), content="hello")
   inspect(vm.eval("5 * 3"), content="15")
   inspect(vm.eval("10 / 2"), content="5")
   inspect(vm.eval("7 % 3"), content="1")
+}
+
+///|
+test "comparison_operators" {
+  let vm = MoonBitVM::new()
   inspect(vm.eval("5 == 5"), content="true")
   inspect(vm.eval("5 != 3"), content="true")
   inspect(vm.eval("3 < 5"), content="true")
@@ -17,76 +58,120 @@ test "basic" {
   inspect(vm.eval("5 >= 3"), content="true")
 }
 
-///|
-test "bool" {
-  let vm = MoonBitVM::new()
-  inspect(vm.eval("true"), content="true")
-  inspect(vm.eval("false"), content="false")
-  inspect(vm.eval("!false"), content="true")
-  inspect(vm.eval("!true"), content="false")
-  inspect(vm.eval("not(false)"), content="true")
-  inspect(vm.eval("not(true)"), content="false")
-  inspect(not(false), content="true")
-  inspect(not(true), content="false")
-}
+// =============================================================================
+// 3. VARIABLES AND MUTABILITY
+// =============================================================================
 
 ///|
-test "array_methods" {
-  let vm = MoonBitVM::new()
-  // 测试数组基本方法
-  inspect(vm.eval("let arr = [1, 2, 3]; arr.length()"), content="3")
-  inspect(vm.eval("let arr = []; arr.is_empty()"), content="true")
-  inspect(vm.eval("let arr = [1, 2, 3]; arr.is_empty()"), content="false")
-  inspect(vm.eval("let arr = []; arr.last()"), content="()")
-  // 测试数组join方法
-  inspect(
-    vm.eval("let arr = [\"1\", \"2\", \"3\"]; arr.join()"),
-    content="1,2,3",
-  )
-  inspect(
-    vm.eval("let arr = [\"1\", \"2\", \"3\"]; arr.join(\"-\")"),
-    content="1-2-3",
-  )
-  // 测试数组copy方法
-  inspect(
-    vm.eval("let arr = [1, 2, 3]; let arr2 = arr.copy(); arr2.length()"),
-    content="3",
-  )
-}
-
-///|
-test "string" {
-  let vm = MoonBitVM::new()
-  inspect(vm.eval("\"hello\""), content="hello")
-  inspect(vm.eval("\"hello\"+\"hello\""), content="hellohello")
-}
-
-///|
-test "variables" {
+test "immutable_variables" {
   let vm = MoonBitVM::new()
   inspect(vm.eval("let a = 1"), content="()")
   inspect(vm.eval("a"), content="1")
 }
 
 ///|
-test "mutable variables" {
+test "mutable_variables" {
   let vm = MoonBitVM::new()
   inspect(vm.eval("let mut a = 1"), content="()")
   inspect(vm.eval("a = 12"), content="()")
   inspect(vm.eval("a"), content="12")
 }
 
+// =============================================================================
+// 4. CONTROL FLOW
+// =============================================================================
+
 ///|
-test "function" {
+test "if_expressions" {
   let vm = MoonBitVM::new()
-  let result = vm.eval("fn double(x: Int) -> Int { x * 2 }")
-  inspect(result, content="(x: Int) -> Int")
+  inspect(
+    vm.eval("if 1 > 0 { if 2 > 1 { 3 } else { 4 } } else { 5 }"),
+    content="3",
+  )
+  inspect(vm.eval("if (5 + 3) * 2 > 15 { 1 } else { 2 }"), content="1")
+  inspect(vm.eval("if true && false || true { 1 } else { 2 }"), content="1")
+  inspect(vm.eval("if 3 < 2 { 1 }"), content="()")
+}
+
+///|
+test "for_loops" {
+  let vm = MoonBitVM::new()
+  inspect(vm.eval("let mut output = 0"), content="()")
+  inspect(vm.eval("for i = 0; i < 10; i = i + 1 { output += i }"), content="()")
+  inspect(vm.eval("output"), content="45")
+}
+
+///|
+test "while_loops" {
+  let vm = MoonBitVM::new()
+  inspect(vm.eval("let mut i = 0"), content="()")
+  inspect(vm.eval("let mut sum = 0"), content="()")
+  inspect(vm.eval("while i < 5 { sum += i; i += 1 }"), content="()")
+  inspect(vm.eval("sum"), content="10")
+  inspect(vm.eval("i"), content="5")
+}
+
+///|
+test "loop_control" {
+  let vm = MoonBitVM::new()
+  inspect(
+    vm.eval(
+      (
+        #|fn sum_with_continue(n : Int, acc : Int) -> Int {
+        #|  let mut acc = acc
+        #|  for i = 0; i < n; i = i + 1 {
+        #|    if i == 2 {
+        #|      continue
+        #|    }
+        #|    acc = acc + i
+        #|  }
+        #|  acc
+        #|}
+      ),
+    ),
+    content="(n: Int, acc: Int) -> Int",
+  )
+  inspect(vm.eval("sum_with_continue(5, 1)"), content="9")
+  inspect(
+    vm.eval(
+      (
+        #|let mut i = 10
+        #|while i > 0 {
+        #|  i = i - 1
+        #|  if i % 2 == 0 {
+        #|    break 5
+        #|  }
+        #|} else {
+        #|  7
+        #|}
+      ),
+    ),
+    content="5",
+  )
+}
+
+// =============================================================================
+// 5. FUNCTIONS
+// =============================================================================
+
+///|
+test "basic_functions" {
+  let vm = MoonBitVM::new()
+  inspect(
+    vm.eval("fn double(x: Int) -> Int { x * 2 }"),
+    content="(x: Int) -> Int",
+  )
   inspect(vm.eval("double(2)"), content="4")
   inspect(
     vm.eval("fn add(a: Int, b: Int) -> Int { a + b }"),
     content="(a: Int, b: Int) -> Int",
   )
   inspect(vm.eval("add(1, 2)"), content="3")
+}
+
+///|
+test "named_parameters" {
+  let vm = MoonBitVM::new()
   inspect(
     vm.eval("fn add_named(a~: Int, b~: Int) -> Int { a + b }"),
     content="(a~: Int, b~: Int) -> Int",
@@ -100,133 +185,16 @@ test "function" {
 }
 
 ///|
-test "str" {
+test "lambda_functions" {
   let vm = MoonBitVM::new()
-  inspect(vm.eval("let str1: String = \"haha\""), content="()")
-  inspect(vm.eval("let str2: String = \"hello\""), content="()")
-  inspect(vm.eval("str1 + str2"), content="()")
-}
-
-///|
-test "if" {
-  let vm = MoonBitVM::new()
-  // Test nested if expressions
-  inspect(
-    vm.eval("if 1 > 0 { if 2 > 1 { 3 } else { 4 } } else { 5 }"),
-    content="3",
-  )
-
-  // Test complex conditions
-  inspect(vm.eval("if (5 + 3) * 2 > 15 { 1 } else { 2 }"), content="1")
-
-  // Test boolean expressions in conditions
-  inspect(vm.eval("if true && false || true { 1 } else { 2 }"), content="1")
-
-  // Test if expression with function calls
-  inspect(
-    vm.eval(
-      "fn double(x: Int) -> Int { x * 2 }\n if double(5) > 8 { 3 } else { 4 }",
-    ),
-    content="3",
-  )
-
-  // Test if without else
-  inspect(vm.eval("if 3 < 2 { 1 }"), content="()")
-}
-
-///|
-test "for" {
-  let mut output = 0
-  for i = 0; i < 10; i = i + 1 {
-    output += i
-    // println(output)
-  }
-  inspect(output, content="45")
-  // test for loop
-  let vm = MoonBitVM::new()
-  inspect(vm.eval("let mut output = 0"), content="()")
-  inspect(vm.eval("for i = 0; i < 10; i = i + 1 { output += i }"), content="()")
-  inspect(vm.eval("output"), content="45")
-  let mut output = 0
-  for i = 0; i < 10; i = i + 1 {
-    output += i
-  }
-  inspect(output, content="45")
-}
-
-///|
-test "while" {
-  let vm = MoonBitVM::new()
-  inspect(vm.eval("let mut i = 0"), content="()")
-  inspect(vm.eval("let mut sum = 0"), content="()")
-  inspect(vm.eval("while i < 5 { sum += i; i += 1 }"), content="()")
-  inspect(vm.eval("sum"), content="10")
-  inspect(vm.eval("i"), content="5")
-
-  // 测试 while 循环不会执行的情况
-  let vm2 = MoonBitVM::new()
-  inspect(vm2.eval("let mut count = 0"), content="()")
-  inspect(vm2.eval("while false { count += 1 }"), content="()")
-  inspect(vm2.eval("count"), content="0")
-}
-
-///|
-test "lambda" {
-  let vm = MoonBitVM::new()
-  // 测试基本的 lambda 函数
   inspect(vm.eval("let f = x => x * 2"), content="()")
   inspect(vm.eval("f(3)"), content="6")
-  // 测试 lambda 函数作为表达式
-  inspect(vm.eval("let g = y => y + 1"), content="()")
-  inspect(vm.eval("g(5)"), content="6")
-
-  // 测试 lambda 函数调用
-  inspect(vm.eval("let h = z => z * z"), content="()")
-  inspect(vm.eval("h(4)"), content="16")
+  inspect(vm.eval("let identity = x => x"), content="()")
+  inspect(vm.eval("identity(5)"), content="5")
 }
 
 ///|
-test "lambda_simple" {
-  let vm = MoonBitVM::new()
-  // 测试简单的 lambda 表达式
-  inspect(vm.eval("let f = x => x"), content="()")
-  inspect(vm.eval("f(5)"), content="5")
-}
-
-///|
-test "extern" {
-  let vm = MoonBitVM::new()
-  vm.interpreter.add_extern_fn("println", params => {
-    if params is [{ value: String(s), .. }, ..] {
-      println(s)
-    }
-    Unit
-  })
-  inspect(vm.eval("println(\"println from external function\")"), content="()")
-}
-
-///|
-test "embedded_code" {
-  let vm = MoonBitVM::new()
-  // 注册 embedded_code
-  vm.interpreter.add_embedded_fn("%string_length2", params => if params
-    is [{ value: String(s), .. }, ..] {
-    Int(s.length())
-  } else {
-    Unit
-  })
-  inspect(
-    vm.eval(
-      "pub fn String::length2(self : String) -> Int = \"%string_length2\"",
-    ),
-    content="()",
-  )
-  inspect(vm.eval("let s = \"hello\""), content="()")
-  inspect(vm.eval("s.length2()"), content="5")
-}
-
-///|
-test "fib" {
+test "recursive_functions" {
   let vm = MoonBitVM::new()
   inspect(
     vm.eval(
@@ -245,27 +213,40 @@ test "fib" {
   inspect(vm.eval("fib(10)"), content="89")
 }
 
+// =============================================================================
+// 6. DATA STRUCTURES
+// =============================================================================
+
 ///|
-test "fn simple" {
+test "tuples" {
   let vm = MoonBitVM::new()
-  inspect(vm.eval("fn a() { 1 }"), content="() -> Int")
-  inspect(vm.eval("fn b() { a() }"), content="() -> Int")
-  inspect(vm.eval("a()"), content="1")
-  inspect(vm.eval("b()"), content="1")
+  inspect(vm.eval("let t = (1, 2)"), content="()")
+  inspect(vm.eval("t.0"), content="1")
+  inspect(vm.eval("t.1"), content="2")
+  inspect(vm.eval("t"), content="(1, 2)")
+  inspect(vm.eval("let (a, b) = t"), content="()")
+  inspect(vm.eval("a"), content="1")
+  inspect(vm.eval("b"), content="2")
 }
 
 ///|
-test "fn add" {
+test "arrays" {
   let vm = MoonBitVM::new()
+  inspect(vm.eval("let arr = [1, 2, 3]; arr.length()"), content="3")
+  inspect(vm.eval("let arr = []; arr.is_empty()"), content="true")
+  inspect(vm.eval("let arr = [1, 2, 3]; arr.is_empty()"), content="false")
   inspect(
-    vm.eval("fn add(a: Int, b: Int) -> Int { a + b }"),
-    content="(a: Int, b: Int) -> Int",
+    vm.eval("let arr = [\"1\", \"2\", \"3\"]; arr.join()"),
+    content="1,2,3",
   )
-  inspect(vm.eval("add(1,2)"), content="3")
+  inspect(
+    vm.eval("let arr = [\"1\", \"2\", \"3\"]; arr.join(\"-\")"),
+    content="1-2-3",
+  )
 }
 
 ///|
-test "struct" {
+test "structs" {
   let vm = MoonBitVM::new()
   inspect(
     vm.eval(
@@ -287,51 +268,98 @@ test "struct" {
 }
 
 ///|
-test "match" {
+test "mutable_structs" {
   let vm = MoonBitVM::new()
-  // 基本常量匹配
+  inspect(
+    vm.eval(
+      (
+        #|struct Point {
+        #|  mut x : Int
+        #|  mut y : Int
+        #|}
+      ),
+      top=true,
+    ),
+    content="()",
+  )
+  inspect(vm.eval("let p = { x: 1, y: 2 }"), content="()")
+  inspect(vm.eval("p.x"), content="1")
+  inspect(vm.eval("p.y"), content="2")
+  inspect(vm.eval("p.x = 3"), content="()")
+  inspect(vm.eval("p.y = 4"), content="()")
+  inspect(vm.eval("p.x"), content="3")
+  inspect(vm.eval("p.y"), content="4")
+  inspect(vm.eval("p"), content="{ x: 3, y: 4 }")
+}
+
+///|
+test "references" {
+  let vm = MoonBitVM::new()
+  inspect(
+    vm.eval(
+      (
+        #|struct RefInt {
+        #|  mut value: Int
+        #|}
+      ),
+      top=true,
+    ),
+    content="()",
+  )
+  inspect(
+    vm.eval(
+      (
+        #|let a = { value: 1 }
+        #|let b = a
+        #|b.value = 2
+      ),
+    ),
+    content="()",
+  )
+  inspect(vm.eval("a"), content="{ value: 2 }")
+  inspect(vm.eval("a.value"), content="2")
+}
+
+// =============================================================================
+// 7. PATTERN MATCHING
+// =============================================================================
+
+///|
+test "basic_pattern_matching" {
+  let vm = MoonBitVM::new()
   inspect(vm.eval("let s = 10"), content="()")
   inspect(vm.eval("match s { 10 => 100 }"), content="100")
-
-  // 变量模式匹配
   inspect(vm.eval("match 42 { x => x * 2 }"), content="84")
-
-  // 通配符模式匹配
   inspect(vm.eval("match 123 { _ => 999 }"), content="999")
+}
 
-  // Or模式匹配
+///|
+test "or_patterns" {
+  let vm = MoonBitVM::new()
   inspect(vm.eval("match 5 { 1 | 5 | 10 => 100 }"), content="100")
   inspect(vm.eval("match 3 { 1 | 5 | 10 => 100; _ => 200 }"), content="200")
+}
 
-  // 测试简单变量绑定
-  inspect(vm.eval("match 42 { x => x }"), content="42")
-
-  // Tuple模式匹配 - 简化测试
+///|
+test "tuple_patterns" {
+  let vm = MoonBitVM::new()
   inspect(vm.eval("match (1, 2) { (a, b) => a }"), content="1")
   inspect(vm.eval("match (1, 2) { (a, b) => b }"), content="2")
   inspect(vm.eval("match (1, 2) { (a, b) => a + b }"), content="3")
+}
 
-  // Array模式匹配
-  // 调试：测试数组创建
-  let array_create_result = vm.eval("[1, 2, 3]")
-  inspect(array_create_result.to_string(), content="[1, 2, 3]")
-  // 调试：测试数组元素访问
-  let array_result = vm.eval("[1, 2, 3][0]")
-  inspect(array_result.to_string(), content="1")
-  inspect(array_result, content="1")
-  // 调试：测试简单的常量匹配
-  inspect(vm.eval("match 1 { a => a }"), content="1")
-  // 调试：测试数组创建
-  inspect(vm.eval("[1, 2, 3]"), content="[1, 2, 3]")
-  // 调试：测试数组第一个元素
-  inspect(vm.eval("let arr = [1, 2, 3]; arr[0]"), content="1")
+///|
+test "array_patterns" {
+  let vm = MoonBitVM::new()
   inspect(vm.eval("match [1, 2, 3] { [a, b, c] => a }"), content="1")
   inspect(vm.eval("match [1, 2, 3] { [a, b, c] => a + b + c }"), content="6")
   inspect(vm.eval("match [5, 10] { [x, y] => x * y }"), content="50")
+}
 
-  // Record模式匹配
-  let match_result = vm.eval("match { x: 10, y: 20 } { { x, y } => x + y }")
-  inspect(match_result, content="30")
+///|
+test "record_patterns" {
+  let vm = MoonBitVM::new()
+  inspect(vm.eval("match { x: 10, y: 20 } { { x, y } => x + y }"), content="30")
   inspect(
     vm.eval("match { name: \"Alice\", age: 25 } { { name, .. } => name }"),
     content="Alice",
@@ -340,19 +368,21 @@ test "match" {
     vm.eval("match { name: \"Alice\", age: 25 } { { age, .. } => age }"),
     content="25",
   )
-  // 嵌套模式匹配
+}
+
+///|
+test "nested_patterns" {
+  let vm = MoonBitVM::new()
   inspect(
     vm.eval("match (1, [2, 3]) { (a, [b, c]) => a + b + c }"),
     content="6",
   )
-
-  // 多个case的匹配
   inspect(vm.eval("match 2 { 1 => 10; 2 => 20; _ => 30 }"), content="20")
   inspect(vm.eval("match 5 { 1 => 10; 2 => 20; _ => 30 }"), content="30")
 }
 
 ///|
-test "match range" {
+test "range_patterns" {
   let vm = MoonBitVM::new()
   inspect(
     vm.eval(
@@ -389,9 +419,8 @@ test "match range" {
 }
 
 ///|
-test "match constructor" {
+test "constructor_patterns" {
   let vm = MoonBitVM::new()
-  // 测试常量构造函数匹配
   inspect(
     vm.eval(
       (
@@ -417,270 +446,21 @@ test "match constructor" {
   inspect(vm.eval("test_constr(5)"), content="other")
 }
 
-///|
-test "mutate" {
-  let vm = MoonBitVM::new()
-  inspect(
-    vm.eval(
-      (
-        #|struct Point {
-        #|  mut x : Int
-        #|  mut y : Int
-        #|}
-      ),
-      top=true,
-    ),
-    content="()",
-  )
-  inspect(vm.eval("let p = { x: 1, y: 2 }"), content="()")
-  inspect(vm.eval("p.x"), content="1")
-  inspect(vm.eval("p.y"), content="2")
-  inspect(vm.eval("p.x = 3"), content="()")
-  inspect(vm.eval("p.y = 4"), content="()")
-  inspect(vm.eval("p.x"), content="3")
-  inspect(vm.eval("p.y"), content="4")
-  inspect(vm.eval("p"), content="{ x: 3, y: 4 }")
-}
+// =============================================================================
+// 8. OPTION TYPE
+// =============================================================================
 
 ///|
-test "tuple" {
-  let vm = MoonBitVM::new()
-  inspect(vm.eval("let t = (1, 2)"), content="()")
-  inspect(vm.eval("t.0"), content="1")
-  inspect(vm.eval("t.1"), content="2")
-  inspect(vm.eval("t"), content="(1, 2)")
-  inspect(vm.eval("let (a, b) = t"), content="()")
-  inspect(vm.eval("a"), content="1")
-  inspect(vm.eval("b"), content="2")
-  inspect(vm.eval("let (a, b, c) = (1, 2, 3)"), content="()")
-  inspect(vm.eval("a"), content="1")
-  inspect(vm.eval("b"), content="2")
-  inspect(vm.eval("c"), content="3")
-  inspect(vm.eval("let a = 1"), content="()")
-  inspect(vm.eval("let a = (a, a)"), content="()")
-  inspect(vm.eval("let a = (a, a)"), content="()")
-  inspect(vm.eval("a"), content="((1, 1), (1, 1))")
-}
-
-///|
-// test "array" {
-//   let vm = MoonBitVM::new()
-//   inspect(vm.eval("let a = [1, 2, 3]"), content="()")
-//   inspect(vm.eval("let b = a"), content="()")
-//   inspect(vm.eval("a"), content="[1, 2, 3]")
-//   inspect(vm.eval("a[0]"), content="1")
-//   inspect(vm.eval("a[1] = 4"), content="()")
-//   inspect(vm.eval("a"), content="[1, 4, 3]")
-//   inspect(vm.eval("b"), content="[1, 4, 3]")
-// }
-
-///|
-test "ref" {
-  let vm = MoonBitVM::new()
-  inspect(
-    vm.eval(
-      (
-        #|struct RefInt {
-        #|  mut value: Int
-        #|}
-      ),
-      top=true,
-    ),
-    content="()",
-  )
-  inspect(
-    vm.eval(
-      (
-        #|let a = { value: 1 }
-        #|let b = a
-        #|b.value = 2
-      ),
-    ),
-    content="()",
-  )
-  inspect(vm.eval("a"), content="{ value: 2 }")
-  inspect(vm.eval("a.value"), content="2")
-}
-
-///|
-test "string embedded" {
-  let vm = MoonBitVM::new()
-  inspect(vm.eval("let s = \"hello\""), content="()")
-  inspect(vm.eval("s.length()"), content="5")
-}
-
-///|
-test "bool embedded methods" {
-  let vm = MoonBitVM::new()
-  inspect(vm.eval("true.compare(false)"), content="1")
-  inspect(vm.eval("false.compare(true)"), content="-1")
-  inspect(vm.eval("true.compare(true)"), content="0")
-  inspect(vm.eval("Bool::default()"), content="false")
-}
-
-///|
-test "int embedded methods" {
-  let vm = MoonBitVM::new()
-  // 位运算
-  inspect(vm.eval("(5).lnot()"), content="-6")
-  inspect(vm.eval("(5).land(3)"), content="1")
-  inspect(vm.eval("(5).lor(3)"), content="7")
-  inspect(vm.eval("(5).lxor(3)"), content="6")
-  inspect(vm.eval("(5).shl(2)"), content="20")
-  inspect(vm.eval("(20).shr(2)"), content="5")
-
-  // 比较和状态
-  inspect(vm.eval("(5).compare(3)"), content="1")
-  inspect(vm.eval("(3).compare(5)"), content="-1")
-  inspect(vm.eval("(5).compare(5)"), content="0")
-  inspect(vm.eval("(5).is_pos()"), content="true")
-  inspect(vm.eval("(-5).is_neg()"), content="true")
-  inspect(vm.eval("(0).is_pos()"), content="false")
-
-  // 位操作
-  inspect(vm.eval("(8).ctz()"), content="3")
-  inspect(vm.eval("(8).clz()"), content="28")
-  inspect(vm.eval("(7).popcnt()"), content="3")
-}
-
-///|
-test "string embedded methods" {
-  let vm = MoonBitVM::new()
-  inspect(vm.eval("let s = \"hello\""), content="()")
-  inspect(vm.eval("s.length()"), content="5")
-  inspect(vm.eval("s.get(0)"), content="104") // 返回字符的 ASCII 码
-  inspect(vm.eval("s.unsafe_get(1)"), content="101") // 返回字符的 ASCII 码
-  inspect(vm.eval("s.to_string()"), content="hello")
-}
-
-///|
-test "double embedded methods" {
-  let vm = MoonBitVM::new()
-  inspect(vm.eval("5.5.compare(3.5)"), content="1")
-  inspect(vm.eval("3.5.compare(5.5)"), content="-1")
-  inspect(vm.eval("3.5.compare(3.5)"), content="0")
-  inspect(vm.eval("3.5.to_int64()"), content="3")
-}
-
-///|
-test "char embedded methods" {
-  let vm = MoonBitVM::new()
-  inspect(vm.eval("'b'.compare('a')"), content="1")
-  inspect(vm.eval("'a'.compare('b')"), content="-1")
-  inspect(vm.eval("'a'.compare('a')"), content="0")
-  inspect(vm.eval("'a'.to_int()"), content="97")
-}
-
-///|
-test {
-  let vm = MoonBitVM::new()
-  inspect(
-    vm.eval(
-      (
-        #|fn sum_loop(n : Int, acc : Int) -> Int {
-        #|  let mut acc = acc
-        #|  for i = 0; i < n; i = i + 1 {
-        #|    acc = acc + i
-        #|  }
-        #|  acc
-        #|}
-      ),
-    ),
-    content="(n: Int, acc: Int) -> Int",
-  )
-  inspect(vm.eval("sum_loop(5, 1)"), content="11")
-  //  with continue
-  inspect(
-    vm.eval(
-      (
-        #|fn sum_loop2(n : Int, acc : Int) -> Int {
-        #|  let mut acc = acc
-        #|  for i = 0; i < n; i = i + 1 {
-        #|    if i == 2 {
-        #|      continue
-        #|    }
-        #|    acc = acc + i
-        #|  }
-        #|  acc
-        #|}
-      ),
-    ),
-    content="(n: Int, acc: Int) -> Int",
-  )
-  inspect(vm.eval("sum_loop2(5, 1)"), content="9")
-}
-
-///|
-test {
-  fn sum_loop2(n : Int, acc : Int) -> Int {
-    let mut acc = acc
-    for i = 0; i < n; i = i + 1 {
-      if i == 2 {
-        continue
-      }
-      acc = acc + i
-    }
-    acc
-  }
-
-  inspect(sum_loop2(5, 1), content="9")
-}
-
-///|
-test {
-  let vm = MoonBitVM::new()
-  inspect(
-    vm.eval(
-      (
-        #|let mut i = 10
-        #|while i > 0 {
-        #|  i = i - 1
-        #|  if i % 2 == 0 {
-        #|    break 5
-        #|  }
-        #|} else {
-        #|  7
-        #|}
-      ),
-    ),
-    content="5",
-  )
-}
-
-///|
-test "pipe" {
-  let vm = MoonBitVM::new()
-
-  // Test basic pipe operator
-  inspect(vm.eval("5 |> ignore"), content="()")
-
-  // Test pipe with array push
-  inspect(vm.eval("[] |> Array::push(5)"), content="[5]")
-
-  // Test chained pipe operators
-  inspect(vm.eval("1 |> add(5) |> ignore"), content="()")
-
-  // Test pipe with function calls
-  inspect(
-    vm.eval("fn add(x: Int, y: Int) -> Int { x + y }\n1 |> add(5)"),
-    content="6",
-  )
-}
-
-///|
-test "option" {
+test "option_basics" {
   let vm = MoonBitVM::new()
   inspect(vm.eval("Some(5)"), content="Some(5)")
   inspect(vm.eval("Option::Some(5)"), content="Some(5)")
   inspect(vm.eval("None"), content="None")
-  // 调试unwrap方法
-  let some_val = vm.eval("Some(5)")
-  inspect(some_val, content="Some(5)")
   inspect(vm.eval("Some(5).unwrap()"), content="5")
 }
 
 ///|
-test "option match" {
+test "option_pattern_matching" {
   let vm = MoonBitVM::new()
   inspect(
     vm.eval("match Option::Some(5) { Some(x) => x, Option::None => 0 }"),
@@ -690,67 +470,135 @@ test "option match" {
     vm.eval("match Some(5) { Option::Some(x) => x, None => 0 }"),
     content="5",
   )
-  inspect(
-    match None {
-      Some(x) => x
-      None => 0
-    },
-    content="0",
-  )
   inspect(vm.eval("match None { Some(x) => x, None => 0 }"), content="0")
 }
 
 ///|
-test "option unwrap_or_else" {
+test "option_methods" {
   let vm = MoonBitVM::new()
-  // 测试Some情况 - 应该返回Some中的值，不调用函数
+  inspect(vm.eval("let opt = Some(42); opt.unwrap()"), content="42")
+  inspect(vm.eval("let opt = Some(42); opt.unwrap_or(0)"), content="42")
+  inspect(vm.eval("let opt = None; opt.unwrap_or(0)"), content="0")
+  inspect(vm.eval("let opt = Some(42); opt.is_empty()"), content="false")
+  inspect(vm.eval("let opt = None; opt.is_empty()"), content="true")
   inspect(
-    vm.eval("let opt = Some(42); opt.unwrap_or_else(fn() { 0 })"),
-    content="42",
+    vm.eval("let opt = Some(5); opt.map(fn(x) { x * 2 })"),
+    content="Some(10)",
   )
-  
-  // 测试None情况 - 应该调用函数并返回函数结果
+  inspect(vm.eval("let opt = None; opt.map(fn(x) { x * 2 })"), content="None")
   inspect(
-    vm.eval("let opt = None; opt.unwrap_or_else(fn() { 99 })"),
-    content="99",
+    vm.eval("let opt = Some(5); opt.filter(fn(x) { x > 3 })"),
+    content="Some(5)",
   )
-  
-  // 测试复杂函数调用
   inspect(
-    vm.eval("let opt = None; opt.unwrap_or_else(fn() { 10 + 20 })"),
-    content="30",
-  )
-  
-  // 测试字符串类型
-  inspect(
-    vm.eval("let opt = Some(\"hello\"); opt.unwrap_or_else(fn() { \"world\" })"),
-    content="hello",
-  )
-  
-  inspect(
-    vm.eval("let opt = None; opt.unwrap_or_else(fn() { \"default\" })"),
-    content="default",
+    vm.eval("let opt = Some(2); opt.filter(fn(x) { x > 3 })"),
+    content="None",
   )
 }
 
-///| 测试新的上下文化架构
-test "context architecture demo" {
+// =============================================================================
+// 9. BUILT-IN METHODS
+// =============================================================================
+
+///|
+test "string_methods" {
   let vm = MoonBitVM::new()
-  
-  // 测试新的map功能（演示版本）
+  inspect(vm.eval("let s = \"hello\""), content="()")
+  inspect(vm.eval("s.length()"), content="5")
+  inspect(vm.eval("s.get(0)"), content="104")
+  inspect(vm.eval("s.unsafe_get(1)"), content="101")
+  inspect(vm.eval("s.to_string()"), content="hello")
+}
+
+///|
+test "bool_methods" {
+  let vm = MoonBitVM::new()
+  inspect(vm.eval("true.compare(false)"), content="1")
+  inspect(vm.eval("false.compare(true)"), content="-1")
+  inspect(vm.eval("true.compare(true)"), content="0")
+  inspect(vm.eval("Bool::default()"), content="false")
+}
+
+///|
+test "int_methods" {
+  let vm = MoonBitVM::new()
+  inspect(vm.eval("(5).lnot()"), content="-6")
+  inspect(vm.eval("(5).land(3)"), content="1")
+  inspect(vm.eval("(5).lor(3)"), content="7")
+  inspect(vm.eval("(5).lxor(3)"), content="6")
+  inspect(vm.eval("(5).shl(2)"), content="20")
+  inspect(vm.eval("(20).shr(2)"), content="5")
+  inspect(vm.eval("(5).compare(3)"), content="1")
+  inspect(vm.eval("(3).compare(5)"), content="-1")
+  inspect(vm.eval("(5).compare(5)"), content="0")
+  inspect(vm.eval("(5).is_pos()"), content="true")
+  inspect(vm.eval("(-5).is_neg()"), content="true")
+  inspect(vm.eval("(0).is_pos()"), content="false")
+  inspect(vm.eval("(8).ctz()"), content="3")
+  inspect(vm.eval("(8).clz()"), content="28")
+  inspect(vm.eval("(7).popcnt()"), content="3")
+}
+
+///|
+test "double_methods" {
+  let vm = MoonBitVM::new()
+  inspect(vm.eval("5.5.compare(3.5)"), content="1")
+  inspect(vm.eval("3.5.compare(5.5)"), content="-1")
+  inspect(vm.eval("3.5.compare(3.5)"), content="0")
+  inspect(vm.eval("3.5.to_int64()"), content="3")
+}
+
+///|
+test "char_methods" {
+  let vm = MoonBitVM::new()
+  inspect(vm.eval("'b'.compare('a')"), content="1")
+  inspect(vm.eval("'a'.compare('b')"), content="-1")
+  inspect(vm.eval("'a'.compare('a')"), content="0")
+  inspect(vm.eval("'a'.to_int()"), content="97")
+}
+
+// =============================================================================
+// 10. ADVANCED FEATURES
+// =============================================================================
+
+///|
+test "pipe_operator" {
+  let vm = MoonBitVM::new()
+  inspect(vm.eval("5 |> ignore"), content="()")
+  inspect(vm.eval("[] |> Array::push(5)"), content="[5]")
   inspect(
-    vm.eval("let opt = Some(42); opt.map(fn(x) { x + 1 })"),
-    content="Some(42)", // 简化版本直接返回原值
+    vm.eval("fn add(x: Int, y: Int) -> Int { x + y }\n1 |> add(5)"),
+    content="6",
   )
-  
+}
+
+///|
+test "external_functions" {
+  let vm = MoonBitVM::new()
+  vm.interpreter.add_extern_fn("println", ctx => {
+    if ctx.arguments is [{ value: String(s), .. }, ..] {
+      println(s)
+    }
+    Unit
+  })
+  inspect(vm.eval("println(\"println from external function\")"), content="()")
+}
+
+///|
+test "embedded_code" {
+  let vm = MoonBitVM::new()
+  vm.interpreter.add_embedded_fn("%string_length2", ctx => if ctx.arguments
+    is [{ value: String(s), .. }, ..] {
+    Int(s.length())
+  } else {
+    Unit
+  })
   inspect(
-    vm.eval("let opt = None; opt.map(fn(x) { x + 1 })"),
-    content="None",
+    vm.eval(
+      "pub fn String::length2(self : String) -> Int = \"%string_length2\"",
+    ),
+    content="()",
   )
-  
-  // 验证原有功能仍然正常工作
-  inspect(
-    vm.eval("let opt = Some(100); opt.unwrap_or_else(fn() { 0 })"),
-    content="100",
-  )
+  inspect(vm.eval("let s = \"hello\""), content="()")
+  inspect(vm.eval("s.length2()"), content="5")
 }

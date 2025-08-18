@@ -1,5 +1,5 @@
 ///|
-pub let array_methods : Map[String, (Array[RuntimeArgument]) -> RuntimeValue] = {
+pub let array_methods : Map[String, RuntimeFunction] = {
   "length": array_length_fn,
   "push": array_push_fn,
   "clear": array_clear_fn,
@@ -11,15 +11,13 @@ pub let array_methods : Map[String, (Array[RuntimeArgument]) -> RuntimeValue] = 
 }
 
 ///| 数组长度
-let array_length_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
-  params {
+let array_length_fn : RuntimeFunction = ctx => match ctx.arguments {
   [{ value: Array(arr), .. }, ..] => Int(arr.length())
   _ => Unit
 }
 
 ///| 数组push操作
-let array_push_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
-  params {
+let array_push_fn : RuntimeFunction = ctx => match ctx.arguments {
   [{ value: Array(arr), .. }, { value: val, .. }, ..] => {
     arr.push(val)
     Array(arr)
@@ -28,8 +26,7 @@ let array_push_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
 }
 
 ///| 数组clear操作
-let array_clear_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
-  params {
+let array_clear_fn : RuntimeFunction = ctx => match ctx.arguments {
   [{ value: Array(arr), .. }, ..] => {
     arr.clear()
     Unit
@@ -38,29 +35,25 @@ let array_clear_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
 }
 
 ///| 数组is_empty操作
-let array_is_empty_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
-  params {
+let array_is_empty_fn : RuntimeFunction = ctx => match ctx.arguments {
   [{ value: Array(arr), .. }, ..] => Bool(arr.is_empty())
   _ => Unit
 }
 
 ///| 数组reverse操作
-let array_rev_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
-  params {
+let array_rev_fn : RuntimeFunction = ctx => match ctx.arguments {
   [{ value: Array(arr), .. }, ..] => Array(arr.rev())
   _ => Unit
 }
 
 ///| 数组copy操作
-let array_copy_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
-  params {
+let array_copy_fn : RuntimeFunction = ctx => match ctx.arguments {
   [{ value: Array(arr), .. }, ..] => Array(arr.copy())
   _ => Unit
 }
 
 ///| 数组join操作
-let array_join_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
-  params {
+let array_join_fn : RuntimeFunction = ctx => match ctx.arguments {
   [{ value: Array(arr), .. }, { value: String(sep), .. }, ..] => {
     let string_arr = arr.map(v => match v {
       String(s) => s
@@ -93,8 +86,7 @@ let array_join_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
 }
 
 ///| 数组swap操作
-let array_swap_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
-  params {
+let array_swap_fn : RuntimeFunction = ctx => match ctx.arguments {
   [{ value: Array(arr), .. }, { value: Int(i), .. }, { value: Int(j), .. }, ..] => {
     arr.swap(i, j)
     Unit

@@ -5,7 +5,7 @@
     "moonbitlang/parser/syntax",
     "moonbitlang/x/encoding",
     "oboard/moonbit-eval/value",
-    "oboard/moonbit-eval/core"
+    "oboard/moonbit-eval/interpreter"
   ],
   "link": {
     "js": {

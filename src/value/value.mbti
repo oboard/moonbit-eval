@@ -1,0 +1,72 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "oboard/moonbit-eval/value"
+
+import(
+  "moonbitlang/parser/syntax"
+)
+
+// Values
+fn infer_type_from_constant(@syntax.Constant) -> String
+
+fn runtime_value_infix(String, RuntimeValue, RuntimeValue) -> RuntimeValue
+
+fn type_to_string(@syntax.Type) -> String
+
+// Errors
+
+// Types and methods
+pub(all) struct RefId(Int)
+fn RefId::inner(Self) -> Int
+impl Eq for RefId
+impl Hash for RefId
+impl Show for RefId
+
+pub(all) struct RuntimeArgument {
+  value : RuntimeValue
+  kind : @syntax.ArgumentKind
+}
+
+pub struct RuntimeStore {
+  structs : Map[RefId, Map[String, RuntimeValue]]
+  mut next_id : RefId
+}
+fn RuntimeStore::alloc_struct(Self, Map[String, RuntimeValue]) -> RefId
+fn RuntimeStore::get_struct(Self, RefId) -> Map[String, RuntimeValue]?
+fn RuntimeStore::new() -> Self
+fn RuntimeStore::update_struct_field(Self, RefId, String, RuntimeValue) -> Bool
+
+pub(all) enum RuntimeValue {
+  Unit
+  Bool(Bool)
+  Int(Int)
+  UInt(UInt)
+  Int64(Int64)
+  UInt64(UInt64)
+  Float(Float)
+  Double(Double)
+  Char(Char)
+  Byte(Byte)
+  String(String)
+  Tuple(Array[RuntimeValue])
+  Array(Array[RuntimeValue])
+  StructRef(RefId)
+  Function(@syntax.Func)
+  Constructor(String, Array[RuntimeValue])
+  Break(RuntimeValue?)
+  Continue(Array[RuntimeValue])
+}
+fn RuntimeValue::from_expr(@syntax.Expr) -> Self
+fn RuntimeValue::from_expr_with_store(@syntax.Expr, RuntimeStore) -> Self
+fn RuntimeValue::is_mutable(Self) -> Bool
+fn RuntimeValue::is_reference(Self) -> Bool
+fn RuntimeValue::to_expr(Self) -> @syntax.Expr
+fn RuntimeValue::to_expr_with_store(Self, RuntimeStore) -> @syntax.Expr
+fn RuntimeValue::to_reference_expr(Self, RuntimeStore) -> @syntax.Expr
+fn RuntimeValue::to_string_with_store(Self, RuntimeStore) -> String
+impl Eq for RuntimeValue
+impl Show for RuntimeValue
+
+// Type aliases
+
+// Traits
+

@@ -1,72 +1,11 @@
-///| Runtime函数执行上下文 - 统一所有函数的执行环境
-struct RuntimeFunctionContext {
-  interpreter : ClosureInterpreter
-  arguments : Array[RuntimeArgument]
-}
-
 ///|
 let core_fn_aliases : Map[String, String] = {
   "not": "%bool_not",
   "ignore": "%ignore",
 }
 
-///| 新的函数类型定义 - 统一的上下文访问
-typealias (RuntimeFunctionContext) -> RuntimeValue as RuntimeFunction
-
-///| Option unwrap_or_else 方法（使用新的上下文模式）
-let option_unwrap_or_else_context_fn : RuntimeFunction = (ctx) => match ctx.arguments {
-  [{ value: Constructor("Some", [inner_value]), .. }, ..] => inner_value
-  [{ value: Constructor("None", []), .. }, { value: Function(func), .. }, ..] => {
-    // 通过上下文访问解释器来调用函数
-    ctx.interpreter.call(func, @list.new())
-  }
-  _ => Unit
-}
-
-///| 兼容性包装器 - 将旧的函数签名转换为新的上下文模式
-let option_unwrap_or_else_with_interpreter_fn : (ClosureInterpreter, Array[RuntimeArgument]) -> RuntimeValue = (interpreter, params) => {
-  let ctx = RuntimeFunctionContext::{ interpreter, arguments: params }
-  option_unwrap_or_else_context_fn(ctx)
-}
-
-///| 支持解释器的embedded方法映射（保持向后兼容）
-let core_embedded_methods_with_interpreter : Map[
-  String,
-  Map[String, (ClosureInterpreter, Array[RuntimeArgument]) -> RuntimeValue],
-] = {
-  "Option": {
-    "unwrap_or_else": option_unwrap_or_else_with_interpreter_fn,
-  },
-}
-
-///| 演示函数 - 展示新架构的强大功能（简化版本）
-let option_map_context_fn : RuntimeFunction = (ctx) => match ctx.arguments {
-  [{ value: Constructor("Some", [inner_value]), .. }, { value: Function(_func), .. }, ..] => {
-    // 新架构让所有函数都能访问解释器上下文
-    // 这里可以轻松实现需要解释器的复杂逻辑
-    // 为了演示，我们直接返回包装的值
-    Constructor("Some", [inner_value])
-  }
-  [{ value: Constructor("None", []), .. }, ..] => Constructor("None", [])
-  _ => Unit
-}
-
-///| 新的上下文化embedded方法映射
-let core_embedded_methods_with_context : Map[
-  String,
-  Map[String, RuntimeFunction],
-] = {
-  "Option": {
-    "unwrap_or_else": option_unwrap_or_else_context_fn,
-    "map": option_map_context_fn,
-  },
-}
-
 ///|
-let builtin_embedded_code : Map[
-  String,
-  (Array[RuntimeArgument]) -> RuntimeValue,
-] = {
+let builtin_embedded_code : Map[String, RuntimeFunction] = {
   "%ignore": ignore_fn,
   "%refeq": physical_equal_fn,
   "%panic": panic_fn,
@@ -148,21 +87,18 @@ let builtin_embedded_code : Map[
 }
 
 ///|
-let core_embedded_code : Map[String, (Array[RuntimeArgument]) -> RuntimeValue] = [
-  builtin_embedded_code, @core.string_embedded_code, @core.int_embedded_code,
+let core_embedded_code : Map[String, RuntimeFunction] = [
+  builtin_embedded_code, string_embedded_code, int_embedded_code,
 ].fold(init=Map::new(), (acc, cur) => {
   cur.each(fn(key, value) { acc.set(key, value) })
   acc
 })
 
 ///|
-let core_embedded_methods : Map[
-  String,
-  Map[String, (Array[RuntimeArgument]) -> RuntimeValue],
-] = {
+let core_embedded_methods : Map[String, Map[String, RuntimeFunction]] = {
   "Bool": { "compare": bool_compare_fn, "default": bool_default_fn },
-  "Int": @core.int_methods,
-  "String": @core.string_methods,
+  "Int": int_methods,
+  "String": string_methods,
   "UInt": {
     "mod": uint_mod_fn,
     "compare": uint_compare_fn,
@@ -191,43 +127,38 @@ let core_embedded_methods : Map[
     "to_u32": uint64_to_uint_fn,
     "to_i64_reinterpret": uint64_to_int64_fn,
   },
-  "Array": @core.array_methods,
-  "Option": @core.option_methods,
+  "Array": array_methods,
+  "Option": option_methods,
 }
 
 // ===== 整数算术运算 =====
 
 ///| 整数取负
-let int_neg_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
-  params {
+let int_neg_fn : RuntimeFunction = ctx => match ctx.arguments {
   [{ value: Int(i), .. }, ..] => Int(-i)
   _ => Unit
 }
 
 ///| 整数加法
-let int_add_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
-  params {
+let int_add_fn : RuntimeFunction = ctx => match ctx.arguments {
   [{ value: Int(a), .. }, { value: Int(b), .. }, ..] => Int(a + b)
   _ => Unit
 }
 
 ///| 整数减法
-let int_sub_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
-  params {
+let int_sub_fn : RuntimeFunction = ctx => match ctx.arguments {
   [{ value: Int(a), .. }, { value: Int(b), .. }, ..] => Int(a - b)
   _ => Unit
 }
 
 ///| 整数乘法
-let int_mul_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
-  params {
+let int_mul_fn : RuntimeFunction = ctx => match ctx.arguments {
   [{ value: Int(a), .. }, { value: Int(b), .. }, ..] => Int(a * b)
   _ => Unit
 }
 
 ///| 整数除法
-let int_div_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
-  params {
+let int_div_fn : RuntimeFunction = ctx => match ctx.arguments {
   [{ value: Int(a), .. }, { value: Int(b), .. }, ..] =>
     if b != 0 {
       Int(a / b)
@@ -239,8 +170,7 @@ let int_div_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
 }
 
 ///| 整数取模
-let int_mod_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
-  params {
+let int_mod_fn : RuntimeFunction = ctx => match ctx.arguments {
   [{ value: Int(a), .. }, { value: Int(b), .. }, ..] =>
     if b != 0 {
       Int(a % b)
@@ -254,17 +184,16 @@ let int_mod_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
 // ===== 基础函数 =====
 
 ///| ignore 函数 - 忽略任何值并返回 Unit
-let ignore_fn : (Array[RuntimeArgument]) -> RuntimeValue = _params => Unit
+let ignore_fn : RuntimeFunction = _ctx => Unit
 
 ///| physical_equal 函数 - 检查两个值是否物理相等
-let physical_equal_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
-  params {
+let physical_equal_fn : RuntimeFunction = ctx => match ctx.arguments {
   [{ value: a, .. }, { value: b, .. }, ..] => Bool(physical_equal(a, b))
   _ => Bool(false)
 }
 
 ///| panic 函数 - 触发 panic
-let panic_fn : (Array[RuntimeArgument]) -> RuntimeValue = _params => {
+let panic_fn : RuntimeFunction = _ctx => {
   abort("panic called")
   Unit
 }
@@ -272,7 +201,7 @@ let panic_fn : (Array[RuntimeArgument]) -> RuntimeValue = _params => {
 // ===== 布尔运算 =====
 
 ///| 布尔 NOT 运算
-let bool_not_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => if params
+let bool_not_fn : RuntimeFunction = ctx => if ctx.arguments
   is [{ value: Bool(b), .. }, ..] {
   Bool(not(b))
 } else {
@@ -280,15 +209,13 @@ let bool_not_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => if params
 }
 
 ///| 布尔相等比较
-let bool_eq_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
-  params {
+let bool_eq_fn : RuntimeFunction = ctx => match ctx.arguments {
   [{ value: Bool(a), .. }, { value: Bool(b), .. }, ..] => Bool(a == b)
   _ => Bool(false)
 }
 
 ///| 布尔比较
-let bool_compare_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
-  params {
+let bool_compare_fn : RuntimeFunction = ctx => match ctx.arguments {
   [{ value: Bool(a), .. }, { value: Bool(b), .. }, ..] =>
     if a == b {
       Int(0)
@@ -301,15 +228,12 @@ let bool_compare_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
 }
 
 ///| 布尔默认值
-let bool_default_fn : (Array[RuntimeArgument]) -> RuntimeValue = _params => Bool(
-  false,
-)
+let bool_default_fn : RuntimeFunction = _ctx => Bool(false)
 
 // ===== 类型转换函数 =====
 
 ///| 转换为 Double
-let to_double_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
-  params {
+let to_double_fn : RuntimeFunction = ctx => match ctx.arguments {
   [{ value: Int(i), .. }, ..] => Double(i.to_double())
   [{ value: Float(f), .. }, ..] => Double(f.to_double())
   [{ value: Double(d), .. }, ..] => Double(d)
@@ -320,8 +244,7 @@ let to_double_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
 }
 
 ///| 转换为 Float
-let to_float_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
-  params {
+let to_float_fn : RuntimeFunction = ctx => match ctx.arguments {
   [{ value: Int(i), .. }, ..] => Float(i.to_float())
   [{ value: Float(f), .. }, ..] => Float(f)
   [{ value: Double(d), .. }, ..] => Float(d.to_float())
@@ -330,8 +253,7 @@ let to_float_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
 }
 
 ///| 转换为 Byte
-let to_byte_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
-  params {
+let to_byte_fn : RuntimeFunction = ctx => match ctx.arguments {
   [{ value: Int(i), .. }, ..] => Byte(i.to_byte())
   [{ value: UInt(u), .. }, ..] => Byte(u.to_byte())
   [{ value: Byte(b), .. }, ..] => Byte(b)
@@ -339,24 +261,21 @@ let to_byte_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
 }
 
 ///| 转换为 Int16 (使用 Int 表示)
-let to_int16_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
-  params {
+let to_int16_fn : RuntimeFunction = ctx => match ctx.arguments {
   [{ value: Int(i), .. }, ..] => Int(i & 0xFFFF)
   [{ value: UInt(u), .. }, ..] => Int(u.reinterpret_as_int() & 0xFFFF)
   _ => Unit
 }
 
 ///| 转换为 UInt16 (使用 UInt 表示)
-let to_uint16_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
-  params {
+let to_uint16_fn : RuntimeFunction = ctx => match ctx.arguments {
   [{ value: Int(i), .. }, ..] => UInt(i.land(0xFFFF).reinterpret_as_uint())
   [{ value: UInt(u), .. }, ..] => UInt(u & 0xFFFFU)
   _ => Unit
 }
 
 ///| 转换为 Int64
-let to_int64_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
-  params {
+let to_int64_fn : RuntimeFunction = ctx => match ctx.arguments {
   [{ value: Int(i), .. }, ..] => Int64(i.to_int64())
   [{ value: UInt(u), .. }, ..] => Int64(u.to_int64())
   [{ value: Int64(i64), .. }, ..] => Int64(i64)
@@ -366,8 +285,7 @@ let to_int64_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
 }
 
 ///| 转换为 UInt64
-let to_uint64_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
-  params {
+let to_uint64_fn : RuntimeFunction = ctx => match ctx.arguments {
   [{ value: Int(i), .. }, ..] => UInt64(i.to_uint64())
   [{ value: UInt(u), .. }, ..] => UInt64(u.to_uint64())
   [{ value: Int64(i64), .. }, ..] => UInt64(i64.reinterpret_as_uint64())
@@ -378,64 +296,55 @@ let to_uint64_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
 // ===== UInt 运算函数 =====
 
 ///| UInt 加法
-let uint_add_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
-  params {
+let uint_add_fn : RuntimeFunction = ctx => match ctx.arguments {
   [{ value: UInt(a), .. }, { value: UInt(b), .. }, ..] => UInt(a + b)
   _ => Unit
 }
 
 ///| UInt 减法
-let uint_sub_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
-  params {
+let uint_sub_fn : RuntimeFunction = ctx => match ctx.arguments {
   [{ value: UInt(a), .. }, { value: UInt(b), .. }, ..] => UInt(a - b)
   _ => Unit
 }
 
 ///| UInt 乘法
-let uint_mul_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
-  params {
+let uint_mul_fn : RuntimeFunction = ctx => match ctx.arguments {
   [{ value: UInt(a), .. }, { value: UInt(b), .. }, ..] => UInt(a * b)
   _ => Unit
 }
 
 ///| UInt 除法
-let uint_div_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
-  params {
+let uint_div_fn : RuntimeFunction = ctx => match ctx.arguments {
   [{ value: UInt(a), .. }, { value: UInt(b), .. }, ..] => UInt(a / b)
   _ => Unit
 }
 
 ///| UInt 取模
-let uint_mod_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
-  params {
+let uint_mod_fn : RuntimeFunction = ctx => match ctx.arguments {
   [{ value: UInt(a), .. }, { value: UInt(b), .. }, ..] => UInt(a % b)
   _ => Unit
 }
 
 ///| UInt 相等比较
-let uint_eq_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
-  params {
+let uint_eq_fn : RuntimeFunction = ctx => match ctx.arguments {
   [{ value: UInt(a), .. }, { value: UInt(b), .. }, ..] => Bool(a == b)
   _ => Unit
 }
 
 ///| UInt 比较
-let uint_compare_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
-  params {
+let uint_compare_fn : RuntimeFunction = ctx => match ctx.arguments {
   [{ value: UInt(a), .. }, { value: UInt(b), .. }, ..] => Int(a.compare(b))
   _ => Unit
 }
 
 ///| UInt 转 Int
-let uint_to_int_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
-  params {
+let uint_to_int_fn : RuntimeFunction = ctx => match ctx.arguments {
   [{ value: UInt(u), .. }, ..] => Int(u.reinterpret_as_int())
   _ => Unit
 }
 
 ///| UInt 转 Double
-let uint_to_double_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
-  params {
+let uint_to_double_fn : RuntimeFunction = ctx => match ctx.arguments {
   [{ value: UInt(u), .. }, ..] => Double(u.to_double())
   _ => Unit
 }
@@ -443,50 +352,43 @@ let uint_to_double_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => mat
 // ===== Float 运算函数 =====
 
 ///| Float 加法
-let float_add_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
-  params {
+let float_add_fn : RuntimeFunction = ctx => match ctx.arguments {
   [{ value: Float(a), .. }, { value: Float(b), .. }, ..] => Float(a + b)
   _ => Unit
 }
 
 ///| Float 减法
-let float_sub_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
-  params {
+let float_sub_fn : RuntimeFunction = ctx => match ctx.arguments {
   [{ value: Float(a), .. }, { value: Float(b), .. }, ..] => Float(a - b)
   _ => Unit
 }
 
 ///| Float 乘法
-let float_mul_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
-  params {
+let float_mul_fn : RuntimeFunction = ctx => match ctx.arguments {
   [{ value: Float(a), .. }, { value: Float(b), .. }, ..] => Float(a * b)
   _ => Unit
 }
 
 ///| Float 除法
-let float_div_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
-  params {
+let float_div_fn : RuntimeFunction = ctx => match ctx.arguments {
   [{ value: Float(a), .. }, { value: Float(b), .. }, ..] => Float(a / b)
   _ => Unit
 }
 
 ///| Float 相等比较
-let float_eq_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
-  params {
+let float_eq_fn : RuntimeFunction = ctx => match ctx.arguments {
   [{ value: Float(a), .. }, { value: Float(b), .. }, ..] => Bool(a == b)
   _ => Unit
 }
 
 ///| Float 比较
-let float_compare_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
-  params {
+let float_compare_fn : RuntimeFunction = ctx => match ctx.arguments {
   [{ value: Float(a), .. }, { value: Float(b), .. }, ..] => Int(a.compare(b))
   _ => Unit
 }
 
 ///| Float 转 Double
-let float_to_double_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
-  params {
+let float_to_double_fn : RuntimeFunction = ctx => match ctx.arguments {
   [{ value: Float(f), .. }, ..] => Double(f.to_double())
   _ => Unit
 }
@@ -494,50 +396,43 @@ let float_to_double_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => ma
 // ===== Double 运算函数 =====
 
 ///| Double 加法
-let double_add_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
-  params {
+let double_add_fn : RuntimeFunction = ctx => match ctx.arguments {
   [{ value: Double(a), .. }, { value: Double(b), .. }, ..] => Double(a + b)
   _ => Unit
 }
 
 ///| Double 减法
-let double_sub_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
-  params {
+let double_sub_fn : RuntimeFunction = ctx => match ctx.arguments {
   [{ value: Double(a), .. }, { value: Double(b), .. }, ..] => Double(a - b)
   _ => Unit
 }
 
 ///| Double 乘法
-let double_mul_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
-  params {
+let double_mul_fn : RuntimeFunction = ctx => match ctx.arguments {
   [{ value: Double(a), .. }, { value: Double(b), .. }, ..] => Double(a * b)
   _ => Unit
 }
 
 ///| Double 除法
-let double_div_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
-  params {
+let double_div_fn : RuntimeFunction = ctx => match ctx.arguments {
   [{ value: Double(a), .. }, { value: Double(b), .. }, ..] => Double(a / b)
   _ => Unit
 }
 
 ///| Double 相等比较
-let double_eq_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
-  params {
+let double_eq_fn : RuntimeFunction = ctx => match ctx.arguments {
   [{ value: Double(a), .. }, { value: Double(b), .. }, ..] => Bool(a == b)
   _ => Unit
 }
 
 ///| Double 比较
-let double_compare_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
-  params {
+let double_compare_fn : RuntimeFunction = ctx => match ctx.arguments {
   [{ value: Double(a), .. }, { value: Double(b), .. }, ..] => Int(a.compare(b))
   _ => Unit
 }
 
 ///| Double 转 Int64
-let double_to_int64_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
-  params {
+let double_to_int64_fn : RuntimeFunction = ctx => match ctx.arguments {
   [{ value: Double(d), .. }, ..] => Int64(d.to_int64())
   _ => Unit
 }
@@ -545,22 +440,19 @@ let double_to_int64_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => ma
 // ===== Char 运算函数 =====
 
 ///| Char 相等比较
-let char_eq_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
-  params {
+let char_eq_fn : RuntimeFunction = ctx => match ctx.arguments {
   [{ value: Char(a), .. }, { value: Char(b), .. }, ..] => Bool(a == b)
   _ => Unit
 }
 
 ///| Char 比较
-let char_compare_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
-  params {
+let char_compare_fn : RuntimeFunction = ctx => match ctx.arguments {
   [{ value: Char(a), .. }, { value: Char(b), .. }, ..] => Int(a.compare(b))
   _ => Unit
 }
 
 ///| Char 转 Int
-let char_to_int_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
-  params {
+let char_to_int_fn : RuntimeFunction = ctx => match ctx.arguments {
   [{ value: Char(c), .. }, ..] => Int(c.to_int())
   _ => Unit
 }
@@ -568,29 +460,25 @@ let char_to_int_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
 // ===== Byte 运算函数 =====
 
 ///| Byte 相等比较
-let byte_eq_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
-  params {
+let byte_eq_fn : RuntimeFunction = ctx => match ctx.arguments {
   [{ value: Byte(a), .. }, { value: Byte(b), .. }, ..] => Bool(a == b)
   _ => Unit
 }
 
 ///| Byte 比较
-let byte_compare_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
-  params {
+let byte_compare_fn : RuntimeFunction = ctx => match ctx.arguments {
   [{ value: Byte(a), .. }, { value: Byte(b), .. }, ..] => Int(a.compare(b))
   _ => Unit
 }
 
 ///| Byte 转 Int
-let byte_to_int_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
-  params {
+let byte_to_int_fn : RuntimeFunction = ctx => match ctx.arguments {
   [{ value: Byte(b), .. }, ..] => Int(b.to_int())
   _ => Unit
 }
 
 ///| Byte 转 UInt
-let byte_to_uint_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
-  params {
+let byte_to_uint_fn : RuntimeFunction = ctx => match ctx.arguments {
   [{ value: Byte(b), .. }, ..] => UInt(b.to_uint())
   _ => Unit
 }
@@ -598,64 +486,55 @@ let byte_to_uint_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
 // ===== Int64 运算函数 =====
 
 ///| Int64 加法
-let int64_add_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
-  params {
+let int64_add_fn : RuntimeFunction = ctx => match ctx.arguments {
   [{ value: Int64(a), .. }, { value: Int64(b), .. }, ..] => Int64(a + b)
   _ => Unit
 }
 
 ///| Int64 减法
-let int64_sub_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
-  params {
+let int64_sub_fn : RuntimeFunction = ctx => match ctx.arguments {
   [{ value: Int64(a), .. }, { value: Int64(b), .. }, ..] => Int64(a - b)
   _ => Unit
 }
 
 ///| Int64 乘法
-let int64_mul_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
-  params {
+let int64_mul_fn : RuntimeFunction = ctx => match ctx.arguments {
   [{ value: Int64(a), .. }, { value: Int64(b), .. }, ..] => Int64(a * b)
   _ => Unit
 }
 
 ///| Int64 除法
-let int64_div_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
-  params {
+let int64_div_fn : RuntimeFunction = ctx => match ctx.arguments {
   [{ value: Int64(a), .. }, { value: Int64(b), .. }, ..] => Int64(a / b)
   _ => Unit
 }
 
 ///| Int64 取模
-let int64_mod_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
-  params {
+let int64_mod_fn : RuntimeFunction = ctx => match ctx.arguments {
   [{ value: Int64(a), .. }, { value: Int64(b), .. }, ..] => Int64(a % b)
   _ => Unit
 }
 
 ///| Int64 相等比较
-let int64_eq_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
-  params {
+let int64_eq_fn : RuntimeFunction = ctx => match ctx.arguments {
   [{ value: Int64(a), .. }, { value: Int64(b), .. }, ..] => Bool(a == b)
   _ => Unit
 }
 
 ///| Int64 比较
-let int64_compare_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
-  params {
+let int64_compare_fn : RuntimeFunction = ctx => match ctx.arguments {
   [{ value: Int64(a), .. }, { value: Int64(b), .. }, ..] => Int(a.compare(b))
   _ => Unit
 }
 
 ///| Int64 转 Int
-let int64_to_int_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
-  params {
+let int64_to_int_fn : RuntimeFunction = ctx => match ctx.arguments {
   [{ value: Int64(i64), .. }, ..] => Int(i64.to_int())
   _ => Unit
 }
 
 ///| Int64 转 Double
-let int64_to_double_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
-  params {
+let int64_to_double_fn : RuntimeFunction = ctx => match ctx.arguments {
   [{ value: Int64(i64), .. }, ..] => Double(i64.to_double())
   _ => Unit
 }
@@ -663,64 +542,55 @@ let int64_to_double_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => ma
 // ===== UInt64 运算函数 =====
 
 ///| UInt64 加法
-let uint64_add_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
-  params {
+let uint64_add_fn : RuntimeFunction = ctx => match ctx.arguments {
   [{ value: UInt64(a), .. }, { value: UInt64(b), .. }, ..] => UInt64(a + b)
   _ => Unit
 }
 
 ///| UInt64 减法
-let uint64_sub_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
-  params {
+let uint64_sub_fn : RuntimeFunction = ctx => match ctx.arguments {
   [{ value: UInt64(a), .. }, { value: UInt64(b), .. }, ..] => UInt64(a - b)
   _ => Unit
 }
 
 ///| UInt64 乘法
-let uint64_mul_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
-  params {
+let uint64_mul_fn : RuntimeFunction = ctx => match ctx.arguments {
   [{ value: UInt64(a), .. }, { value: UInt64(b), .. }, ..] => UInt64(a * b)
   _ => Unit
 }
 
 ///| UInt64 除法
-let uint64_div_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
-  params {
+let uint64_div_fn : RuntimeFunction = ctx => match ctx.arguments {
   [{ value: UInt64(a), .. }, { value: UInt64(b), .. }, ..] => UInt64(a / b)
   _ => Unit
 }
 
 ///| UInt64 取模
-let uint64_mod_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
-  params {
+let uint64_mod_fn : RuntimeFunction = ctx => match ctx.arguments {
   [{ value: UInt64(a), .. }, { value: UInt64(b), .. }, ..] => UInt64(a % b)
   _ => Unit
 }
 
 ///| UInt64 相等比较
-let uint64_eq_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
-  params {
+let uint64_eq_fn : RuntimeFunction = ctx => match ctx.arguments {
   [{ value: UInt64(a), .. }, { value: UInt64(b), .. }, ..] => Bool(a == b)
   _ => Unit
 }
 
 ///| UInt64 比较
-let uint64_compare_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
-  params {
+let uint64_compare_fn : RuntimeFunction = ctx => match ctx.arguments {
   [{ value: UInt64(a), .. }, { value: UInt64(b), .. }, ..] => Int(a.compare(b))
   _ => Unit
 }
 
 ///| UInt64 转 UInt
-let uint64_to_uint_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
-  params {
+let uint64_to_uint_fn : RuntimeFunction = ctx => match ctx.arguments {
   [{ value: UInt64(u64), .. }, ..] => UInt(u64.to_uint())
   _ => Unit
 }
 
 ///| UInt64 转 Int64
-let uint64_to_int64_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
-  params {
+let uint64_to_int64_fn : RuntimeFunction = ctx => match ctx.arguments {
   [{ value: UInt64(u64), .. }, ..] => Int64(u64.reinterpret_as_int64())
   _ => Unit
 }

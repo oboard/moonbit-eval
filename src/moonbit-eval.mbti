@@ -2,133 +2,33 @@
 package "oboard/moonbit-eval"
 
 import(
-  "moonbitlang/core/list"
-  "moonbitlang/parser/basic"
   "moonbitlang/parser/syntax"
+  "oboard/moonbit-eval/interpreter"
+  "oboard/moonbit-eval/value"
 )
 
 // Values
-fn[T : Compare] compare(T, T, String) -> @syntax.Constant
-
-fn constant_infix(String, @syntax.Constant, @syntax.Constant) -> @syntax.Constant
-
-fn eval_double_op(Double, Double, String) -> @syntax.Constant
-
-fn eval_float_op(Double, Double, String) -> @syntax.Constant
-
-fn eval_int64_op(Int64, Int64, String) -> @syntax.Constant
-
-fn eval_int_op(Int, Int, String) -> @syntax.Constant
-
-fn eval_uint64_op(UInt64, UInt64, String) -> @syntax.Constant
-
-fn eval_uint_op(UInt, UInt, String) -> @syntax.Constant
+fn eval_result_to_string(EvalResult) -> String
 
 fn expr_to_string(@syntax.Expr) -> String
-
-fn find_variable(Array[Map[String, RuntimeValue]], Array[Map[String, RuntimeValue]], String) -> RuntimeValue
-
-fn is_comparison_op(String) -> Bool
-
-fn runtime_value_infix(String, RuntimeValue, RuntimeValue) -> RuntimeValue
-
-fn type_to_string(@syntax.Type) -> String
-
-fn unit(loc? : @basic.Location) -> @syntax.Expr
-
-fn update_mutable_variable(Array[Map[String, RuntimeValue]], String, RuntimeValue) -> Bool
 
 // Errors
 
 // Types and methods
-type ClosureInterpreter
-fn ClosureInterpreter::add_embedded_fn(Self, String, (Array[RuntimeArgument]) -> RuntimeValue) -> Unit
-fn ClosureInterpreter::add_embedded_method(Self, String, String, (Array[RuntimeArgument]) -> RuntimeValue) -> Unit
-fn ClosureInterpreter::add_extern_fn(Self, String, (Array[RuntimeArgument]) -> RuntimeValue) -> Unit
-fn ClosureInterpreter::bind_function_parameters(Self, @list.List[@syntax.Parameter], @list.List[@syntax.Argument]) -> Unit
-fn ClosureInterpreter::bind_function_parameters_runtime(Self, @list.List[@syntax.Parameter], @list.List[@syntax.Argument]) -> Unit
-fn ClosureInterpreter::constants_equal(Self, @syntax.Constant, @syntax.Constant) -> Bool
-fn ClosureInterpreter::constants_equal_expr(Self, @syntax.Expr, @syntax.Expr) -> Bool
-fn ClosureInterpreter::define_function(Self, String, @syntax.Func) -> Unit
-fn ClosureInterpreter::define_struct_method(Self, String, String, @syntax.Func) -> Unit
-fn ClosureInterpreter::execute_function_call(Self, @syntax.Func, @list.List[@syntax.Argument]) -> @syntax.Expr
-fn ClosureInterpreter::execute_function_call_runtime(Self, @syntax.Func, @list.List[@syntax.Argument]) -> RuntimeValue
-fn ClosureInterpreter::execute_match(Self, @syntax.Expr, @list.List[@syntax.Case]) -> @syntax.Expr
-fn ClosureInterpreter::execute_match_runtime(Self, RuntimeValue, @list.List[@syntax.Case]) -> RuntimeValue
-fn ClosureInterpreter::find_user_function(Self, String) -> @syntax.Func?
-fn ClosureInterpreter::new(core? : Bool) -> Self
-fn ClosureInterpreter::pattern_matches(Self, @syntax.Expr, @syntax.Pattern) -> Bool
-fn ClosureInterpreter::pattern_to_value(Self, @syntax.Pattern) -> @syntax.Expr?
-fn ClosureInterpreter::pop_scope(Self) -> Unit
-fn ClosureInterpreter::push_scope(Self) -> Unit
-fn ClosureInterpreter::set_immutable_variable(Self, String, RuntimeValue) -> Unit
-fn ClosureInterpreter::set_mutable_variable(Self, String, RuntimeValue) -> Unit
-fn ClosureInterpreter::value_in_range(Self, @syntax.Expr, @syntax.Pattern, @syntax.Pattern, Bool) -> Bool
-
 pub struct EvalResult {
-  value : RuntimeValue
-  store : RuntimeStore
-  interpreter : ClosureInterpreter
+  value : @value.RuntimeValue
+  store : @value.RuntimeStore
+  interpreter : @interpreter.ClosureInterpreter
 }
 impl Show for EvalResult
 
 type MoonBitVM
-fn MoonBitVM::create(log? : Bool, core? : Bool) -> Self
+fn MoonBitVM::create(core? : Bool) -> Self
 fn MoonBitVM::eval(Self, String, log? : Bool, top? : Bool) -> EvalResult raise Failure
-fn MoonBitVM::new(log? : Bool, core? : Bool) -> Self
-
-pub struct RefId(Int)
-fn RefId::inner(Self) -> Int
-impl Eq for RefId
-impl Hash for RefId
-impl Show for RefId
-
-pub struct RuntimeArgument {
-  value : RuntimeValue
-  kind : @syntax.ArgumentKind
-}
-
-pub struct RuntimeStore {
-  structs : Map[RefId, Map[String, RuntimeValue]]
-  mut next_id : RefId
-}
-fn RuntimeStore::alloc_struct(Self, Map[String, RuntimeValue]) -> RefId
-fn RuntimeStore::get_struct(Self, RefId) -> Map[String, RuntimeValue]?
-fn RuntimeStore::new() -> Self
-fn RuntimeStore::update_struct_field(Self, RefId, String, RuntimeValue) -> Bool
-
-pub enum RuntimeValue {
-  Unit
-  Bool(Bool)
-  Int(Int)
-  UInt(UInt)
-  Int64(Int64)
-  UInt64(UInt64)
-  Float(Float)
-  Double(Double)
-  Char(Char)
-  Byte(Byte)
-  String(String)
-  Tuple(Array[RuntimeValue])
-  Array(Array[RuntimeValue])
-  StructRef(RefId)
-  Function(@syntax.Func)
-  Constructor(String, Array[RuntimeValue])
-  Break(RuntimeValue?)
-  Continue(Array[RuntimeValue])
-}
-fn RuntimeValue::from_expr(@syntax.Expr) -> Self
-fn RuntimeValue::from_expr_with_store(@syntax.Expr, RuntimeStore) -> Self
-fn RuntimeValue::is_mutable(Self) -> Bool
-fn RuntimeValue::is_reference(Self) -> Bool
-fn RuntimeValue::to_expr(Self) -> @syntax.Expr
-fn RuntimeValue::to_expr_with_store(Self, RuntimeStore) -> @syntax.Expr
-fn RuntimeValue::to_reference_expr(Self, RuntimeStore) -> @syntax.Expr
-fn RuntimeValue::to_string_with_interpreter(Self, ClosureInterpreter) -> String
-fn RuntimeValue::to_string_with_store(Self, RuntimeStore) -> String
-impl Show for RuntimeValue
+fn MoonBitVM::new(core? : Bool) -> Self
 
 // Type aliases
+pub typealias (@interpreter.RuntimeFunctionContext) -> @value.RuntimeValue as RuntimeFunction
 
 // Traits
 

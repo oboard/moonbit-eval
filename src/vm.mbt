@@ -1,7 +1,6 @@
 ///|
 struct MoonBitVM {
   interpreter : ClosureInterpreter
-  log : Bool
 }
 
 ///|
@@ -35,23 +34,21 @@ pub fn eval_result_to_string(result : EvalResult) -> String {
 }
 
 ///|
-pub fn MoonBitVM::new(log~ : Bool = false, core~ : Bool = true) -> MoonBitVM {
+pub fn MoonBitVM::new(core~ : Bool = true) -> MoonBitVM {
   let interpreter = ClosureInterpreter::new(core~)
-  interpreter.add_extern_fn("println", fn(parameters) {
-    match parameters {
-      [{ value, .. }, ..] => {
-        println(value)
-        Unit
-      }
-      _ => Unit
+  interpreter.add_extern_fn("println", ctx => match ctx.arguments {
+    [{ value, .. }, ..] => {
+      println(value)
+      Unit
     }
+    _ => Unit
   })
-  { interpreter, log }
+  { interpreter, }
 }
 
 ///|
-pub fn MoonBitVM::create(log~ : Bool = false, core~ : Bool = true) -> MoonBitVM {
-  MoonBitVM::new(log~, core~)
+pub fn MoonBitVM::create(core~ : Bool = true) -> MoonBitVM {
+  MoonBitVM::new(core~)
 }
 
 ///|
@@ -209,22 +206,25 @@ pub fn expr_to_string(expr : @syntax.Expr) -> String {
       let args_joined = arg_strs.join(", ")
       func_str + "(" + args_joined + ")"
     }
-    
+
     // 处理Constr表达式 - 构造函数
     Constr(constr~, ..) => constr.name.name
-    
+
     // 处理Ident表达式
-    Ident(id~, ..) => {
+    Ident(id~, ..) =>
       match id.name {
         @syntax.LongIdent::Ident(name~) => name
-        @syntax.LongIdent::Dot(pkg~, id~) => 
-          if pkg == "" { id } else { pkg + "." + id }
+        @syntax.LongIdent::Dot(pkg~, id~) =>
+          if pkg == "" {
+            id
+          } else {
+            pkg + "." + id
+          }
       }
-    }
-    
+
     // 处理Sequence表达式 - 只显示最后一个表达式的结果
     Sequence(last_expr~, ..) => expr_to_string(last_expr)
-    
+
     // 其他未处理的表达式
     _ => ""
   }
@@ -252,12 +252,7 @@ pub fn MoonBitVM::eval(
     parser=Handrolled,
   )
   if top {
-    impls.each(node => {
-      if log.unwrap_or(self.log) {
-        println(node.to_json().stringify())
-      }
-      self.interpreter.top_visit(node)
-    })
+    impls.each(node => self.interpreter.top_visit(node))
     return {
       value: RuntimeValue::Unit,
       store: self.interpreter.runtime_store,
@@ -271,9 +266,6 @@ pub fn MoonBitVM::eval(
     ) =>
       match decl_body {
         @syntax.DeclBody::DeclBody(local_types=_, expr~) => {
-          if log.unwrap_or(self.log) {
-            println(expr.to_json().stringify())
-          }
           let result_value = self.interpreter.visit(expr)
           return {
             value: result_value,
