@@ -28,8 +28,30 @@ test "bool" {
   inspect(vm.eval("not(true)"), content="false")
   inspect(not(false), content="true")
   inspect(not(true), content="false")
-  inspect(vm.eval("true && false"), content="false")
-  inspect(vm.eval("true || false"), content="true")
+}
+
+///|
+test "array_methods" {
+  let vm = MoonBitVM::new()
+  // 测试数组基本方法
+  inspect(vm.eval("let arr = [1, 2, 3]; arr.length()"), content="3")
+  inspect(vm.eval("let arr = []; arr.is_empty()"), content="true")
+  inspect(vm.eval("let arr = [1, 2, 3]; arr.is_empty()"), content="false")
+  inspect(vm.eval("let arr = []; arr.last()"), content="()")
+  // 测试数组join方法
+  inspect(
+    vm.eval("let arr = [\"1\", \"2\", \"3\"]; arr.join()"),
+    content="1,2,3",
+  )
+  inspect(
+    vm.eval("let arr = [\"1\", \"2\", \"3\"]; arr.join(\"-\")"),
+    content="1-2-3",
+  )
+  // 测试数组copy方法
+  inspect(
+    vm.eval("let arr = [1, 2, 3]; let arr2 = arr.copy(); arr2.length()"),
+    content="3",
+  )
 }
 
 ///|

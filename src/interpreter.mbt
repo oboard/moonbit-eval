@@ -226,7 +226,7 @@ fn ClosureInterpreter::visit(
         @syntax.LongIdent::Ident(name~) => {
           let left_val = self.visit(lhs)
           let right_val = self.visit(rhs)
-          runtime_value_infix(name, left_val, right_val)
+          @value.runtime_value_infix(name, left_val, right_val)
         }
         _ => Unit
       }
@@ -312,7 +312,7 @@ fn ClosureInterpreter::visit(
               match op.name {
                 @syntax.LongIdent::Ident(name=op_name) => {
                   let rhs_value = self.visit(expr)
-                  runtime_value_infix(op_name, current_value, rhs_value)
+                  @value.runtime_value_infix(op_name, current_value, rhs_value)
                 }
                 _ => self.visit(expr)
               }
@@ -603,7 +603,7 @@ fn ClosureInterpreter::visit(
                           let rhs_value = self.visit(field)
                           match op.name {
                             @syntax.LongIdent::Ident(name=op_name) =>
-                              runtime_value_infix(
+                              @value.runtime_value_infix(
                                 op_name, current_field_value, rhs_value,
                               )
                             _ => rhs_value
@@ -954,32 +954,28 @@ fn ClosureInterpreter::execute_function_by_name(
   name : String,
   args : @list.List[@syntax.Argument],
 ) -> RuntimeValue {
+  fn get_evaluated_args() -> Array[RuntimeArgument] {
+    args
+    .map(arg => RuntimeArgument::{
+      value: self.visit(arg.value),
+      kind: arg.kind,
+    })
+    .to_array()
+  }
+
   match self.find_method(name) {
     MethodType::UserFunction(function) =>
       self.execute_function_call_runtime(function, args)
-    MethodType::EmbeddedFunction(embedded_name) => {
-      let evaluated_args = args
-        .map(arg => { value: self.visit(arg.value), kind: arg.kind })
-        .to_array()
+    MethodType::EmbeddedFunction(embedded_name) =>
       match self.embedded_fns.get(embedded_name) {
-        Some(embedded_func) => embedded_func(evaluated_args)
+        Some(embedded_func) => embedded_func(get_evaluated_args())
         None => RuntimeValue::Unit
       }
-    }
     MethodType::RuntimeFunction(lambda_func) =>
       self.execute_function_call_runtime(lambda_func, args)
-    MethodType::ExternFunction(extern_func) => {
-      let evaluated_args = args
-        .map(arg => { value: self.visit(arg.value), kind: arg.kind })
-        .to_array()
-      extern_func(evaluated_args)
-    }
-    MethodType::GlobalEmbedded(embedded_func) => {
-      let evaluated_args = args
-        .map(arg => { value: self.visit(arg.value), kind: arg.kind })
-        .to_array()
-      embedded_func(evaluated_args)
-    }
+    MethodType::ExternFunction(extern_func) => extern_func(get_evaluated_args())
+    MethodType::GlobalEmbedded(embedded_func) =>
+      embedded_func(get_evaluated_args())
     MethodType::NotFound => RuntimeValue::Unit
   }
 }
@@ -1059,7 +1055,9 @@ fn ClosureInterpreter::execute_method_call_runtime(
               )
               embedded_method(
                 evaluated_args
-                .map(fn(arg) { { value: arg, kind: Positional } })
+                .map(fn(arg) {
+                  @value.RuntimeArgument::{ value: arg, kind: Positional }
+                })
                 .to_array(),
               )
             }
@@ -1076,7 +1074,7 @@ fn ClosureInterpreter::find_type(
   expr : @syntax.Expr,
 ) -> String {
   match expr {
-    Constant(c~, ..) => infer_type_from_constant(c)
+    Constant(c~, ..) => @value.infer_type_from_constant(c)
     Record(type_name=Some(type_name), ..) =>
       match type_name {
         { name: Ident(name=type_name), .. } => type_name
@@ -1113,7 +1111,10 @@ fn ClosureInterpreter::execute_static_method_call(
       match methods.get(method_name) {
         Some(embedded_func) => {
           let evaluated_args = args
-            .map(arg => { value: self.visit(arg.value), kind: arg.kind })
+            .map(arg => RuntimeArgument::{
+              value: self.visit(arg.value),
+              kind: arg.kind,
+            })
             .to_array()
           embedded_func(evaluated_args)
         }
@@ -1216,4 +1217,106 @@ fn[T] ClosureInterpreter::with_scope(
   let result = f()
   self.pop_scope()
   result
+}
+
+///| 从函数体推导返回类型
+fn ClosureInterpreter::infer_return_type_from_expr(
+  self : ClosureInterpreter,
+  body : @syntax.Expr,
+) -> String {
+  match body {
+    Constant(c~, ..) => @value.infer_type_from_constant(c)
+    Unit(..) => "Unit"
+    Array(..) => "Array"
+    Tuple(..) => "Tuple"
+    Record(..) => "Record"
+    // 处理函数调用表达式
+    Apply(func~, ..) =>
+      match func {
+        @syntax.Expr::Ident(
+          id={ name: @syntax.LongIdent::Ident(name~), .. },
+          ..
+        ) =>
+          // 查找函数定义并获取其返回类型
+          match self.find_user_function(name) {
+            Some(@syntax.Func::Lambda(return_type=Some(ret_type), ..)) =>
+              @value.type_to_string(ret_type)
+            Some(@syntax.Func::Lambda(return_type=None, body~, ..)) =>
+              // 递归推导函数体的返回类型
+              self.infer_return_type_from_expr(body)
+            Some(@syntax.Func::Match(..)) => "Unit"
+            None => "Unit"
+          }
+        _ => "Unit"
+      }
+    // 处理 match 表达式
+    Match(..) => "Unit"
+    Sequence(last_expr~, ..) => self.infer_return_type_from_expr(last_expr)
+    Infix(op={ name: Ident(name=op_name), .. }, lhs~, ..) => {
+      let lhs_type = self.infer_return_type_from_expr(lhs)
+      match op_name {
+        _ => lhs_type
+      }
+    }
+    _ => "Unit"
+  }
+}
+
+///| 将RuntimeValue转换为字符串表示（带解释器支持，用于正确的类型推导）
+pub fn ClosureInterpreter::get_function_type_string(
+  self : ClosureInterpreter,
+  value : RuntimeValue,
+) -> String {
+  match value {
+    Function(func) =>
+      // 从函数中提取参数和返回类型信息
+      match func {
+        @syntax.Func::Lambda(parameters~, return_type~, body~, ..) => {
+          let param_strs = []
+          for param in parameters {
+            let param_str = match param {
+              @syntax.Parameter::Positional(binder~, ty~) =>
+                match ty {
+                  Some(t) => binder.name + ": " + @value.type_to_string(t)
+                  None => binder.name
+                }
+              @syntax.Parameter::Labelled(binder~, ty~) =>
+                match ty {
+                  Some(t) => binder.name + "~: " + @value.type_to_string(t)
+                  None => binder.name + "~"
+                }
+              @syntax.Parameter::Optional(binder~, ty~, default~) => {
+                let type_str = match ty {
+                  Some(t) => binder.name + "~: " + @value.type_to_string(t)
+                  None => binder.name + "~"
+                }
+                match default {
+                  @syntax.Expr::Constant(c=@syntax.Constant::Int(val), ..) =>
+                    type_str + " = " + val
+                  _ => type_str
+                }
+              }
+              @syntax.Parameter::QuestionOptional(binder~, ty~) =>
+                match ty {
+                  Some(t) => binder.name + "?: " + @value.type_to_string(t)
+                  None => binder.name + "?"
+                }
+              @syntax.Parameter::DiscardPositional(..) => "_"
+            }
+            param_strs.push(param_str)
+          }
+          match return_type {
+            Some(t) =>
+              "(" + param_strs.join(", ") + ") -> " + @value.type_to_string(t)
+            None => {
+              // 使用解释器上下文进行正确的类型推导
+              let inferred_type = self.infer_return_type_from_expr(body)
+              "(" + param_strs.join(", ") + ") -> " + inferred_type
+            }
+          }
+        }
+        _ => "<function>"
+      }
+    _ => value.to_string()
+  }
 }

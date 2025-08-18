@@ -1,10 +1,10 @@
 ///| 运行时值系统 - 彻底分离值和引用的概念
 
 ///| 引用ID类型 - 用于标识可变对象
-pub struct RefId(Int) derive(Eq, Hash, Show)
+pub(all) struct RefId(Int) derive(Eq, Hash, Show)
 
 ///| 运行时值 - 解释器实际操作的数据类型
-pub enum RuntimeValue {
+pub(all) enum RuntimeValue {
   // 基本值类型（不可变）
   Unit
   Bool(Bool)
@@ -34,7 +34,7 @@ pub enum RuntimeValue {
 }
 
 ///|
-pub struct RuntimeArgument {
+pub(all) struct RuntimeArgument {
   value : RuntimeValue
   kind : @syntax.ArgumentKind
 }
@@ -89,7 +89,7 @@ pub fn RuntimeStore::update_struct_field(
 }
 
 ///| 从常量推导类型
-fn infer_type_from_constant(c : @syntax.Constant) -> String {
+pub fn infer_type_from_constant(c : @syntax.Constant) -> String {
   match c {
     @syntax.Constant::Int(_) => "Int"
     @syntax.Constant::UInt(_) => "UInt"
@@ -102,49 +102,6 @@ fn infer_type_from_constant(c : @syntax.Constant) -> String {
     @syntax.Constant::String(_) => "String"
     @syntax.Constant::Bool(_) => "Bool"
     @syntax.Constant::Bytes(_) => "Bytes"
-    _ => "Unit"
-  }
-}
-
-///| 从函数体推导返回类型
-fn ClosureInterpreter::infer_return_type_from_expr(
-  self : ClosureInterpreter,
-  body : @syntax.Expr,
-) -> String {
-  match body {
-    Constant(c~, ..) => infer_type_from_constant(c)
-    Unit(..) => "Unit"
-    Array(..) => "Array"
-    Tuple(..) => "Tuple"
-    Record(..) => "Record"
-    // 处理函数调用表达式
-    Apply(func~, ..) =>
-      match func {
-        @syntax.Expr::Ident(
-          id={ name: @syntax.LongIdent::Ident(name~), .. },
-          ..
-        ) =>
-          // 查找函数定义并获取其返回类型
-          match self.find_user_function(name) {
-            Some(@syntax.Func::Lambda(return_type=Some(ret_type), ..)) =>
-              type_to_string(ret_type)
-            Some(@syntax.Func::Lambda(return_type=None, body~, ..)) =>
-              // 递归推导函数体的返回类型
-              self.infer_return_type_from_expr(body)
-            Some(@syntax.Func::Match(..)) => "Unit"
-            None => "Unit"
-          }
-        _ => "Unit"
-      }
-    // 处理 match 表达式
-    Match(..) => "Unit"
-    Sequence(last_expr~, ..) => self.infer_return_type_from_expr(last_expr)
-    Infix(op={ name: Ident(name=op_name), .. }, lhs~, ..) => {
-      let lhs_type = self.infer_return_type_from_expr(lhs)
-      match op_name {
-        _ => lhs_type
-      }
-    }
     _ => "Unit"
   }
 }
@@ -318,64 +275,6 @@ pub fn RuntimeValue::to_string_with_store(
           "{ " + parts.join(", ") + " }"
         }
         None => "<invalid_ref>"
-      }
-    _ => self.to_string()
-  }
-}
-
-///| 将RuntimeValue转换为字符串表示（带解释器支持，用于正确的类型推导）
-pub fn RuntimeValue::to_string_with_interpreter(
-  self : RuntimeValue,
-  interpreter : ClosureInterpreter,
-) -> String {
-  match self {
-    Function(func) =>
-      // 从函数中提取参数和返回类型信息
-      match func {
-        @syntax.Func::Lambda(parameters~, return_type~, body~, ..) => {
-          let param_strs = []
-          for param in parameters {
-            let param_str = match param {
-              @syntax.Parameter::Positional(binder~, ty~) =>
-                match ty {
-                  Some(t) => binder.name + ": " + type_to_string(t)
-                  None => binder.name
-                }
-              @syntax.Parameter::Labelled(binder~, ty~) =>
-                match ty {
-                  Some(t) => binder.name + "~: " + type_to_string(t)
-                  None => binder.name + "~"
-                }
-              @syntax.Parameter::Optional(binder~, ty~, default~) => {
-                let type_str = match ty {
-                  Some(t) => binder.name + "~: " + type_to_string(t)
-                  None => binder.name + "~"
-                }
-                match default {
-                  @syntax.Expr::Constant(c=@syntax.Constant::Int(val), ..) =>
-                    type_str + " = " + val
-                  _ => type_str
-                }
-              }
-              @syntax.Parameter::QuestionOptional(binder~, ty~) =>
-                match ty {
-                  Some(t) => binder.name + "?: " + type_to_string(t)
-                  None => binder.name + "?"
-                }
-              @syntax.Parameter::DiscardPositional(..) => "_"
-            }
-            param_strs.push(param_str)
-          }
-          match return_type {
-            Some(t) => "(" + param_strs.join(", ") + ") -> " + type_to_string(t)
-            None => {
-              // 使用解释器上下文进行正确的类型推导
-              let inferred_type = interpreter.infer_return_type_from_expr(body)
-              "(" + param_strs.join(", ") + ") -> " + inferred_type
-            }
-          }
-        }
-        _ => "<function>"
       }
     _ => self.to_string()
   }

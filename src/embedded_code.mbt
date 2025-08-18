@@ -5,7 +5,10 @@ let core_fn_aliases : Map[String, String] = {
 }
 
 ///|
-let core_embedded_code : Map[String, (Array[RuntimeArgument]) -> RuntimeValue] = {
+let builtin_embedded_code : Map[
+  String,
+  (Array[RuntimeArgument]) -> RuntimeValue,
+] = {
   "%ignore": ignore_fn,
   "%refeq": physical_equal_fn,
   "%panic": panic_fn,
@@ -21,26 +24,6 @@ let core_embedded_code : Map[String, (Array[RuntimeArgument]) -> RuntimeValue] =
   "%i32_mul": int_mul_fn,
   "%i32_div": int_div_fn,
   "%i32_mod": int_mod_fn,
-  "%i32_lnot": int_lnot_fn,
-  "%i32_land": int_land_fn,
-  "%i32_lor": int_lor_fn,
-  "%i32_lxor": int_lxor_fn,
-  "%i32_shl": int_shl_fn,
-  "%i32_shr": int_shr_fn,
-  "%i32_eq": int_eq_fn,
-  "%i32_compare": int_compare_fn,
-  "%i32_is_pos": int_is_pos_fn,
-  "%i32_is_neg": int_is_neg_fn,
-  "%i32_ctz": int_ctz_fn,
-  "%i32_clz": int_clz_fn,
-  "%i32_popcnt": int_popcnt_fn,
-  // String 类型函数
-  "%string_length": string_length,
-  "%string_get": string_get_fn,
-  "%string.unsafe_get": string_unsafe_get_fn,
-  "%string_add": string_add_fn,
-  "%string_eq": string_eq_fn,
-  "%string_to_string": string_to_string_fn,
   // UInt 类型函数
   "%u32.add": uint_add_fn,
   "%u32.sub": uint_sub_fn,
@@ -107,31 +90,21 @@ let core_embedded_code : Map[String, (Array[RuntimeArgument]) -> RuntimeValue] =
 }
 
 ///|
+let core_embedded_code : Map[String, (Array[RuntimeArgument]) -> RuntimeValue] = [
+  builtin_embedded_code, @core.string_embedded_code, @core.int_embedded_code,
+].fold(init=Map::new(), (acc, cur) => {
+  cur.each(fn(key, value) { acc.set(key, value) })
+  acc
+})
+
+///|
 let core_embedded_methods : Map[
   String,
   Map[String, (Array[RuntimeArgument]) -> RuntimeValue],
 ] = {
   "Bool": { "compare": bool_compare_fn, "default": bool_default_fn },
-  "Int": {
-    "lnot": int_lnot_fn,
-    "land": int_land_fn,
-    "lor": int_lor_fn,
-    "lxor": int_lxor_fn,
-    "shl": int_shl_fn,
-    "shr": int_shr_fn,
-    "compare": int_compare_fn,
-    "is_pos": int_is_pos_fn,
-    "is_neg": int_is_neg_fn,
-    "ctz": int_ctz_fn,
-    "clz": int_clz_fn,
-    "popcnt": int_popcnt_fn,
-  },
-  "String": {
-    "length": string_length,
-    "get": string_get_fn,
-    "unsafe_get": string_unsafe_get_fn,
-    "to_string": string_to_string_fn,
-  },
+  "Int": @core.int_methods,
+  "String": @core.string_methods,
   "UInt": {
     "mod": uint_mod_fn,
     "compare": uint_compare_fn,
@@ -160,73 +133,8 @@ let core_embedded_methods : Map[
     "to_u32": uint64_to_uint_fn,
     "to_i64_reinterpret": uint64_to_int64_fn,
   },
-  "Array": {
-    "length": array_length_fn,
-    "push": array_push_fn,
-    "pop": array_pop_fn,
-  },
+  "Array": @core.array_methods,
 }
-
-///|
-let string_length : (Array[RuntimeArgument]) -> RuntimeValue = params => if params
-  is [{ value: String(s), .. }, ..] {
-  Int(s.length())
-} else {
-  Unit
-}
-
-// ===== 基础函数 =====
-
-///| ignore 函数 - 忽略任何值并返回 Unit
-let ignore_fn : (Array[RuntimeArgument]) -> RuntimeValue = _params => Unit
-
-///| physical_equal 函数 - 检查两个值是否物理相等
-let physical_equal_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
-  params {
-  [{ value: a, .. }, { value: b, .. }, ..] => Bool(physical_equal(a, b))
-  _ => Bool(false)
-}
-
-///| panic 函数 - 触发 panic
-let panic_fn : (Array[RuntimeArgument]) -> RuntimeValue = _params => {
-  abort("panic called")
-  Unit
-}
-
-// ===== 布尔运算 =====
-
-///| 布尔 NOT 运算
-let bool_not_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
-  params {
-  [{ value: Bool(b), .. }, ..] => Bool(not(b))
-  _ => Unit
-}
-
-///| 布尔相等比较
-let bool_eq_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
-  params {
-  [{ value: Bool(a), .. }, { value: Bool(b), .. }, ..] => Bool(a == b)
-  _ => Bool(false)
-}
-
-///| 布尔比较
-let bool_compare_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
-  params {
-  [{ value: Bool(a), .. }, { value: Bool(b), .. }, ..] =>
-    if a == b {
-      Int(0)
-    } else if a {
-      Int(1) // true > false
-    } else {
-      Int(-1) // false < true
-    }
-  _ => Int(0)
-}
-
-///| 布尔默认值
-let bool_default_fn : (Array[RuntimeArgument]) -> RuntimeValue = _params => Bool(
-  false,
-)
 
 // ===== 整数算术运算 =====
 
@@ -284,153 +192,61 @@ let int_mod_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
   _ => Unit
 }
 
-// ===== 整数位运算 =====
+// ===== 基础函数 =====
 
-///| 整数按位取反
-let int_lnot_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
+///| ignore 函数 - 忽略任何值并返回 Unit
+let ignore_fn : (Array[RuntimeArgument]) -> RuntimeValue = _params => Unit
+
+///| physical_equal 函数 - 检查两个值是否物理相等
+let physical_equal_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
   params {
-  [{ value: Int(i), .. }, ..] => Int(i.lnot())
-  _ => Unit
-}
-
-///| 整数按位与
-let int_land_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
-  params {
-  [{ value: Int(a), .. }, { value: Int(b), .. }, ..] => Int(a & b)
-  _ => Unit
-}
-
-///| 整数按位或
-let int_lor_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
-  params {
-  [{ value: Int(a), .. }, { value: Int(b), .. }, ..] => Int(a | b)
-  _ => Unit
-}
-
-///| 整数按位异或
-let int_lxor_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
-  params {
-  [{ value: Int(a), .. }, { value: Int(b), .. }, ..] => Int(a ^ b)
-  _ => Unit
-}
-
-///| 整数左移
-let int_shl_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
-  params {
-  [{ value: Int(a), .. }, { value: Int(b), .. }, ..] => Int(a << b)
-  _ => Unit
-}
-
-///| 整数右移
-let int_shr_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
-  params {
-  [{ value: Int(a), .. }, { value: Int(b), .. }, ..] => Int(a >> b)
-  _ => Unit
-}
-
-// ===== 整数比较运算 =====
-
-///| 整数相等比较
-let int_eq_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
-  params {
-  [{ value: Int(a), .. }, { value: Int(b), .. }, ..] => Bool(a == b)
+  [{ value: a, .. }, { value: b, .. }, ..] => Bool(physical_equal(a, b))
   _ => Bool(false)
 }
 
-///| 整数比较
-let int_compare_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
+///| panic 函数 - 触发 panic
+let panic_fn : (Array[RuntimeArgument]) -> RuntimeValue = _params => {
+  abort("panic called")
+  Unit
+}
+
+// ===== 布尔运算 =====
+
+///| 布尔 NOT 运算
+let bool_not_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
   params {
-  [{ value: Int(a), .. }, { value: Int(b), .. }, ..] =>
+  [{ value: Bool(b), .. }, ..] => Bool(not(b))
+  _ => {
+    println("bool_not_fn: no match, returning Unit")
+    Unit
+  }
+}
+
+///| 布尔相等比较
+let bool_eq_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
+  params {
+  [{ value: Bool(a), .. }, { value: Bool(b), .. }, ..] => Bool(a == b)
+  _ => Bool(false)
+}
+
+///| 布尔比较
+let bool_compare_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
+  params {
+  [{ value: Bool(a), .. }, { value: Bool(b), .. }, ..] =>
     if a == b {
       Int(0)
-    } else if a > b {
-      Int(1)
+    } else if a {
+      Int(1) // true > false
     } else {
-      Int(-1)
+      Int(-1) // false < true
     }
   _ => Int(0)
 }
 
-///| 整数是否为正
-let int_is_pos_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
-  params {
-  [{ value: Int(i), .. }, ..] => Bool(i > 0)
-  _ => Bool(false)
-}
-
-///| 整数是否为负
-let int_is_neg_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
-  params {
-  [{ value: Int(i), .. }, ..] => Bool(i < 0)
-  _ => Bool(false)
-}
-
-// ===== 整数工具函数 =====
-
-///| 计算尾随零的个数
-let int_ctz_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
-  params {
-  [{ value: Int(i), .. }, ..] => Int(i.ctz())
-  _ => Unit
-}
-
-///| 计算前导零的个数
-let int_clz_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
-  params {
-  [{ value: Int(i), .. }, ..] => Int(i.clz())
-  _ => Unit
-}
-
-///| 计算设置位的个数
-let int_popcnt_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
-  params {
-  [{ value: Int(i), .. }, ..] => Int(i.popcnt())
-  _ => Unit
-}
-
-// ===== 字符串操作 =====
-
-///| 字符串索引访问
-let string_get_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
-  params {
-  [{ value: String(s), .. }, { value: Int(idx), .. }, ..] =>
-    if idx >= 0 && idx < s.length() {
-      Int(s[idx])
-    } else {
-      abort("string index out of bounds")
-      Unit
-    }
-  _ => Unit
-}
-
-///| 字符串不安全索引访问
-let string_unsafe_get_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
-  params {
-  [{ value: String(s), .. }, { value: Int(idx), .. }, ..] =>
-    Int(s.unsafe_charcode_at(idx))
-  _ => Unit
-}
-
-///| 字符串连接
-let string_add_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
-  params {
-  [{ value: String(a), .. }, { value: String(b), .. }, ..] => String(a + b)
-  _ => Unit
-}
-
-///| 字符串相等比较
-let string_eq_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
-  params {
-  [{ value: String(a), .. }, { value: String(b), .. }, ..] => Bool(a == b)
-  _ => Bool(false)
-}
-
-///| 字符串 to_string
-let string_to_string_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
-  params {
-  [{ value: String(s), .. }, ..] => String(s)
-  _ => Unit
-}
+///| 布尔默认值
+let bool_default_fn : (Array[RuntimeArgument]) -> RuntimeValue = _params => Bool(
+  false,
+)
 
 // ===== 类型转换函数 =====
 
@@ -849,33 +665,5 @@ let uint64_to_uint_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => mat
 let uint64_to_int64_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
   params {
   [{ value: UInt64(u64), .. }, ..] => Int64(u64.reinterpret_as_int64())
-  _ => Unit
-}
-
-///| 数组长度
-let array_length_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
-  params {
-  [{ value: Array(arr), .. }, ..] => Int(arr.length())
-  _ => Unit
-}
-
-///| 数组push操作
-let array_push_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
-  params {
-  [{ value: Array(arr), .. }, { value: val, .. }, ..] => {
-    arr.push(val)
-    Array(arr)
-  }
-  _ => Unit
-}
-
-///| 数组pop操作
-let array_pop_fn : (Array[RuntimeArgument]) -> RuntimeValue = params => match
-  params {
-  [{ value: Array(arr), .. }, ..] =>
-    match arr.pop() {
-      Some(val) => val
-      None => Unit
-    }
   _ => Unit
 }

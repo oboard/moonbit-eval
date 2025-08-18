@@ -15,9 +15,7 @@ pub struct EvalResult {
 pub impl Show for EvalResult with output(self : EvalResult, logger : &Logger) -> Unit {
   match self.value {
     RuntimeValue::Function(_) =>
-      logger.write_string(
-        self.value.to_string_with_interpreter(self.interpreter),
-      )
+      logger.write_string(self.interpreter.get_function_type_string(self.value))
     _ => logger.write_string(self.value.to_string_with_store(self.store))
   }
 }
@@ -26,7 +24,7 @@ pub impl Show for EvalResult with output(self : EvalResult, logger : &Logger) ->
 pub impl Show for EvalResult with to_string(self : EvalResult) -> String {
   match self.value {
     RuntimeValue::Function(_) =>
-      self.value.to_string_with_interpreter(self.interpreter)
+      self.interpreter.get_function_type_string(self.value)
     _ => self.value.to_string_with_store(self.store)
   }
 }
