@@ -1,6 +1,7 @@
 ///|
 struct MoonBitVM {
   interpreter : ClosureInterpreter
+  log : Bool
 }
 
 ///|
@@ -34,7 +35,7 @@ pub fn eval_result_to_string(result : EvalResult) -> String {
 }
 
 ///|
-pub fn MoonBitVM::new(core~ : Bool = true) -> MoonBitVM {
+pub fn MoonBitVM::new(log~ : Bool = false, core~ : Bool = true) -> MoonBitVM {
   let interpreter = ClosureInterpreter::new(core~)
   interpreter.add_extern_fn("println", ctx => match ctx.arguments {
     [{ value, .. }, ..] => {
@@ -43,12 +44,12 @@ pub fn MoonBitVM::new(core~ : Bool = true) -> MoonBitVM {
     }
     _ => Unit
   })
-  { interpreter, }
+  { interpreter, log }
 }
 
 ///|
-pub fn MoonBitVM::create(core~ : Bool = true) -> MoonBitVM {
-  MoonBitVM::new(core~)
+pub fn MoonBitVM::create(log~ : Bool = false, core~ : Bool = true) -> MoonBitVM {
+  MoonBitVM::new(log~, core~)
 }
 
 ///|
@@ -252,7 +253,12 @@ pub fn MoonBitVM::eval(
     parser=Handrolled,
   )
   if top {
-    impls.each(node => self.interpreter.top_visit(node))
+    impls.each(node => {
+      if log.unwrap_or(self.log) {
+        println(node.to_json().stringify())
+      }
+      self.interpreter.top_visit(node)
+    })
     return {
       value: RuntimeValue::Unit,
       store: self.interpreter.runtime_store,
@@ -267,6 +273,9 @@ pub fn MoonBitVM::eval(
       match decl_body {
         @syntax.DeclBody::DeclBody(local_types=_, expr~) => {
           let result_value = self.interpreter.visit(expr)
+          if log.unwrap_or(self.log) {
+            println(expr.to_json().stringify())
+          }
           return {
             value: result_value,
             store: self.interpreter.runtime_store,
