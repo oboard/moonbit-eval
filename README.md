@@ -470,9 +470,6 @@ test "string embedded methods" {
   inspect(vm.eval("s.length()"), content="5")
   inspect(vm.eval("s.get(0)"), content="104") // 返回字符的 ASCII 码
   inspect(vm.eval("s.unsafe_get(1)"), content="101") // 返回字符的 ASCII 码
-  inspect(vm.eval("s.add(\" world\")"), content="hello world")
-  inspect(vm.eval("s.eq(\"hello\")"), content="true")
-  inspect(vm.eval("s.eq(\"world\")"), content="false")
   inspect(vm.eval("s.to_string()"), content="hello")
 }
 ```
@@ -482,22 +479,10 @@ test "string embedded methods" {
 test "other embedded methods" {
   let vm = MoonBitVM::new()
   // Double methods
-  inspect(vm.eval("3.5.add(1.5)"), content="5")
-  inspect(vm.eval("5.5.sub(2.5)"), content="3")
-  inspect(vm.eval("2.5.mul(4.0)"), content="10")
-  inspect(vm.eval("10.0.div(2.0)"), content="5")
-  inspect(vm.eval("3.5.eq(3.5)"), content="true")
   inspect(vm.eval("3.5.to_int64()"), content="3")
   
   // Char methods
-  inspect(vm.eval("'a'.eq('a')"), content="true")
   inspect(vm.eval("'a'.to_int()"), content="97")
-  
-  // Other numeric types
-  inspect(vm.eval("5U.add(3U)"), content="8")
-  inspect(vm.eval("3.5F.add(1.5F)"), content="5")
-  inspect(vm.eval("5L.add(3L)"), content="8")
-  inspect(vm.eval("5UL.add(3UL)"), content="8")
 }
 ```
 

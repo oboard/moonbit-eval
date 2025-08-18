@@ -139,6 +139,7 @@ fn ClosureInterpreter::top_visit(
       // 从decl_body中提取函数体
       match decl_body {
         DeclBody(local_types=_, expr~) => {
+
           // 保持原始的返回类型，不在这里进行推导
           let inferred_return_type = fun_decl.return_type
           let func = @syntax.Func::Lambda(
@@ -225,66 +226,7 @@ fn ClosureInterpreter::visit(
         @syntax.LongIdent::Ident(name~) => {
           let left_val = self.visit(lhs)
           let right_val = self.visit(rhs)
-          match (left_val, right_val) {
-            (RuntimeValue::Bool(l), RuntimeValue::Bool(r)) =>
-              match name {
-                "&&" => Bool(l && r)
-                "||" => Bool(l || r)
-                _ => Unit
-              }
-            (RuntimeValue::Int(l), RuntimeValue::Int(r)) =>
-              match name {
-                "+" => RuntimeValue::Int(l + r)
-                "-" => RuntimeValue::Int(l - r)
-                "*" => RuntimeValue::Int(l * r)
-                "/" =>
-                  if r != 0 {
-                    RuntimeValue::Int(l / r)
-                  } else {
-                    RuntimeValue::Unit
-                  }
-                "%" =>
-                  if r != 0 {
-                    RuntimeValue::Int(l % r)
-                  } else {
-                    RuntimeValue::Unit
-                  }
-                "==" => RuntimeValue::Bool(l == r)
-                "!=" => RuntimeValue::Bool(l != r)
-                "<" => RuntimeValue::Bool(l < r)
-                ">" => RuntimeValue::Bool(l > r)
-                "<=" => RuntimeValue::Bool(l <= r)
-                ">=" => RuntimeValue::Bool(l >= r)
-                _ => RuntimeValue::Unit
-              }
-            (RuntimeValue::Double(l), RuntimeValue::Double(r)) =>
-              match name {
-                "+" => RuntimeValue::Double(l + r)
-                "-" => RuntimeValue::Double(l - r)
-                "*" => RuntimeValue::Double(l * r)
-                "/" =>
-                  if r != 0.0 {
-                    RuntimeValue::Double(l / r)
-                  } else {
-                    RuntimeValue::Unit
-                  }
-                "==" => RuntimeValue::Bool(l == r)
-                "!=" => RuntimeValue::Bool(l != r)
-                "<" => RuntimeValue::Bool(l < r)
-                ">" => RuntimeValue::Bool(l > r)
-                "<=" => RuntimeValue::Bool(l <= r)
-                ">=" => RuntimeValue::Bool(l >= r)
-                _ => RuntimeValue::Unit
-              }
-            (RuntimeValue::String(l), RuntimeValue::String(r)) =>
-              match name {
-                "+" => RuntimeValue::String(l + r)
-                "==" => RuntimeValue::Bool(l == r)
-                "!=" => RuntimeValue::Bool(l != r)
-                _ => RuntimeValue::Unit
-              }
-            _ => RuntimeValue::Unit
-          }
+          runtime_value_infix(name, left_val, right_val)
         }
         _ => Unit
       }
@@ -309,7 +251,7 @@ fn ClosureInterpreter::visit(
       let evaluated_fields = Map::new()
       for field in fields {
         let field_value = self.visit(field.expr)
-        evaluated_fields.set(field.label.name, field_value)
+        ignore(evaluated_fields.set(field.label.name, field_value))
       }
       let ref_id = self.runtime_store.alloc_struct(evaluated_fields)
       RuntimeValue::StructRef(ref_id)
@@ -344,10 +286,11 @@ fn ClosureInterpreter::visit(
     }
 
     // 处理可变变量声明
-    LetMut(binder={ name, .. }, expr~, ..) => {
+    LetMut(binder={ name, .. }, expr~, body~, ..) => {
       let runtime_value = self.visit(expr)
       self.set_mutable_variable(name, runtime_value)
-      RuntimeValue::Unit
+      // 执行body部分，这是关键！
+      self.visit(body)
     }
 
     // 处理函数定义
@@ -369,17 +312,7 @@ fn ClosureInterpreter::visit(
               match op.name {
                 @syntax.LongIdent::Ident(name=op_name) => {
                   let rhs_value = self.visit(expr)
-                  match (current_value, rhs_value) {
-                    (RuntimeValue::Int(l), RuntimeValue::Int(r)) =>
-                      match op_name {
-                        "+" => Int(l + r)
-                        "-" => Int(l - r)
-                        "*" => Int(l * r)
-                        "/" => if r != 0 { Int(l / r) } else { Unit }
-                        _ => self.visit(expr)
-                      }
-                    _ => self.visit(expr)
-                  }
+                  runtime_value_infix(op_name, current_value, rhs_value)
                 }
                 _ => self.visit(expr)
               }
@@ -387,7 +320,6 @@ fn ClosureInterpreter::visit(
             None => self.visit(expr)
           }
           update_mutable_variable(self.mutable_values, name, new_value)
-          |> ignore
           RuntimeValue::Unit
         }
         _ => RuntimeValue::Unit
@@ -443,17 +375,9 @@ fn ClosureInterpreter::visit(
             None => RuntimeValue::Unit
           }
         (RuntimeValue::Tuple(values), @syntax.Accessor::Index(tuple_index~, ..)) =>
-          if tuple_index >= 0 && tuple_index < values.length() {
-            values[tuple_index]
-          } else {
-            RuntimeValue::Unit
-          }
+          safe_index_access(values, tuple_index)
         (RuntimeValue::Array(values), @syntax.Accessor::Index(tuple_index~, ..)) =>
-          if tuple_index >= 0 && tuple_index < values.length() {
-            values[tuple_index]
-          } else {
-            RuntimeValue::Unit
-          }
+          safe_index_access(values, tuple_index)
         _ => RuntimeValue::Unit
       }
     }
@@ -468,20 +392,14 @@ fn ClosureInterpreter::visit(
       let index_val = self.visit(index)
       match (array_val, index_val) {
         (RuntimeValue::Array(values), RuntimeValue::Int(index_num)) =>
-          if index_num >= 0 && index_num < values.length() {
-            values[index_num]
-          } else {
-            RuntimeValue::Unit
-          }
+          safe_index_access(values, index_num)
         _ => RuntimeValue::Unit
       }
     }
 
     // 处理序列表达式
     Sequence(exprs~, last_expr~, ..) => {
-      for expr in exprs {
-        self.visit(expr) |> ignore
-      }
+      exprs.each(fn(expr) { self.visit(expr) |> ignore })
       self.visit(last_expr)
     }
 
@@ -490,66 +408,96 @@ fn ClosureInterpreter::visit(
 
     // 处理 For 循环
     For(binders~, condition~, continue_block~, body~, ..) => {
-      // 创建新作用域
-      self.push_scope()
-
-      // 初始化循环变量
-      for binder_init in binders {
-        match binder_init {
-          (binder, init_expr) => {
-            let init_value = self.visit(init_expr)
-            self.set_mutable_variable(binder.name, init_value)
-          }
-        }
-      }
-
-      // 执行循环
-      while true {
-        // 检查循环条件
-        let should_continue = match condition {
-          Some(cond) => {
-            let condition_result = self.visit(cond)
-            match condition_result {
-              RuntimeValue::Bool(value) => value
-              _ => false
-            }
-          }
-          None => true
-        }
-        if not(should_continue) {
-          break
-        }
-
-        // 执行循环体
-        self.visit(body) |> ignore
-
-        // 执行 continue 块（更新循环变量）
-        for update_tuple in continue_block {
-          match update_tuple {
-            (binder, update_expr) => {
-              let new_value = self.visit(update_expr)
-              self.set_mutable_variable(binder.name, new_value)
+      self.with_scope(fn() {
+        // 初始化循环变量
+        for binder_init in binders {
+          match binder_init {
+            (binder, init_expr) => {
+              let init_value = self.visit(init_expr)
+              self.set_mutable_variable(binder.name, init_value)
             }
           }
         }
-      }
 
-      // 恢复作用域
-      self.pop_scope()
-      RuntimeValue::Unit
+        // 执行循环
+        while true {
+          // 检查循环条件
+          let should_continue = match condition {
+            Some(cond) => {
+              let condition_result = self.visit(cond)
+              match condition_result {
+                RuntimeValue::Bool(value) => value
+                _ => false
+              }
+            }
+            None => true
+          }
+          if not(should_continue) {
+            break
+          }
+
+          // 执行循环体，处理break和continue
+          let body_result = self.visit(body)
+          match body_result {
+            RuntimeValue::Break(value) => {
+              return match value {
+                Some(v) => v
+                None => RuntimeValue::Unit
+              }
+            }
+            _ => () // 正常执行，继续
+          }
+
+          // 执行 continue 块（更新循环变量）
+          for update_tuple in continue_block {
+            match update_tuple {
+              (binder, update_expr) => {
+                let new_value = self.visit(update_expr)
+                self.set_mutable_variable(binder.name, new_value)
+              }
+            }
+          }
+        }
+        RuntimeValue::Unit
+      })
     }
 
     // 处理 While 循环
-    While(loop_cond~, loop_body~, ..) => {
+    While(loop_cond~, loop_body~, while_else~, ..) => {
+      let mut result = RuntimeValue::Unit
+      let mut broke = false
       while true {
         let cond_result = self.visit(loop_cond)
         match cond_result {
           RuntimeValue::Bool(false) => break
           _ => ()
         }
-        self.visit(loop_body) |> ignore
+
+        // 执行循环体，处理break和continue
+        let body_result = self.visit(loop_body)
+        match body_result {
+          RuntimeValue::Break(value) => {
+            result = match value {
+              Some(v) => v
+              None => RuntimeValue::Unit
+            }
+            broke = true
+            break
+          }
+          RuntimeValue::Continue(_) =>
+            // 跳过剩余循环体，继续下一次迭代
+            continue
+          _ => () // 正常执行，继续
+        }
       }
-      RuntimeValue::Unit
+      // 如果没有break，执行else分支
+      if not(broke) {
+        match while_else {
+          Some(else_expr) => result = self.visit(else_expr)
+          None => () // 没有else分支
+        }
+      }
+      result
     }
 
     // 处理字段赋值 (Mutate)
@@ -611,6 +559,22 @@ fn ClosureInterpreter::visit(
             _ => RuntimeValue::Unit
           }
         _ => RuntimeValue::Unit
+      }
+
+    // 处理 Continue 表达式
+    Continue(args~, ..) => {
+      let continue_args = args.map(fn(arg) { self.visit(arg) }).to_array()
+      RuntimeValue::Continue(continue_args)
+    }
+
+    // 处理 Break 表达式
+    Break(arg~, ..) =>
+      match arg {
+        Some(expr) => {
+          let break_value = self.visit(expr)
+          RuntimeValue::Break(Some(break_value))
+        }
+        None => RuntimeValue::Break(None)
       }
 
     // 其他情况暂时返回 Unit，可以逐步完善
@@ -870,12 +834,14 @@ fn ClosureInterpreter::execute_function_by_name(
   // 按优先级查找函数：用户函数 -> Lambda变量 -> 外部函数 -> embedded函数
   match self.find_user_function(name) {
     Some(function) =>
+
       // 检查是否是embedded函数的标记函数
       match function {
         Lambda(body=Ident(id~, ..), ..) =>
           // 提取embedded函数名
           match id.name {
             Ident(name=embedded_name) => {
+
               // 这是embedded函数标记，调用对应的embedded函数
               let evaluated_args = args
                 .map(arg => { value: self.visit(arg.value), kind: arg.kind })
@@ -944,40 +910,36 @@ fn ClosureInterpreter::execute_method_call_runtime(
       match methods.get(method_name) {
         Some(func) => {
           // 普通函数，正常调用
-          // 创建新的作用域
-          self.push_scope()
-
-          // 手动绑定self参数和其他参数
-          match func {
-            @syntax.Func::Lambda(parameters~, body~, ..) => {
-              // 绑定self参数（第一个参数）
-              match parameters {
-                @list.More(first_param, tail=rest_params) => {
-                  match first_param {
-                    @syntax.Parameter::Positional(binder={ name, .. }, ..) =>
-                      self.current_immutable_scope().set(name, self_value)
-                    @syntax.Parameter::Labelled(binder={ name, .. }, ..) =>
-                      self.current_immutable_scope().set(name, self_value)
-                    _ => ()
+          self.with_scope(fn() {
+            // 手动绑定self参数和其他参数
+            match func {
+              @syntax.Func::Lambda(parameters~, body~, ..) => {
+                // 绑定self参数（第一个参数）
+                match parameters {
+                  @list.More(first_param, tail=rest_params) => {
+                    match first_param {
+                      @syntax.Parameter::Positional(binder={ name, .. }, ..) =>
+                        ignore(
+                          self.current_immutable_scope().set(name, self_value),
+                        )
+                      @syntax.Parameter::Labelled(binder={ name, .. }, ..) =>
+                        ignore(
+                          self.current_immutable_scope().set(name, self_value),
+                        )
+                      _ => ()
+                    }
+                    // 绑定其他参数
+                    self.bind_function_parameters_runtime(rest_params, args)
                   }
-                  // 绑定其他参数
-                  self.bind_function_parameters_runtime(rest_params, args)
+                  @list.Empty => ()
                 }
-                @list.Empty => ()
+
+                // 执行函数体
+                self.visit(body)
               }
-
-              // 执行函数体
-              let result = self.visit(body)
-
-              // 恢复作用域
-              self.pop_scope()
-              result
+              _ => RuntimeValue::Unit
             }
-            _ => {
-              self.pop_scope()
-              RuntimeValue::Unit
-            }
-          }
+          })
         }
         None => RuntimeValue::Unit
       }
@@ -1010,39 +972,26 @@ fn ClosureInterpreter::find_type(
   expr : @syntax.Expr,
 ) -> String {
   match expr {
-    // 如果是Constant表达式，根据常量类型推断
     Constant(c~, ..) => infer_type_from_constant(c)
-    // 如果是Record表达式且有显式类型名
     Record(type_name=Some(type_name), ..) =>
-      // 根据top_visit中的模式，TypeName有name字段
       match type_name {
         { name: Ident(name=type_name), .. } => type_name
         _ => "Unknown"
       }
-    // 如果是Record表达式但没有显式类型名，尝试从已定义的类型中推断
     Record(type_name=None, fields~, ..) => {
-      // 收集当前记录的字段名
       let current_fields = []
       for field in fields {
         current_fields.push(field.label.name)
       }
-      // 使用公共方法推导类型
       self.infer_struct_type_from_fields(current_fields)
     }
-    // 如果是Ident表达式，查找变量的值
     Ident(id={ name, .. }, ..) =>
       match name {
-        Ident(name~) => {
-          let var_runtime_value = self.find_runtime(name)
-          self.find_runtime_type(var_runtime_value)
-        }
+        Ident(name~) => self.find_runtime_type(self.find_runtime(name))
         _ => "Unknown"
       }
-    // 如果是Array表达式，返回Array类型
     Array(..) => "Array"
-    // 如果是Group表达式（括号表达式），递归处理内部表达式
     Group(expr~, ..) => self.find_type(expr)
-    // 如果不是已知表达式类型，返回默认类型
     _ => "Unknown"
   }
 }
@@ -1140,5 +1089,27 @@ fn ClosureInterpreter::find_runtime_type(
         None => "Struct"
       }
     RuntimeValue::Function(_) => "Function"
+    RuntimeValue::Break(_) => "Break"
+    RuntimeValue::Continue(_) => "Continue"
   }
+}
+
+///| 安全的索引访问，统一处理数组和元组的边界检查
+fn safe_index_access(values : Array[RuntimeValue], index : Int) -> RuntimeValue {
+  if index >= 0 && index < values.length() {
+    values[index]
+  } else {
+    RuntimeValue::Unit
+  }
+}
+
+///| 作用域管理辅助函数，确保作用域正确清理
+fn[T] ClosureInterpreter::with_scope(
+  self : ClosureInterpreter,
+  f : () -> T
+) -> T {
+  self.push_scope()
+  let result = f()
+  self.pop_scope()
+  result
 }

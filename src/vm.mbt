@@ -32,6 +32,11 @@ pub impl Show for EvalResult with to_string(self : EvalResult) -> String {
 }
 
 ///|
+pub fn eval_result_to_string(result : EvalResult) -> String {
+  result.to_string()
+}
+
+///|
 pub fn MoonBitVM::new(log~ : Bool = false, core~ : Bool = true) -> MoonBitVM {
   let interpreter = ClosureInterpreter::new(core~)
   interpreter.add_extern_fn("println", fn(parameters) {

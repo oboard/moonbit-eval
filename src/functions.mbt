@@ -18,16 +18,16 @@ pub fn ClosureInterpreter::bind_function_parameters(
       match param {
         // 位置参数：直接绑定参数值
         @syntax.Parameter::Positional(binder={ name, .. }, ..) =>
-          self.current_immutable_scope().set(name, runtime_value)
+          ignore(self.current_immutable_scope().set(name, runtime_value))
         // 标签参数：绑定带标签的参数值
         @syntax.Parameter::Labelled(binder={ name, .. }, ..) =>
-          self.current_immutable_scope().set(name, runtime_value)
+          ignore(self.current_immutable_scope().set(name, runtime_value))
         // 可选参数：当有参数提供时绑定参数值，否则使用默认值
         @syntax.Parameter::Optional(binder={ name, .. }, ..) =>
-          self.current_immutable_scope().set(name, runtime_value)
+          ignore(self.current_immutable_scope().set(name, runtime_value))
         // 问号可选参数：绑定参数值
         @syntax.Parameter::QuestionOptional(binder={ name, .. }, ..) =>
-          self.current_immutable_scope().set(name, runtime_value)
+          ignore(self.current_immutable_scope().set(name, runtime_value))
         // 丢弃位置参数：不绑定到任何变量，直接跳过
         @syntax.Parameter::DiscardPositional(..) =>
           // 丢弃参数不需要绑定，但仍需要求值以保持副作用
@@ -139,13 +139,16 @@ pub fn ClosureInterpreter::execute_function_call_runtime(
 ) -> RuntimeValue {
   match function {
     @syntax.Func::Lambda(parameters~, body~, ..) => {
+
       // 创建新的作用域
       self.push_scope()
 
       // 绑定参数
+
       self.bind_function_parameters_runtime(parameters, args)
 
       // 执行函数体
+
       let result = self.visit(body)
 
       // 恢复作用域
@@ -153,6 +156,7 @@ pub fn ClosureInterpreter::execute_function_call_runtime(
       result
     }
     _ =>
+
       // 返回Unit作为默认值
       RuntimeValue::Unit
   }
@@ -179,7 +183,7 @@ pub fn ClosureInterpreter::define_struct_method(
   if !self.struct_methods.contains(type_name) {
     self.struct_methods.set(type_name, Map::new())
   }
-  self.struct_methods.get(type_name).unwrap().set(method_name, func)
+  ignore(self.struct_methods.get(type_name).unwrap().set(method_name, func))
 }
 
 ///| 查找用户定义的函数
@@ -187,10 +191,16 @@ pub fn ClosureInterpreter::find_user_function(
   self : ClosureInterpreter,
   name : String,
 ) -> @syntax.Func? {
+
   // 从当前作用域开始查找
   for functions in self.user_functions {
     if functions.contains(name) {
-      return functions.get(name)
+      let found_func = functions.get(name).unwrap()
+      match found_func {
+        @syntax.Func::Lambda(..) => ()
+        _ => ()
+      }
+      return Some(found_func)
     }
   }
   None

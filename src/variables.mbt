@@ -10,23 +10,19 @@ pub fn find_variable(
   mutable_values : Array[Map[String, RuntimeValue]],
   name : String,
 ) -> RuntimeValue {
-  // 性能优化：优先查找不可变变量（可以缓存和共享）
-  for value in immutable_values.rev() {
-    match value.get(name) {
-      Some(variable) => return variable
-      None => continue
-    }
-  }
-
-  // 然后查找可变变量
+  // 优先查找可变变量（优先级更高）
   for value in mutable_values.rev() {
-    match value.get(name) {
-      Some(variable) => return variable
-      None => continue
+    if value.contains(name) {
+      return value.get(name).unwrap()
     }
   }
 
-  // 如果找不到变量，返回Unit值
+  // 然后查找不可变变量
+  for value in immutable_values.rev() {
+    if value.contains(name) {
+      return value.get(name).unwrap()
+    }
+  }
   RuntimeValue::Unit
 }
 
@@ -55,18 +51,13 @@ pub fn update_mutable_variable(
   mutable_values : Array[Map[String, RuntimeValue]],
   name : String,
   new_value : RuntimeValue,
-) -> Bool {
+) -> Unit {
   // 只在可变变量数组中查找和更新（性能优化）
   for i = mutable_values.length() - 1; i >= 0; i = i - 1 {
-    match mutable_values[i].get(name) {
-      Some(_) => {
-        mutable_values[i].set(name, new_value)
-        return true
-      }
-      None => continue
+    if mutable_values[i].contains(name) {
+      mutable_values[i].set(name, new_value)
     }
   }
-  false
 }
 
 ///| 创建新的作用域

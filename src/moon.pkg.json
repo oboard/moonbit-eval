@@ -10,7 +10,7 @@
       "exports": [
         "create",
         "eval",
-        "expr_to_string",
+        "eval_result_to_string",
         "add_extern_fn"
       ]
     }

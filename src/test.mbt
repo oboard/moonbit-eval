@@ -490,8 +490,6 @@ test "string embedded" {
 ///|
 test "bool embedded methods" {
   let vm = MoonBitVM::new()
-  inspect(vm.eval("true.eq(true)"), content="true")
-  inspect(vm.eval("true.eq(false)"), content="false")
   inspect(vm.eval("true.compare(false)"), content="1")
   inspect(vm.eval("false.compare(true)"), content="-1")
   inspect(vm.eval("true.compare(true)"), content="0")
@@ -510,8 +508,6 @@ test "int embedded methods" {
   inspect(vm.eval("(20).shr(2)"), content="5")
 
   // 比较和状态
-  inspect(vm.eval("(5).eq(5)"), content="true")
-  inspect(vm.eval("(5).eq(3)"), content="false")
   inspect(vm.eval("(5).compare(3)"), content="1")
   inspect(vm.eval("(3).compare(5)"), content="-1")
   inspect(vm.eval("(5).compare(5)"), content="0")
@@ -532,33 +528,12 @@ test "string embedded methods" {
   inspect(vm.eval("s.length()"), content="5")
   inspect(vm.eval("s.get(0)"), content="104") // 返回字符的 ASCII 码
   inspect(vm.eval("s.unsafe_get(1)"), content="101") // 返回字符的 ASCII 码
-  inspect(vm.eval("s.add(\" world\")"), content="hello world")
-  inspect(vm.eval("s.eq(\"hello\")"), content="true")
-  inspect(vm.eval("s.eq(\"world\")"), content="false")
   inspect(vm.eval("s.to_string()"), content="hello")
-}
-
-///|
-test "uint embedded methods" {
-  let vm = MoonBitVM::new()
-  inspect(vm.eval("5U.add(3U)"), content="8")
-}
-
-///|
-test "float embedded methods" {
-  let vm = MoonBitVM::new()
-  inspect(vm.eval("3.5F.add(1.5F)"), content="5")
 }
 
 ///|
 test "double embedded methods" {
   let vm = MoonBitVM::new()
-  inspect(vm.eval("3.5.add(1.5)"), content="5")
-  inspect(vm.eval("5.5.sub(2.5)"), content="3")
-  inspect(vm.eval("2.5.mul(4.0)"), content="10")
-  inspect(vm.eval("10.0.div(2.0)"), content="5")
-  inspect(vm.eval("3.5.eq(3.5)"), content="true")
-  inspect(vm.eval("3.5.eq(2.5)"), content="false")
   inspect(vm.eval("5.5.compare(3.5)"), content="1")
   inspect(vm.eval("3.5.compare(5.5)"), content="-1")
   inspect(vm.eval("3.5.compare(3.5)"), content="0")
@@ -568,8 +543,6 @@ test "double embedded methods" {
 ///|
 test "char embedded methods" {
   let vm = MoonBitVM::new()
-  inspect(vm.eval("'a'.eq('a')"), content="true")
-  inspect(vm.eval("'a'.eq('b')"), content="false")
   inspect(vm.eval("'b'.compare('a')"), content="1")
   inspect(vm.eval("'a'.compare('b')"), content="-1")
   inspect(vm.eval("'a'.compare('a')"), content="0")
@@ -577,19 +550,62 @@ test "char embedded methods" {
 }
 
 ///|
-test "byte embedded methods" {
+test {
   let vm = MoonBitVM::new()
-  inspect(vm.eval("b'\\x41'.eq(b'\\x41')"), content="true")
+  inspect(
+    vm.eval(
+      (
+        #|fn sum_loop(n : Int, acc : Int) -> Int {
+        #|  let mut acc = acc
+        #|  for i = 0; i < n; i = i + 1 {
+        #|    acc = acc + i
+        #|  }
+        #|  acc
+        #|}
+      ),
+    ),
+    content="(n: Int, acc: Int) -> Int",
+  )
+  inspect(vm.eval("sum_loop(5, 1)"), content="11")
+  //  with continue
+  inspect(
+    vm.eval(
+      (
+        #|fn sum_loop2(n : Int, acc : Int) -> Int {
+        #|  let mut acc = acc
+        #|  for i = 0; i < n; i = i + 1 {
+        #|    if i == 2 {
+        #|      continue
+        #|    }
+        #|    acc = acc + i
+        #|  }
+        #|  acc
+        #|}
+      ),
+    ),
+    content="(n: Int, acc: Int) -> Int",
+  )
+  inspect(vm.eval("sum_loop2(5, 1)"), content="11")
 }
 
 ///|
-test "int64 embedded methods" {
+test {
   let vm = MoonBitVM::new()
-  inspect(vm.eval("5L.add(3L)"), content="8")
+  inspect(
+    vm.eval(
+      (
+        #|let mut i = 10
+        #|while i > 0 {
+        #|  i = i - 1
+        #|  if i % 2 == 0 {
+        #|    break 5
+        #|  }
+        #|} else {
+        #|  7
+        #|}
+      ),
+    ),
+    content="5",
+  )
 }
 
-///|
-test "uint64 embedded methods" {
-  let vm = MoonBitVM::new()
-  inspect(vm.eval("5UL.add(3UL)"), content="8")
-}

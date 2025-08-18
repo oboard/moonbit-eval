@@ -27,6 +27,10 @@ pub enum RuntimeValue {
 
   // 函数值
   Function(@syntax.Func)
+
+  // 控制流异常 - 用于实现break和continue语句
+  Break(RuntimeValue?) // break可以带返回值
+  Continue(Array[RuntimeValue]) // continue可以带参数列表
 }
 
 ///|
@@ -56,7 +60,7 @@ pub fn RuntimeStore::alloc_struct(
   let id = self.next_id
   let RefId(current_id) = self.next_id
   self.next_id = RefId(current_id + 1)
-  self.structs.set(id, fields)
+  ignore(self.structs.set(id, fields))
   id
 }
 
@@ -77,7 +81,7 @@ pub fn RuntimeStore::update_struct_field(
 ) -> Bool {
   match self.structs.get(id) {
     Some(struct_data) => {
-      struct_data.set(field, value)
+      ignore(struct_data.set(field, value))
       true
     }
     None => false
@@ -134,6 +138,8 @@ fn infer_return_type_from_body(
       }
     // 处理 match 表达式
     @syntax.Expr::Match(..) => "Unit"
+    @syntax.Expr::Sequence(last_expr~, ..) =>
+      infer_return_type_from_body(last_expr, interpreter)
     _ => "Unit"
   }
 }
@@ -240,6 +246,15 @@ pub impl Show for RuntimeValue with to_string(self) -> String {
         }
         _ => "<function>"
       }
+    Break(value) =>
+      match value {
+        Some(v) => "break " + v.to_string()
+        None => "break"
+      }
+    Continue(args) => {
+      let arg_strs = args.map(fn(v) { v.to_string() })
+      "continue " + arg_strs.join(", ")
+    }
   }
 }
 
@@ -424,6 +439,20 @@ pub fn RuntimeValue::to_expr(self : RuntimeValue) -> @syntax.Expr {
     // 引用类型需要通过store解析
     StructRef(_) => @syntax.Expr::Unit(loc=_dummy_loc, faked=true)
     Function(func) => @syntax.Expr::Function(func~, loc=_dummy_loc)
+    Break(value) =>
+      @syntax.Expr::Break(
+        arg=value.map(fn(v) { v.to_expr() }),
+        label=None,
+        loc=_dummy_loc,
+      )
+    Continue(args) => {
+      let expr_args = args.map(fn(v) { v.to_expr() })
+      @syntax.Expr::Continue(
+        args=@list.from_array(expr_args),
+        label=None,
+        loc=_dummy_loc,
+      )
+    }
   }
 }
 
@@ -545,7 +574,7 @@ pub fn RuntimeValue::from_expr_with_store(
       let field_map = Map::new()
       for field in fields {
         let field_value = RuntimeValue::from_expr_with_store(field.expr, store)
-        field_map.set(field.label.name, field_value)
+        ignore(field_map.set(field.label.name, field_value))
       }
       let ref_id = store.alloc_struct(field_map)
       StructRef(ref_id)
