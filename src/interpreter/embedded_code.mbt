@@ -2,10 +2,13 @@
 let core_fn_aliases : Map[String, String] = {
   "not": "%bool_not",
   "ignore": "%ignore",
+  "println_mono": "%println",
+  "println": "%println_mono",
 }
 
 ///|
 let builtin_embedded_code : Map[String, RuntimeFunction] = {
+  "%println_mono": println_mono_fn,
   "%ignore": ignore_fn,
   "%refeq": physical_equal_fn,
   "%panic": panic_fn,
@@ -129,6 +132,15 @@ let core_embedded_methods : Map[String, Map[String, RuntimeFunction]] = {
   },
   "Array": array_methods,
   "Option": option_methods,
+}
+
+///|
+let println_mono_fn : RuntimeFunction = ctx => match ctx.arguments {
+  [{ value, .. }, ..] => {
+    println(value)
+    Unit
+  }
+  _ => Unit
 }
 
 // ===== 整数算术运算 =====

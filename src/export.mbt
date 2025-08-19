@@ -12,3 +12,31 @@ pub fn MoonBitVM::create(log~ : Bool = false, core~ : Bool = true) -> MoonBitVM 
 pub fn eval_result_to_string(result : EvalResult) -> String {
   result.to_string()
 }
+
+///|
+pub fn add_extern_fn(
+  vm : MoonBitVM,
+  name : String,
+  func : RuntimeFunction,
+) -> Unit {
+  vm.interpreter.add_extern_fn(name, func)
+}
+
+///|
+pub fn add_embedded_fn(
+  vm : MoonBitVM,
+  name : String,
+  func : RuntimeFunction,
+) -> Unit {
+  vm.interpreter.add_embedded_fn(name, func)
+}
+
+///|
+pub fn add_embedded_method(
+  vm : MoonBitVM,
+  name : String,
+  method_name : String,
+  func : RuntimeFunction,
+) -> Unit {
+  vm.interpreter.add_embedded_method(name, method_name, func)
+}

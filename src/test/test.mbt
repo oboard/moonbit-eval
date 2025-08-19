@@ -727,15 +727,9 @@ test "pipe_operator" {
 }
 
 ///|
-test "external_functions" {
+test "println" {
   let vm = MoonBitVM::new()
-  vm.interpreter.add_extern_fn("println", ctx => {
-    if ctx.arguments is [{ value: String(s), .. }, ..] {
-      println(s)
-    }
-    Unit
-  })
-  inspect(vm.eval("println(\"println from external function\")"), content="()")
+  inspect(vm.eval("println(\"hello\")"), content="()")
 }
 
 ///|

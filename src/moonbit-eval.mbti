@@ -8,6 +8,10 @@ import(
 )
 
 // Values
+fn add_embedded_fn(MoonBitVM, String, (@interpreter.RuntimeFunctionContext) -> @value.RuntimeValue) -> Unit
+
+fn add_embedded_method(MoonBitVM, String, String, (@interpreter.RuntimeFunctionContext) -> @value.RuntimeValue) -> Unit
+
 fn add_extern_fn(MoonBitVM, String, (@interpreter.RuntimeFunctionContext) -> @value.RuntimeValue) -> Unit
 
 fn eval_result_to_string(EvalResult) -> String

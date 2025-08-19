@@ -14,6 +14,8 @@
         "eval",
         "eval_result_to_string",
         "add_extern_fn",
+        "add_embedded_fn",
+        "add_embedded_method",
         "value_to_json"
       ]
     }
