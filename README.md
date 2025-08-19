@@ -37,21 +37,29 @@ inspect(vm.eval("match (1, 2) { (a, b) => a + b }"), content="3")
 | Basic Types (Int, Bool, String, Double, Char) | ✅ | Full support for primitive types |
 | Expressions (arithmetic, logical, comparison) | ✅ | Complete expression evaluation |
 | Variables (let, let mut) | ✅ | Immutable and mutable variables |
-| Assignment | ✅ | Variable reassignment |
+| Assignment | ✅ | Variable reassignment and shadowing |
 | **Control Flow** | | |
 | If-else | ✅ | Conditional expressions |
-| For loops | ✅ | C-style for loops |
-| While loops | ✅ | While loop constructs |
+| For loops | ✅ | C-style for loops with continue/break |
+| While loops | ✅ | While loop constructs with else clause |
+| Loop control | ✅ | Continue and break statements |
 | **Functions** | | |
 | Function definitions | ✅ | Named functions with parameters |
+| Named parameters | ✅ | Named and optional parameters |
 | Lambda expressions | ✅ | Anonymous functions (x => x * 2) |
+| Closures | ✅ | Proper closure environment capture |
+| Recursive functions | ✅ | Self-referencing function calls |
+| Currying | ✅ | Higher-order function composition |
 | External functions | ✅ | Integration with external calls |
 | Embedded functions | ✅ | Native function integration |
 | **Data Structures** | | |
 | Arrays | ✅ | Array creation, indexing, assignment |
+| Array methods | ✅ | length, get, push, pop, contains, slice, concat, join |
+| Array boolean methods | ✅ | any, all operations |
 | Tuples | ✅ | Tuple creation, access, destructuring |
 | Structs | ✅ | Custom data types with methods |
 | Mutable struct fields | ✅ | Field mutation support |
+| Nested struct references | ✅ | Reference semantics for nested structures |
 | **Pattern Matching** | | |
 | Basic patterns | ✅ | Constants, variables, wildcards |
 | Tuple patterns | ✅ | Destructuring tuples |
@@ -60,21 +68,33 @@ inspect(vm.eval("match (1, 2) { (a, b) => a + b }"), content="3")
 | Range patterns | ✅ | Range expressions (_..<x, 'a'..='z') |
 | Constructor patterns | ✅ | Constant constructor matching |
 | Or patterns | ✅ | Multiple pattern alternatives |
+| Nested patterns | ✅ | Complex nested pattern matching |
+| **Enums and Generics** | | |
+| Basic enums | ✅ | Simple enumeration types |
+| Enums with data | ✅ | Algebraic data types |
+| Enum pattern matching | ✅ | Pattern matching on enum variants |
+| Generic types | ✅ | Generic enums and functions |
+| Generic functions | ✅ | Polymorphic function definitions |
+| **Option Type** | | |
+| Option basics | ✅ | Some/None construction |
+| Option pattern matching | ✅ | Pattern matching on Option |
+| Option methods | ✅ | unwrap, unwrap_or, is_empty, map, filter |
 | **Built-in Methods** | | |
-| Bool methods | ✅ | eq, compare, default |
+| Bool methods | ✅ | compare, default |
 | Int methods | ✅ | Bitwise ops, comparisons, bit manipulation |
-| String methods | ✅ | length, get, to_string |
-| Double methods | ✅ | to_int64 |
-| Char methods | ✅ | to_int |
+| String methods | ✅ | length, get, unsafe_get, to_string |
+| Double methods | ✅ | compare, to_int64 |
+| Char methods | ✅ | compare, to_int |
 | **Advanced Features** | | |
 | Type system | ✅ | Basic type checking and inference |
 | Static method calls | ✅ | Class::method() syntax |
+| Pipe operator | ✅ | |> operator for function chaining |
 | Function aliases | ✅ | Alias support (e.g., not for %bool_not) |
 | **Not Yet Supported** | | |
+| For-in loops | ❌ | Iterator-based loops (commented out in tests) |
 | Traits | ❌ | Interface definitions |
 | Packages | ❌ | Module system |
-| Generics | ❌ | Generic types and functions |
-| Error handling | ❌ | Result/Option error handling |
+| Error handling | ❌ | Result type error handling |
 | Async/await | ❌ | Asynchronous programming |
 
 ## Features
