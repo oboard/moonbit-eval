@@ -4,7 +4,6 @@
     "moonbitlang/parser/basic",
     "moonbitlang/parser/syntax",
     "moonbitlang/x/encoding",
-    "oboard/moonbit-eval/value",
     "oboard/moonbit-eval/interpreter"
   ],
   "link": {
@@ -16,7 +15,9 @@
         "add_extern_fn",
         "add_embedded_fn",
         "add_embedded_method",
-        "value_to_json"
+        "value_to_json",
+        "value_to_string",
+        "stop"
       ]
     }
   }

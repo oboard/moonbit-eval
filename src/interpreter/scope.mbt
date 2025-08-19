@@ -23,34 +23,34 @@ pub fn ClosureInterpreter::find_variable(
 }
 
 ///| 设置不可变变量
-pub fn ClosureInterpreter::set_variable(
-  self : ClosureInterpreter,
+pub fn RuntimeEnvironment::set_variable(
+  self : RuntimeEnvironment,
   name : String,
   value : RuntimeValue,
 ) -> Unit {
-  self.env.values.set(name, value)
-  self.env.mutable_vars.set(name, false)
+  self.values.set(name, value)
+  self.mutable_vars.set(name, false)
 }
 
 ///| 设置可变变量
-pub fn ClosureInterpreter::set_mutable_variable(
-  self : ClosureInterpreter,
+pub fn RuntimeEnvironment::set_mutable_variable(
+  self : RuntimeEnvironment,
   name : String,
   value : RuntimeValue,
 ) -> Unit {
-  self.env.values.set(name, value)
-  self.env.mutable_vars.set(name, true)
+  self.values.set(name, value)
+  self.mutable_vars.set(name, true)
 }
 
 ///| 更新可变变量的值
 
 ///| 在可变变量数组中查找并更新指定变量
-pub fn ClosureInterpreter::update_variable(
-  self : ClosureInterpreter,
+pub fn RuntimeEnvironment::update_variable(
+  self : RuntimeEnvironment,
   name : String,
   new_value : RuntimeValue,
 ) -> Unit {
-  let mut current_env = self.env
+  let mut current_env = self
   // First check current environment
   if current_env.values.contains(name) {
     current_env.values.set(name, new_value)

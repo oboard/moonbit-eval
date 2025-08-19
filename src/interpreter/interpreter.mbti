@@ -9,7 +9,7 @@ import(
 )
 
 // Values
-let array_methods : Map[String, (RuntimeFunctionContext) -> @value.RuntimeValue]
+let array_methods : Map[String, (RuntimeFunctionContext) -> RuntimeValue]
 
 fn[T : Compare] compare(T, T, String) -> @syntax.Constant
 
@@ -27,17 +27,17 @@ fn eval_uint64_op(UInt64, UInt64, String) -> @syntax.Constant
 
 fn eval_uint_op(UInt, UInt, String) -> @syntax.Constant
 
-let int_embedded_code : Map[String, (RuntimeFunctionContext) -> @value.RuntimeValue]
+let int_embedded_code : Map[String, (RuntimeFunctionContext) -> RuntimeValue]
 
-let int_methods : Map[String, (RuntimeFunctionContext) -> @value.RuntimeValue]
+let int_methods : Map[String, (RuntimeFunctionContext) -> RuntimeValue]
 
 fn is_comparison_op(String) -> Bool
 
-let option_methods : Map[String, (RuntimeFunctionContext) -> @value.RuntimeValue]
+let option_methods : Map[String, (RuntimeFunctionContext) -> RuntimeValue]
 
-let string_embedded_code : Map[String, (RuntimeFunctionContext) -> @value.RuntimeValue]
+let string_embedded_code : Map[String, (RuntimeFunctionContext) -> RuntimeValue]
 
-let string_methods : Map[String, (RuntimeFunctionContext) -> @value.RuntimeValue]
+let string_methods : Map[String, (RuntimeFunctionContext) -> RuntimeValue]
 
 fn unit(loc? : @basic.Location) -> @syntax.Expr
 
@@ -45,46 +45,46 @@ fn unit(loc? : @basic.Location) -> @syntax.Expr
 
 // Types and methods
 pub(all) struct ClosureInterpreter {
-  extern_fns : Map[String, (RuntimeFunctionContext) -> @value.RuntimeValue]
-  embedded_fns : Map[String, (RuntimeFunctionContext) -> @value.RuntimeValue]
-  embedded_methods : Map[String, Map[String, (RuntimeFunctionContext) -> @value.RuntimeValue]]
+  extern_fns : Map[String, (RuntimeFunctionContext) -> RuntimeValue]
+  embedded_fns : Map[String, (RuntimeFunctionContext) -> RuntimeValue]
+  embedded_methods : Map[String, Map[String, (RuntimeFunctionContext) -> RuntimeValue]]
   fn_aliases : Map[String, String]
-  mut env : @value.RuntimeEnvironment
+  mut env : RuntimeEnvironment
   type_definitions : Map[String, @syntax.TypeDecl]
   struct_methods : Map[String, Map[String, @syntax.Func]]
   type_environments : Array[TypeEnvironment]
 }
-fn ClosureInterpreter::add_embedded_fn(Self, String, (RuntimeFunctionContext) -> @value.RuntimeValue) -> Unit
-fn ClosureInterpreter::add_embedded_method(Self, String, String, (RuntimeFunctionContext) -> @value.RuntimeValue) -> Unit
-fn ClosureInterpreter::add_extern_fn(Self, String, (RuntimeFunctionContext) -> @value.RuntimeValue) -> Unit
+fn ClosureInterpreter::add_embedded_fn(Self, String, (RuntimeFunctionContext) -> RuntimeValue) -> Unit
+fn ClosureInterpreter::add_embedded_method(Self, String, String, (RuntimeFunctionContext) -> RuntimeValue) -> Unit
+fn ClosureInterpreter::add_extern_fn(Self, String, (RuntimeFunctionContext) -> RuntimeValue) -> Unit
 fn ClosureInterpreter::bind_function_parameters(Self, @list.List[@syntax.Parameter], @list.List[@syntax.Argument]) -> Unit
 fn ClosureInterpreter::bind_function_parameters_runtime(Self, @list.List[@syntax.Parameter], @list.List[@syntax.Argument]) -> Unit
-fn ClosureInterpreter::call(Self, @syntax.Func, @list.List[@syntax.Argument]) -> @value.RuntimeValue
-fn ClosureInterpreter::call_closure(Self, @syntax.Func, @value.RuntimeEnvironment, @list.List[@syntax.Argument]) -> @value.RuntimeValue
+fn ClosureInterpreter::call(Self, @syntax.Func, @list.List[@syntax.Argument]) -> RuntimeValue
+fn ClosureInterpreter::call_closure(Self, @syntax.Func, RuntimeEnvironment, @list.List[@syntax.Argument]) -> RuntimeValue
 fn ClosureInterpreter::constants_equal(Self, @syntax.Constant, @syntax.Constant) -> Bool
 fn ClosureInterpreter::constants_equal_expr(Self, @syntax.Expr, @syntax.Expr) -> Bool
 fn ClosureInterpreter::define_struct_method(Self, String, String, @syntax.Func) -> Unit
 fn ClosureInterpreter::execute_function_call(Self, @syntax.Func, @list.List[@syntax.Argument]) -> @syntax.Expr
 fn ClosureInterpreter::execute_match(Self, @syntax.Expr, @list.List[@syntax.Case]) -> @syntax.Expr
-fn ClosureInterpreter::execute_match_runtime(Self, @value.RuntimeValue, @list.List[@syntax.Case]) -> @value.RuntimeValue
-fn ClosureInterpreter::find_variable(Self, String) -> @value.RuntimeValue
-fn ClosureInterpreter::get_function_type_string(Self, @value.RuntimeValue) -> String
+fn ClosureInterpreter::execute_match_runtime(Self, RuntimeValue, @list.List[@syntax.Case]) -> RuntimeValue
+fn ClosureInterpreter::find_variable(Self, String) -> RuntimeValue
+fn ClosureInterpreter::get_function_type_string(Self, RuntimeValue) -> String
 fn ClosureInterpreter::is_known_function(Self, String) -> Bool
 fn ClosureInterpreter::new(core? : Bool) -> Self
 fn ClosureInterpreter::pattern_matches(Self, @syntax.Expr, @syntax.Pattern) -> Bool
 fn ClosureInterpreter::pattern_to_value(Self, @syntax.Pattern) -> @syntax.Expr?
 fn ClosureInterpreter::pop_scope(Self) -> Unit
 fn ClosureInterpreter::push_scope(Self) -> Unit
-fn ClosureInterpreter::set_mutable_variable(Self, String, @value.RuntimeValue) -> Unit
-fn ClosureInterpreter::set_variable(Self, String, @value.RuntimeValue) -> Unit
+fn ClosureInterpreter::set_mutable_variable(Self, String, RuntimeValue) -> Unit
+fn ClosureInterpreter::set_variable(Self, String, RuntimeValue) -> Unit
 fn ClosureInterpreter::top_visit(Self, @syntax.Impl) -> Unit
-fn ClosureInterpreter::update_variable(Self, String, @value.RuntimeValue) -> Unit
+fn ClosureInterpreter::update_variable(Self, String, RuntimeValue) -> Unit
 fn ClosureInterpreter::value_in_range(Self, @syntax.Expr, @syntax.Pattern, @syntax.Pattern, Bool) -> Bool
-fn ClosureInterpreter::visit(Self, @syntax.Expr) -> @value.RuntimeValue
+fn ClosureInterpreter::visit(Self, @syntax.Expr) -> RuntimeValue
 
 pub(all) struct RuntimeFunctionContext {
   context : ClosureInterpreter
-  arguments : Array[@value.RuntimeArgument]
+  arguments : Array[RuntimeArgument]
 }
 
 pub struct TypeEnvironment {
@@ -93,7 +93,7 @@ pub struct TypeEnvironment {
 }
 
 // Type aliases
-pub typealias (RuntimeFunctionContext) -> @value.RuntimeValue as RuntimeFunction
+pub typealias (RuntimeFunctionContext) -> RuntimeValue as RuntimeFunction
 
 // Traits
 

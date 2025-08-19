@@ -107,7 +107,7 @@ fn TypeEnvironment::lookup_type(
 //   self : ClosureInterpreter,
 //   type_name : String,
 // ) -> Bool {
-//   match self.type_definitions.get(type_name) {
+//   match self.env.type_definitions.get(type_name) {
 //     Some(type_def) => {
 //       let param_count = type_def.params.length()
 //       param_count > 0

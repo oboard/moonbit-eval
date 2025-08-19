@@ -735,7 +735,7 @@ test "println" {
 ///|
 test "embedded_code" {
   let vm = MoonBitVM::new()
-  vm.interpreter.add_embedded_fn("%string_length2", ctx => if ctx.arguments
+  vm.interpreter.env.add_embedded_fn("%string_length2", ctx => if ctx.arguments
     is [{ value: String(s), .. }, ..] {
     Int(s.length())
   } else {
@@ -871,7 +871,7 @@ test "generic_list" {
   // 测试简单的Cons调用
   inspect(vm.eval("List::cons(1, Nil)"), content="Cons(1, Nil)")
   // 测试嵌套的Cons调用
-  inspect(vm.eval("List::cons(2, List::new())"), content="Cons(2, Nil)")
+  assert_eq(vm.eval("List::cons(2, List::new())").to_string(), "Cons(2, Nil)")
   // 测试中间步骤
   inspect(
     vm.eval("let inner = List::cons(2, List::new()); inner"),

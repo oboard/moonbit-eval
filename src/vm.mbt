@@ -27,7 +27,7 @@ pub impl Show for EvalResult with to_string(self : EvalResult) -> String {
 ///|
 pub fn MoonBitVM::new(log~ : Bool = false, core~ : Bool = true) -> MoonBitVM {
   let interpreter = ClosureInterpreter::new(core~)
-  interpreter.add_extern_fn("println", ctx => match ctx.arguments {
+  interpreter.env.add_extern_fn("println", ctx => match ctx.arguments {
     [{ value, .. }, ..] => {
       println(value)
       Unit
@@ -242,7 +242,9 @@ pub fn MoonBitVM::eval(
       if log.unwrap_or(self.log) {
         println(node.to_json().stringify())
       }
+      self.interpreter.start()
       self.interpreter.top_visit(node)
+      self.interpreter.stop()
     })
     return { value: RuntimeValue::Unit, interpreter: self.interpreter }
   }
@@ -253,7 +255,9 @@ pub fn MoonBitVM::eval(
     ) =>
       match decl_body {
         @syntax.DeclBody::DeclBody(local_types=_, expr~) => {
+          self.interpreter.start()
           let result_value = self.interpreter.visit(expr)
+          self.interpreter.stop()
           if log.unwrap_or(self.log) {
             println(expr.to_json().stringify())
           }

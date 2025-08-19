@@ -4,6 +4,11 @@ pub fn value_to_json(value : RuntimeValue) -> String {
 }
 
 ///|
+pub fn value_to_string(value : RuntimeValue) -> String {
+  value.to_string()
+}
+
+///|
 pub fn MoonBitVM::create(log~ : Bool = false, core~ : Bool = true) -> MoonBitVM {
   MoonBitVM::new(log~, core~)
 }
@@ -19,7 +24,7 @@ pub fn add_extern_fn(
   name : String,
   func : RuntimeFunction,
 ) -> Unit {
-  vm.interpreter.add_extern_fn(name, func)
+  vm.interpreter.env.add_extern_fn(name, func)
 }
 
 ///|
@@ -28,7 +33,7 @@ pub fn add_embedded_fn(
   name : String,
   func : RuntimeFunction,
 ) -> Unit {
-  vm.interpreter.add_embedded_fn(name, func)
+  vm.interpreter.env.add_embedded_fn(name, func)
 }
 
 ///|
@@ -38,5 +43,10 @@ pub fn add_embedded_method(
   method_name : String,
   func : RuntimeFunction,
 ) -> Unit {
-  vm.interpreter.add_embedded_method(name, method_name, func)
+  vm.interpreter.env.add_embedded_method(name, method_name, func)
+}
+
+///|
+pub fn stop(vm : MoonBitVM) -> Unit {
+  vm.interpreter.stop()
 }
