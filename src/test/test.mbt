@@ -894,3 +894,39 @@ test "generic_list" {
   inspect(vm.eval("map(list, x => x * 2)"), content="Cons(2, Cons(4, Nil))")
   inspect(vm.eval("sum(list)"), content="3")
 }
+
+///|
+test {
+  let a = [x => x + 1, x => x - 1]
+  inspect(a[1](10), content="9")
+}
+
+///|
+test {
+  let vm = MoonBitVM::new()
+  inspect(vm.eval("let a = [x => x + 1, x => x - 1]; a[1](10)"), content="9")
+}
+
+///|
+test "nested_struct_reference" {
+  let vm = MoonBitVM::new()
+  inspect(
+    vm.eval(
+      (
+        #|struct S {
+        #|  mut a: Int
+        #|}
+        #|
+        #|struct T {
+        #|  a: S
+        #|}
+      ),
+      top=true,
+    ),
+    content="()",
+  )
+  inspect(vm.eval("let a = { a: 1 }"), content="()")
+  inspect(vm.eval("let b = { a: a }"), content="()")
+  inspect(vm.eval("b.a.a = 2"), content="()")
+  inspect(vm.eval("a"), content="{ a: 2 }")
+}

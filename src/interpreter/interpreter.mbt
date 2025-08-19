@@ -308,13 +308,7 @@ pub fn ClosureInterpreter::visit(
 
     // 处理 Let 绑定
     Let(pattern~, expr~, body~, ..) => {
-      let evaluated_expr = match expr {
-        @syntax.Expr::Ident(
-          id={ name: @syntax.LongIdent::Ident(name~), .. },
-          ..
-        ) => self.find_runtime(name)
-        _ => self.visit(expr)
-      }
+      let evaluated_expr = self.visit(expr)
       ignore(self.pattern_matches_runtime(evaluated_expr, pattern))
       self.visit(body)
     }
@@ -383,7 +377,14 @@ pub fn ClosureInterpreter::visit(
           }
           self.execute_static_method_call(type_str, method_name.name, args)
         }
-        _ => RuntimeValue::Unit
+        // 处理其他表达式作为函数的情况，如 a[1](10)
+        _ => {
+          let func_value = self.visit(func)
+          match func_value {
+            RuntimeValue::FuncRef(function) => self.call(function, args)
+            _ => RuntimeValue::Unit
+          }
+        }
       }
 
     // 处理 if 表达式
@@ -621,65 +622,55 @@ pub fn ClosureInterpreter::visit(
     }
 
     // 处理字段赋值 (Mutate)
-    Mutate(record~, accessor~, field~, augmented_by~, ..) =>
-      match record {
-        @syntax.Expr::Ident(id={ name, .. }, ..) =>
-          match name {
-            @syntax.LongIdent::Ident(name~) => {
-              // 获取当前记录的运行时值
-              let record_runtime = self.find_runtime(name)
-              match record_runtime {
-                RuntimeValue::StructRef(ref_id) => {
-                  // 计算新字段值
-                  let new_field_value = match augmented_by {
-                    Some(op) =>
-                      // 增强赋值操作（如 +=, -=, *=, /= 等）
-                      match accessor {
-                        @syntax.Accessor::Label(label) => {
-                          // 获取当前字段值
-                          let current_field_value = match
-                            self.runtime_store.get_struct(ref_id) {
-                            Some(struct_data) =>
-                              struct_data
-                              .get(label.name)
-                              .unwrap_or(RuntimeValue::Unit)
-                            None => RuntimeValue::Unit
-                          }
-                          let rhs_value = self.visit(field)
-                          match op.name {
-                            @syntax.LongIdent::Ident(name=op_name) =>
-                              @value.runtime_value_infix(
-                                op_name, current_field_value, rhs_value,
-                              )
-                            _ => rhs_value
-                          }
-                        }
-                        _ => self.visit(field)
-                      }
-                    None => self.visit(field)
+    Mutate(record~, accessor~, field~, augmented_by~, ..) => {
+      // 获取记录的运行时值（支持嵌套字段访问）
+      let record_runtime = self.visit(record)
+      match record_runtime {
+        RuntimeValue::StructRef(ref_id) => {
+          // 计算新字段值
+          let new_field_value = match augmented_by {
+            Some(op) =>
+              // 增强赋值操作（如 +=, -=, *=, /= 等）
+              match accessor {
+                @syntax.Accessor::Label(label) => {
+                  // 获取当前字段值
+                  let current_field_value = match
+                    self.runtime_store.get_struct(ref_id) {
+                    Some(struct_data) =>
+                      struct_data.get(label.name).unwrap_or(RuntimeValue::Unit)
+                    None => RuntimeValue::Unit
                   }
-
-                  // 更新RuntimeStore中的记录字段
-                  match accessor {
-                    @syntax.Accessor::Label(label) => {
-                      self.runtime_store.update_struct_field(
-                        ref_id,
-                        label.name,
-                        new_field_value,
+                  let rhs_value = self.visit(field)
+                  match op.name {
+                    @syntax.LongIdent::Ident(name=op_name) =>
+                      @value.runtime_value_infix(
+                        op_name, current_field_value, rhs_value,
                       )
-                      |> ignore
-                      RuntimeValue::Unit
-                    }
-                    _ => RuntimeValue::Unit
+                    _ => rhs_value
                   }
                 }
-                _ => RuntimeValue::Unit
+                _ => self.visit(field)
               }
+            None => self.visit(field)
+          }
+
+          // 更新RuntimeStore中的记录字段
+          match accessor {
+            @syntax.Accessor::Label(label) => {
+              self.runtime_store.update_struct_field(
+                ref_id,
+                label.name,
+                new_field_value,
+              )
+              |> ignore
+              RuntimeValue::Unit
             }
             _ => RuntimeValue::Unit
           }
+        }
         _ => RuntimeValue::Unit
       }
+    }
 
     // 处理 Continue 表达式
     Continue(args~, ..) => {
