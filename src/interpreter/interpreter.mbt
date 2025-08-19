@@ -280,8 +280,9 @@ pub fn ClosureInterpreter::visit(
       RuntimeValue::Array(evaluated_values)
     }
 
-    // 处理函数 - 闭包应该捕获创建时环境的快照
-    Function(func~, ..) => RuntimeValue::Closure(func, self.env.copy())
+    // 处理函数 - 闭包应该捕获对环境的引用以支持可变变量
+    Function(func~, ..) =>
+      RuntimeValue::Closure(func, self.env.create_closure_env())
 
     // 处理 Let 绑定
     Let(pattern~, expr~, body~, ..) => {
@@ -293,7 +294,7 @@ pub fn ClosureInterpreter::visit(
     // 处理可变变量声明
     LetMut(binder={ name, .. }, expr~, body~, ..) => {
       let runtime_value = self.visit(expr)
-      self.set_variable(name, runtime_value)
+      self.set_mutable_variable(name, runtime_value)
       // 执行body部分，这是关键！
       self.visit(body)
     }

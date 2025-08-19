@@ -22,13 +22,24 @@ pub fn ClosureInterpreter::find_variable(
   RuntimeValue::Unit
 }
 
-///| 更新变量
+///| 设置不可变变量
 pub fn ClosureInterpreter::set_variable(
   self : ClosureInterpreter,
   name : String,
   value : RuntimeValue,
 ) -> Unit {
   self.env.values.set(name, value)
+  self.env.mutable_vars.set(name, false)
+}
+
+///| 设置可变变量
+pub fn ClosureInterpreter::set_mutable_variable(
+  self : ClosureInterpreter,
+  name : String,
+  value : RuntimeValue,
+) -> Unit {
+  self.env.values.set(name, value)
+  self.env.mutable_vars.set(name, true)
 }
 
 ///| 更新可变变量的值

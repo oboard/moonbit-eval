@@ -22,9 +22,11 @@ pub(all) struct RuntimeArgument {
 
 pub(all) struct RuntimeEnvironment {
   values : Map[String, RuntimeValue]
+  mutable_vars : Map[String, Bool]
   parent : RuntimeEnvironment?
 }
 fn RuntimeEnvironment::copy(Self) -> Self
+fn RuntimeEnvironment::create_closure_env(Self) -> Self
 fn RuntimeEnvironment::new(parent? : Self) -> Self
 impl Show for RuntimeEnvironment
 

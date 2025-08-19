@@ -75,6 +75,7 @@ fn ClosureInterpreter::pattern_matches(Self, @syntax.Expr, @syntax.Pattern) -> B
 fn ClosureInterpreter::pattern_to_value(Self, @syntax.Pattern) -> @syntax.Expr?
 fn ClosureInterpreter::pop_scope(Self) -> Unit
 fn ClosureInterpreter::push_scope(Self) -> Unit
+fn ClosureInterpreter::set_mutable_variable(Self, String, @value.RuntimeValue) -> Unit
 fn ClosureInterpreter::set_variable(Self, String, @value.RuntimeValue) -> Unit
 fn ClosureInterpreter::top_visit(Self, @syntax.Impl) -> Unit
 fn ClosureInterpreter::update_variable(Self, String, @value.RuntimeValue) -> Unit

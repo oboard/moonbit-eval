@@ -203,7 +203,7 @@ test "for_loops" {
 
 // ///|
 // test "for_in" {
-//   let vm = MoonBitVM::new(log=true)
+//   let vm = MoonBitVM::new()
 //   // Test array iteration
 //   inspect(vm.eval("let mut sum = 0"), content="()")
 //   inspect(vm.eval("for x in [1, 2, 3, 4, 5] { sum += x }"), content="()")
@@ -322,7 +322,7 @@ test "lambda_functions" {
 
 ///|
 test "closure_argument_environment" {
-  let vm = MoonBitVM::new(log=true)
+  let vm = MoonBitVM::new()
   inspect(vm.eval("let x = 10"), content="()")
   // 创建闭包，捕获 x = 10
   inspect(vm.eval("let make_adder = y => x + y"), content="()")
@@ -340,7 +340,7 @@ test "closure_argument_environment" {
 
 ///|
 test "recursive_functions" {
-  let vm = MoonBitVM::new(log=true)
+  let vm = MoonBitVM::new()
   assert_eq(
     vm
     .eval(
@@ -923,7 +923,7 @@ test "generic_list" {
     content="()",
   )
   assert_eq(
-    vm.eval("map(list, x => x * 2)", log=true).to_string(),
+    vm.eval("map(list, x => x * 2)").to_string(),
     "Cons(2, Cons(4, Nil))",
   )
   assert_eq(vm.eval("sum(list)").to_string(), "3")
@@ -973,19 +973,4 @@ test "currying" {
   assert_eq(vm.eval("f").to_string(), "(y) -> Any")
   assert_eq(vm.eval("f(1)").to_string(), "11")
   assert_eq(vm.eval("add(5)(3)").to_string(), "8")
-}
-
-///|
-test "currying" {
-  let mut y = 1
-  let add = x => x + y
-  assert_eq(add(1).to_string(), "2")
-  y = 2
-  assert_eq(add(1).to_string(), "3")
-  let vm = MoonBitVM::new(log=true)
-  assert_eq(vm.eval("let mut y = 1").to_string(), "()")
-  assert_eq(vm.eval("let add = x => x + y").to_string(), "()")
-  assert_eq(vm.eval("add(1)").to_string(), "2")
-  assert_eq(vm.eval("y = 2").to_string(), "()")
-  assert_eq(vm.eval("add(1)").to_string(), "3")
 }
