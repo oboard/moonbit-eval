@@ -18,7 +18,7 @@ pub impl Show for EvalResult with output(self : EvalResult, logger : &Logger) ->
 ///|
 pub impl Show for EvalResult with to_string(self : EvalResult) -> String {
   match self.value {
-    RuntimeValue::FuncRef(_) | RuntimeValue::Closure(_) =>
+    RuntimeValue::Closure(_) =>
       self.interpreter.get_function_type_string(self.value)
     _ => self.value.to_string()
   }

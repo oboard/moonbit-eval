@@ -321,8 +321,26 @@ test "lambda_functions" {
 }
 
 ///|
+test "closure_argument_environment" {
+  let vm = MoonBitVM::new(log=true)
+  inspect(vm.eval("let x = 10"), content="()")
+  // 创建闭包，捕获 x = 10
+  inspect(vm.eval("let make_adder = y => x + y"), content="()")
+  inspect(vm.eval("make_adder(5)"), content="15")
+  inspect(vm.eval("let x = 20"), content="()")
+  inspect(vm.eval("make_adder(x)"), content="30")
+  let x = 10
+  let make_adder = y => x + y
+  inspect(make_adder(x), content="20")
+  // 先测试简单情况：直接传入数字
+  inspect(make_adder(5), content="15")
+  let x = 20
+  inspect(make_adder(x), content="30")
+}
+
+///|
 test "recursive_functions" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM::new(log=true)
   assert_eq(
     vm
     .eval(
@@ -905,7 +923,7 @@ test "generic_list" {
     content="()",
   )
   assert_eq(
-    vm.eval("map(list, x => x * 2)").to_string(),
+    vm.eval("map(list, x => x * 2)", log=true).to_string(),
     "Cons(2, Cons(4, Nil))",
   )
   assert_eq(vm.eval("sum(list)").to_string(), "3")
@@ -955,4 +973,19 @@ test "currying" {
   assert_eq(vm.eval("f").to_string(), "(y) -> Any")
   assert_eq(vm.eval("f(1)").to_string(), "11")
   assert_eq(vm.eval("add(5)(3)").to_string(), "8")
+}
+
+///|
+test "currying" {
+  let mut y = 1
+  let add = x => x + y
+  assert_eq(add(1).to_string(), "2")
+  y = 2
+  assert_eq(add(1).to_string(), "3")
+  let vm = MoonBitVM::new(log=true)
+  assert_eq(vm.eval("let mut y = 1").to_string(), "()")
+  assert_eq(vm.eval("let add = x => x + y").to_string(), "()")
+  assert_eq(vm.eval("add(1)").to_string(), "2")
+  assert_eq(vm.eval("y = 2").to_string(), "()")
+  assert_eq(vm.eval("add(1)").to_string(), "3")
 }

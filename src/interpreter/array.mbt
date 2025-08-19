@@ -283,7 +283,7 @@ let array_reserve_capacity_fn : RuntimeFunction = ctx => match ctx.arguments {
 
 ///| 数组each操作
 let array_each_fn : RuntimeFunction = ctx => match ctx.arguments {
-  [{ value: Array(arr), .. }, { value: FuncRef(f), .. }, ..] => {
+  [{ value: Array(arr), .. }, { value: Closure(f, _env), .. }, ..] => {
     arr.each(fn(val) {
       let arg = @syntax.Argument::{
         value: val.to_expr(),
@@ -298,7 +298,7 @@ let array_each_fn : RuntimeFunction = ctx => match ctx.arguments {
 
 ///| 数组map操作
 let array_map_fn : RuntimeFunction = ctx => match ctx.arguments {
-  [{ value: Array(arr), .. }, { value: FuncRef(f), .. }, ..] => {
+  [{ value: Array(arr), .. }, { value: Closure(f, _env), .. }, ..] => {
     let new_arr = arr.map(fn(val) {
       let arg = @syntax.Argument::{
         value: val.to_expr(),
@@ -313,7 +313,7 @@ let array_map_fn : RuntimeFunction = ctx => match ctx.arguments {
 
 ///| 数组filter操作
 let array_filter_fn : RuntimeFunction = ctx => match ctx.arguments {
-  [{ value: Array(arr), .. }, { value: FuncRef(f), .. }, ..] => {
+  [{ value: Array(arr), .. }, { value: Closure(f, _env), .. }, ..] => {
     let new_arr = arr.filter(fn(val) {
       let arg = @syntax.Argument::{
         value: val.to_expr(),
@@ -334,7 +334,7 @@ let array_fold_fn : RuntimeFunction = ctx => match ctx.arguments {
   [
     { value: Array(arr), .. },
     { value: init_val, .. },
-    { value: FuncRef(f), .. },
+    { value: Closure(f, _env), .. },
     ..,
   ] =>
     arr.fold(init=init_val, fn(acc, val) {

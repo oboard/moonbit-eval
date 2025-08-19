@@ -2,10 +2,7 @@
 typealias @value.RuntimeValue
 
 ///|
-typealias @interpreter.RuntimeFunctionContext
+typealias @interpreter.(RuntimeFunctionContext, ClosureInterpreter)
 
 ///|
 pub typealias (RuntimeFunctionContext) -> RuntimeValue as RuntimeFunction
-
-///|
-typealias @interpreter.ClosureInterpreter

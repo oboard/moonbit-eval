@@ -1,0 +1,68 @@
+///| 变量管理模块
+
+///| 处理变量查找、设置和作用域管理
+
+///| 在解释器中查找变量
+pub fn ClosureInterpreter::find_variable(
+  self : ClosureInterpreter,
+  name : String,
+) -> RuntimeValue {
+  let mut current_env = self.env
+  // First check current environment
+  if current_env.values.get(name) is Some(v) {
+    return v
+  }
+  // Then traverse parent environments
+  while current_env.parent is Some(parent) {
+    current_env = parent
+    if current_env.values.get(name) is Some(v) {
+      return v
+    }
+  }
+  RuntimeValue::Unit
+}
+
+///| 更新变量
+pub fn ClosureInterpreter::set_variable(
+  self : ClosureInterpreter,
+  name : String,
+  value : RuntimeValue,
+) -> Unit {
+  self.env.values.set(name, value)
+}
+
+///| 更新可变变量的值
+
+///| 在可变变量数组中查找并更新指定变量
+pub fn ClosureInterpreter::update_variable(
+  self : ClosureInterpreter,
+  name : String,
+  new_value : RuntimeValue,
+) -> Unit {
+  let mut current_env = self.env
+  // First check current environment
+  if current_env.values.contains(name) {
+    current_env.values.set(name, new_value)
+    return
+  }
+  // Then traverse parent environments
+  while current_env.parent is Some(parent) {
+    current_env = parent
+    if current_env.values.contains(name) {
+      current_env.values.set(name, new_value)
+      return
+    }
+  }
+}
+
+///| 创建新的作用域
+pub fn ClosureInterpreter::push_scope(self : ClosureInterpreter) -> Unit {
+  self.env = RuntimeEnvironment::new(parent=self.env)
+}
+
+///| 销毁当前作用域
+pub fn ClosureInterpreter::pop_scope(self : ClosureInterpreter) -> Unit {
+  if self.env.parent is Some(parent) {
+    self.env = parent
+  }
+}

@@ -8,9 +8,7 @@ pub(all) struct ClosureInterpreter {
   // 函数别名存储 - 存储函数名到其实际实现的映射
   fn_aliases : Map[String, String]
   // 变量
-  values : Array[Map[String, RuntimeValue]]
-  // 用户定义的函数
-  user_functions : Array[Map[String, @syntax.Func]]
+  mut env : RuntimeEnvironment
   // 类型定义
   type_definitions : Map[String, @syntax.TypeDecl]
   // 结构体方法定义 - 按类型名组织方法
@@ -38,8 +36,7 @@ pub fn ClosureInterpreter::new(core~ : Bool = true) -> ClosureInterpreter {
     } else {
       Map::new()
     },
-    values: [{}],
-    user_functions: [{}],
+    env: RuntimeEnvironment::new(),
     type_definitions: Map::new(),
     struct_methods: Map::new(),
     type_environments: [TypeEnvironment::new()],
@@ -77,28 +74,12 @@ pub fn ClosureInterpreter::add_embedded_method(
   self.embedded_methods.get(type_name).unwrap().set(method_name, f)
 }
 
-///| 获取当前函数作用域
-fn ClosureInterpreter::current_user_function_scope(
-  self : ClosureInterpreter,
-) -> Map[String, @syntax.Func] {
-  // user_functions 数组永远非空（初始化为 [{}]），直接访问最后一个元素
-  self.user_functions[self.user_functions.length() - 1]
-}
-
 ///| 获取当前变量作用域
 fn ClosureInterpreter::current_scope(
   self : ClosureInterpreter,
 ) -> Map[String, RuntimeValue] {
   // values 数组永远非空（初始化为 [{}]），直接访问最后一个元素
-  self.values[self.values.length() - 1]
-}
-
-///| 查找变量并返回其 RuntimeValue（新的优化方法）
-fn ClosureInterpreter::find_runtime(
-  self : ClosureInterpreter,
-  name : String,
-) -> RuntimeValue {
-  find_variable(self.values, name)
+  self.env.values
 }
 
 ///|
@@ -187,7 +168,7 @@ pub fn ClosureInterpreter::top_visit(
           if type_name is Some(type_name) {
             self.define_struct_method(type_name, func_name, func)
           } else {
-            self.define_function(func_name, func)
+            self.set_variable(func_name, RuntimeValue::Closure(func, self.env))
           }
         }
         // 处理embedded函数声明
@@ -247,7 +228,7 @@ pub fn ClosureInterpreter::visit(
     // 处理变量标识符
     Ident(id={ name, .. }, ..) =>
       match name {
-        @syntax.LongIdent::Ident(name~) => self.find_runtime(name)
+        @syntax.LongIdent::Ident(name~) => self.find_variable(name)
         _ => RuntimeValue::Unit
       }
 
@@ -299,26 +280,8 @@ pub fn ClosureInterpreter::visit(
       RuntimeValue::Array(evaluated_values)
     }
 
-    // 处理函数
-    Function(func~, ..) => {
-      // 当在函数调用上下文中遇到函数表达式时，总是创建闭包来捕获当前环境
-      // 这是处理柯里化函数的关键
-      let captured_env = Map::new()
-
-      // 捕获当前作用域中的所有变量
-      self
-      .current_scope()
-      .iter()
-      .each(fn(entry) {
-        let (name, value) = entry
-        captured_env.set(name, value)
-      })
-      if captured_env.size() > 0 {
-        RuntimeValue::Closure(func, captured_env)
-      } else {
-        RuntimeValue::FuncRef(func)
-      }
-    }
+    // 处理函数 - 闭包应该捕获创建时环境的快照
+    Function(func~, ..) => RuntimeValue::Closure(func, self.env.copy())
 
     // 处理 Let 绑定
     Let(pattern~, expr~, body~, ..) => {
@@ -337,9 +300,9 @@ pub fn ClosureInterpreter::visit(
 
     // 处理函数定义
     LetFn(name={ name, .. }, func~, body~, ..) => {
-      self.define_function(name, func)
+      self.set_variable(name, RuntimeValue::Closure(func, self.env))
       match body {
-        Unit(..) => RuntimeValue::FuncRef(func)
+        Unit(..) => RuntimeValue::Closure(func, self.env)
         _ => self.visit(body)
       }
     }
@@ -350,7 +313,7 @@ pub fn ClosureInterpreter::visit(
         Ident(name~) => {
           let new_value = match augmented_by {
             Some(op) => {
-              let current_value = self.find_runtime(name)
+              let current_value = self.find_variable(name)
               match op.name {
                 Ident(name=op_name) => {
                   let rhs_value = self.visit(expr)
@@ -395,9 +358,7 @@ pub fn ClosureInterpreter::visit(
         _ => {
           let func_value = self.visit(func)
           match func_value {
-            RuntimeValue::FuncRef(function) => self.call(function, args)
             RuntimeValue::Closure(function, captured_env) =>
-              // 调用闭包：使用专门的闭包调用方法
               self.call_closure(function, captured_env, args)
             _ => RuntimeValue::Unit
           }
@@ -543,6 +504,18 @@ pub fn ClosureInterpreter::visit(
           }
         }
 
+        // 执行更新块的辅助函数
+        let execute_continue_block = fn() {
+          for update_tuple in continue_block {
+            match update_tuple {
+              (binder, update_expr) => {
+                let new_value = self.visit(update_expr)
+                self.update_variable(binder.name, new_value)
+              }
+            }
+          }
+        }
+
         // 执行循环
         while true {
           // 检查循环条件
@@ -569,28 +542,10 @@ pub fn ClosureInterpreter::visit(
                 None => RuntimeValue::Unit
               }
             RuntimeValue::Continue(_) => {
-              // continue时也要执行更新块，然后跳到下一次迭代
-              for update_tuple in continue_block {
-                match update_tuple {
-                  (binder, update_expr) => {
-                    let new_value = self.visit(update_expr)
-                    self.set_variable(binder.name, new_value)
-                  }
-                }
-              }
+              execute_continue_block()
               continue
             }
-            _ => () // 正常执行，继续
-          }
-
-          // 执行 continue 块（更新循环变量）
-          for update_tuple in continue_block {
-            match update_tuple {
-              (binder, update_expr) => {
-                let new_value = self.visit(update_expr)
-                self.set_variable(binder.name, new_value)
-              }
-            }
+            _ => execute_continue_block()
           }
         }
         RuntimeValue::Unit
@@ -845,7 +800,7 @@ fn ClosureInterpreter::pattern_matches_runtime(
           }
         _ => {
           // 查找构造函数对应的值
-          let constr_runtime_value = self.find_runtime(constr.name.name)
+          let constr_runtime_value = self.find_variable(constr.name.name)
           match (value, constr_runtime_value) {
             // 如果构造函数是常量值，直接比较
             (RuntimeValue::Int(v1), RuntimeValue::Int(v2)) => v1 == v2
@@ -947,7 +902,7 @@ fn ClosureInterpreter::pattern_to_runtime_value(
       }
     @syntax.Pattern::Constr(constr~, ..) =>
       // 查找构造函数的值
-      Some(self.find_runtime(constr.name.name))
+      Some(self.find_variable(constr.name.name))
     @syntax.Pattern::Any(..) => None // 通配符表示开放边界
     _ => None
   }
@@ -971,7 +926,7 @@ pub fn ClosureInterpreter::is_known_function(
   }
 
   // 检查用户定义函数
-  if self.find_user_function(actual_name) is Some(_) {
+  if self.find_variable(actual_name) is Closure(_) {
     return true
   }
   false
@@ -979,10 +934,8 @@ pub fn ClosureInterpreter::is_known_function(
 
 ///| 查找方法的类型和执行器
 priv enum MethodType {
-  UserFunction(@syntax.Func)
   EmbeddedFunction(String)
-  RuntimeFunction(@syntax.Func)
-  RuntimeClosure(@syntax.Func, Map[String, RuntimeValue])
+  RuntimeClosure(@syntax.Func, RuntimeEnvironment)
   ExternFunction(RuntimeFunction)
   GlobalEmbedded(RuntimeFunction)
   NotFound
@@ -996,35 +949,26 @@ fn ClosureInterpreter::find_method(
   let name = self.fn_aliases.get(name).unwrap_or(name)
 
   // 按优先级查找：用户函数 -> Lambda变量 -> 外部函数 -> embedded函数
-  match self.find_user_function(name) {
-    Some(function) =>
+  match self.find_variable(name) {
+    RuntimeValue::Closure(func, env) =>
       // 检查是否是embedded函数的标记函数
-      match function {
+      match func {
         Lambda(body=Ident(id={ name: Ident(name=embedded_name), .. }, ..), ..) =>
           match embedded_name {
             ['%', ..] => MethodType::EmbeddedFunction(embedded_name)
-            _ => MethodType::UserFunction(function)
+            _ => MethodType::RuntimeClosure(func, env)
           }
-        _ => MethodType::UserFunction(function)
+        _ => MethodType::RuntimeClosure(func, env)
       }
-    None => {
-      let var_runtime_value = self.find_runtime(name)
-      match var_runtime_value {
-        RuntimeValue::FuncRef(lambda_func) =>
-          MethodType::RuntimeFunction(lambda_func)
-        RuntimeValue::Closure(lambda_func, captured_env) =>
-          MethodType::RuntimeClosure(lambda_func, captured_env)
-        _ =>
-          match self.extern_fns.get(name) {
-            Some(extern_func) => MethodType::ExternFunction(extern_func)
-            None =>
-              match self.embedded_fns.get(name) {
-                Some(embedded_func) => MethodType::GlobalEmbedded(embedded_func)
-                None => MethodType::NotFound
-              }
+    _ =>
+      match self.extern_fns.get(name) {
+        Some(extern_func) => MethodType::ExternFunction(extern_func)
+        None =>
+          match self.embedded_fns.get(name) {
+            Some(embedded_func) => MethodType::GlobalEmbedded(embedded_func)
+            None => MethodType::NotFound
           }
       }
-    }
   }
 }
 
@@ -1044,11 +988,6 @@ fn ClosureInterpreter::execute_function_by_name(
   }
 
   match self.find_method(name) {
-    MethodType::UserFunction(function) =>
-      // 检查是否为泛型函数，如果是则进行类型参数推导
-      // TODO: 实现基于参数类型的类型参数推导
-      // 目前先直接调用，后续可以根据实际参数类型推导类型参数
-      self.call(function, args)
     MethodType::EmbeddedFunction(embedded_name) =>
       match self.embedded_fns.get(embedded_name) {
         Some(embedded_func) =>
@@ -1058,7 +997,6 @@ fn ClosureInterpreter::execute_function_by_name(
           })
         None => RuntimeValue::Unit
       }
-    MethodType::RuntimeFunction(lambda_func) => self.call(lambda_func, args)
     MethodType::RuntimeClosure(lambda_func, captured_env) =>
       // 调用闭包：使用专门的闭包调用方法
       self.call_closure(lambda_func, captured_env, args)
@@ -1095,7 +1033,7 @@ fn ClosureInterpreter::execute_method_call_runtime(
       // 使用公共方法推导类型
       self.infer_struct_type_from_fields(current_fields)
     }
-    _ => self.find_runtime_type(self_value)
+    _ => self.find_variable_type(self_value)
   }
   match self.struct_methods.get(self_type) {
     Some(methods) =>
@@ -1177,7 +1115,7 @@ fn ClosureInterpreter::find_type(
     }
     Ident(id={ name, .. }, ..) =>
       match name {
-        Ident(name~) => self.find_runtime_type(self.find_runtime(name))
+        Ident(name~) => self.find_variable_type(self.find_variable(name))
         _ => "Unknown"
       }
     Array(..) => "Array"
@@ -1287,7 +1225,7 @@ fn ClosureInterpreter::infer_struct_type_from_fields(
 }
 
 ///|
-fn ClosureInterpreter::find_runtime_type(
+fn ClosureInterpreter::find_variable_type(
   self : ClosureInterpreter,
   runtime_value : RuntimeValue,
 ) -> String {
@@ -1313,7 +1251,6 @@ fn ClosureInterpreter::find_runtime_type(
       self.infer_struct_type_from_fields(current_fields)
     }
     Closure(_) => "Closure"
-    FuncRef(_) => "Function"
     Break(_) => "Break"
     Continue(_) => "Continue"
     Constructor(name, _) =>
@@ -1362,17 +1299,7 @@ fn ClosureInterpreter::infer_return_type_from_expr(
         @syntax.Expr::Ident(
           id={ name: @syntax.LongIdent::Ident(name~), .. },
           ..
-        ) =>
-          // 查找函数定义并获取其返回类型
-          match self.find_user_function(name) {
-            Some(@syntax.Func::Lambda(return_type=Some(ret_type), ..)) =>
-              @value.type_to_string(ret_type)
-            Some(@syntax.Func::Lambda(return_type=None, body~, ..)) =>
-              // 递归推导函数体的返回类型
-              self.infer_return_type_from_expr(body)
-            Some(@syntax.Func::Match(..)) => "Any"
-            None => "Any"
-          }
+        ) => self.find_variable_type(self.find_variable(name))
         _ => "Any"
       }
     // 处理 match 表达式
@@ -1393,13 +1320,7 @@ pub fn ClosureInterpreter::get_function_type_string(
   value : RuntimeValue,
 ) -> String {
   match value {
-    Closure(func, values) => {
-      self.values.push(values)
-      let result = self.get_function_type_string(FuncRef(func))
-      self.pop_scope()
-      result
-    }
-    FuncRef(func) =>
+    Closure(func, _env) =>
       // 从函数中提取参数和返回类型信息
       match func {
         @syntax.Func::Lambda(parameters~, return_type~, body~, ..) => {

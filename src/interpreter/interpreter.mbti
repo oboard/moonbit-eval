@@ -27,8 +27,6 @@ fn eval_uint64_op(UInt64, UInt64, String) -> @syntax.Constant
 
 fn eval_uint_op(UInt, UInt, String) -> @syntax.Constant
 
-fn find_variable(Array[Map[String, @value.RuntimeValue]], String) -> @value.RuntimeValue
-
 let int_embedded_code : Map[String, (RuntimeFunctionContext) -> @value.RuntimeValue]
 
 let int_methods : Map[String, (RuntimeFunctionContext) -> @value.RuntimeValue]
@@ -51,8 +49,7 @@ pub(all) struct ClosureInterpreter {
   embedded_fns : Map[String, (RuntimeFunctionContext) -> @value.RuntimeValue]
   embedded_methods : Map[String, Map[String, (RuntimeFunctionContext) -> @value.RuntimeValue]]
   fn_aliases : Map[String, String]
-  values : Array[Map[String, @value.RuntimeValue]]
-  user_functions : Array[Map[String, @syntax.Func]]
+  mut env : @value.RuntimeEnvironment
   type_definitions : Map[String, @syntax.TypeDecl]
   struct_methods : Map[String, Map[String, @syntax.Func]]
   type_environments : Array[TypeEnvironment]
@@ -63,15 +60,14 @@ fn ClosureInterpreter::add_extern_fn(Self, String, (RuntimeFunctionContext) -> @
 fn ClosureInterpreter::bind_function_parameters(Self, @list.List[@syntax.Parameter], @list.List[@syntax.Argument]) -> Unit
 fn ClosureInterpreter::bind_function_parameters_runtime(Self, @list.List[@syntax.Parameter], @list.List[@syntax.Argument]) -> Unit
 fn ClosureInterpreter::call(Self, @syntax.Func, @list.List[@syntax.Argument]) -> @value.RuntimeValue
-fn ClosureInterpreter::call_closure(Self, @syntax.Func, Map[String, @value.RuntimeValue], @list.List[@syntax.Argument]) -> @value.RuntimeValue
+fn ClosureInterpreter::call_closure(Self, @syntax.Func, @value.RuntimeEnvironment, @list.List[@syntax.Argument]) -> @value.RuntimeValue
 fn ClosureInterpreter::constants_equal(Self, @syntax.Constant, @syntax.Constant) -> Bool
 fn ClosureInterpreter::constants_equal_expr(Self, @syntax.Expr, @syntax.Expr) -> Bool
-fn ClosureInterpreter::define_function(Self, String, @syntax.Func) -> Unit
 fn ClosureInterpreter::define_struct_method(Self, String, String, @syntax.Func) -> Unit
 fn ClosureInterpreter::execute_function_call(Self, @syntax.Func, @list.List[@syntax.Argument]) -> @syntax.Expr
 fn ClosureInterpreter::execute_match(Self, @syntax.Expr, @list.List[@syntax.Case]) -> @syntax.Expr
 fn ClosureInterpreter::execute_match_runtime(Self, @value.RuntimeValue, @list.List[@syntax.Case]) -> @value.RuntimeValue
-fn ClosureInterpreter::find_user_function(Self, String) -> @syntax.Func?
+fn ClosureInterpreter::find_variable(Self, String) -> @value.RuntimeValue
 fn ClosureInterpreter::get_function_type_string(Self, @value.RuntimeValue) -> String
 fn ClosureInterpreter::is_known_function(Self, String) -> Bool
 fn ClosureInterpreter::new(core? : Bool) -> Self

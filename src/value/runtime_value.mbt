@@ -22,11 +22,8 @@ pub(all) enum RuntimeValue {
   // 结构类型 - 直接存储字段映射
   Struct(Ref[Map[String, RuntimeValue]])
 
-  // 函数
-  FuncRef(@syntax.Func)
-
-  // 闭包 - 包含函数定义和捕获的环境
-  Closure(@syntax.Func, Map[String, RuntimeValue])
+  // 闭包 - 包含函数定义和捕获的环境（所有函数都是闭包）
+  Closure(@syntax.Func, RuntimeEnvironment)
 
   // 构造函数调用
   Constructor(String, Array[RuntimeValue]) // 构造函数名称和参数
@@ -64,13 +61,9 @@ pub impl Eq for RuntimeValue with op_equal(
     // 结构类型比较
     (Struct({ val: a }), Struct({ val: b })) => a == b
 
-    // 函数类型的比较 - 通过函数签名比较
-    (FuncRef(func_a), FuncRef(func_b)) =>
-      compare_function_signatures(func_a, func_b)
-
     // 闭包类型的比较 - 比较函数签名和环境
-    (Closure(func_a, env_a), Closure(func_b, env_b)) =>
-      compare_function_signatures(func_a, func_b) && env_a == env_b
+    (Closure(func_a, _), Closure(func_b, _)) =>
+      compare_function_signatures(func_a, func_b)
 
     // 构造函数比较
     (Constructor(name_a, args_a), Constructor(name_b, args_b)) =>
@@ -306,7 +299,7 @@ pub impl Show for RuntimeValue with to_string(self) -> String {
         let arg_strs = args.map(fn(v) { v.to_string() })
         name + "(" + arg_strs.join(", ") + ")"
       }
-    FuncRef(func) =>
+    Closure(func, _env) =>
       // 从函数中提取参数和返回类型信息
       match func {
         @syntax.Func::Lambda(parameters~, return_type~, body~, ..) => {
@@ -362,29 +355,6 @@ pub impl Show for RuntimeValue with to_string(self) -> String {
           }
         }
         _ => "<function>"
-      }
-    Closure(func, _env) =>
-      // 闭包显示为函数签名，不显示捕获的环境（太复杂）
-      match func {
-        @syntax.Func::Lambda(parameters~, return_type~, ..) => {
-          let param_strs = []
-          for param in parameters {
-            let param_str = match param {
-              @syntax.Parameter::Positional(binder~, ..) => binder.name
-              @syntax.Parameter::Labelled(binder~, ..) => binder.name + "~"
-              @syntax.Parameter::Optional(binder~, ..) => binder.name + "~"
-              @syntax.Parameter::QuestionOptional(binder~, ..) =>
-                binder.name + "?"
-              @syntax.Parameter::DiscardPositional(..) => "_"
-            }
-            param_strs.push(param_str)
-          }
-          match return_type {
-            Some(t) => "(" + param_strs.join(", ") + ") -> " + type_to_string(t)
-            None => "(" + param_strs.join(", ") + ") -> Any"
-          }
-        }
-        _ => "<closure>"
       }
     Break(value) =>
       match value {
@@ -462,7 +432,6 @@ pub fn RuntimeValue::to_expr(self : RuntimeValue) -> @syntax.Expr {
     }
     // 结构类型转换为Record表达式
     Struct(_) => Unit(loc=_dummy_loc, faked=true)
-    FuncRef(func) => Function(func~, loc=_dummy_loc)
     Closure(func, _env) => Function(func~, loc=_dummy_loc)
     Constructor(_) => Unit(loc=_dummy_loc, faked=true)
     Break(value) =>
@@ -497,7 +466,7 @@ pub fn RuntimeValue::from_expr(expr : @syntax.Expr) -> RuntimeValue {
       // 实际使用时需要通过带store的方法来处理
       Array(values.to_array())
     }
-    Function(func~, ..) => FuncRef(func)
+    Function(func~, ..) => Closure(func, RuntimeEnvironment::new())
     Record(fields~, ..) => {
       // 创建一个新的结构
       let struct_data = Map::new()

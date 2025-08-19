@@ -26,21 +26,6 @@ let option_unwrap_fn : RuntimeFunction = ctx => match ctx.arguments {
 let option_map_fn : RuntimeFunction = ctx => match ctx.arguments {
   [
     { value: Constructor("Some", [inner_value]), .. },
-    { value: FuncRef(func), .. },
-    ..,
-  ] => {
-    // 执行函数调用
-    let result = ctx.context.call(
-      func,
-      @list.construct(
-        @syntax.Argument::{ value: inner_value.to_expr(), kind: Positional },
-        @list.new(),
-      ),
-    )
-    Constructor("Some", [result])
-  }
-  [
-    { value: Constructor("Some", [inner_value]), .. },
     { value: Closure(func, captured_env), .. },
     ..,
   ] => {
@@ -61,20 +46,6 @@ let option_map_fn : RuntimeFunction = ctx => match ctx.arguments {
 
 ///| Option map_or 方法
 let option_map_or_fn : RuntimeFunction = ctx => match ctx.arguments {
-  [
-    { value: Constructor("Some", [inner_value]), .. },
-    _,
-    { value: FuncRef(func), .. },
-    ..,
-  ] =>
-    // 对于Some值，执行函数调用
-    ctx.context.call(
-      func,
-      @list.construct(
-        @syntax.Argument::{ value: inner_value.to_expr(), kind: Positional },
-        @list.new(),
-      ),
-    )
   [
     { value: Constructor("Some", [inner_value]), .. },
     _,
@@ -100,20 +71,6 @@ let option_map_or_else_fn : RuntimeFunction = ctx => match ctx.arguments {
   [
     { value: Constructor("Some", [inner_value]), .. },
     _,
-    { value: FuncRef(map_func), .. },
-    ..,
-  ] =>
-    // 对于Some值，执行map函数
-    ctx.context.call(
-      map_func,
-      @list.construct(
-        @syntax.Argument::{ value: inner_value.to_expr(), kind: Positional },
-        @list.new(),
-      ),
-    )
-  [
-    { value: Constructor("Some", [inner_value]), .. },
-    _,
     { value: Closure(map_func, captured_env), .. },
     ..,
   ] =>
@@ -128,14 +85,6 @@ let option_map_or_else_fn : RuntimeFunction = ctx => match ctx.arguments {
     )
   [
     { value: Constructor("None", []), .. },
-    { value: FuncRef(else_func), .. },
-    _,
-    ..,
-  ] =>
-    // 对于None值，执行else函数
-    ctx.context.call(else_func, @list.new())
-  [
-    { value: Constructor("None", []), .. },
     { value: Closure(else_func, captured_env), .. },
     _,
     ..,
@@ -147,19 +96,6 @@ let option_map_or_else_fn : RuntimeFunction = ctx => match ctx.arguments {
 
 ///| Option bind 方法
 let option_bind_fn : RuntimeFunction = ctx => match ctx.arguments {
-  [
-    { value: Constructor("Some", [inner_value]), .. },
-    { value: FuncRef(func), .. },
-    ..,
-  ] =>
-    // 执行函数调用，bind应该返回函数的结果（应该是Option类型）
-    ctx.context.call(
-      func,
-      @list.construct(
-        @syntax.Argument::{ value: inner_value.to_expr(), kind: Positional },
-        @list.new(),
-      ),
-    )
   [
     { value: Constructor("Some", [inner_value]), .. },
     { value: Closure(func, captured_env), .. },
@@ -197,25 +133,6 @@ let option_is_empty_fn : RuntimeFunction = ctx => match ctx.arguments {
 
 ///| Option filter 方法
 let option_filter_fn : RuntimeFunction = ctx => match ctx.arguments {
-  [
-    { value: Constructor("Some", [inner_value]), .. },
-    { value: FuncRef(predicate), .. },
-    ..,
-  ] => {
-    // 执行谓词函数
-    let result = ctx.context.call(
-      predicate,
-      @list.construct(
-        @syntax.Argument::{ value: inner_value.to_expr(), kind: Positional },
-        @list.new(),
-      ),
-    )
-    // 根据谓词结果决定是否保留值
-    match result {
-      Bool(true) => Constructor("Some", [inner_value])
-      _ => Constructor("None", [])
-    }
-  }
   [
     { value: Constructor("Some", [inner_value]), .. },
     { value: Closure(predicate, captured_env), .. },
@@ -263,13 +180,6 @@ let option_unwrap_or_default_fn : RuntimeFunction = ctx => match ctx.arguments {
 ///| Option unwrap_or_else 方法
 let option_unwrap_or_else_fn : RuntimeFunction = ctx => match ctx.arguments {
   [{ value: Constructor("Some", [inner_value]), .. }, ..] => inner_value
-  [
-    { value: Constructor("None", []), .. },
-    { value: FuncRef(else_func), .. },
-    ..,
-  ] =>
-    // 对于None值，执行else函数
-    ctx.context.call(else_func, @list.new())
   [
     { value: Constructor("None", []), .. },
     { value: Closure(else_func, captured_env), .. },

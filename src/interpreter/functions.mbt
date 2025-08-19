@@ -4,30 +4,26 @@
 pub fn ClosureInterpreter::call_closure(
   self : ClosureInterpreter,
   function : @syntax.Func,
-  captured_env : Map[String, RuntimeValue],
+  env : RuntimeEnvironment,
   args : @list.List[@syntax.Argument],
 ) -> RuntimeValue {
   match function {
     @syntax.Func::Lambda(parameters~, body~, ..) => {
-      // 创建新的作用域
-      self.push_scope()
+      // 在旧环境中解释参数值
+      let arg_values = self.evaluate_arguments(args)
 
-      // 恢复捕获的环境变量
-      captured_env
-      .iter()
-      .each(fn(entry) {
-        let (name, value) = entry
-        self.set_variable(name, value)
+      // 切换到闭包捕获的环境
+      let old_env = self.env
+      self.env = env
+      let result = self.with_scope(() => {
+        // 在新环境中绑定已解释的参数值
+        self.bind_evaluated_parameters(parameters, arg_values)
+        // 执行函数体
+        self.visit(body)
       })
 
-      // 绑定参数
-      self.bind_function_parameters_runtime(parameters, args)
-
-      // 执行函数体
-      let result = self.visit(body)
-
-      // 恢复作用域
-      self.pop_scope()
+      // 恢复原环境
+      self.env = old_env
       result
     }
     _ => RuntimeValue::Unit
@@ -100,16 +96,16 @@ pub fn ClosureInterpreter::bind_function_parameters_runtime(
       match param {
         // 位置参数：直接绑定参数值
         @syntax.Parameter::Positional(binder={ name, .. }, ..) =>
-          self.current_scope().set(name, arg_value)
+          self.set_variable(name, arg_value)
         // 标签参数：绑定带标签的参数值
         @syntax.Parameter::Labelled(binder={ name, .. }, ..) =>
-          self.current_scope().set(name, arg_value)
+          self.set_variable(name, arg_value)
         // 可选参数：当有参数提供时绑定参数值，否则使用默认值
         @syntax.Parameter::Optional(binder={ name, .. }, ..) =>
-          self.current_scope().set(name, arg_value)
+          self.set_variable(name, arg_value)
         // 问号可选参数：绑定参数值
         @syntax.Parameter::QuestionOptional(binder={ name, .. }, ..) =>
-          self.current_scope().set(name, arg_value)
+          self.set_variable(name, arg_value)
         // 丢弃位置参数：不绑定到任何变量，直接跳过
         @syntax.Parameter::DiscardPositional(..) =>
           // 丢弃参数不需要绑定，但仍需要求值以保持副作用
@@ -123,7 +119,7 @@ pub fn ClosureInterpreter::bind_function_parameters_runtime(
         // 可选参数没有对应实参时，使用默认值
         @syntax.Parameter::Optional(binder={ name, .. }, default~, ..) => {
           let default_value = self.visit(default)
-          self.current_scope().set(name, default_value)
+          self.set_variable(name, default_value)
           self.bind_function_parameters_runtime(rest_params, @list.new())
         }
         // 问号可选参数没有对应实参时，不绑定任何值
@@ -145,24 +141,14 @@ pub fn ClosureInterpreter::execute_function_call(
   args : @list.List[@syntax.Argument],
 ) -> @syntax.Expr {
   match function {
-    @syntax.Func::Lambda(parameters~, body~, ..) => {
-      // 创建新的作用域
-      self.push_scope()
-      // TODO: 类型环境管理暂时禁用，调试中
-      // self.push_type_environment()
+    @syntax.Func::Lambda(parameters~, body~, ..) =>
+      self.with_scope(() => {
+        // 绑定参数
+        self.bind_function_parameters(parameters, args)
 
-      // 绑定参数
-      self.bind_function_parameters(parameters, args)
-
-      // 执行函数体
-      let result = self.visit(body).to_expr()
-
-      // 恢复作用域
-      // TODO: 类型环境管理暂时禁用，调试中
-      // self.pop_type_environment()
-      self.pop_scope()
-      result
-    }
+        // 执行函数体
+        self.visit(body).to_expr()
+      })
     _ =>
       // 返回Unit表达式作为默认值
       unit()
@@ -177,71 +163,17 @@ pub fn ClosureInterpreter::call(
 ) -> RuntimeValue {
   match function {
     @syntax.Func::Lambda(parameters~, body~, ..) => {
-      // 检查参数数量是否匹配
-      let arg_count = args.length()
+      // 创建新的作用域
+      self.push_scope()
 
-      // 检查是否需要部分应用
-      // 对于可选参数，需要特殊处理
-      let required_param_count = count_required_parameters(parameters)
-      if arg_count < required_param_count {
-        // 部分应用：创建闭包
-        // 捕获当前环境
-        let captured_env = Map::new()
-        self
-        .current_scope()
-        .iter()
-        .each(fn(entry) {
-          let (name, value) = entry
-          captured_env.set(name, value)
-        })
+      // 绑定参数
+      self.bind_function_parameters_runtime(parameters, args)
+      // 执行函数体
+      let result = self.visit(body)
 
-        // 创建新的Lambda函数，包含剩余的参数
-        let remaining_params = self.drop_parameters(parameters, arg_count)
-        let dummy_loc = @basic.Location::{
-          start: { fname: "", lnum: 0, bol: 0, cnum: 0 },
-          end: { fname: "", lnum: 0, bol: 0, cnum: 0 },
-        }
-        let new_lambda = @syntax.Func::Lambda(
-          parameters=remaining_params,
-          params_loc=dummy_loc,
-          body~,
-          return_type=None,
-          error_type=@syntax.ErrorType::NoErrorType,
-          kind=Arrow,
-          has_error=None,
-          is_async=false,
-          loc=dummy_loc,
-        )
-
-        // 绑定已提供的参数到捕获的环境
-        self.push_scope()
-        let taken_params = self.take_parameters(parameters, arg_count)
-        self.bind_function_parameters_runtime(taken_params, args)
-        // 将绑定的参数添加到捕获的环境
-        self
-        .current_scope()
-        .iter()
-        .each(fn(entry) {
-          let (name, value) = entry
-          captured_env.set(name, value)
-        })
-        self.pop_scope()
-        return RuntimeValue::Closure(new_lambda, captured_env)
-      } else {
-        // 完全应用：正常执行函数
-        // 创建新的作用域
-        self.push_scope()
-
-        // 绑定参数
-        self.bind_function_parameters_runtime(parameters, args)
-
-        // 执行函数体
-        let result = self.visit(body)
-
-        // 恢复作用域
-        self.pop_scope()
-        result
-      }
+      // 恢复作用域
+      self.pop_scope()
+      result
     }
     _ =>
       // 返回Unit作为默认值
@@ -250,15 +182,6 @@ pub fn ClosureInterpreter::call(
 }
 
 ///| 处理函数定义
-
-///| 将函数存储到用户函数映射中
-pub fn ClosureInterpreter::define_function(
-  self : ClosureInterpreter,
-  name : String,
-  func : @syntax.Func,
-) -> Unit {
-  self.current_user_function_scope().set(name, func)
-}
 
 ///|
 pub fn ClosureInterpreter::define_struct_method(
@@ -271,22 +194,6 @@ pub fn ClosureInterpreter::define_struct_method(
     ignore(self.struct_methods.set(type_name, Map::new()))
   }
   ignore(self.struct_methods.get(type_name).unwrap().set(method_name, func))
-}
-
-///| 查找用户定义的函数
-pub fn ClosureInterpreter::find_user_function(
-  self : ClosureInterpreter,
-  name : String,
-) -> @syntax.Func? {
-
-  // 从当前作用域开始查找
-  for functions in self.user_functions.rev_iter() {
-    if functions.contains(name) {
-      let found_func = functions.get(name).unwrap()
-      return Some(found_func)
-    }
-  }
-  None
 }
 
 ///| 递归收集表达式中的自由变量
@@ -364,21 +271,6 @@ fn extract_pattern_variables(
   }
 }
 
-///| 计算必需参数的数量
-fn count_required_parameters(parameters : @list.List[@syntax.Parameter]) -> Int {
-  let mut count = 0
-  for param in parameters {
-    match param {
-      @syntax.Parameter::Positional(..) | @syntax.Parameter::Labelled(..) =>
-        count += 1
-      @syntax.Parameter::Optional(..)
-      | @syntax.Parameter::QuestionOptional(..) => ()
-      _ => ()
-    }
-  }
-  count
-}
-
 ///| 检查是否还有未绑定的参数
 fn ClosureInterpreter::has_unbound_parameters(
   self : ClosureInterpreter,
@@ -429,5 +321,64 @@ fn ClosureInterpreter::drop_parameters(
   match params {
     @list.More(_, tail=rest) => self.drop_parameters(rest, n - 1)
     @list.Empty => @list.new()
+  }
+}
+
+///| 在当前环境中解释参数值
+fn ClosureInterpreter::evaluate_arguments(
+  self : ClosureInterpreter,
+  args : @list.List[@syntax.Argument],
+) -> @list.List[RuntimeValue] {
+  match args {
+    @list.More(arg, tail=rest) => {
+      let value = self.visit(arg.value)
+      @list.construct(value, self.evaluate_arguments(rest))
+    }
+    @list.Empty => @list.new()
+  }
+}
+
+///| 绑定已解释的参数值到新环境
+fn ClosureInterpreter::bind_evaluated_parameters(
+  self : ClosureInterpreter,
+  params : @list.List[@syntax.Parameter],
+  values : @list.List[RuntimeValue],
+) -> Unit {
+  match (params, values) {
+    (@list.More(param, tail=rest_params), @list.More(value, tail=rest_values)) => {
+      match param {
+        // 位置参数：直接绑定参数值
+        @syntax.Parameter::Positional(binder={ name, .. }, ..) =>
+          self.set_variable(name, value)
+        // 标签参数：绑定带标签的参数值
+        @syntax.Parameter::Labelled(binder={ name, .. }, ..) =>
+          self.set_variable(name, value)
+        // 可选参数：当有参数提供时绑定参数值
+        @syntax.Parameter::Optional(binder={ name, .. }, ..) =>
+          self.set_variable(name, value)
+        // 问号可选参数：绑定参数值
+        @syntax.Parameter::QuestionOptional(binder={ name, .. }, ..) =>
+          self.set_variable(name, value)
+        // 丢弃位置参数：不绑定到任何变量
+        @syntax.Parameter::DiscardPositional(..) => ()
+      }
+      self.bind_evaluated_parameters(rest_params, rest_values)
+    }
+    // 处理可选参数的默认值情况
+    (@list.More(param, tail=rest_params), @list.Empty) =>
+      match param {
+        // 可选参数没有对应实参时，使用默认值
+        @syntax.Parameter::Optional(binder={ name, .. }, default~, ..) => {
+          let default_value = self.visit(default)
+          self.set_variable(name, default_value)
+          self.bind_evaluated_parameters(rest_params, @list.new())
+        }
+        // 问号可选参数没有对应实参时，不绑定任何值
+        @syntax.Parameter::QuestionOptional(..) =>
+          self.bind_evaluated_parameters(rest_params, @list.new())
+        _ => ()
+      }
+    (@list.Empty, @list.Empty) => ()
+    _ => ()
   }
 }
