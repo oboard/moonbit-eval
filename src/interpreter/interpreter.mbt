@@ -9,8 +9,6 @@ pub(all) struct ClosureInterpreter {
   fn_aliases : Map[String, String]
   // 变量
   values : Array[Map[String, RuntimeValue]]
-  // 运行时存储 - 管理可变对象的引用
-  runtime_store : RuntimeStore
   // 用户定义的函数
   user_functions : Array[Map[String, @syntax.Func]]
   // 类型定义
@@ -41,7 +39,6 @@ pub fn ClosureInterpreter::new(core~ : Bool = true) -> ClosureInterpreter {
       Map::new()
     },
     values: [{}],
-    runtime_store: RuntimeStore::new(),
     user_functions: [{}],
     type_definitions: Map::new(),
     struct_methods: Map::new(),
@@ -287,8 +284,7 @@ pub fn ClosureInterpreter::visit(
         let field_value = self.visit(field.expr)
         ignore(evaluated_fields.set(field.label.name, field_value))
       }
-      let ref_id = self.runtime_store.alloc_struct(evaluated_fields)
-      RuntimeValue::StructRef(ref_id)
+      RuntimeValue::Struct(@ref.new(evaluated_fields))
     }
 
     // 处理元组
@@ -382,6 +378,20 @@ pub fn ClosureInterpreter::visit(
           let func_value = self.visit(func)
           match func_value {
             RuntimeValue::FuncRef(function) => self.call(function, args)
+            RuntimeValue::Closure(function, captured_env) => {
+              // 调用闭包：恢复捕获的环境
+              self.push_scope()
+              // 将捕获的环境变量绑定到当前作用域
+              captured_env
+              .iter()
+              .each(fn(entry) {
+                let (var_name, value) = entry
+                self.current_scope().set(var_name, value)
+              })
+              let result = self.call(function, args)
+              self.pop_scope()
+              result
+            }
             _ => RuntimeValue::Unit
           }
         }
@@ -411,13 +421,9 @@ pub fn ClosureInterpreter::visit(
     Field(record~, accessor~, ..) => {
       let record_val = self.visit(record)
       match (record_val, accessor) {
-        (RuntimeValue::StructRef(ref_id), @syntax.Accessor::Label(label)) =>
-          match self.runtime_store.get_struct(ref_id) {
-            Some(record) =>
-              match record.get(label.name) {
-                Some(field_value) => field_value
-                None => RuntimeValue::Unit
-              }
+        (RuntimeValue::Struct({ val: fields }), @syntax.Accessor::Label(label)) =>
+          match fields.get(label.name) {
+            Some(field_value) => field_value
             None => RuntimeValue::Unit
           }
         (RuntimeValue::Tuple(values), @syntax.Accessor::Index(tuple_index~, ..)) =>
@@ -451,7 +457,7 @@ pub fn ClosureInterpreter::visit(
         // 处理简单函数调用，如 5 |> ignore
         Ident(id={ name: @syntax.LongIdent::Ident(name~), .. }, ..) => {
           // 创建包含左侧值的参数列表
-          let left_expr = left_val.to_expr_with_store(self.runtime_store)
+          let left_expr = left_val.to_expr()
           let pipe_args = @list.construct(
             @syntax.Argument::{
               value: left_expr,
@@ -470,7 +476,7 @@ pub fn ClosureInterpreter::visit(
                 _ => "Unknown"
               }
               // 将左侧值添加到参数列表前面
-              let left_expr = left_val.to_expr_with_store(self.runtime_store)
+              let left_expr = left_val.to_expr()
               let pipe_args = @list.construct(
                 @syntax.Argument::{
                   value: left_expr,
@@ -486,7 +492,7 @@ pub fn ClosureInterpreter::visit(
             }
             Ident(id={ name: @syntax.LongIdent::Ident(name~), .. }, ..) => {
               // 处理函数调用，如 5 |> func(arg1, arg2)
-              let left_expr = left_val.to_expr_with_store(self.runtime_store)
+              let left_expr = left_val.to_expr()
               let pipe_args = @list.construct(
                 @syntax.Argument::{
                   value: left_expr,
@@ -623,53 +629,19 @@ pub fn ClosureInterpreter::visit(
 
     // 处理字段赋值 (Mutate)
     Mutate(record~, accessor~, field~, augmented_by~, ..) => {
-      // 获取记录的运行时值（支持嵌套字段访问）
-      let record_runtime = self.visit(record)
-      match record_runtime {
-        RuntimeValue::StructRef(ref_id) => {
-          // 计算新字段值
-          let new_field_value = match augmented_by {
-            Some(op) =>
-              // 增强赋值操作（如 +=, -=, *=, /= 等）
-              match accessor {
-                @syntax.Accessor::Label(label) => {
-                  // 获取当前字段值
-                  let current_field_value = match
-                    self.runtime_store.get_struct(ref_id) {
-                    Some(struct_data) =>
-                      struct_data.get(label.name).unwrap_or(RuntimeValue::Unit)
-                    None => RuntimeValue::Unit
-                  }
-                  let rhs_value = self.visit(field)
-                  match op.name {
-                    @syntax.LongIdent::Ident(name=op_name) =>
-                      @value.runtime_value_infix(
-                        op_name, current_field_value, rhs_value,
-                      )
-                    _ => rhs_value
-                  }
-                }
-                _ => self.visit(field)
-              }
-            None => self.visit(field)
-          }
 
-          // 更新RuntimeStore中的记录字段
+      // 获取记录的运行时值（支持嵌套字段访问）
+      match self.visit(record) {
+        RuntimeValue::Struct(refer) =>
           match accessor {
-            @syntax.Accessor::Label(label) => {
-              self.runtime_store.update_struct_field(
-                ref_id,
-                label.name,
-                new_field_value,
-              )
-              |> ignore
-              RuntimeValue::Unit
-            }
-            _ => RuntimeValue::Unit
+            Label(label) => refer.val.set(label.name, self.visit(field))
+            Index(tuple_index~, ..) =>
+              refer.val.set(tuple_index.to_string(), self.visit(field))
+            Newtype(_) => ()
           }
-        }
-        _ => RuntimeValue::Unit
+        _ => ()
       }
+      RuntimeValue::Unit
     }
 
     // 处理 Continue 表达式
@@ -802,27 +774,20 @@ fn ClosureInterpreter::pattern_matches_runtime(
     // Record模式匹配
     @syntax.Pattern::Record(fields=pat_fields, ..) =>
       match value {
-        RuntimeValue::StructRef(ref_id) =>
-          match self.runtime_store.get_struct(ref_id) {
-            Some(record_fields) => {
-              for pat_field in pat_fields {
-                match record_fields.get(pat_field.label.name) {
-                  Some(field_value) =>
-                    if not(
-                        self.pattern_matches_runtime(
-                          field_value,
-                          pat_field.pattern,
-                        ),
-                      ) {
-                      return false
-                    }
-                  None => return false
+        RuntimeValue::Struct({ val: record_fields }) => {
+          for pat_field in pat_fields {
+            match record_fields.get(pat_field.label.name) {
+              Some(field_value) =>
+                if not(
+                    self.pattern_matches_runtime(field_value, pat_field.pattern),
+                  ) {
+                  return false
                 }
-              }
-              true
+              None => return false
             }
-            None => false
           }
+          true
+        }
         _ => false
       }
 
@@ -1011,6 +976,7 @@ priv enum MethodType {
   UserFunction(@syntax.Func)
   EmbeddedFunction(String)
   RuntimeFunction(@syntax.Func)
+  RuntimeClosure(@syntax.Func, Map[String, RuntimeValue])
   ExternFunction(RuntimeFunction)
   GlobalEmbedded(RuntimeFunction)
   NotFound
@@ -1040,6 +1006,8 @@ fn ClosureInterpreter::find_method(
       match var_runtime_value {
         RuntimeValue::FuncRef(lambda_func) =>
           MethodType::RuntimeFunction(lambda_func)
+        RuntimeValue::Closure(lambda_func, captured_env) =>
+          MethodType::RuntimeClosure(lambda_func, captured_env)
         _ =>
           match self.extern_fns.get(name) {
             Some(extern_func) => MethodType::ExternFunction(extern_func)
@@ -1085,6 +1053,20 @@ fn ClosureInterpreter::execute_function_by_name(
         None => RuntimeValue::Unit
       }
     MethodType::RuntimeFunction(lambda_func) => self.call(lambda_func, args)
+    MethodType::RuntimeClosure(lambda_func, captured_env) => {
+      // 调用闭包：恢复捕获的环境
+      self.push_scope()
+      // 将捕获的环境变量绑定到当前作用域
+      captured_env
+      .iter()
+      .each(fn(entry) {
+        let (var_name, value) = entry
+        self.current_scope().set(var_name, value)
+      })
+      let result = self.call(lambda_func, args)
+      self.pop_scope()
+      result
+    }
     MethodType::ExternFunction(extern_func) =>
       extern_func(RuntimeFunctionContext::{
         context: self,
@@ -1111,18 +1093,13 @@ fn ClosureInterpreter::execute_method_call_runtime(
 
   // 根据运行时值推断类型
   let self_type = match self_value {
-    RuntimeValue::StructRef(ref_id) =>
-      // 对于StructRef，尝试从store中获取字段信息来推断类型
-      match self.runtime_store.get_struct(ref_id) {
-        Some(struct_data) => {
-          // 收集字段名
-          let current_fields = []
-          struct_data.each(fn(field_name, _) { current_fields.push(field_name) })
-          // 使用公共方法推导类型
-          self.infer_struct_type_from_fields(current_fields)
-        }
-        None => "Struct"
-      }
+    RuntimeValue::Struct({ val: struct_data }) => {
+      // 收集字段名
+      let current_fields = []
+      struct_data.each(fn(field_name, _) { current_fields.push(field_name) })
+      // 使用公共方法推导类型
+      self.infer_struct_type_from_fields(current_fields)
+    }
     _ => self.find_runtime_type(self_value)
   }
   match self.struct_methods.get(self_type) {
@@ -1333,18 +1310,14 @@ fn ClosureInterpreter::find_runtime_type(
     String(_) => "String"
     Tuple(_) => "Tuple"
     Array(_) => "Array"
-    StructRef(ref_id) =>
-      // 对于StructRef，尝试从store中获取字段信息来推断类型
-      match self.runtime_store.get_struct(ref_id) {
-        Some(struct_data) => {
-          // 收集字段名
-          let current_fields = []
-          struct_data.each(fn(field_name, _) { current_fields.push(field_name) })
-          // 使用公共方法推导类型
-          self.infer_struct_type_from_fields(current_fields)
-        }
-        None => "Struct"
-      }
+    Struct(struct_data) => {
+      // 收集字段名
+      let current_fields = []
+      struct_data.val.each(fn(field_name, _) { current_fields.push(field_name) })
+      // 使用公共方法推导类型
+      self.infer_struct_type_from_fields(current_fields)
+    }
+    Closure(_) => "Closure"
     FuncRef(_) => "Function"
     Break(_) => "Break"
     Continue(_) => "Continue"
@@ -1402,21 +1375,36 @@ fn ClosureInterpreter::infer_return_type_from_expr(
             Some(@syntax.Func::Lambda(return_type=None, body~, ..)) =>
               // 递归推导函数体的返回类型
               self.infer_return_type_from_expr(body)
-            Some(@syntax.Func::Match(..)) => "Unit"
-            None => "Unit"
+            Some(@syntax.Func::Match(..)) => "Any"
+            None => "Any"
           }
-        _ => "Unit"
+        _ => "Any"
       }
     // 处理 match 表达式
-    Match(..) => "Unit"
+    Match(..) => "Any"
     Sequence(last_expr~, ..) => self.infer_return_type_from_expr(last_expr)
-    Infix(op={ name: Ident(name=op_name), .. }, lhs~, ..) => {
-      let lhs_type = self.infer_return_type_from_expr(lhs)
+    Infix(op={ name: Ident(name=op_name), .. }, lhs~, rhs~, ..) =>
       match op_name {
-        _ => lhs_type
+        "+" | "-" | "*" | "/" | "%" => {
+          // 算术运算，检查操作数类型
+          let lhs_type = self.infer_return_type_from_expr(lhs)
+          let rhs_type = self.infer_return_type_from_expr(rhs)
+          // 如果任一操作数是数值类型，结果也是数值类型
+          match (lhs_type, rhs_type) {
+            ("Int", _) | (_, "Int") => "Int"
+            ("Float", _) | (_, "Float") => "Float"
+            ("Double", _) | (_, "Double") => "Double"
+            _ => "Int" // 默认为Int
+          }
+        }
+        "==" | "!=" | "<" | ">" | "<=" | ">=" => "Bool"
+        "&&" | "||" => "Bool"
+        _ => {
+          let lhs_type = self.infer_return_type_from_expr(lhs)
+          lhs_type
+        }
       }
-    }
-    _ => "Unit"
+    _ => "Any"
   }
 }
 
@@ -1426,6 +1414,12 @@ pub fn ClosureInterpreter::get_function_type_string(
   value : RuntimeValue,
 ) -> String {
   match value {
+    Closure(func, values) => {
+      self.values.push(values)
+      let result = self.get_function_type_string(FuncRef(func))
+      self.pop_scope()
+      result
+    }
     FuncRef(func) =>
       // 从函数中提取参数和返回类型信息
       match func {
@@ -1467,7 +1461,7 @@ pub fn ClosureInterpreter::get_function_type_string(
             Some(t) =>
               "(" + param_strs.join(", ") + ") -> " + @value.type_to_string(t)
             None => {
-              // 使用解释器上下文进行正确的类型推导
+              // 推断返回类型，对于柯里化函数需要特殊处理
               let inferred_type = self.infer_return_type_from_expr(body)
               "(" + param_strs.join(", ") + ") -> " + inferred_type
             }
@@ -1475,6 +1469,6 @@ pub fn ClosureInterpreter::get_function_type_string(
         }
         _ => "<function>"
       }
-    _ => value.to_string_with_store(self.runtime_store)
+    _ => value.to_string()
   }
 }

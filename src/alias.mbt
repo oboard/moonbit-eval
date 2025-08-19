@@ -1,5 +1,5 @@
 ///|
-typealias @value.(RuntimeValue, RuntimeStore)
+typealias @value.RuntimeValue
 
 ///|
 typealias @interpreter.RuntimeFunctionContext

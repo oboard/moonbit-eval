@@ -298,7 +298,7 @@ test "basic_functions" {
 
 ///|
 test "named_parameters" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM::new(log=true)
   inspect(
     vm.eval("fn add_named(a~: Int, b~: Int) -> Int { a + b }"),
     content="(a~: Int, b~: Int) -> Int",
@@ -308,23 +308,24 @@ test "named_parameters" {
     vm.eval("fn add_optional(a~: Int, b~: Int=2) -> Int { a + b }"),
     content="(a~: Int, b~: Int = 2) -> Int",
   )
-  inspect(vm.eval("add_optional(a=1)"), content="3")
+  assert_eq(vm.eval("add_optional(a=1)").to_string(), "3")
 }
 
 ///|
 test "lambda_functions" {
   let vm = MoonBitVM::new()
   inspect(vm.eval("let f = x => x * 2"), content="()")
-  inspect(vm.eval("f(3)"), content="6")
-  inspect(vm.eval("let identity = x => x"), content="()")
-  inspect(vm.eval("identity(5)"), content="5")
+  assert_eq(vm.eval("f(3)").to_string(), "6")
+  assert_eq(vm.eval("let identity = x => x").to_string(), "()")
+  assert_eq(vm.eval("identity(5)").to_string(), "5")
 }
 
 ///|
 test "recursive_functions" {
   let vm = MoonBitVM::new()
-  inspect(
-    vm.eval(
+  assert_eq(
+    vm
+    .eval(
       (
         #|fn fib(n : Int) -> Int {
         #|  if n <= 1 {
@@ -334,10 +335,11 @@ test "recursive_functions" {
         #|  }
         #|}
       ),
-    ),
-    content="(n: Int) -> Int",
+    )
+    .to_string(),
+    "(n: Int) -> Int",
   )
-  inspect(vm.eval("fib(10)"), content="89")
+  assert_eq(vm.eval("fib(10)").to_string(), "89")
 }
 
 // =============================================================================
@@ -604,9 +606,9 @@ test "option_methods" {
   inspect(vm.eval("let opt = None; opt.unwrap_or(0)"), content="0")
   inspect(vm.eval("let opt = Some(42); opt.is_empty()"), content="false")
   inspect(vm.eval("let opt = None; opt.is_empty()"), content="true")
-  inspect(
-    vm.eval("let opt = Some(5); opt.map(fn(x) { x * 2 })"),
-    content="Some(10)",
+  assert_eq(
+    vm.eval("let opt = Some(5); opt.map(fn(x) { x * 2 })").to_string(),
+    "Some(10)",
   )
   inspect(vm.eval("let opt = None; opt.map(fn(x) { x * 2 })"), content="None")
   inspect(
@@ -891,8 +893,11 @@ test "generic_list" {
     vm.eval("let list = List::cons(1, List::cons(2, List::new()))"),
     content="()",
   )
-  inspect(vm.eval("map(list, x => x * 2)"), content="Cons(2, Cons(4, Nil))")
-  inspect(vm.eval("sum(list)"), content="3")
+  assert_eq(
+    vm.eval("map(list, x => x * 2)").to_string(),
+    "Cons(2, Cons(4, Nil))",
+  )
+  assert_eq(vm.eval("sum(list)").to_string(), "3")
 }
 
 ///|
@@ -929,4 +934,14 @@ test "nested_struct_reference" {
   inspect(vm.eval("let b = { a: a }"), content="()")
   inspect(vm.eval("b.a.a = 2"), content="()")
   inspect(vm.eval("a"), content="{ a: 2 }")
+}
+
+///|
+test "curried_functions" {
+  let vm = MoonBitVM::new()
+  assert_eq(vm.eval("let add = x => y => x + y").to_string(), "()")
+  assert_eq(vm.eval("let f = add(10)").to_string(), "()")
+  assert_eq(vm.eval("f").to_string(), "(y) -> Int")
+  assert_eq(vm.eval("f(1)").to_string(), "11")
+  assert_eq(vm.eval("add(5)(3)").to_string(), "8")
 }

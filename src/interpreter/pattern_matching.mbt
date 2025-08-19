@@ -10,7 +10,7 @@ pub fn ClosureInterpreter::execute_match(
     // 为每个case创建新的作用域
     self.push_scope()
     if self.pattern_matches(value, case.pattern) {
-      let result = self.visit(case.body).to_expr_with_store(self.runtime_store)
+      let result = self.visit(case.body).to_expr()
       self.pop_scope()
       return result
     }
@@ -57,7 +57,7 @@ pub fn ClosureInterpreter::pattern_matches(
       @syntax.Pattern::Constant(c=pattern_const, ..),
     ) => {
       let runtime_value = self.find_runtime(name)
-      let value_expr = runtime_value.to_expr_with_store(self.runtime_store)
+      let value_expr = runtime_value.to_expr()
       match value_expr {
         @syntax.Expr::Constant(c=value_const, ..) =>
           self.constants_equal(value_const, pattern_const)
@@ -163,47 +163,8 @@ pub fn ClosureInterpreter::pattern_matches(
 
     // Record模式匹配
     (value, @syntax.Pattern::Record(fields=pat_fields, ..)) => {
-      // 处理引用记录和普通记录
+      // 处理记录模式匹配
       let record_fields = match value {
-        // 处理引用记录
-        @syntax.Expr::Unit(
-          loc={ start: { fname: "record", lnum, .. }, .. },
-          faked=false
-        ) => {
-          // 从RuntimeStore中获取记录数据
-          let ref_id = @value.RefId(lnum)
-          match self.runtime_store.get_struct(ref_id) {
-            Some(runtime_fields) => {
-              // 将RuntimeValue字段转换为表达式字段
-              let expr_fields = []
-              runtime_fields
-              .iter()
-              .each(fn(entry) {
-                let (field_name, field_value) = entry
-                let field_expr = field_value.to_expr_with_store(
-                  self.runtime_store,
-                )
-                expr_fields.push(@syntax.FieldDef::{
-                  label: @syntax.Label::{
-                    name: field_name,
-                    loc: @basic.Location::{
-                      start: { fname: "", lnum: 0, bol: 0, cnum: 0 },
-                      end: { fname: "", lnum: 0, bol: 0, cnum: 0 },
-                    },
-                  },
-                  expr: field_expr,
-                  is_pun: false,
-                  loc: @basic.Location::{
-                    start: { fname: "", lnum: 0, bol: 0, cnum: 0 },
-                    end: { fname: "", lnum: 0, bol: 0, cnum: 0 },
-                  },
-                })
-              })
-              Some(expr_fields)
-            }
-            None => None
-          }
-        }
         // 处理普通记录
         @syntax.Expr::Record(fields~, ..) => Some(fields.to_array())
         _ => None
@@ -375,7 +336,7 @@ pub fn ClosureInterpreter::pattern_to_value(
     @syntax.Pattern::Constr(constr~, ..) => {
       // 查找构造函数的值
       let runtime_value = self.find_runtime(constr.name.name)
-      Some(runtime_value.to_expr_with_store(self.runtime_store))
+      Some(runtime_value.to_expr())
     }
     @syntax.Pattern::Any(..) => None // 通配符表示开放边界
     _ => None

@@ -1,2 +1,2 @@
 ///|
-typealias @value.(RuntimeValue, RuntimeArgument, RuntimeStore)
+typealias @value.(RuntimeValue, RuntimeArgument)

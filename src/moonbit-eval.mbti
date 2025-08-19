@@ -8,6 +8,8 @@ import(
 )
 
 // Values
+fn add_extern_fn(MoonBitVM, String, (@interpreter.RuntimeFunctionContext) -> @value.RuntimeValue) -> Unit
+
 fn eval_result_to_string(EvalResult) -> String
 
 fn expr_to_string(@syntax.Expr) -> String
@@ -17,7 +19,6 @@ fn expr_to_string(@syntax.Expr) -> String
 // Types and methods
 pub struct EvalResult {
   value : @value.RuntimeValue
-  store : @value.RuntimeStore
   interpreter : @interpreter.ClosureInterpreter
 }
 impl Show for EvalResult

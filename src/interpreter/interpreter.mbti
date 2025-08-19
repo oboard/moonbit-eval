@@ -52,7 +52,6 @@ pub(all) struct ClosureInterpreter {
   embedded_methods : Map[String, Map[String, (RuntimeFunctionContext) -> @value.RuntimeValue]]
   fn_aliases : Map[String, String]
   values : Array[Map[String, @value.RuntimeValue]]
-  runtime_store : @value.RuntimeStore
   user_functions : Array[Map[String, @syntax.Func]]
   type_definitions : Map[String, @syntax.TypeDecl]
   struct_methods : Map[String, Map[String, @syntax.Func]]
@@ -64,6 +63,7 @@ fn ClosureInterpreter::add_extern_fn(Self, String, (RuntimeFunctionContext) -> @
 fn ClosureInterpreter::bind_function_parameters(Self, @list.List[@syntax.Parameter], @list.List[@syntax.Argument]) -> Unit
 fn ClosureInterpreter::bind_function_parameters_runtime(Self, @list.List[@syntax.Parameter], @list.List[@syntax.Argument]) -> Unit
 fn ClosureInterpreter::call(Self, @syntax.Func, @list.List[@syntax.Argument]) -> @value.RuntimeValue
+fn ClosureInterpreter::call_closure(Self, @syntax.Func, Map[String, @value.RuntimeValue], @list.List[@syntax.Argument]) -> @value.RuntimeValue
 fn ClosureInterpreter::constants_equal(Self, @syntax.Constant, @syntax.Constant) -> Bool
 fn ClosureInterpreter::constants_equal_expr(Self, @syntax.Expr, @syntax.Expr) -> Bool
 fn ClosureInterpreter::define_function(Self, String, @syntax.Func) -> Unit
