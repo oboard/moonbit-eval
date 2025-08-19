@@ -25,11 +25,6 @@ pub impl Show for EvalResult with to_string(self : EvalResult) -> String {
 }
 
 ///|
-pub fn eval_result_to_string(result : EvalResult) -> String {
-  result.to_string()
-}
-
-///|
 pub fn add_extern_fn(
   vm : MoonBitVM,
   name : String,
@@ -49,11 +44,6 @@ pub fn MoonBitVM::new(log~ : Bool = false, core~ : Bool = true) -> MoonBitVM {
     _ => Unit
   })
   { interpreter, log }
-}
-
-///|
-pub fn MoonBitVM::create(log~ : Bool = false, core~ : Bool = true) -> MoonBitVM {
-  MoonBitVM::new(log~, core~)
 }
 
 ///|

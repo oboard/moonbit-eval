@@ -13,7 +13,8 @@
         "create",
         "eval",
         "eval_result_to_string",
-        "add_extern_fn"
+        "add_extern_fn",
+        "value_to_json"
       ]
     }
   }

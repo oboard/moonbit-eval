@@ -33,6 +33,30 @@ pub(all) enum RuntimeValue {
   Continue(Array[RuntimeValue]) // continue可以带参数列表
 }
 
+///| 为 RuntimeValue 实现自定义的 ToJson trait
+pub impl ToJson for RuntimeValue with to_json(self : RuntimeValue) -> Json {
+  match self {
+    Unit => Json::null()
+    Bool(b) => b.to_json()
+    Int(i) => i.to_json()
+    UInt(u) => u.to_json()
+    Int64(i) => i.to_json()
+    UInt64(u) => u.to_json()
+    Float(f) => f.to_json()
+    Double(d) => d.to_json()
+    Char(c) => c.to_json()
+    Byte(b) => b.to_json()
+    String(s) => s.to_json()
+    Tuple(t) => t.to_json()
+    Array(a) => a.to_json()
+    Struct(s) => s.val.to_json()
+    Closure(f, _) => f.to_json()
+    Constructor(name, args) => [name, args.to_json()]
+    Break(v) => ["break", v.to_json()]
+    Continue(v) => ["continue", v.to_json()]
+  }
+}
+
 ///| 为 RuntimeValue 实现自定义的 Eq trait
 
 ///| 特别处理 Function 类型，通过函数签名比较相等性
