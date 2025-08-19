@@ -57,6 +57,7 @@ fn RuntimeValue::is_reference(Self) -> Bool
 fn RuntimeValue::to_expr(Self) -> @syntax.Expr
 impl Eq for RuntimeValue
 impl Show for RuntimeValue
+impl ToJson for RuntimeValue
 
 // Type aliases
 

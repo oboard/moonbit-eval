@@ -14,6 +14,8 @@ fn eval_result_to_string(EvalResult) -> String
 
 fn expr_to_string(@syntax.Expr) -> String
 
+fn value_to_json(@value.RuntimeValue) -> String
+
 // Errors
 
 // Types and methods
