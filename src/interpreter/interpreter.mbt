@@ -300,7 +300,25 @@ pub fn ClosureInterpreter::visit(
     }
 
     // 处理函数
-    Function(func~, ..) => RuntimeValue::FuncRef(func)
+    Function(func~, ..) => {
+      // 当在函数调用上下文中遇到函数表达式时，总是创建闭包来捕获当前环境
+      // 这是处理柯里化函数的关键
+      let captured_env = Map::new()
+
+      // 捕获当前作用域中的所有变量
+      self
+      .current_scope()
+      .iter()
+      .each(fn(entry) {
+        let (name, value) = entry
+        captured_env.set(name, value)
+      })
+      if captured_env.size() > 0 {
+        RuntimeValue::Closure(func, captured_env)
+      } else {
+        RuntimeValue::FuncRef(func)
+      }
+    }
 
     // 处理 Let 绑定
     Let(pattern~, expr~, body~, ..) => {
@@ -378,20 +396,9 @@ pub fn ClosureInterpreter::visit(
           let func_value = self.visit(func)
           match func_value {
             RuntimeValue::FuncRef(function) => self.call(function, args)
-            RuntimeValue::Closure(function, captured_env) => {
-              // 调用闭包：恢复捕获的环境
-              self.push_scope()
-              // 将捕获的环境变量绑定到当前作用域
-              captured_env
-              .iter()
-              .each(fn(entry) {
-                let (var_name, value) = entry
-                self.current_scope().set(var_name, value)
-              })
-              let result = self.call(function, args)
-              self.pop_scope()
-              result
-            }
+            RuntimeValue::Closure(function, captured_env) =>
+              // 调用闭包：使用专门的闭包调用方法
+              self.call_closure(function, captured_env, args)
             _ => RuntimeValue::Unit
           }
         }
@@ -628,8 +635,7 @@ pub fn ClosureInterpreter::visit(
     }
 
     // 处理字段赋值 (Mutate)
-    Mutate(record~, accessor~, field~, augmented_by~, ..) => {
-
+    Mutate(record~, accessor~, field~, ..) => {
       // 获取记录的运行时值（支持嵌套字段访问）
       match self.visit(record) {
         RuntimeValue::Struct(refer) =>
@@ -1053,20 +1059,9 @@ fn ClosureInterpreter::execute_function_by_name(
         None => RuntimeValue::Unit
       }
     MethodType::RuntimeFunction(lambda_func) => self.call(lambda_func, args)
-    MethodType::RuntimeClosure(lambda_func, captured_env) => {
-      // 调用闭包：恢复捕获的环境
-      self.push_scope()
-      // 将捕获的环境变量绑定到当前作用域
-      captured_env
-      .iter()
-      .each(fn(entry) {
-        let (var_name, value) = entry
-        self.current_scope().set(var_name, value)
-      })
-      let result = self.call(lambda_func, args)
-      self.pop_scope()
-      result
-    }
+    MethodType::RuntimeClosure(lambda_func, captured_env) =>
+      // 调用闭包：使用专门的闭包调用方法
+      self.call_closure(lambda_func, captured_env, args)
     MethodType::ExternFunction(extern_func) =>
       extern_func(RuntimeFunctionContext::{
         context: self,
@@ -1383,26 +1378,10 @@ fn ClosureInterpreter::infer_return_type_from_expr(
     // 处理 match 表达式
     Match(..) => "Any"
     Sequence(last_expr~, ..) => self.infer_return_type_from_expr(last_expr)
-    Infix(op={ name: Ident(name=op_name), .. }, lhs~, rhs~, ..) =>
+    Infix(op={ name: Ident(name=op_name), .. }, lhs~, ..) =>
       match op_name {
-        "+" | "-" | "*" | "/" | "%" => {
-          // 算术运算，检查操作数类型
-          let lhs_type = self.infer_return_type_from_expr(lhs)
-          let rhs_type = self.infer_return_type_from_expr(rhs)
-          // 如果任一操作数是数值类型，结果也是数值类型
-          match (lhs_type, rhs_type) {
-            ("Int", _) | (_, "Int") => "Int"
-            ("Float", _) | (_, "Float") => "Float"
-            ("Double", _) | (_, "Double") => "Double"
-            _ => "Int" // 默认为Int
-          }
-        }
-        "==" | "!=" | "<" | ">" | "<=" | ">=" => "Bool"
-        "&&" | "||" => "Bool"
-        _ => {
-          let lhs_type = self.infer_return_type_from_expr(lhs)
-          lhs_type
-        }
+        "==" | "!=" | "<" | ">" | "<=" | ">=" | "&&" | "||" => "Bool"
+        _ => self.infer_return_type_from_expr(lhs)
       }
     _ => "Any"
   }

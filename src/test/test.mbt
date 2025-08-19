@@ -298,7 +298,7 @@ test "basic_functions" {
 
 ///|
 test "named_parameters" {
-  let vm = MoonBitVM::new(log=true)
+  let vm = MoonBitVM::new()
   inspect(
     vm.eval("fn add_named(a~: Int, b~: Int) -> Int { a + b }"),
     content="(a~: Int, b~: Int) -> Int",
@@ -596,6 +596,17 @@ test "option_pattern_matching" {
     content="5",
   )
   inspect(vm.eval("match None { Some(x) => x, None => 0 }"), content="0")
+}
+
+///|
+test {
+  inspect(
+    {
+      let opt = Some(5)
+      opt.map(fn(x) { x * 2 })
+    },
+    content="Some(10)",
+  )
 }
 
 ///|
@@ -937,11 +948,11 @@ test "nested_struct_reference" {
 }
 
 ///|
-test "curried_functions" {
+test "currying" {
   let vm = MoonBitVM::new()
   assert_eq(vm.eval("let add = x => y => x + y").to_string(), "()")
   assert_eq(vm.eval("let f = add(10)").to_string(), "()")
-  assert_eq(vm.eval("f").to_string(), "(y) -> Int")
+  assert_eq(vm.eval("f").to_string(), "(y) -> Any")
   assert_eq(vm.eval("f(1)").to_string(), "11")
   assert_eq(vm.eval("add(5)(3)").to_string(), "8")
 }

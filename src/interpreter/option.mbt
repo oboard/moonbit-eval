@@ -39,6 +39,22 @@ let option_map_fn : RuntimeFunction = ctx => match ctx.arguments {
     )
     Constructor("Some", [result])
   }
+  [
+    { value: Constructor("Some", [inner_value]), .. },
+    { value: Closure(func, captured_env), .. },
+    ..,
+  ] => {
+    // 执行闭包调用
+    let result = ctx.context.call_closure(
+      func,
+      captured_env,
+      @list.construct(
+        @syntax.Argument::{ value: inner_value.to_expr(), kind: Positional },
+        @list.new(),
+      ),
+    )
+    Constructor("Some", [result])
+  }
   [{ value: Constructor("None", []), .. }, _, ..] => Constructor("None", [])
   _ => Constructor("None", [])
 }
@@ -54,6 +70,21 @@ let option_map_or_fn : RuntimeFunction = ctx => match ctx.arguments {
     // 对于Some值，执行函数调用
     ctx.context.call(
       func,
+      @list.construct(
+        @syntax.Argument::{ value: inner_value.to_expr(), kind: Positional },
+        @list.new(),
+      ),
+    )
+  [
+    { value: Constructor("Some", [inner_value]), .. },
+    _,
+    { value: Closure(func, captured_env), .. },
+    ..,
+  ] =>
+    // 对于Some值，执行闭包调用
+    ctx.context.call_closure(
+      func,
+      captured_env,
       @list.construct(
         @syntax.Argument::{ value: inner_value.to_expr(), kind: Positional },
         @list.new(),
@@ -81,6 +112,21 @@ let option_map_or_else_fn : RuntimeFunction = ctx => match ctx.arguments {
       ),
     )
   [
+    { value: Constructor("Some", [inner_value]), .. },
+    _,
+    { value: Closure(map_func, captured_env), .. },
+    ..,
+  ] =>
+    // 对于Some值，执行map闭包
+    ctx.context.call_closure(
+      map_func,
+      captured_env,
+      @list.construct(
+        @syntax.Argument::{ value: inner_value.to_expr(), kind: Positional },
+        @list.new(),
+      ),
+    )
+  [
     { value: Constructor("None", []), .. },
     { value: FuncRef(else_func), .. },
     _,
@@ -88,6 +134,14 @@ let option_map_or_else_fn : RuntimeFunction = ctx => match ctx.arguments {
   ] =>
     // 对于None值，执行else函数
     ctx.context.call(else_func, @list.new())
+  [
+    { value: Constructor("None", []), .. },
+    { value: Closure(else_func, captured_env), .. },
+    _,
+    ..,
+  ] =>
+    // 对于None值，执行else闭包
+    ctx.context.call_closure(else_func, captured_env, @list.new())
   _ => Unit
 }
 
@@ -101,6 +155,20 @@ let option_bind_fn : RuntimeFunction = ctx => match ctx.arguments {
     // 执行函数调用，bind应该返回函数的结果（应该是Option类型）
     ctx.context.call(
       func,
+      @list.construct(
+        @syntax.Argument::{ value: inner_value.to_expr(), kind: Positional },
+        @list.new(),
+      ),
+    )
+  [
+    { value: Constructor("Some", [inner_value]), .. },
+    { value: Closure(func, captured_env), .. },
+    ..,
+  ] =>
+    // 执行闭包调用，bind应该返回函数的结果（应该是Option类型）
+    ctx.context.call_closure(
+      func,
+      captured_env,
       @list.construct(
         @syntax.Argument::{ value: inner_value.to_expr(), kind: Positional },
         @list.new(),
@@ -148,6 +216,26 @@ let option_filter_fn : RuntimeFunction = ctx => match ctx.arguments {
       _ => Constructor("None", [])
     }
   }
+  [
+    { value: Constructor("Some", [inner_value]), .. },
+    { value: Closure(predicate, captured_env), .. },
+    ..,
+  ] => {
+    // 执行谓词闭包
+    let result = ctx.context.call_closure(
+      predicate,
+      captured_env,
+      @list.construct(
+        @syntax.Argument::{ value: inner_value.to_expr(), kind: Positional },
+        @list.new(),
+      ),
+    )
+    // 根据谓词结果决定是否保留值
+    match result {
+      Bool(true) => Constructor("Some", [inner_value])
+      _ => Constructor("None", [])
+    }
+  }
   [{ value: Constructor("None", []), .. }, _, ..] => Constructor("None", [])
   _ => Constructor("None", [])
 }
@@ -182,5 +270,12 @@ let option_unwrap_or_else_fn : RuntimeFunction = ctx => match ctx.arguments {
   ] =>
     // 对于None值，执行else函数
     ctx.context.call(else_func, @list.new())
+  [
+    { value: Constructor("None", []), .. },
+    { value: Closure(else_func, captured_env), .. },
+    ..,
+  ] =>
+    // 对于None值，执行else闭包
+    ctx.context.call_closure(else_func, captured_env, @list.new())
   _ => Unit
 }

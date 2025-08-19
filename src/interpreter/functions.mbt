@@ -182,7 +182,7 @@ pub fn ClosureInterpreter::call(
 
       // 检查是否需要部分应用
       // 对于可选参数，需要特殊处理
-      let required_param_count = self.count_required_parameters(parameters)
+      let required_param_count = count_required_parameters(parameters)
       if arg_count < required_param_count {
         // 部分应用：创建闭包
         // 捕获当前环境
@@ -289,17 +289,6 @@ pub fn ClosureInterpreter::find_user_function(
   None
 }
 
-///| 分析函数体中的自由变量（未绑定的变量引用）
-fn ClosureInterpreter::analyze_free_variables(
-  self : ClosureInterpreter,
-  expr : @syntax.Expr,
-  bound_vars : Map[String, Unit],
-) -> Map[String, Unit] {
-  let free_vars = Map::new()
-  self.collect_free_variables(expr, bound_vars, free_vars)
-  free_vars
-}
-
 ///| 递归收集表达式中的自由变量
 fn ClosureInterpreter::collect_free_variables(
   self : ClosureInterpreter,
@@ -325,7 +314,7 @@ fn ClosureInterpreter::collect_free_variables(
       self.collect_free_variables(expr, bound_vars, free_vars)
       // 提取模式中绑定的变量
       let new_bound_vars = bound_vars.copy()
-      self.extract_pattern_variables(pattern, new_bound_vars)
+      extract_pattern_variables(pattern, new_bound_vars)
       // 处理let体
       self.collect_free_variables(body, new_bound_vars, free_vars)
     }
@@ -364,8 +353,7 @@ fn ClosureInterpreter::collect_free_variables(
 }
 
 ///| 从模式中提取绑定的变量名
-fn ClosureInterpreter::extract_pattern_variables(
-  self : ClosureInterpreter,
+fn extract_pattern_variables(
   pattern : @syntax.Pattern,
   bound_vars : Map[String, Unit],
 ) -> Unit {
@@ -377,10 +365,7 @@ fn ClosureInterpreter::extract_pattern_variables(
 }
 
 ///| 计算必需参数的数量
-fn ClosureInterpreter::count_required_parameters(
-  self : ClosureInterpreter,
-  parameters : @list.List[@syntax.Parameter],
-) -> Int {
+fn count_required_parameters(parameters : @list.List[@syntax.Parameter]) -> Int {
   let mut count = 0
   for param in parameters {
     match param {
