@@ -35,6 +35,15 @@ pub fn eval_result_to_string(result : EvalResult) -> String {
 }
 
 ///|
+pub fn add_extern_fn(
+  vm : MoonBitVM,
+  name : String,
+  func : RuntimeFunction,
+) -> Unit {
+  vm.interpreter.add_extern_fn(name, func)
+}
+
+///|
 pub fn MoonBitVM::new(log~ : Bool = false, core~ : Bool = true) -> MoonBitVM {
   let interpreter = ClosureInterpreter::new(core~)
   interpreter.add_extern_fn("println", ctx => match ctx.arguments {
