@@ -1,0 +1,10 @@
+{
+  "import": [
+    {
+      "path": "oboard/moonbit-eval",
+      "alias": "eval"
+    },
+    "oboard/moonbit-eval/value",
+    "oboard/moonbit-eval/interpreter"
+  ]
+}

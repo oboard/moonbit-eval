@@ -50,7 +50,12 @@ let array_push_fn : RuntimeFunction = ctx => match ctx.arguments {
 ///| 数组slice操作
 let array_slice_fn : RuntimeFunction = ctx => match ctx.arguments {
   // slice(start, end)
-  [{ value: Array(arr), .. }, { value: Int(start), .. }, { value: Int(end), .. }, ..] => {
+  [
+    { value: Array(arr), .. },
+    { value: Int(start), .. },
+    { value: Int(end), .. },
+    ..,
+  ] => {
     let start_idx = if start < 0 { 0 } else { start }
     let end_idx = if end > arr.length() { arr.length() } else { end }
     if start_idx >= end_idx {

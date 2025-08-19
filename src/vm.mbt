@@ -1,5 +1,5 @@
 ///|
-struct MoonBitVM {
+pub(all) struct MoonBitVM {
   interpreter : ClosureInterpreter
   log : Bool
 }

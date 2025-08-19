@@ -22,7 +22,10 @@ pub struct EvalResult {
 }
 impl Show for EvalResult
 
-type MoonBitVM
+pub(all) struct MoonBitVM {
+  interpreter : @interpreter.ClosureInterpreter
+  log : Bool
+}
 fn MoonBitVM::create(log? : Bool, core? : Bool) -> Self
 fn MoonBitVM::eval(Self, String, log? : Bool, top? : Bool) -> EvalResult raise Failure
 fn MoonBitVM::new(log? : Bool, core? : Bool) -> Self
