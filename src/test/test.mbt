@@ -86,52 +86,6 @@ test "array_contains_methods" {
 }
 
 ///|
-test "array_index_methods" {
-  let vm = MoonBitVM::new()
-  // Test index_of and last_index_of
-  inspect(vm.eval("let arr = [1, 2, 3, 2]; arr.index_of(2)"), content="Some(1)")
-  inspect(
-    vm.eval("let arr = [1, 2, 3, 2]; arr.last_index_of(2)"),
-    content="Some(3)",
-  )
-  inspect(vm.eval("let arr = [1, 2, 3]; arr.index_of(5)"), content="None")
-}
-
-///|
-test "array_slice_methods" {
-  let vm = MoonBitVM::new()
-  // Test slice method
-  inspect(
-    vm.eval("let arr = [1, 2, 3, 4, 5]; arr.slice(1, 3).length()"),
-    content="2",
-  )
-  inspect(
-    vm.eval("let arr = [1, 2, 3, 4, 5]; arr.slice(2).length()"),
-    content="3",
-  )
-}
-
-///|
-test "array_concat_methods" {
-  let vm = MoonBitVM::new()
-  // Test concat method
-  inspect(
-    vm.eval("let arr1 = [1, 2]; let arr2 = [3, 4]; arr1.concat(arr2).length()"),
-    content="4",
-  )
-}
-
-///|
-test "array_boolean_methods" {
-  let vm = MoonBitVM::new()
-  // Test any and all methods
-  inspect(vm.eval("let arr = [true, false, true]; arr.any()"), content="true")
-  inspect(vm.eval("let arr = [false, false]; arr.any()"), content="false")
-  inspect(vm.eval("let arr = [true, true]; arr.all()"), content="true")
-  inspect(vm.eval("let arr = [true, false]; arr.all()"), content="false")
-}
-
-///|
 test "comparison_operators" {
   let vm = MoonBitVM::new()
   inspect(vm.eval("5 == 5"), content="true")

@@ -33,10 +33,7 @@ let option_map_fn : RuntimeFunction = ctx => match ctx.arguments {
     let result = ctx.context.call_closure(
       func,
       captured_env,
-      @list.construct(
-        @syntax.Argument::{ value: inner_value.to_expr(), kind: Positional },
-        @list.new(),
-      ),
+      @list.of([{ value: inner_value.to_expr(), kind: Positional }]),
     )
     Constructor("Some", [result])
   }
@@ -56,10 +53,7 @@ let option_map_or_fn : RuntimeFunction = ctx => match ctx.arguments {
     ctx.context.call_closure(
       func,
       captured_env,
-      @list.construct(
-        @syntax.Argument::{ value: inner_value.to_expr(), kind: Positional },
-        @list.new(),
-      ),
+      @list.of([{ value: inner_value.to_expr(), kind: Positional }]),
     )
   [{ value: Constructor("None", []), .. }, { value: default_value, .. }, _, ..] =>
     default_value
@@ -78,10 +72,7 @@ let option_map_or_else_fn : RuntimeFunction = ctx => match ctx.arguments {
     ctx.context.call_closure(
       map_func,
       captured_env,
-      @list.construct(
-        @syntax.Argument::{ value: inner_value.to_expr(), kind: Positional },
-        @list.new(),
-      ),
+      @list.of([{ value: inner_value.to_expr(), kind: Positional }]),
     )
   [
     { value: Constructor("None", []), .. },
@@ -90,7 +81,7 @@ let option_map_or_else_fn : RuntimeFunction = ctx => match ctx.arguments {
     ..,
   ] =>
     // 对于None值，执行else闭包
-    ctx.context.call_closure(else_func, captured_env, @list.new())
+    ctx.context.call_closure(else_func, captured_env, @list.of([]))
   _ => Unit
 }
 
@@ -105,10 +96,7 @@ let option_bind_fn : RuntimeFunction = ctx => match ctx.arguments {
     ctx.context.call_closure(
       func,
       captured_env,
-      @list.construct(
-        @syntax.Argument::{ value: inner_value.to_expr(), kind: Positional },
-        @list.new(),
-      ),
+      @list.of([{ value: inner_value.to_expr(), kind: Positional }]),
     )
   [{ value: Constructor("None", []), .. }, _, ..] => Constructor("None", [])
   _ => Constructor("None", [])
@@ -142,10 +130,7 @@ let option_filter_fn : RuntimeFunction = ctx => match ctx.arguments {
     let result = ctx.context.call_closure(
       predicate,
       captured_env,
-      @list.construct(
-        @syntax.Argument::{ value: inner_value.to_expr(), kind: Positional },
-        @list.new(),
-      ),
+      @list.of([{ value: inner_value.to_expr(), kind: Positional }]),
     )
     // 根据谓词结果决定是否保留值
     match result {
