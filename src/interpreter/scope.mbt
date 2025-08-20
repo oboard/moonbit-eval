@@ -3,11 +3,11 @@
 ///| 处理变量查找、设置和作用域管理
 
 ///| 在解释器中查找变量
-pub fn ClosureInterpreter::find_variable(
-  self : ClosureInterpreter,
+pub fn RuntimeEnvironment::find(
+  self : RuntimeEnvironment,
   name : String,
 ) -> RuntimeValue {
-  let mut current_env = self.env
+  let mut current_env = self
   // First check current environment
   if current_env.values.get(name) is Some(v) {
     return v

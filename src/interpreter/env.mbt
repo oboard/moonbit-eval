@@ -12,6 +12,7 @@ pub(all) struct RuntimeEnvironment {
   // 跟踪哪些变量是可变的
   mutable_vars : Map[String, Bool]
   parent : RuntimeEnvironment?
+  deps : Map[String, RuntimeModule]
 } derive(ToJson)
 
 ///|
@@ -34,6 +35,7 @@ pub fn RuntimeEnvironment::new(
       values: Map::new(),
       mutable_vars: Map::new(),
       parent: None,
+      deps: Map::new(),
     }
   }
 }
@@ -81,10 +83,7 @@ pub fn RuntimeEnvironment::create_closure_env(
   // 设置父环境为当前环境，这样可变变量可以通过父环境访问
   // 继承父环境的全局状态（如类型定义、方法等）
   {
-    fn_aliases: self.fn_aliases,
-    type_definitions: self.type_definitions,
-    struct_methods: self.struct_methods,
-    type_environments: self.type_environments,
+    ..self,
     values: new_values,
     mutable_vars: new_mutable_vars,
     parent: Some(self),

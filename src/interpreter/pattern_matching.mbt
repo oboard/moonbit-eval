@@ -56,7 +56,7 @@ pub fn ClosureInterpreter::pattern_matches(
       @syntax.Expr::Ident(id={ name: @syntax.LongIdent::Ident(name~), .. }, ..),
       @syntax.Pattern::Constant(c=pattern_const, ..),
     ) => {
-      let runtime_value = self.find_variable(name)
+      let runtime_value = self.env.find(name)
       let value_expr = runtime_value.to_expr()
       match value_expr {
         @syntax.Expr::Constant(c=value_const, ..) =>
@@ -206,7 +206,7 @@ pub fn ClosureInterpreter::pattern_matches(
     // Constructor模式匹配
     (value, @syntax.Pattern::Constr(constr~, ..)) => {
       // 查找构造函数对应的值
-      let constr_runtime_value = self.find_variable(constr.name.name)
+      let constr_runtime_value = self.env.find(constr.name.name)
       let value_runtime = RuntimeValue::from_expr(value)
       match (value_runtime, constr_runtime_value) {
         // 如果构造函数是常量值，直接比较
@@ -335,7 +335,7 @@ pub fn ClosureInterpreter::pattern_to_value(
       Some(@syntax.Expr::Constant(c~, loc~))
     @syntax.Pattern::Constr(constr~, ..) => {
       // 查找构造函数的值
-      let runtime_value = self.find_variable(constr.name.name)
+      let runtime_value = self.env.find(constr.name.name)
       Some(runtime_value.to_expr())
     }
     @syntax.Pattern::Any(..) => None // 通配符表示开放边界

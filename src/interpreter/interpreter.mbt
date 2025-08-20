@@ -39,6 +39,11 @@ pub fn ClosureInterpreter::new(core~ : Bool = true) -> ClosureInterpreter {
       } else {
         {}
       },
+      deps: if core {
+        core_modules
+      } else {
+        {}
+      },
       struct_methods: {},
       type_definitions: {},
       type_environments: [],
@@ -257,7 +262,7 @@ pub fn ClosureInterpreter::visit(
     // 处理变量标识符
     Ident(id={ name, .. }, ..) =>
       match name {
-        @syntax.LongIdent::Ident(name~) => self.find_variable(name)
+        @syntax.LongIdent::Ident(name~) => self.env.find(name)
         _ => RuntimeValue::Unit
       }
 
@@ -343,7 +348,7 @@ pub fn ClosureInterpreter::visit(
         Ident(name~) => {
           let new_value = match augmented_by {
             Some(op) => {
-              let current_value = self.find_variable(name)
+              let current_value = self.env.find(name)
               match op.name {
                 Ident(name=op_name) => {
                   let rhs_value = self.visit(expr)
@@ -830,7 +835,7 @@ fn ClosureInterpreter::pattern_matches_runtime(
           }
         _ => {
           // 查找构造函数对应的值
-          let constr_runtime_value = self.find_variable(constr.name.name)
+          let constr_runtime_value = self.env.find(constr.name.name)
           match (value, constr_runtime_value) {
             // 如果构造函数是常量值，直接比较
             (RuntimeValue::Int(v1), RuntimeValue::Int(v2)) => v1 == v2
@@ -932,7 +937,7 @@ fn ClosureInterpreter::pattern_to_runtime_value(
       }
     @syntax.Pattern::Constr(constr~, ..) =>
       // 查找构造函数的值
-      Some(self.find_variable(constr.name.name))
+      Some(self.env.find(constr.name.name))
     @syntax.Pattern::Any(..) => None // 通配符表示开放边界
     _ => None
   }
@@ -956,7 +961,7 @@ pub fn ClosureInterpreter::is_known_function(
   }
 
   // 检查用户定义函数
-  if self.find_variable(actual_name) is Closure(_) {
+  if self.env.find(actual_name) is Closure(_) {
     return true
   }
   false
@@ -979,7 +984,7 @@ fn ClosureInterpreter::find_method(
   let name = self.env.fn_aliases.get(name).unwrap_or(name)
 
   // 按优先级查找：用户函数 -> Lambda变量 -> 外部函数 -> embedded函数
-  match self.find_variable(name) {
+  match self.env.find(name) {
     RuntimeValue::Closure(func, env) =>
       // 检查是否是embedded函数的标记函数
       match func {
@@ -1145,7 +1150,7 @@ fn ClosureInterpreter::find_type(
     }
     Ident(id={ name, .. }, ..) =>
       match name {
-        Ident(name~) => self.find_variable_type(self.find_variable(name))
+        Ident(name~) => self.find_variable_type(self.env.find(name))
         _ => "Unknown"
       }
     Array(..) => "Array"
@@ -1329,7 +1334,7 @@ fn ClosureInterpreter::infer_return_type_from_expr(
         @syntax.Expr::Ident(
           id={ name: @syntax.LongIdent::Ident(name~), .. },
           ..
-        ) => self.find_variable_type(self.find_variable(name))
+        ) => self.find_variable_type(self.env.find(name))
         _ => "Any"
       }
     // 处理 match 表达式

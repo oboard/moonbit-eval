@@ -2,7 +2,7 @@
 pub(all) struct RuntimeModule {
   meta : ModuleMeta
   env : RuntimeEnvironment
-}
+} derive(ToJson)
 
 ///| 模块元数据
 pub struct ModuleMeta {
