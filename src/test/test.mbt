@@ -735,7 +735,7 @@ test "println" {
 ///|
 test "embedded_code" {
   let vm = MoonBitVM::new()
-  vm.interpreter.env.add_embedded_fn("%string_length2", ctx => if ctx.arguments
+  vm.interpreter.add_embedded_fn("%string_length2", ctx => if ctx.arguments
     is [{ value: String(s), .. }, ..] {
     Int(s.length())
   } else {
@@ -968,3 +968,18 @@ test "currying" {
   assert_eq(vm.eval("f(1)").to_string(), "11")
   assert_eq(vm.eval("add(5)(3)").to_string(), "8")
 }
+
+// ///|
+// test "module" {
+//   let max_value = 1
+//   assert_eq(max_value, 1)
+//   assert_eq(@int.max_value, 2147483647)
+// }
+
+// ///|
+// test "module" {
+//   let vm = MoonBitVM::new(log=true)
+//   assert_eq(vm.eval("let max_value = 1").to_string(), "()")
+//   assert_eq(vm.eval("max_value").to_string(), "1")
+//   assert_eq(vm.eval("@int.max_value").to_string(), "2147483647")
+// }

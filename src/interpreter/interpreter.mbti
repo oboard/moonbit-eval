@@ -2,10 +2,10 @@
 package "oboard/moonbit-eval/interpreter"
 
 import(
+  "moonbitlang/core/json"
   "moonbitlang/core/list"
   "moonbitlang/parser/basic"
   "moonbitlang/parser/syntax"
-  "oboard/moonbit-eval/value"
 )
 
 // Values
@@ -27,6 +27,8 @@ fn eval_uint64_op(UInt64, UInt64, String) -> @syntax.Constant
 
 fn eval_uint_op(UInt, UInt, String) -> @syntax.Constant
 
+fn infer_type_from_constant(@syntax.Constant) -> String
+
 let int_embedded_code : Map[String, (RuntimeFunctionContext) -> RuntimeValue]
 
 let int_methods : Map[String, (RuntimeFunctionContext) -> RuntimeValue]
@@ -35,9 +37,13 @@ fn is_comparison_op(String) -> Bool
 
 let option_methods : Map[String, (RuntimeFunctionContext) -> RuntimeValue]
 
+fn runtime_value_infix(String, RuntimeValue, RuntimeValue) -> RuntimeValue
+
 let string_embedded_code : Map[String, (RuntimeFunctionContext) -> RuntimeValue]
 
 let string_methods : Map[String, (RuntimeFunctionContext) -> RuntimeValue]
+
+fn type_to_string(@syntax.Type) -> String
 
 fn unit(loc? : @basic.Location) -> @syntax.Expr
 
@@ -48,11 +54,9 @@ pub(all) struct ClosureInterpreter {
   extern_fns : Map[String, (RuntimeFunctionContext) -> RuntimeValue]
   embedded_fns : Map[String, (RuntimeFunctionContext) -> RuntimeValue]
   embedded_methods : Map[String, Map[String, (RuntimeFunctionContext) -> RuntimeValue]]
-  fn_aliases : Map[String, String]
   mut env : RuntimeEnvironment
-  type_definitions : Map[String, @syntax.TypeDecl]
-  struct_methods : Map[String, Map[String, @syntax.Func]]
-  type_environments : Array[TypeEnvironment]
+  mut state : InterpreterState
+  modules : Map[String, RuntimeModule]
 }
 fn ClosureInterpreter::add_embedded_fn(Self, String, (RuntimeFunctionContext) -> RuntimeValue) -> Unit
 fn ClosureInterpreter::add_embedded_method(Self, String, String, (RuntimeFunctionContext) -> RuntimeValue) -> Unit
@@ -63,7 +67,6 @@ fn ClosureInterpreter::call(Self, @syntax.Func, @list.List[@syntax.Argument]) ->
 fn ClosureInterpreter::call_closure(Self, @syntax.Func, RuntimeEnvironment, @list.List[@syntax.Argument]) -> RuntimeValue
 fn ClosureInterpreter::constants_equal(Self, @syntax.Constant, @syntax.Constant) -> Bool
 fn ClosureInterpreter::constants_equal_expr(Self, @syntax.Expr, @syntax.Expr) -> Bool
-fn ClosureInterpreter::define_struct_method(Self, String, String, @syntax.Func) -> Unit
 fn ClosureInterpreter::execute_function_call(Self, @syntax.Func, @list.List[@syntax.Argument]) -> @syntax.Expr
 fn ClosureInterpreter::execute_match(Self, @syntax.Expr, @list.List[@syntax.Case]) -> @syntax.Expr
 fn ClosureInterpreter::execute_match_runtime(Self, RuntimeValue, @list.List[@syntax.Case]) -> RuntimeValue
@@ -75,22 +78,101 @@ fn ClosureInterpreter::pattern_matches(Self, @syntax.Expr, @syntax.Pattern) -> B
 fn ClosureInterpreter::pattern_to_value(Self, @syntax.Pattern) -> @syntax.Expr?
 fn ClosureInterpreter::pop_scope(Self) -> Unit
 fn ClosureInterpreter::push_scope(Self) -> Unit
-fn ClosureInterpreter::set_mutable_variable(Self, String, RuntimeValue) -> Unit
-fn ClosureInterpreter::set_variable(Self, String, RuntimeValue) -> Unit
+fn ClosureInterpreter::start(Self) -> Unit
+fn ClosureInterpreter::stop(Self) -> Unit
 fn ClosureInterpreter::top_visit(Self, @syntax.Impl) -> Unit
-fn ClosureInterpreter::update_variable(Self, String, RuntimeValue) -> Unit
 fn ClosureInterpreter::value_in_range(Self, @syntax.Expr, @syntax.Pattern, @syntax.Pattern, Bool) -> Bool
 fn ClosureInterpreter::visit(Self, @syntax.Expr) -> RuntimeValue
+
+pub(all) enum InterpreterState {
+  Running
+  Stopped
+}
+
+pub struct ModuleMeta {
+  name : String
+  version : String?
+  deps : Map[String, String]?
+  readme : String?
+  repository : String?
+  license : String?
+  keywords : Array[String]?
+  description : String?
+  source : String?
+}
+fn ModuleMeta::new(String, version? : String, readme? : String, repository? : String, license? : String, keywords? : Array[String], description? : String, source? : String, deps? : Map[String, String]) -> Self
+impl Show for ModuleMeta
+impl ToJson for ModuleMeta
+impl @json.FromJson for ModuleMeta
+
+pub(all) struct RuntimeArgument {
+  value : RuntimeValue
+  kind : @syntax.ArgumentKind
+}
+
+pub(all) struct RuntimeEnvironment {
+  fn_aliases : Map[String, String]
+  type_definitions : Map[String, @syntax.TypeDecl]
+  struct_methods : Map[String, Map[String, @syntax.Func]]
+  type_environments : Array[TypeEnvironment]
+  values : Map[String, RuntimeValue]
+  mutable_vars : Map[String, Bool]
+  parent : RuntimeEnvironment?
+}
+fn RuntimeEnvironment::copy(Self) -> Self
+fn RuntimeEnvironment::create_closure_env(Self) -> Self
+fn RuntimeEnvironment::current_scope(Self) -> Map[String, RuntimeValue]
+fn RuntimeEnvironment::define_struct_method(Self, String, String, @syntax.Func) -> Unit
+fn RuntimeEnvironment::new(parent? : Self) -> Self
+fn RuntimeEnvironment::set_mutable_variable(Self, String, RuntimeValue) -> Unit
+fn RuntimeEnvironment::set_variable(Self, String, RuntimeValue) -> Unit
+fn RuntimeEnvironment::update_variable(Self, String, RuntimeValue) -> Unit
+impl ToJson for RuntimeEnvironment
 
 pub(all) struct RuntimeFunctionContext {
   context : ClosureInterpreter
   arguments : Array[RuntimeArgument]
 }
 
+pub(all) struct RuntimeModule {
+  meta : ModuleMeta
+  env : RuntimeEnvironment
+}
+
+pub(all) enum RuntimeValue {
+  Unit
+  Bool(Bool)
+  Int(Int)
+  UInt(UInt)
+  Int64(Int64)
+  UInt64(UInt64)
+  Float(Float)
+  Double(Double)
+  Char(Char)
+  Byte(Byte)
+  String(String)
+  Tuple(Array[RuntimeValue])
+  Array(Array[RuntimeValue])
+  Struct(Ref[Map[String, RuntimeValue]])
+  Closure(@syntax.Func, RuntimeEnvironment)
+  Constructor(String, Array[RuntimeValue])
+  Break(RuntimeValue?)
+  Continue(Array[RuntimeValue])
+}
+fn RuntimeValue::from_expr(@syntax.Expr) -> Self
+fn RuntimeValue::from_option(Self?) -> Self
+fn RuntimeValue::is_mutable(Self) -> Bool
+fn RuntimeValue::is_reference(Self) -> Bool
+fn RuntimeValue::to_expr(Self) -> @syntax.Expr
+impl Eq for RuntimeValue
+impl Show for RuntimeValue
+impl ToJson for RuntimeValue
+
 pub struct TypeEnvironment {
   type_bindings : Map[String, String]
   parent : TypeEnvironment?
 }
+impl ToJson for TypeEnvironment
 
 // Type aliases
 pub typealias (RuntimeFunctionContext) -> RuntimeValue as RuntimeFunction

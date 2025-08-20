@@ -1,10 +1,5 @@
 ///|
 pub(all) struct RuntimeEnvironment {
-  extern_fns : Map[String, RuntimeFunction]
-  // embedded函数存储 - 全局函数
-  embedded_fns : Map[String, RuntimeFunction]
-  // embedded方法存储 - 按类型组织的embedded方法定义
-  embedded_methods : Map[String, Map[String, RuntimeFunction]]
   // 函数别名存储 - 存储函数名到其实际实现的映射
   fn_aliases : Map[String, String]
   // 类型定义
@@ -17,7 +12,7 @@ pub(all) struct RuntimeEnvironment {
   // 跟踪哪些变量是可变的
   mutable_vars : Map[String, Bool]
   parent : RuntimeEnvironment?
-}
+} derive(ToJson)
 
 ///|
 pub fn RuntimeEnvironment::new(
@@ -32,9 +27,6 @@ pub fn RuntimeEnvironment::new(
     }
   } else {
     {
-      extern_fns: Map::new(),
-      embedded_fns: Map::new(),
-      embedded_methods: Map::new(),
       fn_aliases: Map::new(),
       type_definitions: Map::new(),
       struct_methods: Map::new(),
@@ -89,9 +81,6 @@ pub fn RuntimeEnvironment::create_closure_env(
   // 设置父环境为当前环境，这样可变变量可以通过父环境访问
   // 继承父环境的全局状态（如类型定义、方法等）
   {
-    extern_fns: self.extern_fns,
-    embedded_fns: self.embedded_fns,
-    embedded_methods: self.embedded_methods,
     fn_aliases: self.fn_aliases,
     type_definitions: self.type_definitions,
     struct_methods: self.struct_methods,

@@ -4,27 +4,30 @@ package "oboard/moonbit-eval"
 import(
   "moonbitlang/parser/syntax"
   "oboard/moonbit-eval/interpreter"
-  "oboard/moonbit-eval/value"
 )
 
 // Values
-fn add_embedded_fn(MoonBitVM, String, (@interpreter.RuntimeFunctionContext) -> RuntimeValue) -> Unit
+fn add_embedded_fn(MoonBitVM, String, (@interpreter.RuntimeFunctionContext) -> @interpreter.RuntimeValue) -> Unit
 
-fn add_embedded_method(MoonBitVM, String, String, (@interpreter.RuntimeFunctionContext) -> RuntimeValue) -> Unit
+fn add_embedded_method(MoonBitVM, String, String, (@interpreter.RuntimeFunctionContext) -> @interpreter.RuntimeValue) -> Unit
 
-fn add_extern_fn(MoonBitVM, String, (@interpreter.RuntimeFunctionContext) -> RuntimeValue) -> Unit
+fn add_extern_fn(MoonBitVM, String, (@interpreter.RuntimeFunctionContext) -> @interpreter.RuntimeValue) -> Unit
 
 fn eval_result_to_string(EvalResult) -> String
 
 fn expr_to_string(@syntax.Expr) -> String
 
-fn value_to_json(RuntimeValue) -> String
+fn stop(MoonBitVM) -> Unit
+
+fn value_to_json(@interpreter.RuntimeValue) -> String
+
+fn value_to_string(@interpreter.RuntimeValue) -> String
 
 // Errors
 
 // Types and methods
 pub struct EvalResult {
-  value : RuntimeValue
+  value : @interpreter.RuntimeValue
   interpreter : @interpreter.ClosureInterpreter
 }
 impl Show for EvalResult
@@ -38,7 +41,6 @@ fn MoonBitVM::eval(Self, String, log? : Bool, top? : Bool) -> EvalResult raise F
 fn MoonBitVM::new(log? : Bool, core? : Bool) -> Self
 
 // Type aliases
-pub typealias (@interpreter.RuntimeFunctionContext) -> RuntimeValue as RuntimeFunction
 
 // Traits
 

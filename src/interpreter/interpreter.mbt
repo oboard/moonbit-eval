@@ -1,9 +1,16 @@
 ///| 支持引用系统和泛型的解释器
 pub(all) struct ClosureInterpreter {
+  extern_fns : Map[String, RuntimeFunction]
+  // embedded函数存储 - 全局函数
+  embedded_fns : Map[String, RuntimeFunction]
+  // embedded方法存储 - 按类型组织的embedded方法定义
+  embedded_methods : Map[String, Map[String, RuntimeFunction]]
   // 变量
   mut env : RuntimeEnvironment
   // 解释器状态
   mut state : InterpreterState
+  // 模块
+  modules : Map[String, RuntimeModule]
 }
 
 ///| 解释器状态
@@ -15,18 +22,18 @@ pub(all) enum InterpreterState {
 ///|
 pub fn ClosureInterpreter::new(core~ : Bool = true) -> ClosureInterpreter {
   {
+    extern_fns: {},
+    embedded_fns: if core {
+      core_embedded_code
+    } else {
+      {}
+    },
+    embedded_methods: if core {
+      core_embedded_methods
+    } else {
+      {}
+    },
     env: {
-      extern_fns: {},
-      embedded_fns: if core {
-        core_embedded_code
-      } else {
-        {}
-      },
-      embedded_methods: if core {
-        core_embedded_methods
-      } else {
-        {}
-      },
       fn_aliases: if core {
         core_fn_aliases
       } else {
@@ -39,13 +46,19 @@ pub fn ClosureInterpreter::new(core~ : Bool = true) -> ClosureInterpreter {
       values: {},
       parent: None,
     },
+    // 模块
+    modules: if core {
+      core_modules
+    } else {
+      {}
+    },
     state: InterpreterState::Stopped,
   }
 }
 
 ///|
-pub fn RuntimeEnvironment::add_extern_fn(
-  self : RuntimeEnvironment,
+pub fn ClosureInterpreter::add_extern_fn(
+  self : ClosureInterpreter,
   name : String,
   f : RuntimeFunction,
 ) -> Unit {
@@ -53,8 +66,8 @@ pub fn RuntimeEnvironment::add_extern_fn(
 }
 
 ///|
-pub fn RuntimeEnvironment::add_embedded_fn(
-  self : RuntimeEnvironment,
+pub fn ClosureInterpreter::add_embedded_fn(
+  self : ClosureInterpreter,
   name : String,
   f : RuntimeFunction,
 ) -> Unit {
@@ -62,8 +75,8 @@ pub fn RuntimeEnvironment::add_embedded_fn(
 }
 
 ///|
-pub fn RuntimeEnvironment::add_embedded_method(
-  self : RuntimeEnvironment,
+pub fn ClosureInterpreter::add_embedded_method(
+  self : ClosureInterpreter,
   type_name : String,
   method_name : String,
   f : RuntimeFunction,
@@ -147,8 +160,6 @@ pub fn ClosureInterpreter::top_visit(
         Some({ name: Dot(..), .. }) => None // 处理点号形式的类型名
         None => None
       }
-      
-
 
       // 处理泛型函数的类型参数
       let type_params = []
@@ -190,9 +201,9 @@ pub fn ClosureInterpreter::top_visit(
         DeclStubs(stubs) =>
           match stubs {
             Embedded(code=@syntax.EmbeddedCode::CodeString(code_str), ..) => {
-              let func = self.env.embedded_fns.get(code_str)
+              let func = self.embedded_fns.get(code_str)
               if (type_name, func) is (Some(type_name), Some(func)) {
-                self.env.add_embedded_method(type_name, func_name, func)
+                self.add_embedded_method(type_name, func_name, func)
               }
             }
             _ => ()
@@ -935,12 +946,12 @@ pub fn ClosureInterpreter::is_known_function(
   let actual_name = self.env.fn_aliases.get(name).unwrap_or(name)
 
   // 检查外部函数
-  if self.env.extern_fns.contains(actual_name) {
+  if self.extern_fns.contains(actual_name) {
     return true
   }
 
   // 检查嵌入函数
-  if self.env.embedded_fns.contains(actual_name) {
+  if self.embedded_fns.contains(actual_name) {
     return true
   }
 
@@ -980,10 +991,10 @@ fn ClosureInterpreter::find_method(
         _ => MethodType::RuntimeClosure(func, env)
       }
     _ =>
-      match self.env.extern_fns.get(name) {
+      match self.extern_fns.get(name) {
         Some(extern_func) => MethodType::ExternFunction(extern_func)
         None =>
-          match self.env.embedded_fns.get(name) {
+          match self.embedded_fns.get(name) {
             Some(embedded_func) => MethodType::GlobalEmbedded(embedded_func)
             None => MethodType::NotFound
           }
@@ -1008,7 +1019,7 @@ fn ClosureInterpreter::execute_function_by_name(
 
   match self.find_method(name) {
     MethodType::EmbeddedFunction(embedded_name) =>
-      match self.env.embedded_fns.get(embedded_name) {
+      match self.embedded_fns.get(embedded_name) {
         Some(embedded_func) =>
           embedded_func(RuntimeFunctionContext::{
             context: self,
@@ -1088,7 +1099,7 @@ fn ClosureInterpreter::execute_method_call_runtime(
         None => RuntimeValue::Unit
       }
     None =>
-      match self.env.embedded_methods.get(self_type) {
+      match self.embedded_methods.get(self_type) {
         Some(type_methods) =>
           match type_methods.get(method_name) {
             Some(embedded_method) => {
@@ -1184,7 +1195,7 @@ fn ClosureInterpreter::execute_embedded_static_method(
   method_name : String,
   args : @list.List[@syntax.Argument],
 ) -> RuntimeValue {
-  match self.env.embedded_methods.get(type_name) {
+  match self.embedded_methods.get(type_name) {
     Some(methods) =>
       match methods.get(method_name) {
         Some(embedded_func) => {

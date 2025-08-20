@@ -24,7 +24,7 @@ pub fn add_extern_fn(
   name : String,
   func : RuntimeFunction,
 ) -> Unit {
-  vm.interpreter.env.add_extern_fn(name, func)
+  vm.interpreter.add_extern_fn(name, func)
 }
 
 ///|
@@ -33,7 +33,7 @@ pub fn add_embedded_fn(
   name : String,
   func : RuntimeFunction,
 ) -> Unit {
-  vm.interpreter.env.add_embedded_fn(name, func)
+  vm.interpreter.add_embedded_fn(name, func)
 }
 
 ///|
@@ -43,7 +43,7 @@ pub fn add_embedded_method(
   method_name : String,
   func : RuntimeFunction,
 ) -> Unit {
-  vm.interpreter.env.add_embedded_method(name, method_name, func)
+  vm.interpreter.add_embedded_method(name, method_name, func)
 }
 
 ///|

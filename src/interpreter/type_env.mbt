@@ -4,7 +4,7 @@ pub struct TypeEnvironment {
   type_bindings : Map[String, String]
   // 嵌套作用域支持
   parent : TypeEnvironment?
-}
+} derive(ToJson)
 
 ///| TypeEnvironment 方法
 fn TypeEnvironment::new() -> TypeEnvironment {
