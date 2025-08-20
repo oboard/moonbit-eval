@@ -929,5 +929,6 @@ test "module" {
   assert_eq(vm.eval("let max_value = 1").to_string(), "()")
   assert_eq(vm.eval("max_value").to_string(), "1")
   assert_eq(vm.eval("@int.max_value").to_string(), "2147483647")
-  assert_eq(vm.eval("@int.abs(-1)", log=true).to_string(), "1")
+  println(vm.interpreter.env.deps.to_json().stringify())
+  assert_eq(vm.eval("@int.abs(-1)", ).to_string(), "1")
 }

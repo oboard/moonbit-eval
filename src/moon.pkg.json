@@ -1,7 +1,6 @@
 {
   "import": [
     "moonbitlang/parser",
-    "moonbitlang/parser/basic",
     "moonbitlang/parser/syntax",
     "moonbitlang/x/encoding",
     "oboard/moonbit-eval/interpreter"

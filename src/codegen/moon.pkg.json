@@ -1,8 +1,0 @@
-{
-  "import": [
-    "moonbitlang/parser/syntax",
-    "moonbitlang/parser/basic",
-    "moonbitlang/x/encoding",
-    "moonbitlang/parser"
-  ]
-}

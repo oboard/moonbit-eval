@@ -217,41 +217,6 @@ pub fn expr_to_string(expr : @syntax.Expr) -> String {
 }
 
 ///|
-fn parse_code_to_expr(code : String, top : Bool) -> Result[@syntax.Expr, String] {
-  let buf = @buffer.new()
-  @encoding.encode_to(
-    if top {
-      code
-    } else {
-      "fn init {\n\{code}\n}"
-    },
-    buf,
-    encoding=UTF8,
-  )
-  let (impls, diagnostics) = @moonbitlang/parser.parse_bytes(
-    buf.to_bytes(),
-    parser=Handrolled,
-  )
-  
-  if top {
-    // For top-level evaluation, we don't extract a single expression
-    return Err("Top-level parsing not supported in parse_code_to_expr")
-  }
-  
-  match impls {
-    @list.List::More(
-      @syntax.Impl::TopFuncDef(fun_decl=_, decl_body~, loc=_),
-      tail=@list.List::Empty
-    ) =>
-      match decl_body {
-        @syntax.DeclBody::DeclBody(local_types=_, expr~) => Ok(expr)
-        _ => Err("Invalid function declaration body")
-      }
-    _ => Err(diagnostics.fold(init="", (acc, cur) => "\{acc}\n\{cur}"))
-  }
-}
-
-///|
 pub fn MoonBitVM::eval(
   self : MoonBitVM,
   code : String,
@@ -275,8 +240,7 @@ pub fn MoonBitVM::eval(
     })
     return { value: RuntimeValue::Unit, interpreter: self.interpreter }
   }
-  
-  match parse_code_to_expr(code, top) {
+  match @interpreter.parse_code_to_expr(code) {
     Ok(expr) => {
       self.interpreter.start()
       let result_value = self.interpreter.visit(expr)
@@ -286,9 +250,8 @@ pub fn MoonBitVM::eval(
       }
       { value: result_value, interpreter: self.interpreter }
     }
-    Err(error) => {
+    Err(_) =>
       // try top eval
       return self.eval(code, log?, top=true)
-    }
   }
 }

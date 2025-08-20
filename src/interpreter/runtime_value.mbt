@@ -14,6 +14,7 @@ pub(all) enum RuntimeValue {
   Char(Char)
   Byte(Byte)
   String(String)
+  Error(Failure)
 
   // 复合值类型
   Tuple(Array[RuntimeValue])
@@ -31,6 +32,31 @@ pub(all) enum RuntimeValue {
   // 控制流异常 - 用于实现break和continue语句
   Break(RuntimeValue?) // break可以带返回值
   Continue(Array[RuntimeValue]) // continue可以带参数列表
+}
+
+///|
+pub fn build(code : String) -> RuntimeValue {
+  let expr = parse_code_to_expr(code)
+  match expr {
+    Ok(expr) =>
+      Closure(
+        @syntax.Func::Lambda(
+          parameters=@list.of([
+            Positional(binder={ name: "self", loc: dummy_loc() }, ty=None),
+          ]),
+          params_loc=dummy_loc(),
+          body=expr,
+          return_type=None,
+          error_type=NoErrorType,
+          kind=Arrow,
+          has_error=None,
+          is_async=false,
+          loc=dummy_loc(),
+        ),
+        RuntimeEnvironment::new(),
+      )
+    Err(error) => RuntimeValue::Error(Failure(error))
+  }
 }
 
 ///| 为 RuntimeValue 实现自定义的 ToJson trait
@@ -54,6 +80,7 @@ pub impl ToJson for RuntimeValue with to_json(self : RuntimeValue) -> Json {
     Constructor(name, args) => [name, args.to_json()]
     Break(v) => ["break", v.to_json()]
     Continue(v) => ["continue", v.to_json()]
+    Error(e) => e.to_json()
   }
 }
 
@@ -389,6 +416,7 @@ pub impl Show for RuntimeValue with to_string(self) -> String {
       let arg_strs = args.map(fn(v) { v.to_string() })
       "continue " + arg_strs.join(", ")
     }
+    Error(e) => e.to_string()
   }
 }
 
@@ -464,6 +492,7 @@ pub fn RuntimeValue::to_expr(self : RuntimeValue) -> @syntax.Expr {
       let expr_args = args.map(fn(v) { v.to_expr() })
       Continue(args=@list.from_array(expr_args), label=None, loc=_dummy_loc)
     }
+    Error(_) => Unit(loc=_dummy_loc, faked=true)
   }
 }
 

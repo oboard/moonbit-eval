@@ -1304,6 +1304,7 @@ fn ClosureInterpreter::find_variable_type(
         "Some" | "None" => "Option"
         _ => name
       }
+    Error(_) => "Error"
   }
 }
 
