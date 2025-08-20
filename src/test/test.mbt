@@ -786,19 +786,20 @@ test "44. loop_expressions" {
     vm
     .eval(
       (
-        #|let mut sum = 0
-        #|let mut i = 0
-        #|loop {
-        #|  if i >= 5 { break }
-        #|  sum += i
-        #|  i += 1
+        #|fn sum(xs : @list.List[Int]) -> Int {
+        #|  loop (xs, 0) {
+        #|    (Empty, acc) => break acc // <=> Nil, acc => acc
+        #|    (More(x, tail=rest), acc) => continue (rest, x + acc)
+        #|  }
         #|}
-        #|sum
       ),
     )
     .to_string(),
-    "10",
+    "(xs: @list.List[Int]) -> Int",
   )
+  
+  assert_eq(vm.eval("@list.from_array([1, 2, 3])").to_string(), "()")
+  assert_eq(vm.eval("sum(@list.from_array([1, 2, 3]))").to_string(), "6")
 }
 
 ///|

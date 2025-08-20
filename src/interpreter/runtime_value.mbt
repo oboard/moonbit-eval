@@ -429,20 +429,22 @@ pub fn type_to_string(ty : @syntax.Type) -> String {
       if tys.is_empty() {
         name
       } else {
+        // 泛型
         let type_strs = tys.map(fn(t) { type_to_string(t) })
-        name + "<" + type_strs.to_array().join(", ") + ">"
+        name + "[" + type_strs.to_array().join(", ") + "]"
       }
     Name(constr_id={ id: Dot(pkg~, id~), .. }, tys~, ..) =>
       if tys.is_empty() {
         if pkg == "" {
           id // 对于空包名，直接返回类型名
         } else {
-          pkg + "." + id
+          "@" + pkg + "." + id
         }
       } else {
+        // 泛型
         let type_strs = tys.map(fn(t) { type_to_string(t) })
-        let prefix = if pkg == "" { id } else { pkg + "." + id }
-        prefix + "<" + type_strs.to_array().join(", ") + ">"
+        let prefix = if pkg == "" { id } else { "@" + pkg + "." + id }
+        prefix + "[" + type_strs.to_array().join(", ") + "]"
       }
     Option(ty~, ..) => type_to_string(ty) + "?"
     Object(_) => "Object"
