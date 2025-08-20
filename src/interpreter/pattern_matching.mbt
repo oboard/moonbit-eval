@@ -46,15 +46,13 @@ pub fn ClosureInterpreter::pattern_matches(
 ) -> Bool {
   match (value, pattern) {
     // 常量模式匹配
-    (
-      @syntax.Expr::Constant(c=value_const, ..),
-      @syntax.Pattern::Constant(c=pattern_const, ..),
-    ) => self.constants_equal(value_const, pattern_const)
+    (Constant(c=value_const, ..), Constant(c=pattern_const, ..)) =>
+      self.constants_equal(value_const, pattern_const)
 
     // 标识符与常量模式匹配
     (
-      @syntax.Expr::Ident(id={ name: @syntax.LongIdent::Ident(name~), .. }, ..),
-      @syntax.Pattern::Constant(c=pattern_const, ..),
+      Ident(id={ name: @syntax.LongIdent::Ident(name~), .. }, ..),
+      Constant(c=pattern_const, ..),
     ) => {
       let runtime_value = self.env.find(name)
       let value_expr = runtime_value.to_expr()
@@ -331,14 +329,13 @@ pub fn ClosureInterpreter::pattern_to_value(
   pattern : @syntax.Pattern,
 ) -> @syntax.Expr? {
   match pattern {
-    @syntax.Pattern::Constant(c~, loc~) =>
-      Some(@syntax.Expr::Constant(c~, loc~))
-    @syntax.Pattern::Constr(constr~, ..) => {
+    Constant(c~, loc~) => Some(Constant(c~, loc~))
+    Constr(constr~, ..) => {
       // 查找构造函数的值
       let runtime_value = self.env.find(constr.name.name)
       Some(runtime_value.to_expr())
     }
-    @syntax.Pattern::Any(..) => None // 通配符表示开放边界
+    Any(..) => None // 通配符表示开放边界
     _ => None
   }
 }

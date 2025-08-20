@@ -22,6 +22,23 @@ pub fn RuntimeEnvironment::find(
   RuntimeValue::Unit
 }
 
+///|
+pub fn[T] RuntimeEnvironment::with_ident(
+  self : RuntimeEnvironment,
+  long_ident : @syntax.LongIdent,
+  func : (RuntimeEnvironment, String) -> T,
+) -> T {
+  match long_ident {
+    Ident(name~) => func(self, name)
+    Dot(pkg~, id~) =>
+      if self.deps.get(pkg) is Some(pkg) {
+        func(pkg.env, id)
+      } else {
+        func(self, id)
+      }
+  }
+}
+
 ///| 设置不可变变量
 pub fn RuntimeEnvironment::set_variable(
   self : RuntimeEnvironment,

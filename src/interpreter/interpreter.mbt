@@ -101,6 +101,21 @@ pub fn RuntimeEnvironment::current_scope(
 }
 
 ///|
+pub fn RuntimeEnvironment::find_fn_alias(
+  self : RuntimeEnvironment,
+  name : String,
+) -> String {
+  let mut current_env = Some(self)
+  while current_env is Some(env) {
+    if env.fn_aliases.get(name) is Some(a) {
+      return a
+    }
+    current_env = env.parent
+  }
+  name
+}
+
+///|
 pub fn ClosureInterpreter::start(self : ClosureInterpreter) -> Unit {
   self.state = InterpreterState::Running
 }
@@ -261,10 +276,7 @@ pub fn ClosureInterpreter::visit(
 
     // 处理变量标识符
     Ident(id={ name, .. }, ..) =>
-      match name {
-        @syntax.LongIdent::Ident(name~) => self.env.find(name)
-        _ => RuntimeValue::Unit
-      }
+      self.env.with_ident(name, fn(env, name) { env.find(name) })
 
     // 处理中缀表达式（如 1+1）
     Infix(op~, lhs~, rhs~, ..) =>
@@ -343,33 +355,29 @@ pub fn ClosureInterpreter::visit(
     }
 
     // 处理赋值操作
-    Assign(var_~, expr~, augmented_by~, ..) =>
-      match var_.name {
-        Ident(name~) => {
-          let new_value = match augmented_by {
-            Some(op) => {
-              let current_value = self.env.find(name)
-              match op.name {
-                Ident(name=op_name) => {
-                  let rhs_value = self.visit(expr)
-                  runtime_value_infix(op_name, current_value, rhs_value)
-                }
-                _ => self.visit(expr)
+    Assign(var_={ name, .. }, expr~, augmented_by~, ..) =>
+      self.env.with_ident(name, fn(env, name) {
+        let new_value = match augmented_by {
+          Some(op) => {
+            let current_value = env.find(name)
+            match op.name {
+              Ident(name=op_name) => {
+                let rhs_value = self.visit(expr)
+                runtime_value_infix(op_name, current_value, rhs_value)
               }
+              _ => self.visit(expr)
             }
-            None => self.visit(expr)
           }
-          self.env.update_variable(name, new_value)
-          RuntimeValue::Unit
+          None => self.visit(expr)
         }
-        _ => RuntimeValue::Unit
-      }
+        self.env.update_variable(name, new_value)
+        RuntimeValue::Unit
+      })
 
     // 处理函数调用
     Apply(func~, args~, ..) =>
       match func {
-        Ident(id={ name: @syntax.LongIdent::Ident(name~), .. }, ..) =>
-          self.execute_function_by_name(name, args)
+        Ident(id={ name, .. }, ..) => self.execute_function_by_name(name, args)
         // 处理构造函数调用，如 Some(5)
         Constr(constr~, ..) => {
           let arg_values = args
@@ -458,7 +466,7 @@ pub fn ClosureInterpreter::visit(
       let left_val = self.visit(lhs)
       match rhs {
         // 处理简单函数调用，如 5 |> ignore
-        Ident(id={ name: @syntax.LongIdent::Ident(name~), .. }, ..) => {
+        Ident(id={ name, .. }, ..) => {
           // 创建包含左侧值的参数列表
           let left_expr = left_val.to_expr()
           let pipe_args = @list.construct(
@@ -493,7 +501,7 @@ pub fn ClosureInterpreter::visit(
                 pipe_args,
               )
             }
-            Ident(id={ name: @syntax.LongIdent::Ident(name~), .. }, ..) => {
+            Ident(id={ name, .. }, ..) => {
               // 处理函数调用，如 5 |> func(arg1, arg2)
               let left_expr = left_val.to_expr()
               let pipe_args = @list.construct(
@@ -909,31 +917,31 @@ fn ClosureInterpreter::pattern_to_runtime_value(
   pattern : @syntax.Pattern,
 ) -> RuntimeValue? {
   match pattern {
-    @syntax.Pattern::Constant(c~, ..) =>
+    Constant(c~, ..) =>
       match c {
-        @syntax.Constant::Int(v) => {
+        Int(v) => {
           let int_val = @strconv.parse_int(v) catch { _ => return None }
           Some(RuntimeValue::Int(int_val))
         }
-        @syntax.Constant::Double(v) => {
+        Double(v) => {
           let double_val = @strconv.parse_double(v) catch { _ => return None }
           Some(RuntimeValue::Double(double_val))
         }
-        @syntax.Constant::String(v) => Some(RuntimeValue::String(v))
-        @syntax.Constant::Char(v) =>
+        String(v) => Some(RuntimeValue::String(v))
+        Char(v) =>
           if v.length() > 0 && v.get(0) is Some(ch) {
             Some(RuntimeValue::Char(ch.unsafe_to_char()))
           } else {
             None
           }
-        @syntax.Constant::Bool(v) => Some(RuntimeValue::Bool(v))
-        @syntax.Constant::Bytes(_) => None
-        @syntax.Constant::Byte(_) => None
-        @syntax.Constant::Int64(_) => None
-        @syntax.Constant::UInt64(_) => None
-        @syntax.Constant::UInt(_) => None
-        @syntax.Constant::Float(_) => None
-        @syntax.Constant::BigInt(_) => None
+        Bool(v) => Some(RuntimeValue::Bool(v))
+        Bytes(_) => None
+        Byte(_) => None
+        Int64(_) => None
+        UInt64(_) => None
+        UInt(_) => None
+        Float(_) => None
+        BigInt(_) => None
       }
     @syntax.Pattern::Constr(constr~, ..) =>
       // 查找构造函数的值
@@ -948,7 +956,7 @@ pub fn ClosureInterpreter::is_known_function(
   self : ClosureInterpreter,
   name : String,
 ) -> Bool {
-  let actual_name = self.env.fn_aliases.get(name).unwrap_or(name)
+  let actual_name = self.env.find_fn_alias(name)
 
   // 检查外部函数
   if self.extern_fns.contains(actual_name) {
@@ -979,38 +987,40 @@ priv enum MethodType {
 ///| 按名称查找方法
 fn ClosureInterpreter::find_method(
   self : ClosureInterpreter,
-  name : String,
+  long_ident : @syntax.LongIdent,
 ) -> MethodType {
-  let name = self.env.fn_aliases.get(name).unwrap_or(name)
+  self.env.with_ident(long_ident, fn(env, name) {
+    let name = self.env.find_fn_alias(name)
 
-  // 按优先级查找：用户函数 -> Lambda变量 -> 外部函数 -> embedded函数
-  match self.env.find(name) {
-    RuntimeValue::Closure(func, env) =>
-      // 检查是否是embedded函数的标记函数
-      match func {
-        Lambda(body=Ident(id={ name: Ident(name=embedded_name), .. }, ..), ..) =>
-          match embedded_name {
-            ['%', ..] => MethodType::EmbeddedFunction(embedded_name)
-            _ => MethodType::RuntimeClosure(func, env)
-          }
-        _ => MethodType::RuntimeClosure(func, env)
-      }
-    _ =>
-      match self.extern_fns.get(name) {
-        Some(extern_func) => MethodType::ExternFunction(extern_func)
-        None =>
-          match self.embedded_fns.get(name) {
-            Some(embedded_func) => MethodType::GlobalEmbedded(embedded_func)
-            None => MethodType::NotFound
-          }
-      }
-  }
+    // 按优先级查找：用户函数 -> Lambda变量 -> 外部函数 -> embedded函数
+    match env.find(name) {
+      RuntimeValue::Closure(func, env) =>
+        // 检查是否是embedded函数的标记函数
+        match func {
+          Lambda(body=Ident(id={ name: Ident(name=embedded_name), .. }, ..), ..) =>
+            match embedded_name {
+              ['%', ..] => MethodType::EmbeddedFunction(embedded_name)
+              _ => MethodType::RuntimeClosure(func, env)
+            }
+          _ => MethodType::RuntimeClosure(func, env)
+        }
+      _ =>
+        match self.extern_fns.get(name) {
+          Some(extern_func) => MethodType::ExternFunction(extern_func)
+          None =>
+            match self.embedded_fns.get(name) {
+              Some(embedded_func) => MethodType::GlobalEmbedded(embedded_func)
+              None => MethodType::NotFound
+            }
+        }
+    }
+  })
 }
 
 ///| 按名称执行函数调用
 fn ClosureInterpreter::execute_function_by_name(
   self : ClosureInterpreter,
-  name : String,
+  long_ident : @syntax.LongIdent,
   args : @list.List[@syntax.Argument],
 ) -> RuntimeValue {
   fn get_evaluated_args() -> Array[RuntimeArgument] {
@@ -1022,7 +1032,7 @@ fn ClosureInterpreter::execute_function_by_name(
     .to_array()
   }
 
-  match self.find_method(name) {
+  match self.find_method(long_ident) {
     MethodType::EmbeddedFunction(embedded_name) =>
       match self.embedded_fns.get(embedded_name) {
         Some(embedded_func) =>
