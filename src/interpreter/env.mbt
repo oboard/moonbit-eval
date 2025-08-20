@@ -18,11 +18,12 @@ pub(all) struct RuntimeEnvironment {
 ///|
 pub fn RuntimeEnvironment::new(
   parent? : RuntimeEnvironment,
+  values? : Map[String, RuntimeValue],
 ) -> RuntimeEnvironment {
   if parent is Some(parent) {
     {
       ..parent,
-      values: Map::new(),
+      values: values.unwrap_or({}),
       mutable_vars: Map::new(),
       parent: Some(parent),
     }
@@ -32,7 +33,7 @@ pub fn RuntimeEnvironment::new(
       type_definitions: Map::new(),
       struct_methods: Map::new(),
       type_environments: [TypeEnvironment::new()],
-      values: Map::new(),
+      values: values.unwrap_or({}),
       mutable_vars: Map::new(),
       parent: None,
       deps: Map::new(),
@@ -87,5 +88,34 @@ pub fn RuntimeEnvironment::create_closure_env(
     values: new_values,
     mutable_vars: new_mutable_vars,
     parent: Some(self),
+  }
+}
+
+///| 处理函数声明体，创建Lambda函数并注册到环境中
+pub fn RuntimeEnvironment::top_func_def_to_closure(
+  self : RuntimeEnvironment,
+  func : @syntax.Impl,
+) -> RuntimeValue {
+  if func is TopFuncDef(fun_decl~, decl_body~, loc~) {
+    if decl_body is DeclBody(local_types=_, expr=body) {
+      // 保持原始的返回类型，不在这里进行推导
+      let inferred_return_type = fun_decl.return_type
+      let func = @syntax.Func::Lambda(
+        parameters=fun_decl.decl_params.unwrap_or(@list.new()),
+        params_loc=loc,
+        body~,
+        return_type=inferred_return_type,
+        error_type=fun_decl.error_type,
+        kind=Arrow,
+        has_error=fun_decl.has_error,
+        is_async=fun_decl.is_async,
+        loc~,
+      )
+      RuntimeValue::Closure(func, self.create_closure_env())
+    } else {
+      Unit
+    }
+  } else {
+    Unit
   }
 }

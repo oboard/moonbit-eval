@@ -226,7 +226,7 @@ pub fn MoonBitVM::eval(
   if top {
     let buf = @buffer.new()
     @encoding.encode_to(code, buf, encoding=UTF8)
-    let (impls, diagnostics) = @moonbitlang/parser.parse_bytes(
+    let (impls, _diagnostics) = @moonbitlang/parser.parse_bytes(
       buf.to_bytes(),
       parser=Handrolled,
     )

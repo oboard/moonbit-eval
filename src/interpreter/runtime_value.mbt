@@ -34,31 +34,6 @@ pub(all) enum RuntimeValue {
   Continue(Array[RuntimeValue]) // continue可以带参数列表
 }
 
-///|
-pub fn build(code : String) -> RuntimeValue {
-  let expr = parse_code_to_expr(code)
-  match expr {
-    Ok(expr) =>
-      Closure(
-        @syntax.Func::Lambda(
-          parameters=@list.of([
-            Positional(binder={ name: "self", loc: dummy_loc() }, ty=None),
-          ]),
-          params_loc=dummy_loc(),
-          body=expr,
-          return_type=None,
-          error_type=NoErrorType,
-          kind=Arrow,
-          has_error=None,
-          is_async=false,
-          loc=dummy_loc(),
-        ),
-        RuntimeEnvironment::new(),
-      )
-    Err(error) => RuntimeValue::Error(Failure(error))
-  }
-}
-
 ///| 为 RuntimeValue 实现自定义的 ToJson trait
 pub impl ToJson for RuntimeValue with to_json(self : RuntimeValue) -> Json {
   match self {

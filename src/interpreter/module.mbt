@@ -41,3 +41,52 @@ pub fn ModuleMeta::new(
     source,
   }
 }
+
+///|
+pub fn RuntimeModule::new(
+  pkg : String,
+  builder : (RuntimeEnvironment, (String) -> RuntimeValue) -> Map[
+    String,
+    RuntimeValue,
+  ],
+) -> RuntimeModule {
+  let values = {}
+  let env = RuntimeEnvironment::new(values~)
+  ///|
+  fn build(code : String) -> RuntimeValue {
+    if code.has_prefix("pub") {
+      let impl_ = parse_code_to_impl(code)
+      if impl_ is Ok(impl_) {
+        return env.top_func_def_to_closure(impl_)
+      }
+    }
+    let expr = parse_code_to_expr(code)
+    match expr {
+      Ok(expr) =>
+        match expr {
+          Function(func~, ..) => Closure(func, env.create_closure_env())
+          _ =>
+            Closure(
+              @syntax.Func::Lambda(
+                parameters=@list.of([
+                  Positional(binder={ name: "self", loc: dummy_loc() }, ty=None),
+                ]),
+                params_loc=dummy_loc(),
+                body=expr,
+                return_type=None,
+                error_type=NoErrorType,
+                kind=Arrow,
+                has_error=None,
+                is_async=false,
+                loc=dummy_loc(),
+              ),
+              RuntimeEnvironment::new(),
+            )
+        }
+      Err(error) => RuntimeValue::Error(Failure(error))
+    }
+  }
+
+  builder(env, build).each(fn(key, value) { values.set(key, value) })
+  { meta: ModuleMeta::new(pkg), env }
+}

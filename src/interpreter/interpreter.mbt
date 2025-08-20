@@ -191,7 +191,7 @@ pub fn ClosureInterpreter::top_visit(
 
       // 从decl_body中提取函数体
       match decl_body {
-        DeclBody(local_types=_, expr~) => {
+        DeclBody(expr~, ..) => {
           // 如果是泛型函数，需要在函数调用时进行类型参数绑定
           // TODO: 实现泛型函数的类型参数推导机制
 
