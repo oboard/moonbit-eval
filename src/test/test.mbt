@@ -817,7 +817,6 @@ test "45. break_continue" {
         #|}
         #|result
       ),
-      top=true,
     )
     .to_string(),
     "18",
@@ -843,7 +842,6 @@ test "46. try_catch_expressions" {
         #|  e => -1
         #|}
       ),
-      top=true,
     )
     .to_string(),
     "5",
@@ -859,7 +857,6 @@ test "46. try_catch_expressions" {
         #|  e => 0
         #|}
       ),
-      top=true,
     )
     .to_string(),
     "0",
@@ -880,7 +877,6 @@ test "47. try_operator" {
         #|let result = safe_divide(10, 2)?
         #|result
       ),
-      top=true,
     )
     .to_string(),
     "5",
@@ -892,7 +888,6 @@ test "47. try_operator" {
         #|let result = safe_divide(10, 0)?
         #|result
       ),
-      top=true,
     )
     .to_string(),
     "None",
@@ -905,7 +900,7 @@ test "47. try_operator" {
 
 ///|
 test "48. map_expressions" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM::new(log=true)
   // Test map literal expressions
   assert_eq(
     vm
@@ -914,7 +909,6 @@ test "48. map_expressions" {
         #|let m = { "a": 1, "b": 2, "c": 3 }
         #|m["b"]
       ),
-      top=true,
     )
     .to_string(),
     "2",
@@ -925,30 +919,8 @@ test "48. map_expressions" {
 test "49. group_expressions" {
   let vm = MoonBitVM::new()
   // Test grouped expressions with parentheses
-  assert_eq(
-    vm
-    .eval(
-      (
-        #|let x = (2 + 3) * (4 + 1)
-        #|x
-      ),
-      top=true,
-    )
-    .to_string(),
-    "25",
-  )
-  assert_eq(
-    vm
-    .eval(
-      (
-        #|let y = ((1 + 2) * 3) + (4 * (5 + 6))
-        #|y
-      ),
-      top=true,
-    )
-    .to_string(),
-    "53",
-  )
+  assert_eq(vm.eval("(2 + 3) * (4 + 1)").to_string(), "25")
+  assert_eq(vm.eval("((1 + 2) * 3) + (4 * (5 + 6))").to_string(), "53")
 }
 
 // =============================================================================
