@@ -797,7 +797,6 @@ test "44. loop_expressions" {
     .to_string(),
     "(xs: @list.List[Int]) -> Int",
   )
-  
   assert_eq(vm.eval("@list.from_array([1, 2, 3])").to_string(), "()")
   assert_eq(vm.eval("sum(@list.from_array([1, 2, 3]))").to_string(), "6")
 }
@@ -1479,4 +1478,13 @@ test "bigint" {
   let vm = MoonBitVM::new()
   assert_eq(vm.eval("@bigint.zero").to_string(), "0")
   assert_eq(vm.eval("@bigint.radix_bit_len").to_string(), "32")
+}
+
+///|
+test "cmp" {
+  let vm = MoonBitVM::new()
+  assert_eq(vm.eval("@cmp.maximum").to_string(), "(x: T, y: T) -> T")
+  assert_eq(vm.eval("@cmp.minimum").to_string(), "(x: T, y: T) -> T")
+  assert_eq(vm.eval("@cmp.maximum(1, 2)").to_string(), "2")
+  assert_eq(vm.eval("@cmp.minimum(1, 2)").to_string(), "1")
 }

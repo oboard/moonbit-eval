@@ -12,8 +12,8 @@ from pathlib import Path
 from typing import Dict, List, Set, Tuple
 
 # Core library path
-CORE_PATH = "/Users/oboard/Development/moonbit-packages/moonbit-eval/.mooncakes/moonbitlang/parser/core"
-OUTPUT_FILE = "/Users/oboard/Development/moonbit-packages/moonbit-eval/src/interpreter/core_modules.mbt"
+CORE_PATH = ".mooncakes/moonbitlang/parser/core"
+OUTPUT_FILE = "src/interpreter/core_modules.mbt"
 
 def extract_all_items(mbt_content: str) -> List[Tuple[str, str, str, str]]:
     """
@@ -36,7 +36,7 @@ def extract_all_items(mbt_content: str) -> List[Tuple[str, str, str, str]]:
         line = line.strip()
         
         # Look for constants at top level (must be at column 0 and brace_depth == 0)
-        if brace_depth == 0 and not original_line.startswith(' ') and not original_line.startswith('\t') and (line.startswith('let ') or line.startswith('pub let ')):
+        if not original_line.startswith(' ') and not original_line.startswith('\t') and (line.startswith('let ') or line.startswith('pub let ')):
             const_match = re.match(r'(?:pub\s+)?let\s+(\w+)\s*=\s*(.+)', line)
             if const_match:
                 const_name = const_match.group(1)
@@ -44,9 +44,9 @@ def extract_all_items(mbt_content: str) -> List[Tuple[str, str, str, str]]:
                 items.append((const_name, 'constant', '', const_value))
         
         # Look for function declarations at top level (must be at column 0 and brace_depth == 0)
-        elif brace_depth == 0 and not original_line.startswith(' ') and not original_line.startswith('\t') and (line.startswith('fn ') or line.startswith('pub fn ')) and '{' in line:
+        elif not original_line.startswith(' ') and not original_line.startswith('\t') and (line.startswith('fn') or line.startswith('pub fn')) and '{' in line:
             # Extract function name - handle regular functions, method syntax, and generic functions
-            func_match = re.match(r'(?:pub\s+)?fn(?:\[.*?\])?\s+(?:\w+::)?(\w+)', line)
+            func_match = re.match(r'(?:pub\s+)?fn(?:\[.*?\])?\s+(?:(?:\w+::)?(\w+))\s*(?:\[.*?\])?\s*\(', line)
             if not func_match:
                 i += 1
                 continue

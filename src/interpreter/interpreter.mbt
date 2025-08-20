@@ -319,7 +319,7 @@ pub fn ClosureInterpreter::visit(
                         @syntax.Accessor::Label(label) => {
                           let current_val = refer.val
                             .get(label.name)
-                            .or(RuntimeValue::Int(0))
+                            .unwrap_or(RuntimeValue::Int(0))
                           let new_val = runtime_value_infix(
                             base_op, current_val, right_val,
                           )
@@ -328,7 +328,7 @@ pub fn ClosureInterpreter::visit(
                         @syntax.Accessor::Index(tuple_index~, ..) => {
                           let current_val = refer.val
                             .get(tuple_index.to_string())
-                            .or(RuntimeValue::Int(0))
+                            .unwrap_or(RuntimeValue::Int(0))
                           let new_val = runtime_value_infix(
                             base_op, current_val, right_val,
                           )
@@ -796,7 +796,7 @@ pub fn ClosureInterpreter::visit(
                   }
                   let current_val = refer.val
                     .get(label.name)
-                    .or(RuntimeValue::Int(0))
+                    .unwrap_or(RuntimeValue::Int(0))
                   let right_val = self.visit(field)
                   let new_val = runtime_value_infix(
                     base_op, current_val, right_val,
@@ -825,7 +825,7 @@ pub fn ClosureInterpreter::visit(
                   }
                   let current_val = refer.val
                     .get(tuple_index.to_string())
-                    .or(RuntimeValue::Int(0))
+                    .unwrap_or(RuntimeValue::Int(0))
                   let right_val = self.visit(field)
                   let new_val = runtime_value_infix(
                     base_op, current_val, right_val,
@@ -881,7 +881,7 @@ pub fn ClosureInterpreter::visit(
     }
 
     // 处理 Loop 表达式
-    Loop(args~, body~, ..) => {
+    Loop(body~, ..) => {
       // 简化实现：执行循环体直到遇到 break
       let mut loop_result = RuntimeValue::Unit
       let mut should_break = false
@@ -908,7 +908,7 @@ pub fn ClosureInterpreter::visit(
     Try(body~, catch_~, ..) => {
       let result = self.visit(body)
       match result {
-        RuntimeValue::Exception(msg) => {
+        RuntimeValue::Exception(_msg) => {
           // 查找匹配的 catch 分支
           for case in catch_ {
             // 简化实现：执行第一个 catch 分支
