@@ -938,3 +938,10 @@ test "math" {
   assert_eq(vm.eval("@math.abs").to_string(), "(x: Double) -> Double")
   assert_eq(vm.eval("@math.abs(-1.0)").to_string(), "1")
 }
+
+///|
+test "bigint" {
+  let vm = MoonBitVM::new(log=true)
+  assert_eq(vm.eval("@bigint.zero").to_string(), "0")
+  assert_eq(vm.eval("@bigint.radix_bit_len").to_string(), "32")
+}

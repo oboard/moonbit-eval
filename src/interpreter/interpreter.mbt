@@ -1283,6 +1283,7 @@ fn ClosureInterpreter::find_variable_type(
     UInt64(_) => "UInt64"
     Float(_) => "Float"
     Double(_) => "Double"
+    BigInt(_) => "BigInt"
     Char(_) => "Char"
     Byte(_) => "Byte"
     String(_) => "String"

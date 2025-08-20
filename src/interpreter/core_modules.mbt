@@ -184,7 +184,7 @@ let bigint_module : RuntimeModule = RuntimeModule::new(
           #|pub fn BigInt::from_int(n : Int) -> BigInt { BigInt::from_int64(n.to_int64()) }
         ),
       ),
-      "zero": build("0N"),
+      "zero": BigInt(0N),
       "from_string": build(
         (
           #|pub fn BigInt::from_string(str : String) -> BigInt { if str.length() == 0 {

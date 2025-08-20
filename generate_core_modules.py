@@ -193,6 +193,9 @@ def generate_module_code(module_info: Dict) -> str:
             elif item_body.endswith('L') and not re.search(r'\b[a-zA-Z_][a-zA-Z0-9_]*\b', item_body[:-1]):
                 # Int64 constants (only if no variables in the expression)
                 values_entries.append(f'      "{item_name}": Int64({item_body})')
+            elif item_body.endswith('N') and not re.search(r'\b[a-zA-Z_][a-zA-Z0-9_]*\b', item_body[:-1]):
+                # BigInt constants (only if no variables in the expression)
+                values_entries.append(f'      "{item_name}": BigInt({item_body})')
             elif item_body.endswith('U') and not re.search(r'\b[a-zA-Z_][a-zA-Z0-9_]*\b', item_body[:-1]):
                 # UInt constants (only if no variables in the expression)
                 values_entries.append(f'      "{item_name}": UInt({item_body})')
