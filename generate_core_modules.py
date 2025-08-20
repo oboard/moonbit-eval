@@ -28,22 +28,25 @@ def extract_all_items(mbt_content: str) -> List[Tuple[str, str, str, str]]:
     # Split content into lines for better processing
     lines = mbt_content.split('\n')
     i = 0
+    brace_depth = 0  # Track nesting level to only extract top-level items
     
     while i < len(lines):
-        line = lines[i].strip()
+        line = lines[i]
+        original_line = line
+        line = line.strip()
         
-        # Look for all constants (both public and private)
-        if line.startswith('let ') or line.startswith('pub let '):
+        # Look for constants at top level (must be at column 0 and brace_depth == 0)
+        if brace_depth == 0 and not original_line.startswith(' ') and not original_line.startswith('\t') and (line.startswith('let ') or line.startswith('pub let ')):
             const_match = re.match(r'(?:pub\s+)?let\s+(\w+)\s*=\s*(.+)', line)
             if const_match:
                 const_name = const_match.group(1)
                 const_value = const_match.group(2)
                 items.append((const_name, 'constant', '', const_value))
         
-        # Look for all function declarations (both public and private)
-        elif (line.startswith('fn ') or line.startswith('pub fn ')) and '{' in line:
-            # Extract function name - handle both regular functions and method syntax
-            func_match = re.match(r'(?:pub\s+)?fn\s+(?:\w+::)?(\w+)', line)
+        # Look for function declarations at top level (must be at column 0 and brace_depth == 0)
+        elif brace_depth == 0 and not original_line.startswith(' ') and not original_line.startswith('\t') and (line.startswith('fn ') or line.startswith('pub fn ')) and '{' in line:
+            # Extract function name - handle regular functions, method syntax, and generic functions
+            func_match = re.match(r'(?:pub\s+)?fn(?:\[.*?\])?\s+(?:\w+::)?(\w+)', line)
             if not func_match:
                 i += 1
                 continue
@@ -55,7 +58,7 @@ def extract_all_items(mbt_content: str) -> List[Tuple[str, str, str, str]]:
             func_signature = line[:brace_pos].strip()
             
             # Find the complete function body - preserve original formatting
-            brace_count = line.count('{') - line.count('}')
+            func_brace_count = line.count('{') - line.count('}')
             func_lines = []
             
             # Start from the current line and collect the entire function
@@ -63,10 +66,12 @@ def extract_all_items(mbt_content: str) -> List[Tuple[str, str, str, str]]:
             
             # Continue reading until braces are balanced
             i += 1
-            while i < len(lines) and brace_count > 0:
+            while i < len(lines) and func_brace_count > 0:
                 current_line = lines[i]
                 current_func_lines.append(current_line)
-                brace_count += current_line.count('{') - current_line.count('}')
+                func_brace_count += current_line.count('{') - current_line.count('}')
+                # Also update the main brace_depth
+                brace_depth += current_line.count('{') - current_line.count('}')
                 i += 1
             
             # Extract just the function body (everything after the opening brace)
@@ -89,6 +94,8 @@ def extract_all_items(mbt_content: str) -> List[Tuple[str, str, str, str]]:
             # i is already incremented in the while loop, so continue
             continue
         
+        # Update brace depth for non-function lines
+        brace_depth += original_line.count('{') - original_line.count('}')
         i += 1
     
     return items
@@ -180,17 +187,17 @@ def generate_module_code(module_info: Dict) -> str:
         if len(item) == 3:  # Constants: (name, type, body)
             item_name, item_type, item_body = item
             # For constants, we need to wrap them in the appropriate type
-            if item_body.endswith('UL'):
-                # UInt64 constants (check UL before L to avoid conflict)
+            if item_body.endswith('UL') and not re.search(r'\b[a-zA-Z_][a-zA-Z0-9_]*\b', item_body[:-2]):
+                # UInt64 constants (check UL before L to avoid conflict, only if no variables)
                 values_entries.append(f'      "{item_name}": UInt64({item_body})')
-            elif item_body.endswith('L'):
-                # Int64 constants
+            elif item_body.endswith('L') and not re.search(r'\b[a-zA-Z_][a-zA-Z0-9_]*\b', item_body[:-1]):
+                # Int64 constants (only if no variables in the expression)
                 values_entries.append(f'      "{item_name}": Int64({item_body})')
-            elif item_body.endswith('U'):
-                # UInt constants
+            elif item_body.endswith('U') and not re.search(r'\b[a-zA-Z_][a-zA-Z0-9_]*\b', item_body[:-1]):
+                # UInt constants (only if no variables in the expression)
                 values_entries.append(f'      "{item_name}": UInt({item_body})')
-            elif item_body.isdigit() or (item_body.startswith('-') and item_body[1:].isdigit()):
-                # Int constants
+            elif (item_body.isdigit() or (item_body.startswith('-') and item_body[1:].isdigit())) and not re.search(r'\b[a-zA-Z_][a-zA-Z0-9_]*\b', item_body):
+                # Int constants (only if no variables in the expression)
                 values_entries.append(f'      "{item_name}": Int({item_body})')
             elif item_body in ['true', 'false']:
                 # Bool constants
@@ -205,45 +212,23 @@ def generate_module_code(module_info: Dict) -> str:
         elif len(item) == 4:  # Functions: (name, type, signature, body)
             item_name, item_type, item_signature, item_body = item
             # Check if function has non-self parameters
-            if has_non_self_parameters(item_signature):
-                # For functions with parameters, use the complete function definition
-                # Combine signature and body
-                complete_func = f"{item_signature} {{ {item_body} }}"
-                # Split into lines and add #| prefix to each line
-                lines = complete_func.split('\n')
-                formatted_lines = []
-                for line in lines:
-                    # Keep original indentation but escape quotes and backslashes
-                    if line.strip():  # Only process non-empty lines
-                        escaped_line = line.replace('\\', '\\\\')
-                        escaped_line = escaped_line.replace('"', '\\"')
-                        formatted_lines.append(f'        #|{escaped_line}')
-                
-                if formatted_lines:
-                    multiline_body = '\n'.join(formatted_lines)
-                    values_entries.append(f'      "{item_name}": build(\n        (\n{multiline_body}\n        ),\n      )')
-            else:
-                # For functions with only self parameter, extract just the body
-                # Split function body into lines and format each line
-                lines = item_body.split('\n')
-                if len(lines) > 1:
-                    # Multi-line function body
-                    formatted_lines = []
-                    for line in lines:
-                        if line.strip():  # Only process non-empty lines
-                            escaped_line = line.replace('\\', '\\\\')
-                            escaped_line = escaped_line.replace('"', '\\"')
-                            formatted_lines.append(f'        #|{escaped_line}')
-                    
-                    if formatted_lines:
-                        multiline_body = '\n'.join(formatted_lines)
-                        values_entries.append(f'      "{item_name}": build(\n        (\n{multiline_body}\n        ),\n      )')
-                else:
-                    # Single line function body
-                    escaped_body = item_body.replace('\\', '\\\\')
-                    escaped_body = escaped_body.replace('"', '\\"')
-                    values_entries.append(f'      "{item_name}": build(\n        (\n          #|{escaped_body}\n        ),\n      )')
-    
+            # For functions with parameters, use the complete function definition
+            # Combine signature and body
+            complete_func = f"{item_signature} {{ {item_body} }}"
+            # Split into lines and add #| prefix to each line
+            lines = complete_func.split('\n')
+            formatted_lines = []
+            for line in lines:
+                # Keep original indentation but escape quotes and backslashes
+                if line.strip():  # Only process non-empty lines
+                    escaped_line = line.replace('\\', '\\\\')
+                    escaped_line = escaped_line.replace('"', '\\"')
+                    formatted_lines.append(f'        #|{escaped_line}')
+            
+            if formatted_lines:
+                multiline_body = '\n'.join(formatted_lines)
+                values_entries.append(f'      "{item_name}": build(\n        (\n{multiline_body}\n        ),\n      )')
+            
     values_map = ",\n".join(values_entries)
     
     module_code = f'''///|

@@ -934,6 +934,7 @@ test "module" {
 
 ///|
 test "math" {
-  let vm = MoonBitVM::new()
-  assert_eq(vm.eval("@math.cos(0.0)").to_string(), "1")
+  let vm = MoonBitVM::new(log=true)
+  assert_eq(vm.eval("@math.abs").to_string(), "(x: Double) -> Double")
+  assert_eq(vm.eval("@math.abs(-1.0)").to_string(), "1")
 }

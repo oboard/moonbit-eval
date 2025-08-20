@@ -54,7 +54,7 @@ pub fn RuntimeModule::new(
   let env = RuntimeEnvironment::new(values~)
   ///|
   fn build(code : String) -> RuntimeValue {
-    if code.has_prefix("pub") {
+    if code.has_prefix("pub") || code.has_prefix("fn") {
       let impl_ = parse_code_to_impl(code)
       if impl_ is Ok(impl_) {
         return env.top_func_def_to_closure(impl_)
