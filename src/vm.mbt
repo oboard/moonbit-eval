@@ -230,15 +230,17 @@ pub fn MoonBitVM::eval(
       buf.to_bytes(),
       parser=Handrolled,
     )
+    let mut last_result = RuntimeValue::Unit
     impls.each(node => {
       if log.unwrap_or(self.log) {
         println(node.to_json().stringify())
       }
       self.interpreter.start()
-      self.interpreter.top_visit(node)
+      let result = self.interpreter.top_visit(node)
+      last_result = result
       self.interpreter.stop()
     })
-    return { value: RuntimeValue::Unit, interpreter: self.interpreter }
+    return { value: last_result, interpreter: self.interpreter }
   }
   match @interpreter.parse_code_to_expr(code) {
     Ok(expr) => {

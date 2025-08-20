@@ -2,6 +2,7 @@
 package "oboard/moonbit-eval/interpreter"
 
 import(
+  "moonbitlang/core/bigint"
   "moonbitlang/core/json"
   "moonbitlang/core/list"
   "moonbitlang/parser/basic"
@@ -37,6 +38,10 @@ fn is_comparison_op(String) -> Bool
 
 let option_methods : Map[String, (RuntimeFunctionContext) -> RuntimeValue]
 
+fn parse_code_to_expr(String) -> Result[@syntax.Expr, String]
+
+fn parse_code_to_impl(String) -> Result[@syntax.Impl, String]
+
 fn runtime_value_infix(String, RuntimeValue, RuntimeValue) -> RuntimeValue
 
 let string_embedded_code : Map[String, (RuntimeFunctionContext) -> RuntimeValue]
@@ -70,7 +75,6 @@ fn ClosureInterpreter::constants_equal_expr(Self, @syntax.Expr, @syntax.Expr) ->
 fn ClosureInterpreter::execute_function_call(Self, @syntax.Func, @list.List[@syntax.Argument]) -> @syntax.Expr
 fn ClosureInterpreter::execute_match(Self, @syntax.Expr, @list.List[@syntax.Case]) -> @syntax.Expr
 fn ClosureInterpreter::execute_match_runtime(Self, RuntimeValue, @list.List[@syntax.Case]) -> RuntimeValue
-fn ClosureInterpreter::find_variable(Self, String) -> RuntimeValue
 fn ClosureInterpreter::get_function_type_string(Self, RuntimeValue) -> String
 fn ClosureInterpreter::is_known_function(Self, String) -> Bool
 fn ClosureInterpreter::new(core? : Bool) -> Self
@@ -80,7 +84,7 @@ fn ClosureInterpreter::pop_scope(Self) -> Unit
 fn ClosureInterpreter::push_scope(Self) -> Unit
 fn ClosureInterpreter::start(Self) -> Unit
 fn ClosureInterpreter::stop(Self) -> Unit
-fn ClosureInterpreter::top_visit(Self, @syntax.Impl) -> Unit
+fn ClosureInterpreter::top_visit(Self, @syntax.Impl) -> RuntimeValue
 fn ClosureInterpreter::value_in_range(Self, @syntax.Expr, @syntax.Pattern, @syntax.Pattern, Bool) -> Bool
 fn ClosureInterpreter::visit(Self, @syntax.Expr) -> RuntimeValue
 
@@ -118,15 +122,20 @@ pub(all) struct RuntimeEnvironment {
   values : Map[String, RuntimeValue]
   mutable_vars : Map[String, Bool]
   parent : RuntimeEnvironment?
+  deps : Map[String, RuntimeModule]
 }
 fn RuntimeEnvironment::copy(Self) -> Self
 fn RuntimeEnvironment::create_closure_env(Self) -> Self
 fn RuntimeEnvironment::current_scope(Self) -> Map[String, RuntimeValue]
 fn RuntimeEnvironment::define_struct_method(Self, String, String, @syntax.Func) -> Unit
-fn RuntimeEnvironment::new(parent? : Self) -> Self
+fn RuntimeEnvironment::find(Self, String) -> RuntimeValue
+fn RuntimeEnvironment::find_fn_alias(Self, String) -> String
+fn RuntimeEnvironment::new(parent? : Self, values? : Map[String, RuntimeValue]) -> Self
 fn RuntimeEnvironment::set_mutable_variable(Self, String, RuntimeValue) -> Unit
 fn RuntimeEnvironment::set_variable(Self, String, RuntimeValue) -> Unit
+fn RuntimeEnvironment::top_func_def_to_closure(Self, @syntax.Impl) -> RuntimeValue
 fn RuntimeEnvironment::update_variable(Self, String, RuntimeValue) -> Unit
+fn[T] RuntimeEnvironment::with_ident(Self, @syntax.LongIdent, (Self, String) -> T) -> T
 impl ToJson for RuntimeEnvironment
 
 pub(all) struct RuntimeFunctionContext {
@@ -138,6 +147,8 @@ pub(all) struct RuntimeModule {
   meta : ModuleMeta
   env : RuntimeEnvironment
 }
+fn RuntimeModule::new(String, (RuntimeEnvironment, (String) -> RuntimeValue) -> Map[String, RuntimeValue]) -> Self
+impl ToJson for RuntimeModule
 
 pub(all) enum RuntimeValue {
   Unit
@@ -148,9 +159,11 @@ pub(all) enum RuntimeValue {
   UInt64(UInt64)
   Float(Float)
   Double(Double)
+  BigInt(@bigint.BigInt)
   Char(Char)
   Byte(Byte)
   String(String)
+  Error(Failure)
   Tuple(Array[RuntimeValue])
   Array(Array[RuntimeValue])
   Struct(Ref[Map[String, RuntimeValue]])
@@ -158,6 +171,9 @@ pub(all) enum RuntimeValue {
   Constructor(String, Array[RuntimeValue])
   Break(RuntimeValue?)
   Continue(Array[RuntimeValue])
+  Return(RuntimeValue)
+  Exception(String)
+  TraitObject(RuntimeValue, String)
 }
 fn RuntimeValue::from_expr(@syntax.Expr) -> Self
 fn RuntimeValue::from_option(Self?) -> Self

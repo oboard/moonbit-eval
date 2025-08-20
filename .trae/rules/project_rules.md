@@ -1,4 +1,4 @@
-使用 moon test 测试
+使用 moon test 测试，不要创建 temp 或者 debug 文件来测试，可以修改src/test.mbt文件在调用 moon test 来测试
 moon test -h
 Test the current package
 
@@ -47,16 +47,3 @@ Common Options:
       --dry-run                  Do not actually run the command
       --build-graph              Generate build graph
 
-不要创建 temp 文件来测试，可以修改src/test.mbt文件在调用 moon test 来测试
-测试结果如果不符合预期，diff 会输出差异，预期的在前面，实际的在后面
-例如
-Diff:
-----
-Cons(1, Cons(2, Nil)()
-----
-
-意思是
-预期：
-Cons(1, Cons(2, Nil))
-实际：
-()

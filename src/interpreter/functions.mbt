@@ -24,7 +24,12 @@ pub fn ClosureInterpreter::call_closure(
 
       // 恢复原环境
       self.env = old_env
-      result
+
+      // 处理Return值：如果函数返回Return包装器，提取其内部值
+      match result {
+        RuntimeValue::Return(value) => value
+        _ => result
+      }
     }
     _ => RuntimeValue::Unit
   }
@@ -173,7 +178,12 @@ pub fn ClosureInterpreter::call(
 
       // 恢复作用域
       self.pop_scope()
-      result
+
+      // 处理Return值：如果函数返回Return包装器，提取其内部值
+      match result {
+        RuntimeValue::Return(value) => value
+        _ => result
+      }
     }
     _ =>
       // 返回Unit作为默认值

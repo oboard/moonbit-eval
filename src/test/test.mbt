@@ -8,7 +8,7 @@
 // =============================================================================
 
 ///|
-test "basic_integers" {
+test "0. basic_integers" {
   let vm = MoonBitVM::new()
   inspect(vm.eval("1"), content="1")
   inspect(vm.eval("42"), content="42")
@@ -16,7 +16,7 @@ test "basic_integers" {
 }
 
 ///|
-test "basic_booleans" {
+test "1. basic_booleans" {
   let vm = MoonBitVM::new()
   inspect(vm.eval("true"), content="true")
   inspect(vm.eval("false"), content="false")
@@ -27,10 +27,46 @@ test "basic_booleans" {
 }
 
 ///|
-test "basic_strings" {
+test "2. basic_strings" {
   let vm = MoonBitVM::new()
   inspect(vm.eval("\"hello\""), content="hello")
   inspect(vm.eval("\"hello\"+\"world\""), content="helloworld")
+}
+
+///|
+test "3. multiline_strings" {
+  let vm = MoonBitVM::new()
+  // Test multiline string syntax
+  assert_eq(vm.eval("#|hello\n#|world").to_string(), "hello\nworld")
+  assert_eq(
+    vm.eval("#|line1\n#|line2\n#|line3").to_string(),
+    "line1\nline2\nline3",
+  )
+  assert_eq(vm.eval("#|single line").to_string(), "single line")
+}
+
+///|
+test "4. string_interpolation" {
+  let vm = MoonBitVM::new()
+  // Test string interpolation
+  assert_eq(
+    vm.eval("let x = 42; \"The answer is \\{x}\"").to_string(),
+    "The answer is 42",
+  )
+  assert_eq(
+    vm.eval("let name = \"World\"; \"Hello, \\{name}!\"").to_string(),
+    "Hello, World!",
+  )
+  assert_eq(
+    vm.eval("let a = 5; let b = 3; \"\\{a} + \\{b} = \\{a + b}\"").to_string(),
+    "5 + 3 = 8",
+  )
+  assert_eq(
+    vm
+    .eval("\"Result: \\{if true { \"success\" } else { \"failure\" }}\"")
+    .to_string(),
+    "Result: success",
+  )
 }
 
 // =============================================================================
@@ -38,7 +74,7 @@ test "basic_strings" {
 // =============================================================================
 
 ///|
-test "arithmetic_operators" {
+test "5.arithmetic_operators" {
   let vm = MoonBitVM::new()
   inspect(vm.eval("1+1"), content="2")
   inspect(vm.eval("2-1"), content="1")
@@ -52,7 +88,7 @@ test "arithmetic_operators" {
 // =============================================================================
 
 ///|
-test "array_basic_methods" {
+test "6. array_basic_methods" {
   let vm = MoonBitVM::new()
   // Test array creation and basic methods
   inspect(vm.eval("let arr = [1, 2, 3]; arr.length()"), content="3")
@@ -61,7 +97,7 @@ test "array_basic_methods" {
 }
 
 ///|
-test "array_get_set_methods" {
+test "7. array_get_set_methods" {
   let vm = MoonBitVM::new()
   // Test get method
   inspect(vm.eval("let arr = [1, 2, 3]; arr.get(1)"), content="Some(2)")
@@ -69,7 +105,7 @@ test "array_get_set_methods" {
 }
 
 ///|
-test "array_push_pop_methods" {
+test "8. array_push_pop_methods" {
   let vm = MoonBitVM::new()
   // Test push and pop
   inspect(vm.eval("let arr = [1, 2]; arr.push(3); arr.length()"), content="3")
@@ -78,7 +114,7 @@ test "array_push_pop_methods" {
 }
 
 ///|
-test "array_contains_methods" {
+test "9. array_contains_methods" {
   let vm = MoonBitVM::new()
   // Test contains method
   inspect(vm.eval("let arr = [1, 2, 3]; arr.contains(2)"), content="true")
@@ -86,7 +122,7 @@ test "array_contains_methods" {
 }
 
 ///|
-test "comparison_operators" {
+test "10. comparison_operators" {
   let vm = MoonBitVM::new()
   inspect(vm.eval("5 == 5"), content="true")
   inspect(vm.eval("5 != 3"), content="true")
@@ -101,21 +137,21 @@ test "comparison_operators" {
 // =============================================================================
 
 ///|
-test "immutable_variables" {
+test "11. immutable_variables" {
   let vm = MoonBitVM::new()
   inspect(vm.eval("let a = 1"), content="()")
   inspect(vm.eval("a"), content="1")
 }
 
 ///|
-test "shadowing" {
+test "12. shadowing" {
   let vm = MoonBitVM::new()
   inspect(vm.eval("let a = 0; let a = 1; a"), content="1")
   inspect(vm.eval("let mut a = 0; let a = 1; a"), content="1")
 }
 
 ///|
-test "mutable_variables" {
+test "13. mutable_variables" {
   let vm = MoonBitVM::new()
   inspect(vm.eval("let mut a = 1"), content="()")
   inspect(vm.eval("a = 12"), content="()")
@@ -127,7 +163,7 @@ test "mutable_variables" {
 // =============================================================================
 
 ///|
-test "if_expressions" {
+test "14. if_expressions" {
   let vm = MoonBitVM::new()
   inspect(
     vm.eval("if 1 > 0 { if 2 > 1 { 3 } else { 4 } } else { 5 }"),
@@ -139,7 +175,50 @@ test "if_expressions" {
 }
 
 ///|
-test "for_loops" {
+test "15. type_constraints" {
+  let vm = MoonBitVM::new()
+  // Test type constraint expressions
+  assert_eq(vm.eval("(42 : Int)").to_string(), "42")
+  assert_eq(vm.eval("(true : Bool)").to_string(), "true")
+  assert_eq(vm.eval("(\"hello\" : String)").to_string(), "hello")
+  assert_eq(vm.eval("let x = (5 : Int); x + 1").to_string(), "6")
+}
+
+///|
+test "16. guard_expressions" {
+  let vm = MoonBitVM::new()
+  // Test guard expressions
+  assert_eq(vm.eval("guard true else { 0 }; 42").to_string(), "42")
+  assert_eq(vm.eval("guard false else { 99 }; 42").to_string(), "99")
+  assert_eq(
+    vm.eval("let x = 5; guard x > 0 else { -1 }; x * 2").to_string(),
+    "10",
+  )
+}
+
+///|
+test "17. is_expressions" {
+  let vm = MoonBitVM::new()
+  // Test 'is' pattern matching expressions
+  assert_eq(vm.eval("5 is 5").to_string(), "true")
+  assert_eq(vm.eval("5 is 3").to_string(), "false")
+  assert_eq(vm.eval("Some(42) is Some(_)").to_string(), "true")
+  assert_eq(vm.eval("None is Some(_)").to_string(), "false")
+}
+
+///|
+test "18. defer_expressions" {
+  let vm = MoonBitVM::new()
+  // Test defer expressions
+  assert_eq(vm.eval("defer println(\"cleanup\"); 42").to_string(), "42")
+  assert_eq(
+    vm.eval("let mut x = 0; defer x = x + 1; x = 5; x").to_string(),
+    "6",
+  )
+}
+
+///|
+test "19. for_loops" {
   let vm = MoonBitVM::new()
   // 简化测试：只测试最基本的for循环
   inspect(vm.eval("let mut sum = 0"), content="()")
@@ -183,7 +262,7 @@ test "for_loops" {
 // }
 
 ///|
-test "while_loops" {
+test "20. while_loops" {
   let vm = MoonBitVM::new()
   inspect(vm.eval("let mut i = 0"), content="()")
   inspect(vm.eval("let mut sum = 0"), content="()")
@@ -193,10 +272,11 @@ test "while_loops" {
 }
 
 ///|
-test "loop_control" {
+test "21. loop_control" {
   let vm = MoonBitVM::new()
-  inspect(
-    vm.eval(
+  assert_eq(
+    vm
+    .eval(
       (
         #|fn sum_with_continue(n : Int, acc : Int) -> Int {
         #|  let mut acc = acc
@@ -209,12 +289,14 @@ test "loop_control" {
         #|  acc
         #|}
       ),
-    ),
-    content="(n: Int, acc: Int) -> Int",
+    )
+    .to_string(),
+    "(n: Int, acc: Int) -> Int",
   )
-  inspect(vm.eval("sum_with_continue(5, 1)"), content="9")
-  inspect(
-    vm.eval(
+  assert_eq(vm.eval("sum_with_continue(5, 1)").to_string(), "9")
+  assert_eq(
+    vm
+    .eval(
       (
         #|let mut i = 10
         #|while i > 0 {
@@ -226,8 +308,9 @@ test "loop_control" {
         #|  7
         #|}
       ),
-    ),
-    content="5",
+    )
+    .to_string(),
+    "5",
   )
 }
 
@@ -236,26 +319,26 @@ test "loop_control" {
 // =============================================================================
 
 ///|
-test "basic_functions" {
+test "22. basic_functions" {
   let vm = MoonBitVM::new()
-  inspect(
-    vm.eval("fn double(x: Int) -> Int { x * 2 }"),
-    content="(x: Int) -> Int",
+  assert_eq(
+    vm.eval("fn double(x: Int) -> Int { x * 2 }").to_string(),
+    "(x: Int) -> Int",
   )
   inspect(vm.eval("double(2)"), content="4")
-  inspect(
-    vm.eval("fn add(a: Int, b: Int) -> Int { a + b }"),
-    content="(a: Int, b: Int) -> Int",
+  assert_eq(
+    vm.eval("fn add(a: Int, b: Int) -> Int { a + b }").to_string(),
+    "(a: Int, b: Int) -> Int",
   )
   inspect(vm.eval("add(1, 2)"), content="3")
 }
 
 ///|
-test "named_parameters" {
+test "24. named_parameters" {
   let vm = MoonBitVM::new()
-  inspect(
-    vm.eval("fn add_named(a~: Int, b~: Int) -> Int { a + b }"),
-    content="(a~: Int, b~: Int) -> Int",
+  assert_eq(
+    vm.eval("fn add_named(a~: Int, b~: Int) -> Int { a + b }").to_string(),
+    "(a~: Int, b~: Int) -> Int",
   )
   inspect(vm.eval("add_named(a=1, b=2)"), content="3")
   inspect(
@@ -266,7 +349,7 @@ test "named_parameters" {
 }
 
 ///|
-test "lambda_functions" {
+test "25. lambda_functions" {
   let vm = MoonBitVM::new()
   inspect(vm.eval("let f = x => x * 2"), content="()")
   assert_eq(vm.eval("f(3)").to_string(), "6")
@@ -275,7 +358,7 @@ test "lambda_functions" {
 }
 
 ///|
-test "closure_argument_environment" {
+test "26. closure_argument_environment" {
   let vm = MoonBitVM::new()
   inspect(vm.eval("let x = 10"), content="()")
   // 创建闭包，捕获 x = 10
@@ -293,7 +376,7 @@ test "closure_argument_environment" {
 }
 
 ///|
-test "recursive_functions" {
+test "27. recursive_functions" {
   let vm = MoonBitVM::new()
   assert_eq(
     vm
@@ -314,12 +397,56 @@ test "recursive_functions" {
   assert_eq(vm.eval("fib(10)").to_string(), "89")
 }
 
+///|
+test "28. mutually_recursive_functions" {
+  let vm = MoonBitVM::new()
+  // Test LetRec for mutually recursive functions
+  assert_eq(
+    vm
+    .eval(
+      (
+        #|fn is_even(n : Int) -> Bool {
+        #|  if n == 0 { true } else { is_odd(n - 1) }
+        #|}
+        #|fn is_odd(n : Int) -> Bool {
+        #|  if n == 0 { false } else { is_even(n - 1) }
+        #|}
+        #|is_even(4)
+      ),
+      top=true,
+    )
+    .to_string(),
+    "true",
+  )
+  assert_eq(vm.eval("is_odd(5)").to_string(), "true")
+  assert_eq(vm.eval("is_even(3)").to_string(), "false")
+}
+
+///|
+test "29. let_and_bindings" {
+  let vm = MoonBitVM::new()
+  // Test LetAnd for simultaneous function definitions
+  assert_eq(
+    vm
+    .eval(
+      (
+        #|fn f(x : Int) -> Int { x + 1 }
+        #|and g(x : Int) -> Int { x * 2 }
+        #|f(5) + g(3)
+      ),
+      top=true,
+    )
+    .to_string(),
+    "12",
+  )
+}
+
 // =============================================================================
 // 6. DATA STRUCTURES
 // =============================================================================
 
 ///|
-test "tuples" {
+test "30. tuples" {
   let vm = MoonBitVM::new()
   inspect(vm.eval("let t = (1, 2)"), content="()")
   inspect(vm.eval("t.0"), content="1")
@@ -331,7 +458,7 @@ test "tuples" {
 }
 
 ///|
-test "arrays" {
+test "30. arrays" {
   let vm = MoonBitVM::new()
   inspect(vm.eval("let arr = [1, 2, 3]; arr.length()"), content="3")
   inspect(vm.eval("let arr = []; arr.is_empty()"), content="true")
@@ -343,7 +470,78 @@ test "arrays" {
 }
 
 ///|
-test "structs" {
+test "31. array_spread" {
+  let vm = MoonBitVM::new()
+  // Test array spread syntax
+  assert_eq(
+    vm
+    .eval("let arr1 = [1, 2]; let arr2 = [3, 4]; [..arr1, ..arr2]")
+    .to_string(),
+    "[1, 2, 3, 4]",
+  )
+  assert_eq(
+    vm.eval("let arr = [2, 3]; [1, ..arr, 4]").to_string(),
+    "[1, 2, 3, 4]",
+  )
+  assert_eq(vm.eval("let arr = [1, 2, 3]; [..arr]").to_string(), "[1, 2, 3]")
+}
+
+///|
+test "32. array_slice_operations" {
+  let vm = MoonBitVM::new()
+  // Test array slice get operations
+  assert_eq(
+    vm.eval("let arr = [1, 2, 3, 4, 5]; arr[1:3]").to_string(),
+    "[2, 3]",
+  )
+  assert_eq(
+    vm.eval("let arr = [1, 2, 3, 4, 5]; arr[2:]").to_string(),
+    "[3, 4, 5]",
+  )
+  assert_eq(
+    vm.eval("let arr = [1, 2, 3, 4, 5]; arr[:3]").to_string(),
+    "[1, 2, 3]",
+  )
+  assert_eq(
+    vm.eval("let arr = [1, 2, 3, 4, 5]; arr[:]").to_string(),
+    "[1, 2, 3, 4, 5]",
+  )
+}
+
+///|
+test "33. array_set_operations" {
+  let vm = MoonBitVM::new()
+  // Test array set operations
+  assert_eq(
+    vm.eval("let mut arr = [1, 2, 3]; arr[1] = 5; arr").to_string(),
+    "[1, 5, 3]",
+  )
+  assert_eq(
+    vm.eval("let mut arr = [1, 2, 3]; arr[0] = 10; arr[0]").to_string(),
+    "10",
+  )
+}
+
+///|
+test "34. array_augmented_set" {
+  let vm = MoonBitVM::new()
+  // Test array augmented assignment operations
+  assert_eq(
+    vm.eval("let mut arr = [1, 2, 3]; arr[1] += 5; arr").to_string(),
+    "[1, 7, 3]",
+  )
+  assert_eq(
+    vm.eval("let mut arr = [10, 20, 30]; arr[0] -= 5; arr[0]").to_string(),
+    "5",
+  )
+  assert_eq(
+    vm.eval("let mut arr = [2, 4, 6]; arr[1] *= 3; arr[1]").to_string(),
+    "12",
+  )
+}
+
+///|
+test "35. structs" {
   let vm = MoonBitVM::new()
   inspect(
     vm.eval(
@@ -365,7 +563,7 @@ test "structs" {
 }
 
 ///|
-test "mutable_structs" {
+test "36. mutable_structs" {
   let vm = MoonBitVM::new()
   inspect(
     vm.eval(
@@ -390,7 +588,124 @@ test "mutable_structs" {
 }
 
 ///|
-test "references" {
+test "36. record_update" {
+  let vm = MoonBitVM::new()
+  assert_eq(
+    vm
+    .eval(
+      (
+        #|struct Person {
+        #|  name : String
+        #|  age : Int
+        #|}
+      ),
+      top=true,
+    )
+    .to_string(),
+    "()",
+  )
+  assert_eq(vm.eval("let p1 = { name: \"Alice\", age: 25 }").to_string(), "()")
+  assert_eq(vm.eval("let p2 = { ..p1, age: 26 }").to_string(), "()")
+  assert_eq(vm.eval("p2.name").to_string(), "Alice")
+  assert_eq(vm.eval("p2.age").to_string(), "26")
+  assert_eq(vm.eval("p1.age").to_string(), "25")
+}
+
+///|
+test "37. method_calls" {
+  let vm = MoonBitVM::new()
+  assert_eq(
+    vm
+    .eval(
+      (
+        #|struct Calculator {
+        #|  value : Int
+        #|}
+        #|fn Calculator::add(self : Calculator, x : Int) -> Int {
+        #|  self.value + x
+        #|}
+        #|fn Calculator::multiply(self : Calculator, x : Int) -> Int {
+        #|  self.value * x
+        #|}
+      ),
+      top=true,
+    )
+    .to_string(),
+    "()",
+  )
+  assert_eq(vm.eval("let calc = { value: 10 }").to_string(), "()")
+  assert_eq(vm.eval("calc.add(5)").to_string(), "15")
+  assert_eq(vm.eval("calc.multiply(3)").to_string(), "30")
+  assert_eq(
+    vm.eval("Calculator::add").to_string(),
+    "(self: Calculator, x: Int) -> Int",
+  )
+}
+
+///|
+test "40. trait_as_expressions" {
+  let vm = MoonBitVM::new()
+  // Test basic string operations first
+  assert_eq(vm.eval("1.to_string()").to_string(), "1")
+  assert_eq(vm.eval("\"hello\" + \" world\"").to_string(), "hello world")
+
+  // Test 'as' expressions for trait casting
+  assert_eq(
+    vm
+    .eval(
+      (
+        #|trait Show {
+        #|  show(Self) -> String
+        #|}
+        #|struct Point {
+        #|  x : Int
+        #|  y : Int
+        #|}
+        #|fn Point::show(self : Point) -> String {
+        #|  \"(\" + self.x.to_string() + \", \" + self.y.to_string() + \")\"
+        #|}
+      ),
+      top=true,
+    )
+    .to_string(),
+    "()",
+  )
+  assert_eq(vm.eval("let p = { x: 1, y: 2 }").to_string(), "()")
+  assert_eq(vm.eval("(p as Show).show()").to_string(), "(1, 2)")
+}
+
+///|
+test "40. field_mutation" {
+  let vm = MoonBitVM::new()
+  assert_eq(
+    vm
+    .eval(
+      (
+        #|struct Counter {
+        #|  mut count : Int
+        #|}
+      ),
+      top=true,
+    )
+    .to_string(),
+    "()",
+  )
+  assert_eq(vm.eval("let c = { count: 0 }").to_string(), "()")
+  assert_eq(vm.eval("c.count = 5").to_string(), "()")
+  assert_eq(vm.eval("c.count").to_string(), "5")
+
+  // 测试简单赋值对比
+  assert_eq(vm.eval("c.count = 5").to_string(), "()")
+  // 测试 += 是否被解析为 =
+  assert_eq(vm.eval("c.count = 3").to_string(), "()")
+  assert_eq(vm.eval("c.count += 3").to_string(), "()")
+  assert_eq(vm.eval("c.count").to_string(), "8")
+  assert_eq(vm.eval("c.count *= 2").to_string(), "()")
+  assert_eq(vm.eval("c.count").to_string(), "16")
+}
+
+///|
+test "41. references" {
   let vm = MoonBitVM::new()
   inspect(
     vm.eval(
@@ -418,11 +733,230 @@ test "references" {
 }
 
 // =============================================================================
+// 6.5. ADVANCED CONTROL FLOW
+// =============================================================================
+
+///|
+test "42. return_expressions" {
+  let vm = MoonBitVM::new()
+  // Test return expressions in functions
+  assert_eq(
+    vm
+    .eval(
+      (
+        #|fn early_return(x : Int) -> Int {
+        #|  if x < 0 { return -1 }
+        #|  x * 2
+        #|}
+        #|early_return(5)
+      ),
+    )
+    .to_string(),
+    "10",
+  )
+  assert_eq(vm.eval("early_return(-3)").to_string(), "-1")
+}
+
+///|
+test "43. raise_expressions" {
+  let vm = MoonBitVM::new()
+  // Test raise expressions for exceptions
+  assert_eq(
+    vm
+    .eval(
+      (
+        #|fn divide(a : Int, b : Int) -> Int {
+        #|  if b == 0 { raise "Division by zero" }
+        #|  a / b
+        #|}
+        #|divide(10, 2)
+      ),
+      top=true,
+    )
+    .to_string(),
+    "5",
+  )
+}
+
+///|
+test "44. loop_expressions" {
+  let vm = MoonBitVM::new()
+  // Test loop expressions
+  assert_eq(
+    vm
+    .eval(
+      (
+        #|let mut sum = 0
+        #|let mut i = 0
+        #|loop {
+        #|  if i >= 5 { break }
+        #|  sum += i
+        #|  i += 1
+        #|}
+        #|sum
+      ),
+    )
+    .to_string(),
+    "10",
+  )
+}
+
+///|
+test "45. break_continue" {
+  let vm = MoonBitVM::new()
+  // Test break and continue in loops
+  assert_eq(
+    vm
+    .eval(
+      (
+        #|let mut result = 0
+        #|for i = 0; i < 10; i = i + 1 {
+        #|  if i == 3 { continue }
+        #|  if i == 7 { break }
+        #|  result += i
+        #|}
+        #|result
+      ),
+      top=true,
+    )
+    .to_string(),
+    "18",
+  )
+}
+
+// =============================================================================
+// 6.6. EXCEPTION HANDLING
+// =============================================================================
+
+///|
+test "46. try_catch_expressions" {
+  let vm = MoonBitVM::new()
+  // Test try-catch expressions
+  assert_eq(
+    vm
+    .eval(
+      (
+        #|try {
+        #|  let x = 10 / 2
+        #|  x
+        #|} catch {
+        #|  e => -1
+        #|}
+      ),
+      top=true,
+    )
+    .to_string(),
+    "5",
+  )
+  assert_eq(
+    vm
+    .eval(
+      (
+        #|try {
+        #|  raise "error"
+        #|  42
+        #|} catch {
+        #|  e => 0
+        #|}
+      ),
+      top=true,
+    )
+    .to_string(),
+    "0",
+  )
+}
+
+///|
+test "47. try_operator" {
+  let vm = MoonBitVM::new()
+  // Test try operator (?)
+  assert_eq(
+    vm
+    .eval(
+      (
+        #|fn safe_divide(a : Int, b : Int) -> Int? {
+        #|  if b == 0 { None } else { Some(a / b) }
+        #|}
+        #|let result = safe_divide(10, 2)?
+        #|result
+      ),
+      top=true,
+    )
+    .to_string(),
+    "5",
+  )
+  assert_eq(
+    vm
+    .eval(
+      (
+        #|let result = safe_divide(10, 0)?
+        #|result
+      ),
+      top=true,
+    )
+    .to_string(),
+    "None",
+  )
+}
+
+// =============================================================================
+// 6.7. MISCELLANEOUS SYNTAX
+// =============================================================================
+
+///|
+test "48. map_expressions" {
+  let vm = MoonBitVM::new()
+  // Test map literal expressions
+  assert_eq(
+    vm
+    .eval(
+      (
+        #|let m = { "a": 1, "b": 2, "c": 3 }
+        #|m["b"]
+      ),
+      top=true,
+    )
+    .to_string(),
+    "2",
+  )
+}
+
+///|
+test "49. group_expressions" {
+  let vm = MoonBitVM::new()
+  // Test grouped expressions with parentheses
+  assert_eq(
+    vm
+    .eval(
+      (
+        #|let x = (2 + 3) * (4 + 1)
+        #|x
+      ),
+      top=true,
+    )
+    .to_string(),
+    "25",
+  )
+  assert_eq(
+    vm
+    .eval(
+      (
+        #|let y = ((1 + 2) * 3) + (4 * (5 + 6))
+        #|y
+      ),
+      top=true,
+    )
+    .to_string(),
+    "53",
+  )
+}
+
+// =============================================================================
 // 7. PATTERN MATCHING
 // =============================================================================
 
 ///|
-test "basic_pattern_matching" {
+test "50. basic_pattern_matching" {
   let vm = MoonBitVM::new()
   inspect(vm.eval("let s = 10"), content="()")
   inspect(vm.eval("match s { 10 => 100 }"), content="100")
@@ -431,14 +965,14 @@ test "basic_pattern_matching" {
 }
 
 ///|
-test "or_patterns" {
+test "51. or_patterns" {
   let vm = MoonBitVM::new()
   inspect(vm.eval("match 5 { 1 | 5 | 10 => 100 }"), content="100")
   inspect(vm.eval("match 3 { 1 | 5 | 10 => 100; _ => 200 }"), content="200")
 }
 
 ///|
-test "tuple_patterns" {
+test "52. tuple_patterns" {
   let vm = MoonBitVM::new()
   inspect(vm.eval("match (1, 2) { (a, b) => a }"), content="1")
   inspect(vm.eval("match (1, 2) { (a, b) => b }"), content="2")
@@ -446,7 +980,7 @@ test "tuple_patterns" {
 }
 
 ///|
-test "array_patterns" {
+test "53. array_patterns" {
   let vm = MoonBitVM::new()
   inspect(vm.eval("match [1, 2, 3] { [a, b, c] => a }"), content="1")
   inspect(vm.eval("match [1, 2, 3] { [a, b, c] => a + b + c }"), content="6")
@@ -454,7 +988,7 @@ test "array_patterns" {
 }
 
 ///|
-test "record_patterns" {
+test "54. record_patterns" {
   let vm = MoonBitVM::new()
   inspect(vm.eval("match { x: 10, y: 20 } { { x, y } => x + y }"), content="30")
   inspect(
@@ -468,7 +1002,7 @@ test "record_patterns" {
 }
 
 ///|
-test "nested_patterns" {
+test "55. nested_patterns" {
   let vm = MoonBitVM::new()
   inspect(
     vm.eval("match (1, [2, 3]) { (a, [b, c]) => a + b + c }"),
@@ -479,7 +1013,7 @@ test "nested_patterns" {
 }
 
 ///|
-test "range_patterns" {
+test "56. range_patterns" {
   let vm = MoonBitVM::new()
   inspect(
     vm.eval(
@@ -934,14 +1468,14 @@ test "module" {
 
 ///|
 test "math" {
-  let vm = MoonBitVM::new(log=true)
+  let vm = MoonBitVM::new()
   assert_eq(vm.eval("@math.abs").to_string(), "(x: Double) -> Double")
   assert_eq(vm.eval("@math.abs(-1.0)").to_string(), "1")
 }
 
 ///|
 test "bigint" {
-  let vm = MoonBitVM::new(log=true)
+  let vm = MoonBitVM::new()
   assert_eq(vm.eval("@bigint.zero").to_string(), "0")
   assert_eq(vm.eval("@bigint.radix_bit_len").to_string(), "32")
 }

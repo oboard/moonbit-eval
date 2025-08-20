@@ -12,6 +12,7 @@ pub let int_methods : Map[String, RuntimeFunction] = {
   "ctz": int_ctz_fn,
   "clz": int_clz_fn,
   "popcnt": int_popcnt_fn,
+  "to_string": int_to_string_fn,
 }
 
 ///|
@@ -119,5 +120,11 @@ let int_clz_fn : RuntimeFunction = ctx => match ctx.arguments {
 ///| 计算设置位的个数
 let int_popcnt_fn : RuntimeFunction = ctx => match ctx.arguments {
   [{ value: Int(i), .. }, ..] => Int(i.popcnt())
+  _ => Unit
+}
+
+///| 整数转字符串
+let int_to_string_fn : RuntimeFunction = ctx => match ctx.arguments {
+  [{ value: Int(i), .. }, ..] => String(i.to_string())
   _ => Unit
 }

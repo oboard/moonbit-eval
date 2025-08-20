@@ -33,6 +33,15 @@ pub(all) enum RuntimeValue {
   // 控制流异常 - 用于实现break和continue语句
   Break(RuntimeValue?) // break可以带返回值
   Continue(Array[RuntimeValue]) // continue可以带参数列表
+
+  // 函数返回值 - 用于实现return语句
+  Return(RuntimeValue) // return带返回值
+
+  // 异常处理 - 用于实现raise和try语句
+  Exception(String) // 异常信息
+
+  // Trait 对象 - 用于实现 trait casting
+  TraitObject(RuntimeValue, String) // 原始值和 trait 名称
 }
 
 ///| 为 RuntimeValue 实现自定义的 ToJson trait
@@ -57,7 +66,10 @@ pub impl ToJson for RuntimeValue with to_json(self : RuntimeValue) -> Json {
     Constructor(name, args) => [name, args.to_json()]
     Break(v) => ["break", v.to_json()]
     Continue(v) => ["continue", v.to_json()]
+    Return(v) => ["return", v.to_json()]
+    Exception(msg) => ["exception", msg.to_json()]
     Error(e) => e.to_json()
+    TraitObject(value, _) => value.to_json() // 返回原始值的 JSON 表示
   }
 }
 
@@ -394,7 +406,10 @@ pub impl Show for RuntimeValue with to_string(self) -> String {
       let arg_strs = args.map(fn(v) { v.to_string() })
       "continue " + arg_strs.join(", ")
     }
+    Return(value) => "return " + value.to_string()
+    Exception(msg) => "exception: " + msg
     Error(e) => e.to_string()
+    TraitObject(value, _) => value.to_string() // 返回原始值的字符串表示
   }
 }
 
@@ -471,7 +486,10 @@ pub fn RuntimeValue::to_expr(self : RuntimeValue) -> @syntax.Expr {
       let expr_args = args.map(fn(v) { v.to_expr() })
       Continue(args=@list.from_array(expr_args), label=None, loc=_dummy_loc)
     }
+    Return(value) => Return(return_value=Some(value.to_expr()), loc=_dummy_loc)
+    Exception(_) => Unit(loc=_dummy_loc, faked=true)
     Error(_) => Unit(loc=_dummy_loc, faked=true)
+    TraitObject(value, _) => value.to_expr() // 返回原始值的表达式表示
   }
 }
 
@@ -538,6 +556,9 @@ pub fn runtime_value_infix(
         ">" => Bool(left > right)
         "<=" => Bool(left <= right)
         ">=" => Bool(left >= right)
+        // 增强赋值操作符 - 注意：这些操作符不应该在这里处理
+        // 它们应该在解释器的 Infix 处理中被特殊处理
+        "+=" | "-=" | "*=" | "/=" | "%=" => Unit
         _ => Unit
       }
     // Double 运算
