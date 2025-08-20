@@ -16,12 +16,8 @@ pub let array_methods : Map[String, RuntimeFunction] = {
   "remove": array_remove_fn,
   "contains": array_contains_fn,
   "search": array_search_fn,
-  "index_of": array_index_of_fn,
-  "last_index_of": array_last_index_of_fn,
-  "slice": array_slice_fn,
-  "concat": array_concat_fn,
-  "any": array_any_fn,
-  "all": array_all_fn,
+  "search_by": array_search_by_fn,
+  "find_index": array_search_by_fn,
   "capacity": array_capacity_fn,
   "resize": array_resize_fn,
   "truncate": array_truncate_fn,
@@ -43,98 +39,6 @@ let array_push_fn : RuntimeFunction = ctx => match ctx.arguments {
   [{ value: Array(arr), .. }, { value: val, .. }, ..] => {
     arr.push(val)
     Array(arr)
-  }
-  _ => Unit
-}
-
-///| 数组slice操作
-let array_slice_fn : RuntimeFunction = ctx => match ctx.arguments {
-  // slice(start, end)
-  [
-    { value: Array(arr), .. },
-    { value: Int(start), .. },
-    { value: Int(end), .. },
-    ..,
-  ] => {
-    let start_idx = if start < 0 { 0 } else { start }
-    let end_idx = if end > arr.length() { arr.length() } else { end }
-    if start_idx >= end_idx {
-      RuntimeValue::Array([])
-    } else {
-      let sliced = Array::new()
-      for i = start_idx; i < end_idx; i = i + 1 {
-        sliced.push(arr[i])
-      }
-      RuntimeValue::Array(sliced)
-    }
-  }
-  // slice(start) - slice from start to end
-  [{ value: Array(arr), .. }, { value: Int(start), .. }, ..] => {
-    let start_idx = if start < 0 { 0 } else { start }
-    if start_idx >= arr.length() {
-      RuntimeValue::Array([])
-    } else {
-      let sliced = Array::new()
-      for i = start_idx; i < arr.length(); i = i + 1 {
-        sliced.push(arr[i])
-      }
-      RuntimeValue::Array(sliced)
-    }
-  }
-  _ => Unit
-}
-
-///| 数组concat操作
-let array_concat_fn : RuntimeFunction = ctx => match ctx.arguments {
-  [{ value: Array(arr1), .. }, { value: Array(arr2), .. }, ..] => {
-    let result = Array::new()
-    for i = 0; i < arr1.length(); i = i + 1 {
-      result.push(arr1[i])
-    }
-    for i = 0; i < arr2.length(); i = i + 1 {
-      result.push(arr2[i])
-    }
-    RuntimeValue::Array(result)
-  }
-  _ => Unit
-}
-
-///| 数组any操作
-let array_any_fn : RuntimeFunction = ctx => match ctx.arguments {
-  [{ value: Array(arr), .. }, ..] => {
-    let mut result = false
-    for i = 0; i < arr.length(); i = i + 1 {
-      match arr[i] {
-        Bool(true) => {
-          result = true
-          break
-        }
-        _ => continue
-      }
-    }
-    RuntimeValue::Bool(result)
-  }
-  _ => Unit
-}
-
-///| 数组all操作
-let array_all_fn : RuntimeFunction = ctx => match ctx.arguments {
-  [{ value: Array(arr), .. }, ..] => {
-    let mut result = true
-    for i = 0; i < arr.length(); i = i + 1 {
-      match arr[i] {
-        Bool(false) => {
-          result = false
-          break
-        }
-        Bool(true) => continue
-        _ => {
-          result = false
-          break
-        }
-      }
-    }
-    RuntimeValue::Bool(result)
   }
   _ => Unit
 }
@@ -289,7 +193,7 @@ let array_each_fn : RuntimeFunction = ctx => match ctx.arguments {
         value: val.to_expr(),
         kind: @syntax.ArgumentKind::Positional,
       }
-      ctx.context.call(f, @list.from_array([arg])) |> ignore
+      ctx.context.call(f, @list.of([arg])) |> ignore
     })
     Unit
   }
@@ -319,10 +223,7 @@ let array_filter_fn : RuntimeFunction = ctx => match ctx.arguments {
         value: val.to_expr(),
         kind: @syntax.ArgumentKind::Positional,
       }
-      match ctx.context.call(f, @list.from_array([arg])) {
-        Bool(true) => true
-        _ => false
-      }
+      ctx.context.call(f, @list.of([arg])) is Bool(true)
     })
     Array(new_arr)
   }
@@ -346,46 +247,23 @@ let array_fold_fn : RuntimeFunction = ctx => match ctx.arguments {
         value: val.to_expr(),
         kind: @syntax.ArgumentKind::Positional,
       }
-      ctx.context.call(f, @list.from_array([acc_arg, val_arg]))
+      ctx.context.call(f, @list.of([acc_arg, val_arg]))
     })
   _ => Unit
 }
 
 ///| 数组index_of操作
-let array_index_of_fn : RuntimeFunction = ctx => match ctx.arguments {
-  [{ value: Array(arr), .. }, { value: val, .. }, ..] => {
-    let mut index = 0
-    let mut found = false
-    while index < arr.length() && not(found) {
-      if arr[index] == val {
-        found = true
-      } else {
-        index = index + 1
+let array_search_by_fn : RuntimeFunction = ctx => match ctx.arguments {
+  [{ value: Array(arr), .. }, { value: Closure(f, _), .. }, ..] => {
+    let index = arr.search_by(fn(val) {
+      let arg = @syntax.Argument::{
+        value: val.to_expr(),
+        kind: @syntax.ArgumentKind::Positional,
       }
-    }
-    if found {
-      RuntimeValue::Constructor("Some", [RuntimeValue::Int(index)])
-    } else {
-      RuntimeValue::Constructor("None", [])
-    }
-  }
-  _ => Unit
-}
-
-///| 数组last_index_of操作
-let array_last_index_of_fn : RuntimeFunction = ctx => match ctx.arguments {
-  [{ value: Array(arr), .. }, { value: val, .. }, ..] => {
-    let mut index = arr.length() - 1
-    let mut found = false
-    while index >= 0 && not(found) {
-      if arr[index] == val {
-        found = true
-      } else {
-        index = index - 1
-      }
-    }
-    if found {
-      RuntimeValue::Constructor("Some", [RuntimeValue::Int(index)])
+      ctx.context.call(f, @list.of([arg])) is Bool(true)
+    })
+    if index is Some(i) {
+      RuntimeValue::Constructor("Some", [RuntimeValue::Int(i)])
     } else {
       RuntimeValue::Constructor("None", [])
     }
