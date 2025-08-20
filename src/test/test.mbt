@@ -925,8 +925,9 @@ test "currying" {
 
 ///|
 test "module" {
-  let vm = MoonBitVM::new(log=true)
+  let vm = MoonBitVM::new()
   assert_eq(vm.eval("let max_value = 1").to_string(), "()")
   assert_eq(vm.eval("max_value").to_string(), "1")
   assert_eq(vm.eval("@int.max_value").to_string(), "2147483647")
+  assert_eq(vm.eval("@int.abs(-1)", log=true).to_string(), "1")
 }

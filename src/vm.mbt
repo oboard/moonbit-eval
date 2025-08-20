@@ -217,12 +217,7 @@ pub fn expr_to_string(expr : @syntax.Expr) -> String {
 }
 
 ///|
-pub fn MoonBitVM::eval(
-  self : MoonBitVM,
-  code : String,
-  log? : Bool,
-  top~ : Bool = false,
-) -> EvalResult raise Failure {
+fn parse_code_to_expr(code : String, top : Bool) -> Result[@syntax.Expr, String] {
   let buf = @buffer.new()
   @encoding.encode_to(
     if top {
@@ -237,7 +232,39 @@ pub fn MoonBitVM::eval(
     buf.to_bytes(),
     parser=Handrolled,
   )
+  
   if top {
+    // For top-level evaluation, we don't extract a single expression
+    return Err("Top-level parsing not supported in parse_code_to_expr")
+  }
+  
+  match impls {
+    @list.List::More(
+      @syntax.Impl::TopFuncDef(fun_decl=_, decl_body~, loc=_),
+      tail=@list.List::Empty
+    ) =>
+      match decl_body {
+        @syntax.DeclBody::DeclBody(local_types=_, expr~) => Ok(expr)
+        _ => Err("Invalid function declaration body")
+      }
+    _ => Err(diagnostics.fold(init="", (acc, cur) => "\{acc}\n\{cur}"))
+  }
+}
+
+///|
+pub fn MoonBitVM::eval(
+  self : MoonBitVM,
+  code : String,
+  log? : Bool,
+  top~ : Bool = false,
+) -> EvalResult raise Failure {
+  if top {
+    let buf = @buffer.new()
+    @encoding.encode_to(code, buf, encoding=UTF8)
+    let (impls, diagnostics) = @moonbitlang/parser.parse_bytes(
+      buf.to_bytes(),
+      parser=Handrolled,
+    )
     impls.each(node => {
       if log.unwrap_or(self.log) {
         println(node.to_json().stringify())
@@ -248,30 +275,20 @@ pub fn MoonBitVM::eval(
     })
     return { value: RuntimeValue::Unit, interpreter: self.interpreter }
   }
-  match impls {
-    @list.List::More(
-      @syntax.Impl::TopFuncDef(fun_decl=_, decl_body~, loc=_),
-      tail=@list.List::Empty
-    ) =>
-      match decl_body {
-        @syntax.DeclBody::DeclBody(local_types=_, expr~) => {
-          self.interpreter.start()
-          let result_value = self.interpreter.visit(expr)
-          self.interpreter.stop()
-          if log.unwrap_or(self.log) {
-            println(expr.to_json().stringify())
-          }
-          return { value: result_value, interpreter: self.interpreter }
-        }
-        _ => ()
+  
+  match parse_code_to_expr(code, top) {
+    Ok(expr) => {
+      self.interpreter.start()
+      let result_value = self.interpreter.visit(expr)
+      self.interpreter.stop()
+      if log.unwrap_or(self.log) {
+        println(expr.to_json().stringify())
       }
-    _ => {
-      if !top {
-        // try top eval
-        return self.eval(code, log?, top=true)
-      }
-      fail(diagnostics.fold(init="", (acc, cur) => "\{acc}\n\{cur}"))
+      { value: result_value, interpreter: self.interpreter }
+    }
+    Err(error) => {
+      // try top eval
+      return self.eval(code, log?, top=true)
     }
   }
-  { value: RuntimeValue::Unit, interpreter: self.interpreter }
 }

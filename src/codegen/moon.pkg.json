@@ -2,6 +2,7 @@
   "import": [
     "moonbitlang/parser/syntax",
     "moonbitlang/parser/basic",
-    "moonbitlang/yacc/lib/driver/util"
+    "moonbitlang/x/encoding",
+    "moonbitlang/parser"
   ]
 }
