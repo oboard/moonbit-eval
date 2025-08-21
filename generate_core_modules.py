@@ -5,6 +5,7 @@ This script reads all modules from moonbitlang/core and generates
 RuntimeModule definitions in the format expected by core_modules.mbt.
 """
 
+from ast import alias
 import os
 import json
 import re
@@ -106,6 +107,7 @@ def read_module_info(module_dir: Path) -> Dict:
     Returns dict with module name, dependencies, and items (functions/constants).
     """
     pkg = "moonbitlang/core/" + module_dir.relative_to(CORE_PATH).as_posix()
+    alias = module_dir.relative_to(CORE_PATH).as_posix()
     module_name = pkg.replace('/', '_')
     
     # Read moon.pkg.json if it exists
@@ -142,6 +144,7 @@ def read_module_info(module_dir: Path) -> Dict:
             continue
     
     return {
+        'alias': alias,
         'pkg': pkg,
         'name': module_name,
         'dependencies': dependencies,
@@ -265,6 +268,7 @@ def generate_core_modules_map(modules: List[dict]) -> str:
     """
     entries = []
     for module in modules: 
+        entries.append(f'"{module['alias']}": {module['name']}_module')
         entries.append(f'"{module['pkg']}": {module['name']}_module')
     map_content = ", ".join(entries)
     

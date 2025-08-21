@@ -1460,7 +1460,7 @@ fn ClosureInterpreter::find_method(
   long_ident : @syntax.LongIdent,
 ) -> MethodType {
   self.main.with_ident(long_ident, fn(env, name) {
-    let name = self.main.env.find_fn_alias(name)
+    let name = env.find_fn_alias(name)
 
     // 按优先级查找：用户函数 -> Lambda变量 -> 外部函数 -> embedded函数
     match env.find(name) {

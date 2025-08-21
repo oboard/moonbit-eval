@@ -7,17 +7,13 @@ pub fn RuntimeEnvironment::find(
   self : RuntimeEnvironment,
   name : String,
 ) -> RuntimeValue {
-  let mut current_env = self
-  // First check current environment
-  if current_env.values.get(name) is Some(v) {
-    return v
-  }
-  // Then traverse parent environments
-  while current_env.parent is Some(parent) {
-    current_env = parent
-    if current_env.values.get(name) is Some(v) {
+  let mut cur = Some(self)
+  // traverse parent environments
+  while cur is Some(env) {
+    if env.values.get(name) is Some(v) {
       return v
     }
+    cur = env.parent
   }
   RuntimeValue::Unit
 }

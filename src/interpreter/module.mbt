@@ -105,5 +105,5 @@ pub fn RuntimeModule::new(
     }
     values.set(key, value.1)
   })
-  { meta: ModuleMeta::new(pkg), env, deps: {} }
+  { meta: ModuleMeta::new(pkg), env, deps }
 }
