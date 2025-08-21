@@ -90,11 +90,11 @@ inspect(vm.eval("match (1, 2) { (a, b) => a + b }"), content="3")
 | Static method calls | ✅ | Class::method() syntax |
 | Pipe operator | ✅ | |> operator for function chaining |
 | Function aliases | ✅ | Alias support (e.g., not for %bool_not) |
+| Traits | ✅ | Interface definitions |
+| Packages | ✅ | Module system |
+| Error handling | ✅ | Result type error handling |
 | **Not Yet Supported** | | |
 | For-in loops | ❌ | Iterator-based loops (commented out in tests) |
-| Traits | ❌ | Interface definitions |
-| Packages | ❌ | Module system |
-| Error handling | ❌ | Result type error handling |
 | Async/await | ❌ | Asynchronous programming |
 
 ## Features
