@@ -51,7 +51,7 @@ pub fn ClosureInterpreter::pattern_matches(
 
     // 标识符与常量模式匹配
     (Ident(id={ name, .. }, ..), Constant(c=pattern_const, ..)) =>
-      self.env.with_ident(name, (env, name) => {
+      self.main.with_ident(name, (env, name) => {
         let runtime_value = env.find(name)
         let value_expr = runtime_value.to_expr()
         match value_expr {
@@ -67,7 +67,7 @@ pub fn ClosureInterpreter::pattern_matches(
       let runtime_value = self.visit(value)
 
       // 直接绑定RuntimeValue
-      self.env.current_scope().set(name, runtime_value)
+      self.main.env.current_scope().set(name, runtime_value)
       true
     }
 
@@ -334,7 +334,7 @@ pub fn ClosureInterpreter::pattern_to_value(
     Constant(c~, loc~) => Some(Constant(c~, loc~))
     Constr(constr~, ..) => {
       // 查找构造函数的值
-      let runtime_value = self.env.find(constr.name.name)
+      let runtime_value = self.main.env.find(constr.name.name)
       Some(runtime_value.to_expr())
     }
     Any(..) => None // 通配符表示开放边界

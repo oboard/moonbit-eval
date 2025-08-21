@@ -13,7 +13,6 @@ pub(all) struct RuntimeEnvironment {
   // 跟踪哪些变量是可变的
   mutable_vars : Map[String, Bool]
   parent : RuntimeEnvironment?
-  deps : Map[String, RuntimeModule]
 } derive(ToJson)
 
 ///|
@@ -40,7 +39,6 @@ pub fn RuntimeEnvironment::new(
       values: values.unwrap_or({}),
       mutable_vars: Map::new(),
       parent: None,
-      deps: Map::new(),
     }
   }
 }

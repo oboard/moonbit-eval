@@ -1,7 +1,8 @@
 ///|
 pub(all) struct RuntimeModule {
   meta : ModuleMeta
-  env : RuntimeEnvironment
+  mut env : RuntimeEnvironment
+  deps : Map[String, RuntimeModule]
 } derive(ToJson)
 
 ///| 模块元数据
@@ -103,5 +104,5 @@ pub fn RuntimeModule::new(
     }
     values.set(key, value.1)
   })
-  { meta: ModuleMeta::new(pkg), env }
+  { meta: ModuleMeta::new(pkg), env, deps: {} }
 }

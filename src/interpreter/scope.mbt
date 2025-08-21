@@ -23,18 +23,18 @@ pub fn RuntimeEnvironment::find(
 }
 
 ///|
-pub fn[T] RuntimeEnvironment::with_ident(
-  self : RuntimeEnvironment,
+pub fn[T] RuntimeModule::with_ident(
+  self : RuntimeModule,
   long_ident : @syntax.LongIdent,
   func : (RuntimeEnvironment, String) -> T,
 ) -> T {
   match long_ident {
-    Ident(name~) => func(self, name)
+    Ident(name~) => func(self.env, name)
     Dot(pkg~, id~) =>
       if self.deps.get(pkg) is Some(pkg) {
         func(pkg.env, id)
       } else {
-        func(self, id)
+        func(self.env, id)
       }
   }
 }
@@ -85,12 +85,12 @@ pub fn RuntimeEnvironment::update(
 
 ///| 创建新的作用域
 pub fn ClosureInterpreter::push_scope(self : ClosureInterpreter) -> Unit {
-  self.env = RuntimeEnvironment::new(parent=self.env)
+  self.main.env = RuntimeEnvironment::new(parent=self.main.env)
 }
 
 ///| 销毁当前作用域
 pub fn ClosureInterpreter::pop_scope(self : ClosureInterpreter) -> Unit {
-  if self.env.parent is Some(parent) {
-    self.env = parent
+  if self.main.env.parent is Some(parent) {
+    self.main.env = parent
   }
 }

@@ -62,9 +62,8 @@ pub(all) struct ClosureInterpreter {
   extern_fns : Map[String, (RuntimeFunctionContext) -> RuntimeValue]
   embedded_fns : Map[String, (RuntimeFunctionContext) -> RuntimeValue]
   embedded_methods : Map[String, Map[String, (RuntimeFunctionContext) -> RuntimeValue]]
-  mut env : RuntimeEnvironment
+  main : RuntimeModule
   mut state : InterpreterState
-  modules : Map[String, RuntimeModule]
 }
 fn ClosureInterpreter::add_embedded_fn(Self, String, (RuntimeFunctionContext) -> RuntimeValue) -> Unit
 fn ClosureInterpreter::add_embedded_method(Self, String, String, (RuntimeFunctionContext) -> RuntimeValue) -> Unit
@@ -126,7 +125,6 @@ pub(all) struct RuntimeEnvironment {
   values : Map[String, RuntimeValue]
   mutable_vars : Map[String, Bool]
   parent : RuntimeEnvironment?
-  deps : Map[String, RuntimeModule]
 }
 fn RuntimeEnvironment::cons(Self, String, Array[RuntimeValue]) -> RuntimeValue
 fn RuntimeEnvironment::copy(Self) -> Self
@@ -141,7 +139,6 @@ fn RuntimeEnvironment::set(Self, String, RuntimeValue) -> Unit
 fn RuntimeEnvironment::set_mutable_variable(Self, String, RuntimeValue) -> Unit
 fn RuntimeEnvironment::top_func_def_to_closure(Self, @syntax.Impl) -> (String?, RuntimeValue)
 fn RuntimeEnvironment::update(Self, String, RuntimeValue) -> Unit
-fn[T] RuntimeEnvironment::with_ident(Self, @syntax.LongIdent, (Self, String) -> T) -> T
 impl ToJson for RuntimeEnvironment
 
 pub(all) struct RuntimeFunctionContext {
@@ -152,9 +149,11 @@ pub(all) struct RuntimeFunctionContext {
 
 pub(all) struct RuntimeModule {
   meta : ModuleMeta
-  env : RuntimeEnvironment
+  mut env : RuntimeEnvironment
+  deps : Map[String, RuntimeModule]
 }
 fn RuntimeModule::new(String, (RuntimeEnvironment, (String) -> (String?, RuntimeValue)) -> Map[String, (String?, RuntimeValue)]) -> Self
+fn[T] RuntimeModule::with_ident(Self, @syntax.LongIdent, (RuntimeEnvironment, String) -> T) -> T
 impl ToJson for RuntimeModule
 
 pub(all) enum RuntimeValue {
