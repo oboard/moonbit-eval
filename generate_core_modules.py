@@ -186,32 +186,32 @@ def generate_module_code(module_info: Dict) -> str:
     for item in items:
         if len(item) == 3:  # Constants: (name, type, body)
             item_name, item_type, item_body = item
-            # For constants, we need to wrap them in the appropriate type
-            if item_body.endswith('UL') and not re.search(r'\b[a-zA-Z_][a-zA-Z0-9_]*\b', item_body[:-2]):
-                # UInt64 constants (check UL before L to avoid conflict, only if no variables)
-                values_entries.append(f'      "{item_name}": UInt64({item_body})')
-            elif item_body.endswith('L') and not re.search(r'\b[a-zA-Z_][a-zA-Z0-9_]*\b', item_body[:-1]):
-                # Int64 constants (only if no variables in the expression)
-                values_entries.append(f'      "{item_name}": Int64({item_body})')
-            elif item_body.endswith('N') and not re.search(r'\b[a-zA-Z_][a-zA-Z0-9_]*\b', item_body[:-1]):
-                # BigInt constants (only if no variables in the expression)
-                values_entries.append(f'      "{item_name}": BigInt({item_body})')
-            elif item_body.endswith('U') and not re.search(r'\b[a-zA-Z_][a-zA-Z0-9_]*\b', item_body[:-1]):
-                # UInt constants (only if no variables in the expression)
-                values_entries.append(f'      "{item_name}": UInt({item_body})')
-            elif (item_body.isdigit() or (item_body.startswith('-') and item_body[1:].isdigit())) and not re.search(r'\b[a-zA-Z_][a-zA-Z0-9_]*\b', item_body):
-                # Int constants (only if no variables in the expression)
-                values_entries.append(f'      "{item_name}": Int({item_body})')
-            elif item_body in ['true', 'false']:
-                # Bool constants
-                values_entries.append(f'      "{item_name}": Bool({item_body})')
-            elif item_body.startswith('"') and item_body.endswith('"') and '"' not in item_body[1:-1].replace('\\"', '') and '//' not in item_body and '[' not in item_body and '{' not in item_body:
-                # Simple string constants (no embedded quotes, comments, expressions, or interpolation)
-                values_entries.append(f'      "{item_name}": String({item_body})')
+            # Define type mapping for different constant suffixes
+            type_mapping = {
+                'UL': ('UInt64', 2),
+                'L': ('Int64', 1), 
+                'N': ('BigInt', 1),
+                'U': ('UInt', 1)
+            }
+            prefix = "None"
+            # Handle different constant types
+            for suffix, (type_name, trim_len) in type_mapping.items():
+                if item_body.endswith(suffix) and not re.search(r'\b[a-zA-Z_][a-zA-Z0-9_]*\b', item_body[:-trim_len]):
+                    values_entries.append(f'      "{item_name}": ({prefix}, {type_name}({item_body}))')
+                    break
             else:
-                # For other constants, use build with the value
-                escaped_body = item_body.replace('\\', '\\\\').replace('"', '\\"')
-                values_entries.append(f'      "{item_name}": build("{escaped_body}")')
+                # Handle other constant types
+                if (item_body.isdigit() or (item_body.startswith('-') and item_body[1:].isdigit())) and not re.search(r'\b[a-zA-Z_][a-zA-Z0-9_]*\b', item_body):
+                    values_entries.append(f'      "{item_name}": ({prefix}, Int({item_body}))')
+                elif item_body in ['true', 'false']:
+                    values_entries.append(f'      "{item_name}": ({prefix}, Bool({item_body}))')
+                elif (item_body.startswith('"') and item_body.endswith('"') and 
+                      '"' not in item_body[1:-1].replace('\\"', '') and 
+                      '//' not in item_body and '[' not in item_body and '{' not in item_body):
+                    values_entries.append(f'      "{item_name}": ({prefix}, String({item_body}))')
+                else:
+                    escaped_body = item_body.replace('\\', '\\\\').replace('"', '\\"')
+                    values_entries.append(f'      "{item_name}": ({prefix}, String("{escaped_body}"))')
         elif len(item) == 4:  # Functions: (name, type, signature, body)
             item_name, item_type, item_signature, item_body = item
             # Check if function has non-self parameters

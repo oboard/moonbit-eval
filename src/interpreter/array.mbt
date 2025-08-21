@@ -89,7 +89,7 @@ let array_swap_fn : RuntimeFunction = ctx => match ctx.arguments {
 ///| 数组get操作
 let array_get_fn : RuntimeFunction = ctx => match ctx.arguments {
   [{ value: Array(arr), .. }, { value: Int(i), .. }, ..] =>
-    RuntimeValue::from_option(arr.get(i))
+    ctx.context.env.from_option(arr.get(i))
   _ => Unit
 }
 
@@ -113,7 +113,7 @@ let array_set_fn : RuntimeFunction = ctx => match ctx.arguments {
 
 ///| 数组pop操作
 let array_pop_fn : RuntimeFunction = ctx => match ctx.arguments {
-  [{ value: Array(arr), .. }, ..] => RuntimeValue::from_option(arr.pop())
+  [{ value: Array(arr), .. }, ..] => ctx.context.env.from_option(arr.pop())
   _ => Unit
 }
 
@@ -141,7 +141,7 @@ let array_contains_fn : RuntimeFunction = ctx => match ctx.arguments {
 ///| 数组search操作
 let array_search_fn : RuntimeFunction = ctx => match ctx.arguments {
   [{ value: Array(arr), .. }, { value: val, .. }, ..] =>
-    RuntimeValue::from_option(
+    ctx.context.env.from_option(
       arr.search(val).map(fn(i) { RuntimeValue::Int(i) }),
     )
   _ => Unit
@@ -262,11 +262,7 @@ let array_search_by_fn : RuntimeFunction = ctx => match ctx.arguments {
       }
       ctx.context.call(f, @list.of([arg])) is Bool(true)
     })
-    if index is Some(i) {
-      RuntimeValue::Constructor("Some", [RuntimeValue::Int(i)])
-    } else {
-      RuntimeValue::Constructor("None", [])
-    }
+    ctx.context.env.from_option(index.map(Int(_)))
   }
   _ => Unit
 }

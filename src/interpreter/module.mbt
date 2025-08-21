@@ -45,15 +45,16 @@ pub fn ModuleMeta::new(
 ///|
 pub fn RuntimeModule::new(
   pkg : String,
-  builder : (RuntimeEnvironment, (String) -> RuntimeValue) -> Map[
+  builder : (RuntimeEnvironment, (String) -> (String?, RuntimeValue)) -> Map[
     String,
-    RuntimeValue,
+    (String?, RuntimeValue),
   ],
 ) -> RuntimeModule {
   let values = {}
-  let env = RuntimeEnvironment::new(values~)
+  let struct_methods = {}
+  let env = RuntimeEnvironment::new(values~, struct_methods~)
   ///|
-  fn build(code : String) -> RuntimeValue {
+  fn build(code : String) -> (String?, RuntimeValue) {
     if code.has_prefix("pub") || code.has_prefix("fn") {
       let impl_ = parse_code_to_impl(code)
       if impl_ is Ok(impl_) {
@@ -61,32 +62,46 @@ pub fn RuntimeModule::new(
       }
     }
     let expr = parse_code_to_expr(code)
-    match expr {
-      Ok(expr) =>
-        match expr {
-          Function(func~, ..) => Closure(func, env.create_closure_env())
-          _ =>
-            Closure(
-              @syntax.Func::Lambda(
-                parameters=@list.of([
-                  Positional(binder={ name: "self", loc: dummy_loc() }, ty=None),
-                ]),
-                params_loc=dummy_loc(),
-                body=expr,
-                return_type=None,
-                error_type=NoErrorType,
-                kind=Arrow,
-                has_error=None,
-                is_async=false,
-                loc=dummy_loc(),
-              ),
-              RuntimeEnvironment::new(),
-            )
-        }
-      Err(_) => Unit
-    }
+    (
+      None,
+      match expr {
+        Ok(expr) =>
+          match expr {
+            Function(func~, ..) => Closure(func, env.create_closure_env())
+            _ =>
+              Closure(
+                @syntax.Func::Lambda(
+                  parameters=@list.of([
+                    Positional(
+                      binder={ name: "self", loc: dummy_loc() },
+                      ty=None,
+                    ),
+                  ]),
+                  params_loc=dummy_loc(),
+                  body=expr,
+                  return_type=None,
+                  error_type=NoErrorType,
+                  kind=Arrow,
+                  has_error=None,
+                  is_async=false,
+                  loc=dummy_loc(),
+                ),
+                RuntimeEnvironment::new(),
+              )
+          }
+        Err(_) => Unit
+      },
+    )
   }
 
-  builder(env, build).each(fn(key, value) { values.set(key, value) })
+  builder(env, build).each(fn(key, value) {
+    if value.0 is Some(name) {
+      if !struct_methods.contains(name) {
+        struct_methods.set(name, {})
+      }
+      struct_methods.get(name).unwrap().set(key, value.1)
+    }
+    values.set(key, value.1)
+  })
   { meta: ModuleMeta::new(pkg), env }
 }

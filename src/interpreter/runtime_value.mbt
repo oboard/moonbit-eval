@@ -22,13 +22,13 @@ pub(all) enum RuntimeValue {
   Map(Map[RuntimeValue, RuntimeValue])
 
   // 结构类型 - 直接存储字段映射
-  Struct(Ref[Map[String, RuntimeValue]])
+  Struct(WithEnv[Map[String, RuntimeValue]])
 
   // 闭包 - 包含函数定义和捕获的环境（所有函数都是闭包）
   Closure(@syntax.Func, RuntimeEnvironment)
 
   // 构造函数调用
-  Constructor(String, Array[RuntimeValue]) // 构造函数名称和参数
+  Constructor(WithEnv[(String, Array[RuntimeValue])]) // 构造函数名称和参数
 
   // 控制流异常 - 用于实现break和continue语句
   Break(RuntimeValue?) // break可以带返回值
@@ -42,6 +42,12 @@ pub(all) enum RuntimeValue {
 
   // Trait 对象 - 用于实现 trait casting
   TraitObject(RuntimeValue, String) // 原始值和 trait 名称
+}
+
+///|
+pub struct WithEnv[T] {
+  val : T
+  env : RuntimeEnvironment
 }
 
 ///|
@@ -115,7 +121,7 @@ pub impl ToJson for RuntimeValue with to_json(self : RuntimeValue) -> Json {
     Array(a) => a.to_json()
     Struct(s) => s.val.to_json()
     Closure(f, _) => f.to_json()
-    Constructor(name, args) => [name, args.to_json()]
+    Constructor({ val: (name, args), .. }) => [name, args.to_json()]
     Break(v) => ["break", v.to_json()]
     Continue(v) => ["continue", v.to_json()]
     Return(v) => ["return", v.to_json()]
@@ -150,15 +156,17 @@ pub impl Eq for RuntimeValue with op_equal(
       a == b
 
     // 结构类型比较
-    (Struct({ val: a }), Struct({ val: b })) => a == b
+    (Struct({ val: a, .. }), Struct({ val: b, .. })) => a == b
 
     // 闭包类型的比较 - 比较函数签名和环境
     (Closure(func_a, _), Closure(func_b, _)) =>
       compare_function_signatures(func_a, func_b)
 
     // 构造函数比较
-    (Constructor(name_a, args_a), Constructor(name_b, args_b)) =>
-      name_a == name_b && args_a == args_b
+    (
+      Constructor({ val: (name_a, args_a), .. }),
+      Constructor({ val: (name_b, args_b), .. }),
+    ) => name_a == name_b && args_a == args_b
 
     // 控制流异常比较
     (Break(a), Break(b)) => a == b
@@ -404,7 +412,7 @@ pub impl Show for RuntimeValue with to_string(self) -> String {
       })
       "{ " + parts.join(", ") + " }"
     }
-    Constructor(name, args) =>
+    Constructor({ val: (name, args), .. }) =>
       // 格式化构造函数调用
       if args.length() == 0 {
         name
@@ -598,7 +606,7 @@ pub fn RuntimeValue::from_expr(expr : @syntax.Expr) -> RuntimeValue {
         let field_value = RuntimeValue::from_expr(field.expr)
         struct_data.set(field_name, field_value)
       }
-      Struct(@ref.new(struct_data))
+      Struct({ val: struct_data, env: RuntimeEnvironment::new() })
     }
     Ident(..) => Unit // Ident表达式需要通过环境查找，这里返回Unit作为占位符
     Sequence(last_expr~, ..) =>
@@ -671,9 +679,12 @@ pub fn runtime_value_infix(
 }
 
 ///|
-pub fn RuntimeValue::from_option(self : RuntimeValue?) -> RuntimeValue {
-  match self {
-    Some(x) => RuntimeValue::Constructor("Some", [x])
-    None => RuntimeValue::Constructor("None", [])
+pub fn RuntimeEnvironment::from_option(
+  self : RuntimeEnvironment,
+  val : RuntimeValue?,
+) -> RuntimeValue {
+  match val {
+    Some(x) => Constructor({ val: ("Some", [x]), env: self })
+    None => Constructor({ val: ("None", []), env: self })
   }
 }

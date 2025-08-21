@@ -121,7 +121,7 @@ pub(all) struct RuntimeEnvironment {
   traits : Map[String, @syntax.TraitDecl]
   fn_aliases : Map[String, String]
   type_definitions : Map[String, @syntax.TypeDecl]
-  struct_methods : Map[String, Map[String, @syntax.Func]]
+  struct_methods : Map[String, Map[String, RuntimeValue]]
   type_environment : TypeEnvironment
   values : Map[String, RuntimeValue]
   mutable_vars : Map[String, Bool]
@@ -134,24 +134,27 @@ fn RuntimeEnvironment::current_scope(Self) -> Map[String, RuntimeValue]
 fn RuntimeEnvironment::define_struct_method(Self, String, String, @syntax.Func) -> Unit
 fn RuntimeEnvironment::find(Self, String) -> RuntimeValue
 fn RuntimeEnvironment::find_fn_alias(Self, String) -> String
-fn RuntimeEnvironment::new(parent? : Self, values? : Map[String, RuntimeValue]) -> Self
+fn RuntimeEnvironment::from_option(Self, RuntimeValue?) -> RuntimeValue
+fn RuntimeEnvironment::new(parent? : Self, values? : Map[String, RuntimeValue], struct_methods? : Map[String, Map[String, RuntimeValue]]) -> Self
 fn RuntimeEnvironment::set(Self, String, RuntimeValue) -> Unit
 fn RuntimeEnvironment::set_mutable_variable(Self, String, RuntimeValue) -> Unit
-fn RuntimeEnvironment::top_func_def_to_closure(Self, @syntax.Impl) -> RuntimeValue
+fn RuntimeEnvironment::top_func_def_to_closure(Self, @syntax.Impl) -> (String?, RuntimeValue)
 fn RuntimeEnvironment::update(Self, String, RuntimeValue) -> Unit
 fn[T] RuntimeEnvironment::with_ident(Self, @syntax.LongIdent, (Self, String) -> T) -> T
 impl ToJson for RuntimeEnvironment
 
 pub(all) struct RuntimeFunctionContext {
   context : ClosureInterpreter
+  env : RuntimeEnvironment
   arguments : Array[RuntimeArgument]
 }
+fn RuntimeFunctionContext::cons(Self, String, Array[RuntimeValue]) -> RuntimeValue
 
 pub(all) struct RuntimeModule {
   meta : ModuleMeta
   env : RuntimeEnvironment
 }
-fn RuntimeModule::new(String, (RuntimeEnvironment, (String) -> RuntimeValue) -> Map[String, RuntimeValue]) -> Self
+fn RuntimeModule::new(String, (RuntimeEnvironment, (String) -> (String?, RuntimeValue)) -> Map[String, (String?, RuntimeValue)]) -> Self
 impl ToJson for RuntimeModule
 
 pub(all) enum RuntimeValue {
@@ -170,9 +173,9 @@ pub(all) enum RuntimeValue {
   Tuple(Array[RuntimeValue])
   Array(Array[RuntimeValue])
   Map(Map[RuntimeValue, RuntimeValue])
-  Struct(Ref[Map[String, RuntimeValue]])
+  Struct(WithEnv[Map[String, RuntimeValue]])
   Closure(@syntax.Func, RuntimeEnvironment)
-  Constructor(String, Array[RuntimeValue])
+  Constructor(WithEnv[(String, Array[RuntimeValue])])
   Break(RuntimeValue?)
   Continue(Array[RuntimeValue])
   Return(RuntimeValue)
@@ -180,7 +183,6 @@ pub(all) enum RuntimeValue {
   TraitObject(RuntimeValue, String)
 }
 fn RuntimeValue::from_expr(@syntax.Expr) -> Self
-fn RuntimeValue::from_option(Self?) -> Self
 fn RuntimeValue::is_mutable(Self) -> Bool
 fn RuntimeValue::is_reference(Self) -> Bool
 fn RuntimeValue::to_expr(Self) -> @syntax.Expr
@@ -195,6 +197,11 @@ pub struct TypeEnvironment {
   parent : TypeEnvironment?
 }
 impl ToJson for TypeEnvironment
+
+pub struct WithEnv[T] {
+  val : T
+  env : RuntimeEnvironment
+}
 
 // Type aliases
 pub typealias (RuntimeFunctionContext) -> RuntimeValue as RuntimeFunction

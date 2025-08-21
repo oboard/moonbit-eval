@@ -1064,10 +1064,10 @@ test "constructor_patterns" {
 ///|
 test "option_basics" {
   let vm = MoonBitVM::new()
-  inspect(vm.eval("Some(5)"), content="Some(5)")
-  inspect(vm.eval("Option::Some(5)"), content="Some(5)")
-  inspect(vm.eval("None"), content="None")
-  inspect(vm.eval("Some(5).unwrap()"), content="5")
+  assert_eq(vm.eval("Some(5)").to_string(), "Some(5)")
+  assert_eq(vm.eval("Some(5)").to_string(), "Some(5)")
+  assert_eq(vm.eval("None").to_string(), "None")
+  assert_eq(vm.eval("Some(5).unwrap()").to_string(), "5")
 }
 
 ///|

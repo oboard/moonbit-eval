@@ -204,7 +204,7 @@ pub fn ClosureInterpreter::pattern_matches(
       // 查找构造函数对应的值
       let name1 = constr.name.name
       let value_runtime = self.visit(value)
-      if value_runtime is Constructor(name2, arr) {
+      if value_runtime is Constructor({ val: (name2, arr), .. }) {
         if name1 != name2 {
           return false
         }

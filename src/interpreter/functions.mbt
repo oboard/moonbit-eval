@@ -203,7 +203,10 @@ pub fn RuntimeEnvironment::define_struct_method(
   if !self.struct_methods.contains(type_name) {
     self.struct_methods.set(type_name, Map::new())
   }
-  self.struct_methods.get(type_name).unwrap().set(method_name, func)
+  self.struct_methods
+  .get(type_name)
+  .unwrap()
+  .set(method_name, RuntimeValue::Closure(func, self))
 }
 
 ///| 递归收集表达式中的自由变量

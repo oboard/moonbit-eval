@@ -1201,9 +1201,9 @@ let bigint_module : RuntimeModule = RuntimeModule::new(
   "moonbitlang/core/bigint",
   fn(_env, build) {
     {
-      "radix_bit_len": Int(32),
-      "decimal_ratio": build("0.302 // log10(2)"),
-      "karatsuba_threshold": Int(50),
+      "radix_bit_len": (None, Int(32)),
+      "decimal_ratio": (None, String("0.302 // log10(2)")),
+      "karatsuba_threshold": (None, Int(50)),
       "from_int": build(
         (
           #|pub fn BigInt::from_int(n : Int) -> BigInt { BigInt::from_int64(n.to_int64()) }
@@ -1815,7 +1815,7 @@ let bigint_module : RuntimeModule = RuntimeModule::new(
           #|fn BigInt::limbs(self : Self) -> Iter[UInt] { self.limbs.iter().take(self.len) }
         ),
       ),
-      "zero": BigInt(0N),
+      "zero": (None, BigInt(0N)),
       "from_string": build(
         (
           #|pub fn BigInt::from_string(str : String) -> BigInt { if str.length() == 0 {
@@ -5003,11 +5003,11 @@ let bytes_module : RuntimeModule = RuntimeModule::new(
   "moonbitlang/core/bytes",
   fn(_env, build) {
     {
-      "gPRIME1": build("0x9E3779B1"),
-      "gPRIME2": build("0x85EBCA77"),
-      "gPRIME3": build("0xC2B2AE3D"),
-      "gPRIME4": build("0x27D4EB2F"),
-      "gPRIME5": build("0x165667B1"),
+      "gPRIME1": (None, String("0x9E3779B1")),
+      "gPRIME2": (None, String("0x85EBCA77")),
+      "gPRIME3": (None, String("0xC2B2AE3D")),
+      "gPRIME4": (None, String("0x27D4EB2F")),
+      "gPRIME5": (None, String("0x165667B1")),
       "xxhash32": build(
         (
           #|fn xxhash32(input : Bytes, seed : Int) -> Int { let len = input.length()
@@ -7362,9 +7362,9 @@ let double_module : RuntimeModule = RuntimeModule::new(
           #|  } }
         ),
       ),
-      "exp_bias": Int(1023),
-      "exp_bits": Int(11),
-      "frac_bits": Int(52),
+      "exp_bias": (None, Int(1023)),
+      "exp_bits": (None, Int(11)),
+      "frac_bits": (None, Int(52)),
       "trunc": build(
         (
           #|pub fn Double::trunc(self : Double) -> Double { let u64 = self.reinterpret_as_uint64()
@@ -8063,21 +8063,33 @@ let double_module : RuntimeModule = RuntimeModule::new(
           #|  return y * ui.reinterpret_as_double() }
         ),
       ),
-      "sqrt2": build(
-        "1.41421356237309504880168872420969807856967187537694807317667974",
+      "sqrt2": (
+        None,
+        String(
+          "1.41421356237309504880168872420969807856967187537694807317667974",
+        ),
       ),
-      "ln2": build(
-        "0.693147180559945309417232121458176568075500134360255254120680009",
+      "ln2": (
+        None,
+        String(
+          "0.693147180559945309417232121458176568075500134360255254120680009",
+        ),
       ),
-      "ln2_hi": build("6.93147180369123816490e-01 // 3fe62e42 fee00000"),
-      "ln2_lo": build("1.90821492927058770002e-10 // 3dea39ef 35793c76"),
-      "l1": build("6.666666666666735130e-01 // 3FE55555 55555593"),
-      "l2": build("3.999999999940941908e-01 // 3FD99999 9997FA04"),
-      "l3": build("2.857142874366239149e-01 // 3FD24924 94229359"),
-      "l4": build("2.222219843214978396e-01 // 3FCC71C5 1D8E78AF"),
-      "l5": build("1.818357216161805012e-01 // 3FC74664 96CB03DE"),
-      "l6": build("1.531383769920937332e-01 // 3FC39A09 D078C69F"),
-      "l7": build("1.479819860511658591e-01 // 3FC2F112 DF3E5244"),
+      "ln2_hi": (
+        None,
+        String("6.93147180369123816490e-01 // 3fe62e42 fee00000"),
+      ),
+      "ln2_lo": (
+        None,
+        String("1.90821492927058770002e-10 // 3dea39ef 35793c76"),
+      ),
+      "l1": (None, String("6.666666666666735130e-01 // 3FE55555 55555593")),
+      "l2": (None, String("3.999999999940941908e-01 // 3FD99999 9997FA04")),
+      "l3": (None, String("2.857142874366239149e-01 // 3FD24924 94229359")),
+      "l4": (None, String("2.222219843214978396e-01 // 3FCC71C5 1D8E78AF")),
+      "l5": (None, String("1.818357216161805012e-01 // 3FC74664 96CB03DE")),
+      "l6": (None, String("1.531383769920937332e-01 // 3FC39A09 D078C69F")),
+      "l7": (None, String("1.479819860511658591e-01 // 3FC2F112 DF3E5244")),
       "normalize": build(
         (
           #|fn normalize(f : Double) -> (Double, Int) { if f.abs() < min_positive {
@@ -8450,9 +8462,9 @@ let float_module : RuntimeModule = RuntimeModule::new(
   "moonbitlang/core/float",
   fn(_env, build) {
     {
-      "exp_bias": Int(127),
-      "exp_bits": Int(8),
-      "frac_bits": Int(23),
+      "exp_bias": (None, Int(127)),
+      "exp_bits": (None, Int(8)),
+      "frac_bits": (None, Int(23)),
       "trunc": build(
         (
           #|pub fn Float::trunc(self : Float) -> Float { let u32 = self.reinterpret_as_uint()
@@ -9228,8 +9240,8 @@ let float_module : RuntimeModule = RuntimeModule::new(
           #|  } }
         ),
       ),
-      "logf_off": UInt(0x3f330000U),
-      "logf_table_bits": Int(4),
+      "logf_off": (None, UInt(0x3f330000U)),
+      "logf_table_bits": (None, Int(4)),
       "k_expo2f": build(
         (
           #|fn k_expo2f(x : Float) -> Float { let k = 235
@@ -9410,7 +9422,7 @@ let float_module : RuntimeModule = RuntimeModule::new(
           #|fn __math_uflowf(sign : UInt) -> Float { return __math_xflowf(sign, 0x1.0p-95) }
         ),
       ),
-      "exp2f_table_bits": Int(5),
+      "exp2f_table_bits": (None, Int(5)),
       "pow": build(
         (
           #|pub fn Float::pow(self : Float, other : Float) -> Float { self.to_double().pow(other.to_double()).to_float() }
@@ -9697,7 +9709,7 @@ let hashset_module : RuntimeModule = RuntimeModule::new(
   "moonbitlang/core/hashset",
   fn(_env, build) {
     {
-      "default_init_capacity": Int(8),
+      "default_init_capacity": (None, Int(8)),
       "new": build(
         (
           #|pub fn[K] new(capacity~ : Int = default_init_capacity) -> T[K] { {
@@ -10026,8 +10038,8 @@ let int_module : RuntimeModule = RuntimeModule::new("moonbitlang/core/int", fn(
   build,
 ) {
   {
-    "max_value": Int(2147483647),
-    "min_value": Int(-2147483648),
+    "max_value": (None, Int(2147483647)),
+    "min_value": (None, Int(-2147483648)),
     "abs": build(
       (
         #|pub fn Int::abs(self : Int) -> Int { if self < 0 {
@@ -10078,8 +10090,8 @@ let int64_module : RuntimeModule = RuntimeModule::new(
   "moonbitlang/core/int64",
   fn(_env, build) {
     {
-      "max_value": Int64(9223372036854775807L),
-      "min_value": Int64(-9223372036854775808L),
+      "max_value": (None, Int64(9223372036854775807L)),
+      "min_value": (None, Int64(-9223372036854775808L)),
       "from_int": build(
         (
           #|pub fn Int64::from_int(i : Int) -> Int64 { i.to_int64() }
@@ -10109,10 +10121,10 @@ let int64_module : RuntimeModule = RuntimeModule::new(
           #|pub fn to_le_bytes(self : Int64) -> Bytes { self.reinterpret_as_uint64().to_le_bytes() }
         ),
       ),
-      "gPRIME2": UInt(0x85EBCA77U),
-      "gPRIME3": UInt(0xC2B2AE3DU),
-      "gPRIME4": UInt(0x27D4EB2FU),
-      "gPRIME5": UInt(0x165667B1U),
+      "gPRIME2": (None, UInt(0x85EBCA77U)),
+      "gPRIME3": (None, UInt(0xC2B2AE3DU)),
+      "gPRIME4": (None, UInt(0x27D4EB2FU)),
+      "gPRIME5": (None, UInt(0x165667B1U)),
       "slow_hash": build(
         (
           #|fn slow_hash(self : Int64) -> Int { let self = self.reinterpret_as_uint64()
@@ -12643,7 +12655,7 @@ let math_module : RuntimeModule = RuntimeModule::new("moonbitlang/core/math", fn
         #|  x * (rat * rat + 1.0).sqrt() }
       ),
     ),
-    "pi": build("0x3.243F6A8885A308CA8A54"),
+    "pi": (None, String("0x3.243F6A8885A308CA8A54")),
     "exp": build(
       (
         #|pub fn exp(x : Double) -> Double { fn get_high_word(x : Double) -> UInt {
@@ -12905,8 +12917,8 @@ let math_module : RuntimeModule = RuntimeModule::new("moonbitlang/core/math", fn
         #|  return (frac, exp) }
       ),
     ),
-    "logf_off": UInt(0x3f330000U),
-    "logf_table_bits": Int(4),
+    "logf_off": (None, UInt(0x3f330000U)),
+    "logf_table_bits": (None, Int(4)),
     "lnf": build(
       (
         #|pub fn lnf(x : Float) -> Float { let mut ix : UInt = x.reinterpret_as_uint()
@@ -13638,7 +13650,7 @@ let math_module : RuntimeModule = RuntimeModule::new("moonbitlang/core/math", fn
         #|fn __math_uflowf(sign : UInt) -> Float { return __math_xflowf(sign, 0x1.0p-95) }
       ),
     ),
-    "exp2f_table_bits": Int(5),
+    "exp2f_table_bits": (None, Int(5)),
     "expf": build(
       (
         #|pub fn expf(x : Float) -> Float { let xd = x.to_double()
@@ -16467,7 +16479,7 @@ let strconv_module : RuntimeModule = RuntimeModule::new(
           #|  } }
         ),
       ),
-      "mantissa_explicit_bits": Int(52),
+      "mantissa_explicit_bits": (None, Int(52)),
       "parse_double": build(
         (
           #|pub fn parse_double(str : @string.View) -> Double raise StrConvError { if str.length() == 0 {
@@ -16720,9 +16732,9 @@ let strconv_module : RuntimeModule = RuntimeModule::new(
           #|  Some(a * b) }
         ),
       ),
-      "range_err_str": String("value out of range"),
-      "syntax_err_str": String("invalid syntax"),
-      "base_err_str": String("invalid base"),
+      "range_err_str": (None, String("value out of range")),
+      "syntax_err_str": (None, String("invalid syntax")),
+      "base_err_str": (None, String("invalid base")),
       "range_err": build(
         (
           #|fn[T] range_err() -> T raise StrConvError { raise StrConvError(range_err_str) }
@@ -16738,8 +16750,8 @@ let strconv_module : RuntimeModule = RuntimeModule::new(
           #|fn[T] base_err() -> T raise StrConvError { raise StrConvError(base_err_str) }
         ),
       ),
-      "max_shift": Int(59),
-      "powtab": build("["),
+      "max_shift": (None, Int(59)),
+      "powtab": (None, String("[")),
       "new_priv": build(
         (
           #|fn Decimal::new_priv() -> Decimal { {
@@ -17065,7 +17077,7 @@ let strconv_module : RuntimeModule = RuntimeModule::new(
           #|  self.trim() }
         ),
       ),
-      "left_shift_cheats": build("["),
+      "left_shift_cheats": (None, String("[")),
       "new_digits": build(
         (
           #|fn new_digits(self : Decimal, s : Int) -> Int { let new_digits = left_shift_cheats[s].0

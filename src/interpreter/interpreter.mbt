@@ -149,6 +149,7 @@ pub fn ClosureInterpreter::top_visit(
       match def {
         { tycon, params, components, .. } => {
           self.env.type_definitions.set(tycon, def)
+          self.env.struct_methods.set(tycon, Map::new())
 
           // 处理泛型类型参数
           let type_params = []
@@ -165,9 +166,10 @@ pub fn ClosureInterpreter::top_visit(
             Variant(constructors) =>
               for constr in constructors {
                 let constr_name = constr.name.name
-                // 将构造函数注册为无参数的Constructor
-                // TODO: 对于泛型类型，需要在实例化时处理类型参数
-                self.env.set(constr_name, Constructor(constr_name, []))
+                self.env.set(
+                  constr_name,
+                  Constructor({ val: (constr_name, []), env: self.env }),
+                )
               } else {
                 ()
               }
@@ -399,7 +401,7 @@ pub fn ClosureInterpreter::visit(
         let field_value = self.visit(field.expr)
         ignore(evaluated_fields.set(field.label.name, field_value))
       }
-      Struct(@ref.new(evaluated_fields))
+      Struct({ val: evaluated_fields, env: self.env })
     }
     ArraySpread(elems~, ..) => {
       let result_values = []
@@ -607,7 +609,7 @@ pub fn ClosureInterpreter::visit(
           // TODO: 对于泛型类型的构造函数，需要根据参数类型推导类型参数
           // 例如：Cons(1, Nil) 应该推导出 List[Int]
           let constr_name = constr.name.name
-          Constructor(constr_name, arg_values)
+          Constructor({ val: (constr_name, arg_values), env: self.env })
         }
         // 处理静态方法调用，如 Bool::default()
         Method(type_name~, method_name~, ..) => {
@@ -615,9 +617,17 @@ pub fn ClosureInterpreter::visit(
             Ident(name~) => name
             _ => "Unknown"
           }
+          // self.execute_function_by_name(type_name.name, @list.new())
+          // self.env.with_ident(type_name.name, fn(env, name) {
+          //   env.find(name)
+          // })
+          // let type_str = match type_name.name {
+          //   Ident(name~) => name
+          //   _ => "Unknown"
+          // }
           self.execute_static_method_call(type_str, method_name.name, args)
+          // 处理其他表达式作为函数的情况，如 a[1](10)
         }
-        // 处理其他表达式作为函数的情况，如 a[1](10)
         _ => {
           let func_value = self.visit(func)
           match func_value {
@@ -666,7 +676,7 @@ pub fn ClosureInterpreter::visit(
     Field(record~, accessor~, ..) => {
       let record_val = self.visit(record)
       match (record_val, accessor) {
-        (Struct({ val: fields }), Label(label)) =>
+        (Struct({ val: fields, .. }), Label(label)) =>
           match fields.get(label.name) {
             Some(field_value) => field_value
             None => error("Field: not found")
@@ -963,7 +973,7 @@ pub fn ClosureInterpreter::visit(
     // 处理单独的构造函数表达式，如 None
     Constr(constr~, ..) =>
       // 单独的构造函数没有参数
-      Constructor(constr.name.name, [])
+      Constructor({ val: (constr.name.name, []), env: self.env })
 
     // 处理 Break 表达式
     Break(arg~, ..) =>
@@ -1073,7 +1083,7 @@ pub fn ClosureInterpreter::visit(
           }
 
           // 返回新的结构体
-          Struct(@ref.new(new_fields))
+          Struct({ val: new_fields, env: original_ref.env })
         }
         _ => error("RecordUpdate: expected struct")
       }
@@ -1084,7 +1094,7 @@ pub fn ClosureInterpreter::visit(
         match env.struct_methods.get(ty_name) {
           Some(methods) =>
             match methods.get(method_name.name) {
-              Some(func) => Closure(func, self.env)
+              Some(func) => func
               None => error("Method:\{ty_name}:\{method_name.name} not found")
             }
           None => error("Method:\{ty_name} not found")
@@ -1245,7 +1255,7 @@ fn ClosureInterpreter::pattern_matches_runtime(
     // Record模式匹配
     Record(fields=pat_fields, ..) =>
       match value {
-        Struct({ val: record_fields }) => {
+        Struct({ val: record_fields, .. }) => {
           for pat_field in pat_fields {
             match record_fields.get(pat_field.label.name) {
               Some(field_value) =>
@@ -1269,7 +1279,7 @@ fn ClosureInterpreter::pattern_matches_runtime(
     // Constructor模式匹配
     Constr(constr~, args=pattern_args, ..) =>
       match value {
-        Constructor(name, runtime_args) =>
+        Constructor({ val: (name, runtime_args), .. }) =>
           if name == constr.name.name {
             // 检查参数匹配
             match pattern_args {
@@ -1501,6 +1511,7 @@ fn ClosureInterpreter::execute_function_by_name(
       match self.embedded_fns.get(embedded_name) {
         Some(embedded_func) =>
           embedded_func(RuntimeFunctionContext::{
+            env: self.env,
             context: self,
             arguments: get_evaluated_args(),
           })
@@ -1511,11 +1522,13 @@ fn ClosureInterpreter::execute_function_by_name(
       self.call_closure(lambda_func, captured_env, args)
     ExternFunction(extern_func) =>
       extern_func(RuntimeFunctionContext::{
+        env: self.env,
         context: self,
         arguments: get_evaluated_args(),
       })
     GlobalEmbedded(embedded_func) =>
       embedded_func(RuntimeFunctionContext::{
+        env: self.env,
         context: self,
         arguments: get_evaluated_args(),
       })
@@ -1535,7 +1548,7 @@ fn ClosureInterpreter::execute_method_call_runtime(
     TraitObject(original_value, _trait_name) => {
       // 对于 TraitObject，使用原始值的类型来查找方法
       let original_type = match original_value {
-        Struct({ val: struct_data }) => {
+        Struct({ val: struct_data, .. }) => {
           let current_fields = []
           struct_data.each(fn(field_name, _) { current_fields.push(field_name) })
           self.infer_struct_type_from_fields(current_fields)
@@ -1544,7 +1557,7 @@ fn ClosureInterpreter::execute_method_call_runtime(
       }
       (original_value, original_type)
     }
-    Struct({ val: struct_data }) => {
+    Struct({ val: struct_data, .. }) => {
       // 收集字段名
       let current_fields = []
       struct_data.each(fn(field_name, _) { current_fields.push(field_name) })
@@ -1553,7 +1566,12 @@ fn ClosureInterpreter::execute_method_call_runtime(
     }
     _ => (self_value, self.find_variable_type(self_value))
   }
-  match self.env.struct_methods.get(self_type) {
+  let cur_env = if self_value is RuntimeValue::Struct({ env, .. }) {
+    env
+  } else {
+    self.env
+  }
+  match cur_env.struct_methods.get(self_type) {
     Some(methods) =>
       match methods.get(method_name) {
         Some(func) =>
@@ -1561,7 +1579,7 @@ fn ClosureInterpreter::execute_method_call_runtime(
           self.with_scope(fn() {
             // 手动绑定self参数和其他参数
             match func {
-              @syntax.Func::Lambda(parameters~, body~, ..) => {
+              Closure(@syntax.Func::Lambda(parameters~, body~, ..), _env) => {
                 // 绑定self参数（第一个参数）
                 match parameters {
                   @list.More(first_param, tail=rest_params) => {
@@ -1597,6 +1615,7 @@ fn ClosureInterpreter::execute_method_call_runtime(
               )
               embedded_method(RuntimeFunctionContext::{
                 context: self,
+                env: self.env,
                 arguments: evaluated_args
                 .map(fn(arg) {
                   RuntimeArgument::{ value: arg, kind: Positional }
@@ -1604,9 +1623,9 @@ fn ClosureInterpreter::execute_method_call_runtime(
                 .to_array(),
               })
             }
-            None => error("Method:\{method_name}:\{self_type} not found")
+            None => error("exec: \{self_type}::\{method_name} not found")
           }
-        None => error("Method:\{method_name}:\{self_type} not found")
+        None => error("exec: \{self_type}::\{method_name} not found")
       }
   }
 }
@@ -1641,6 +1660,24 @@ fn ClosureInterpreter::find_type(
   }
 }
 
+///|
+fn RuntimeEnvironment::find_method(
+  self : RuntimeEnvironment,
+  type_name : String,
+  method_name : String,
+) -> RuntimeValue? {
+  let mut current_env = Some(self)
+  while current_env is Some(env) {
+    if env.struct_methods.get(type_name) is Some(methods) {
+      if methods.get(method_name) is Some(func) {
+        return Some(func)
+      }
+    }
+    current_env = env.parent
+  }
+  None
+}
+
 ///| 执行静态方法调用（如 Bool::default()）
 fn ClosureInterpreter::execute_static_method_call(
   self : ClosureInterpreter,
@@ -1649,33 +1686,30 @@ fn ClosureInterpreter::execute_static_method_call(
   args : @list.List[@syntax.Argument],
 ) -> RuntimeValue {
   // 首先查找用户定义的struct方法
-  match self.env.struct_methods.get(type_name) {
-    Some(methods) =>
-      match methods.get(method_name) {
-        Some(func) =>
-          // 执行用户定义的静态方法
-          return self.with_scope(fn() {
-            match func {
-              @syntax.Func::Lambda(parameters~, body~, ..) => {
-                // 绑定参数（静态方法没有self参数）
-                self.bind_function_parameters_runtime(parameters, args)
-                // 执行函数体
-                let result = self.visit(body)
-                // 处理Return值：如果函数返回Return包装器，提取其内部值
-                match result {
-                  Return(value) => value
-                  _ => result
-                }
-              }
-              _ => Unit
+  match self.env.find_method(type_name, method_name) {
+    Some(func) =>
+      // 执行用户定义的静态方法
+      return self.with_scope(fn() {
+        match func {
+          RuntimeValue::Closure(
+            @syntax.Func::Lambda(parameters~, body~, ..),
+            _env
+          ) => {
+            // 绑定参数（静态方法没有self参数）
+            self.bind_function_parameters_runtime(parameters, args)
+            // 执行函数体
+            let result = self.visit(body)
+            // 处理Return值：如果函数返回Return包装器，提取其内部值
+            match result {
+              Return(value) => value
+              _ => result
             }
-          })
-        None =>
-          // 如果用户方法中没有找到，继续查找嵌入式方法
-          self.execute_embedded_static_method(type_name, method_name, args)
-      }
+          }
+          _ => Unit
+        }
+      })
     None =>
-      // 如果用户方法中没有找到，查找嵌入式方法
+      // 如果用户方法中没有找到，继续查找嵌入式方法
       self.execute_embedded_static_method(type_name, method_name, args)
   }
 }
@@ -1698,6 +1732,7 @@ fn ClosureInterpreter::execute_embedded_static_method(
             })
             .to_array()
           embedded_func(RuntimeFunctionContext::{
+            env: self.env,
             context: self,
             arguments: evaluated_args,
           })
@@ -1779,7 +1814,7 @@ fn ClosureInterpreter::find_variable_type(
     Continue(_) => "Continue"
     Return(_) => "Return"
     Exception(_) => "Exception"
-    Constructor(name, _) =>
+    Constructor({ val: (name, _), .. }) =>
       // 将Option构造函数映射到Option类型
       match name {
         "Some" | "None" => "Option"

@@ -6,7 +6,7 @@ pub(all) struct RuntimeEnvironment {
   // 类型定义
   type_definitions : Map[String, @syntax.TypeDecl]
   // 结构体方法定义 - 按类型名组织方法
-  struct_methods : Map[String, Map[String, @syntax.Func]]
+  struct_methods : Map[String, Map[String, RuntimeValue]]
   // 泛型类型环境
   type_environment : TypeEnvironment
   values : Map[String, RuntimeValue]
@@ -20,12 +20,14 @@ pub(all) struct RuntimeEnvironment {
 pub fn RuntimeEnvironment::new(
   parent? : RuntimeEnvironment,
   values? : Map[String, RuntimeValue],
+  struct_methods? : Map[String, Map[String, RuntimeValue]],
 ) -> RuntimeEnvironment {
   if parent is Some(parent) {
     {
       ..parent,
       values: values.unwrap_or({}),
       mutable_vars: Map::new(),
+      struct_methods: struct_methods.unwrap_or({}),
       parent: Some(parent),
     }
   } else {
@@ -33,7 +35,7 @@ pub fn RuntimeEnvironment::new(
       traits: Map::new(),
       fn_aliases: Map::new(),
       type_definitions: Map::new(),
-      struct_methods: Map::new(),
+      struct_methods: struct_methods.unwrap_or({}),
       type_environment: TypeEnvironment::new(),
       values: values.unwrap_or({}),
       mutable_vars: Map::new(),
@@ -93,31 +95,32 @@ pub fn RuntimeEnvironment::create_closure_env(
   }
 }
 
-///| 处理函数声明体，创建Lambda函数并注册到环境中
+///| 处理函数声明体，创建Lambda函数
 pub fn RuntimeEnvironment::top_func_def_to_closure(
   self : RuntimeEnvironment,
   func : @syntax.Impl,
-) -> RuntimeValue {
+) -> (String?, RuntimeValue) {
   if func is TopFuncDef(fun_decl~, decl_body~, loc~) {
     if decl_body is DeclBody(local_types=_, expr=body) {
-      // 保持原始的返回类型，不在这里进行推导
-      let inferred_return_type = fun_decl.return_type
       let func = @syntax.Func::Lambda(
         parameters=fun_decl.decl_params.unwrap_or(@list.new()),
         params_loc=loc,
         body~,
-        return_type=inferred_return_type,
+        return_type=fun_decl.return_type,
         error_type=fun_decl.error_type,
         kind=Arrow,
         has_error=fun_decl.has_error,
         is_async=fun_decl.is_async,
         loc~,
       )
-      RuntimeValue::Closure(func, self.create_closure_env())
-    } else {
-      Unit
+      return (
+        fun_decl.type_name.map(ty => match ty {
+          { name: Ident(name~), .. } => name
+          { name: Dot(id~, ..), .. } => id
+        }),
+        RuntimeValue::Closure(func, self.create_closure_env()),
+      )
     }
-  } else {
-    Unit
   }
+  (None, Unit)
 }
