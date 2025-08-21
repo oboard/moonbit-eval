@@ -46,6 +46,7 @@ pub fn ModuleMeta::new(
 ///|
 pub fn RuntimeModule::new(
   pkg : String,
+  deps~ : Map[String, RuntimeModule],
   builder : (RuntimeEnvironment, (String) -> (String?, RuntimeValue)) -> Map[
     String,
     (String?, RuntimeValue),

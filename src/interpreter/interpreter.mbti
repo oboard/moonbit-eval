@@ -152,7 +152,7 @@ pub(all) struct RuntimeModule {
   mut env : RuntimeEnvironment
   deps : Map[String, RuntimeModule]
 }
-fn RuntimeModule::new(String, (RuntimeEnvironment, (String) -> (String?, RuntimeValue)) -> Map[String, (String?, RuntimeValue)]) -> Self
+fn RuntimeModule::new(String, deps~ : Map[String, Self], (RuntimeEnvironment, (String) -> (String?, RuntimeValue)) -> Map[String, (String?, RuntimeValue)]) -> Self
 fn[T] RuntimeModule::with_ident(Self, @syntax.LongIdent, (RuntimeEnvironment, String) -> T) -> T
 impl ToJson for RuntimeModule
 

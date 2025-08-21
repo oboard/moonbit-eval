@@ -105,7 +105,8 @@ def read_module_info(module_dir: Path) -> Dict:
     Read module information from a directory.
     Returns dict with module name, dependencies, and items (functions/constants).
     """
-    module_name = module_dir.name
+    pkg = "moonbitlang/core/" + module_dir.relative_to(CORE_PATH).as_posix()
+    module_name = pkg.replace('/', '_')
     
     # Read moon.pkg.json if it exists
     pkg_json_path = module_dir / "moon.pkg.json"
@@ -141,6 +142,7 @@ def read_module_info(module_dir: Path) -> Dict:
             continue
     
     return {
+        'pkg': pkg,
         'name': module_name,
         'dependencies': dependencies,
         'items': all_items
@@ -175,8 +177,10 @@ def generate_module_code(module_info: Dict) -> str:
     """
     Generate RuntimeModule code for a single module.
     """
+    pkg = module_info['pkg']
     module_name = module_info['name']
     items = module_info['items']
+    dependencies = module_info['dependencies']
     
     if not items:
         return ""
@@ -233,12 +237,21 @@ def generate_module_code(module_info: Dict) -> str:
                 values_entries.append(f'      "{item_name}": build(\n        (\n{multiline_body}\n        ),\n      )')
             
     values_map = ",\n".join(values_entries)
+    print(dependencies)
+    dependencies_map_entries = []
+    for dep in dependencies:
+        if isinstance(dep, str):
+            name = dep.replace('/', '_')
+            dependencies_map_entries.append(f'"{dep}": {name}_module')
+        elif isinstance(dep, dict):
+            name = dep["path"].replace('/', '_')
+            dependencies_map_entries.append(f'"{dep["alias"]}": {name}_module')
+    dependencies_map_str = ", ".join(dependencies_map_entries)
     
     module_code = f'''///|
-let {module_name}_module : RuntimeModule = RuntimeModule::new("moonbitlang/core/{module_name}", fn(
-  _env,
-  build,
-) {{
+let {module_name}_module : RuntimeModule = RuntimeModule::new("{pkg}",
+  deps={{ {dependencies_map_str} }},
+  fn(_env, build) {{
   {{
 {values_map},
   }}
@@ -246,11 +259,13 @@ let {module_name}_module : RuntimeModule = RuntimeModule::new("moonbitlang/core/
     
     return module_code
 
-def generate_core_modules_map(modules: List[str]) -> str:
+def generate_core_modules_map(modules: List[dict]) -> str:
     """
     Generate the core_modules map declaration.
     """
-    entries = [f'"{module}": {module}_module' for module in modules]
+    entries = []
+    for module in modules: 
+        entries.append(f'"{module['pkg']}": {module['name']}_module')
     map_content = ", ".join(entries)
     
     return f'''///|
@@ -265,10 +280,13 @@ def main():
     if not core_path.exists():
         print(f"Error: Core path {CORE_PATH} does not exist")
         return
-    
-    # Get all module directories
-    module_dirs = [d for d in core_path.iterdir() 
-                   if d.is_dir() and not d.name.startswith('.') and d.name not in ['coverage']]
+    # Get all module directories recursively
+    module_dirs = []
+    for root, dirs, _ in os.walk(core_path):
+        root_path = Path(root)
+        # Skip hidden directories and coverage directory
+        dirs[:] = [d for d in dirs if not d.startswith('.') and d != 'coverage']
+        module_dirs.extend([root_path / d for d in dirs])
     
     print(f"Found {len(module_dirs)} modules to process")
     
@@ -285,7 +303,7 @@ def main():
             module_code = generate_module_code(module_info)
             if module_code:
                 module_codes.append(module_code)
-                generated_modules.append(module_info['name'])
+                generated_modules.append(module_info)
                 functions_count = len([item for item in module_info['items'] if item[1] == 'function'])
                 constants_count = len([item for item in module_info['items'] if item[1] == 'constant'])
                 print(f"  Generated {functions_count} functions, {constants_count} constants")
@@ -321,9 +339,10 @@ fn dummy_loc() -> @basic.Location {
     with open(output_path, 'w', encoding='utf-8') as f:
         f.write(full_content)
     
-    print(f"\nGenerated {len(generated_modules)} modules:")
-    for module in generated_modules:
-        print(f"  - {module}")
+    module_names = [module['name'] for module in generated_modules]
+    print(f"\nGenerated {len(module_names)} modules:")
+    for module_name in module_names:
+        print(f"  - {module_name}")
     print(f"\nOutput written to: {OUTPUT_FILE}")
 
 if __name__ == "__main__":

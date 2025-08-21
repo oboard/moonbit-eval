@@ -4,49 +4,61 @@
 
 ///|
 let core_modules : Map[String, RuntimeModule] = {
-  "abort": abort_module,
-  "array": array_module,
-  "bench": bench_module,
-  "bigint": bigint_module,
-  "bool": bool_module,
-  "buffer": buffer_module,
-  "builtin": builtin_module,
-  "byte": byte_module,
-  "bytes": bytes_module,
-  "char": char_module,
-  "cmp": cmp_module,
-  "deque": deque_module,
-  "double": double_module,
-  "env": env_module,
-  "float": float_module,
-  "hashmap": hashmap_module,
-  "hashset": hashset_module,
-  "int": int_module,
-  "int16": int16_module,
-  "int64": int64_module,
-  "json": json_module,
-  "list": list_module,
-  "math": math_module,
-  "option": option_module,
-  "prelude": prelude_module,
-  "priority_queue": priority_queue_module,
-  "queue": queue_module,
-  "quickcheck": quickcheck_module,
-  "random": random_module,
-  "rational": rational_module,
-  "ref": ref_module,
-  "result": result_module,
-  "set": set_module,
-  "sorted_map": sorted_map_module,
-  "sorted_set": sorted_set_module,
-  "strconv": strconv_module,
-  "string": string_module,
-  "test": test_module,
-  "tuple": tuple_module,
-  "uint": uint_module,
-  "uint16": uint16_module,
-  "uint64": uint64_module,
-  "unit": unit_module,
+  "moonbitlang/core/abort": moonbitlang_core_abort_module,
+  "moonbitlang/core/array": moonbitlang_core_array_module,
+  "moonbitlang/core/bench": moonbitlang_core_bench_module,
+  "moonbitlang/core/bigint": moonbitlang_core_bigint_module,
+  "moonbitlang/core/bool": moonbitlang_core_bool_module,
+  "moonbitlang/core/buffer": moonbitlang_core_buffer_module,
+  "moonbitlang/core/builtin": moonbitlang_core_builtin_module,
+  "moonbitlang/core/byte": moonbitlang_core_byte_module,
+  "moonbitlang/core/bytes": moonbitlang_core_bytes_module,
+  "moonbitlang/core/char": moonbitlang_core_char_module,
+  "moonbitlang/core/cmp": moonbitlang_core_cmp_module,
+  "moonbitlang/core/deque": moonbitlang_core_deque_module,
+  "moonbitlang/core/double": moonbitlang_core_double_module,
+  "moonbitlang/core/double/internal/ryu": moonbitlang_core_double_internal_ryu_module,
+  "moonbitlang/core/env": moonbitlang_core_env_module,
+  "moonbitlang/core/float": moonbitlang_core_float_module,
+  "moonbitlang/core/hashmap": moonbitlang_core_hashmap_module,
+  "moonbitlang/core/hashset": moonbitlang_core_hashset_module,
+  "moonbitlang/core/immut/array": moonbitlang_core_immut_array_module,
+  "moonbitlang/core/immut/hashmap": moonbitlang_core_immut_hashmap_module,
+  "moonbitlang/core/immut/hashset": moonbitlang_core_immut_hashset_module,
+  "moonbitlang/core/immut/internal/path": moonbitlang_core_immut_internal_path_module,
+  "moonbitlang/core/immut/internal/sparse_array": moonbitlang_core_immut_internal_sparse_array_module,
+  "moonbitlang/core/immut/list": moonbitlang_core_immut_list_module,
+  "moonbitlang/core/immut/priority_queue": moonbitlang_core_immut_priority_queue_module,
+  "moonbitlang/core/immut/sorted_map": moonbitlang_core_immut_sorted_map_module,
+  "moonbitlang/core/immut/sorted_set": moonbitlang_core_immut_sorted_set_module,
+  "moonbitlang/core/int": moonbitlang_core_int_module,
+  "moonbitlang/core/int16": moonbitlang_core_int16_module,
+  "moonbitlang/core/int64": moonbitlang_core_int64_module,
+  "moonbitlang/core/json": moonbitlang_core_json_module,
+  "moonbitlang/core/list": moonbitlang_core_list_module,
+  "moonbitlang/core/math": moonbitlang_core_math_module,
+  "moonbitlang/core/option": moonbitlang_core_option_module,
+  "moonbitlang/core/prelude": moonbitlang_core_prelude_module,
+  "moonbitlang/core/priority_queue": moonbitlang_core_priority_queue_module,
+  "moonbitlang/core/queue": moonbitlang_core_queue_module,
+  "moonbitlang/core/quickcheck": moonbitlang_core_quickcheck_module,
+  "moonbitlang/core/quickcheck/splitmix": moonbitlang_core_quickcheck_splitmix_module,
+  "moonbitlang/core/random": moonbitlang_core_random_module,
+  "moonbitlang/core/random/internal/random_source": moonbitlang_core_random_internal_random_source_module,
+  "moonbitlang/core/rational": moonbitlang_core_rational_module,
+  "moonbitlang/core/ref": moonbitlang_core_ref_module,
+  "moonbitlang/core/result": moonbitlang_core_result_module,
+  "moonbitlang/core/set": moonbitlang_core_set_module,
+  "moonbitlang/core/sorted_map": moonbitlang_core_sorted_map_module,
+  "moonbitlang/core/sorted_set": moonbitlang_core_sorted_set_module,
+  "moonbitlang/core/strconv": moonbitlang_core_strconv_module,
+  "moonbitlang/core/string": moonbitlang_core_string_module,
+  "moonbitlang/core/test": moonbitlang_core_test_module,
+  "moonbitlang/core/tuple": moonbitlang_core_tuple_module,
+  "moonbitlang/core/uint": moonbitlang_core_uint_module,
+  "moonbitlang/core/uint16": moonbitlang_core_uint16_module,
+  "moonbitlang/core/uint64": moonbitlang_core_uint64_module,
+  "moonbitlang/core/unit": moonbitlang_core_unit_module,
 }
 
 ///|
@@ -58,8 +70,9 @@ fn dummy_loc() -> @basic.Location {
 }
 
 ///|
-let abort_module : RuntimeModule = RuntimeModule::new(
+let moonbitlang_core_abort_module : RuntimeModule = RuntimeModule::new(
   "moonbitlang/core/abort",
+  deps={},
   fn(_env, build) {
     {
       "abort": build(
@@ -73,8 +86,15 @@ let abort_module : RuntimeModule = RuntimeModule::new(
 )
 
 ///|
-let array_module : RuntimeModule = RuntimeModule::new(
+let moonbitlang_core_array_module : RuntimeModule = RuntimeModule::new(
   "moonbitlang/core/array",
+  deps={
+    "moonbitlang/core/builtin": moonbitlang_core_builtin_module,
+    "moonbitlang/core/bytes": moonbitlang_core_bytes_module,
+    "moonbitlang/core/string": moonbitlang_core_string_module,
+    "moonbitlang/core/quickcheck": moonbitlang_core_quickcheck_module,
+    "moonbitlang/core/quickcheck/splitmix": moonbitlang_core_quickcheck_splitmix_module,
+  },
   fn(_env, build) {
     {
       "copy": build(
@@ -1008,8 +1028,14 @@ let array_module : RuntimeModule = RuntimeModule::new(
 )
 
 ///|
-let bench_module : RuntimeModule = RuntimeModule::new(
+let moonbitlang_core_bench_module : RuntimeModule = RuntimeModule::new(
   "moonbitlang/core/bench",
+  deps={
+    "moonbitlang/core/builtin": moonbitlang_core_builtin_module,
+    "moonbitlang/core/double": moonbitlang_core_double_module,
+    "moonbitlang/core/array": moonbitlang_core_array_module,
+    "moonbitlang/core/json": moonbitlang_core_json_module,
+  },
   fn(_env, build) {
     {
       "iter_n_microseconds": build(
@@ -1197,8 +1223,17 @@ let bench_module : RuntimeModule = RuntimeModule::new(
 )
 
 ///|
-let bigint_module : RuntimeModule = RuntimeModule::new(
+let moonbitlang_core_bigint_module : RuntimeModule = RuntimeModule::new(
   "moonbitlang/core/bigint",
+  deps={
+    "moonbitlang/core/builtin": moonbitlang_core_builtin_module,
+    "moonbitlang/core/char": moonbitlang_core_char_module,
+    "moonbitlang/core/uint": moonbitlang_core_uint_module,
+    "moonbitlang/core/json": moonbitlang_core_json_module,
+    "moonbitlang/core/quickcheck": moonbitlang_core_quickcheck_module,
+    "moonbitlang/core/quickcheck/splitmix": moonbitlang_core_quickcheck_splitmix_module,
+    "moonbitlang/core/string": moonbitlang_core_string_module,
+  },
   fn(_env, build) {
     {
       "radix_bit_len": (None, Int(32)),
@@ -1983,71 +2018,78 @@ let bigint_module : RuntimeModule = RuntimeModule::new(
 )
 
 ///|
-let bool_module : RuntimeModule = RuntimeModule::new("moonbitlang/core/bool", fn(
-  _env,
-  build,
-) {
-  {
-    "to_int": build(
-      (
-        #|pub fn to_int(self : Bool) -> Int { if self {
-        #|    1
-        #|  } else {
-        #|    0
-        #|  } }
+let moonbitlang_core_bool_module : RuntimeModule = RuntimeModule::new(
+  "moonbitlang/core/bool",
+  deps={ "moonbitlang/core/builtin": moonbitlang_core_builtin_module },
+  fn(_env, build) {
+    {
+      "to_int": build(
+        (
+          #|pub fn to_int(self : Bool) -> Int { if self {
+          #|    1
+          #|  } else {
+          #|    0
+          #|  } }
+        ),
       ),
-    ),
-    "to_int64": build(
-      (
-        #|pub fn to_int64(self : Bool) -> Int64 { if self {
-        #|    1
-        #|  } else {
-        #|    0
-        #|  } }
+      "to_int64": build(
+        (
+          #|pub fn to_int64(self : Bool) -> Int64 { if self {
+          #|    1
+          #|  } else {
+          #|    0
+          #|  } }
+        ),
       ),
-    ),
-    "to_uint": build(
-      (
-        #|pub fn to_uint(self : Bool) -> UInt { if self {
-        #|    1
-        #|  } else {
-        #|    0
-        #|  } }
+      "to_uint": build(
+        (
+          #|pub fn to_uint(self : Bool) -> UInt { if self {
+          #|    1
+          #|  } else {
+          #|    0
+          #|  } }
+        ),
       ),
-    ),
-    "to_uint64": build(
-      (
-        #|pub fn to_uint64(self : Bool) -> UInt64 { if self {
-        #|    1
-        #|  } else {
-        #|    0
-        #|  } }
+      "to_uint64": build(
+        (
+          #|pub fn to_uint64(self : Bool) -> UInt64 { if self {
+          #|    1
+          #|  } else {
+          #|    0
+          #|  } }
+        ),
       ),
-    ),
-    "to_uint16": build(
-      (
-        #|pub fn to_uint16(self : Bool) -> UInt16 { if self {
-        #|    1
-        #|  } else {
-        #|    0
-        #|  } }
+      "to_uint16": build(
+        (
+          #|pub fn to_uint16(self : Bool) -> UInt16 { if self {
+          #|    1
+          #|  } else {
+          #|    0
+          #|  } }
+        ),
       ),
-    ),
-    "to_int16": build(
-      (
-        #|pub fn to_int16(self : Bool) -> Int16 { if self {
-        #|    1
-        #|  } else {
-        #|    0
-        #|  } }
+      "to_int16": build(
+        (
+          #|pub fn to_int16(self : Bool) -> Int16 { if self {
+          #|    1
+          #|  } else {
+          #|    0
+          #|  } }
+        ),
       ),
-    ),
-  }
-})
+    }
+  },
+)
 
 ///|
-let buffer_module : RuntimeModule = RuntimeModule::new(
+let moonbitlang_core_buffer_module : RuntimeModule = RuntimeModule::new(
   "moonbitlang/core/buffer",
+  deps={
+    "moonbitlang/core/builtin": moonbitlang_core_builtin_module,
+    "moonbitlang/core/bytes": moonbitlang_core_bytes_module,
+    "moonbitlang/core/array": moonbitlang_core_array_module,
+    "moonbitlang/core/string": moonbitlang_core_string_module,
+  },
   fn(_env, build) {
     {
       "grow_if_necessary": build(
@@ -2276,8 +2318,9 @@ let buffer_module : RuntimeModule = RuntimeModule::new(
 )
 
 ///|
-let builtin_module : RuntimeModule = RuntimeModule::new(
+let moonbitlang_core_builtin_module : RuntimeModule = RuntimeModule::new(
   "moonbitlang/core/builtin",
+  deps={ "moonbitlang/core/abort": moonbitlang_core_abort_module },
   fn(_env, build) {
     {
       "run": build(
@@ -4976,31 +5019,33 @@ let builtin_module : RuntimeModule = RuntimeModule::new(
 )
 
 ///|
-let byte_module : RuntimeModule = RuntimeModule::new("moonbitlang/core/byte", fn(
-  _env,
-  build,
-) {
-  {
-    "to_uint64": build(
-      (
-        #|pub fn to_uint64(self : Byte) -> UInt64 { self.to_uint().to_uint64() }
+let moonbitlang_core_byte_module : RuntimeModule = RuntimeModule::new(
+  "moonbitlang/core/byte",
+  deps={ "moonbitlang/core/builtin": moonbitlang_core_builtin_module },
+  fn(_env, build) {
+    {
+      "to_uint64": build(
+        (
+          #|pub fn to_uint64(self : Byte) -> UInt64 { self.to_uint().to_uint64() }
+        ),
       ),
-    ),
-    "popcnt": build(
-      (
-        #|pub fn popcnt(self : Byte) -> Int { let mut n = self
-        #|  n = (n & 0x55) + ((n >> 1) & 0x55)
-        #|  n = (n & 0x33) + ((n >> 2) & 0x33)
-        #|  n = (n & 0x0F) + ((n >> 4) & 0x0F)
-        #|  n.to_int() }
+      "popcnt": build(
+        (
+          #|pub fn popcnt(self : Byte) -> Int { let mut n = self
+          #|  n = (n & 0x55) + ((n >> 1) & 0x55)
+          #|  n = (n & 0x33) + ((n >> 2) & 0x33)
+          #|  n = (n & 0x0F) + ((n >> 4) & 0x0F)
+          #|  n.to_int() }
+        ),
       ),
-    ),
-  }
-})
+    }
+  },
+)
 
 ///|
-let bytes_module : RuntimeModule = RuntimeModule::new(
+let moonbitlang_core_bytes_module : RuntimeModule = RuntimeModule::new(
   "moonbitlang/core/bytes",
+  deps={ "moonbitlang/core/builtin": moonbitlang_core_builtin_module },
   fn(_env, build) {
     {
       "gPRIME1": (None, String("0x9E3779B1")),
@@ -5360,408 +5405,416 @@ let bytes_module : RuntimeModule = RuntimeModule::new(
 )
 
 ///|
-let char_module : RuntimeModule = RuntimeModule::new("moonbitlang/core/char", fn(
-  _env,
-  build,
-) {
-  {
-    "is_ascii": build(
-      (
-        #|pub fn Char::is_ascii(self : Self) -> Bool { self is ('\\u{00}'..='\\u{7F}') }
+let moonbitlang_core_char_module : RuntimeModule = RuntimeModule::new(
+  "moonbitlang/core/char",
+  deps={ "moonbitlang/core/builtin": moonbitlang_core_builtin_module },
+  fn(_env, build) {
+    {
+      "is_ascii": build(
+        (
+          #|pub fn Char::is_ascii(self : Self) -> Bool { self is ('\\u{00}'..='\\u{7F}') }
+        ),
       ),
-    ),
-    "is_ascii_alphabetic": build(
-      (
-        #|pub fn Char::is_ascii_alphabetic(self : Self) -> Bool { self is ('A'..='Z' | 'a'..='z') }
+      "is_ascii_alphabetic": build(
+        (
+          #|pub fn Char::is_ascii_alphabetic(self : Self) -> Bool { self is ('A'..='Z' | 'a'..='z') }
+        ),
       ),
-    ),
-    "is_ascii_control": build(
-      (
-        #|pub fn Char::is_ascii_control(self : Self) -> Bool { self is ('\\u{00}'..='\\u{1F}' | '\\u{7F}') }
+      "is_ascii_control": build(
+        (
+          #|pub fn Char::is_ascii_control(self : Self) -> Bool { self is ('\\u{00}'..='\\u{1F}' | '\\u{7F}') }
+        ),
       ),
-    ),
-    "is_ascii_digit": build(
-      (
-        #|pub fn Char::is_ascii_digit(self : Self) -> Bool { self is ('0'..='9') }
+      "is_ascii_digit": build(
+        (
+          #|pub fn Char::is_ascii_digit(self : Self) -> Bool { self is ('0'..='9') }
+        ),
       ),
-    ),
-    "is_ascii_graphic": build(
-      (
-        #|pub fn Char::is_ascii_graphic(self : Self) -> Bool { self is ('\\u{21}'..='\\u{7E}') }
+      "is_ascii_graphic": build(
+        (
+          #|pub fn Char::is_ascii_graphic(self : Self) -> Bool { self is ('\\u{21}'..='\\u{7E}') }
+        ),
       ),
-    ),
-    "is_ascii_hexdigit": build(
-      (
-        #|pub fn Char::is_ascii_hexdigit(self : Self) -> Bool { self is ('0'..='9' | 'A'..='F' | 'a'..='f') }
+      "is_ascii_hexdigit": build(
+        (
+          #|pub fn Char::is_ascii_hexdigit(self : Self) -> Bool { self is ('0'..='9' | 'A'..='F' | 'a'..='f') }
+        ),
       ),
-    ),
-    "is_ascii_lowercase": build(
-      (
-        #|pub fn Char::is_ascii_lowercase(self : Self) -> Bool { self is ('a'..='z') }
+      "is_ascii_lowercase": build(
+        (
+          #|pub fn Char::is_ascii_lowercase(self : Self) -> Bool { self is ('a'..='z') }
+        ),
       ),
-    ),
-    "is_ascii_octdigit": build(
-      (
-        #|pub fn Char::is_ascii_octdigit(self : Self) -> Bool { self is ('0'..='7') }
+      "is_ascii_octdigit": build(
+        (
+          #|pub fn Char::is_ascii_octdigit(self : Self) -> Bool { self is ('0'..='7') }
+        ),
       ),
-    ),
-    "is_ascii_punctuation": build(
-      (
-        #|pub fn Char::is_ascii_punctuation(self : Self) -> Bool { self
-        #|  is ('\\u{21}'..='\\u{2F}'
-        #|  | '\\u{3A}'..='\\u{40}'
-        #|  | '\\u{5B}'..='\\u{60}'
-        #|  | '\\u{7B}'..='\\u{7E}') }
+      "is_ascii_punctuation": build(
+        (
+          #|pub fn Char::is_ascii_punctuation(self : Self) -> Bool { self
+          #|  is ('\\u{21}'..='\\u{2F}'
+          #|  | '\\u{3A}'..='\\u{40}'
+          #|  | '\\u{5B}'..='\\u{60}'
+          #|  | '\\u{7B}'..='\\u{7E}') }
+        ),
       ),
-    ),
-    "is_ascii_uppercase": build(
-      (
-        #|pub fn Char::is_ascii_uppercase(self : Self) -> Bool { self is ('A'..='Z') }
+      "is_ascii_uppercase": build(
+        (
+          #|pub fn Char::is_ascii_uppercase(self : Self) -> Bool { self is ('A'..='Z') }
+        ),
       ),
-    ),
-    "is_ascii_whitespace": build(
-      (
-        #|pub fn Char::is_ascii_whitespace(self : Self) -> Bool { self is ('\\u{20}' | '\\u{09}' | '\\u{0A}' | '\\u{0B}' | '\\u{0C}' | '\\u{0D}') }
+      "is_ascii_whitespace": build(
+        (
+          #|pub fn Char::is_ascii_whitespace(self : Self) -> Bool { self is ('\\u{20}' | '\\u{09}' | '\\u{0A}' | '\\u{0B}' | '\\u{0C}' | '\\u{0D}') }
+        ),
       ),
-    ),
-    "is_control": build(
-      (
-        #|pub fn Char::is_control(self : Self) -> Bool { self is ('\\u0000'..='\\u001F' | '\\u007F'..='\\u009F') }
+      "is_control": build(
+        (
+          #|pub fn Char::is_control(self : Self) -> Bool { self is ('\\u0000'..='\\u001F' | '\\u007F'..='\\u009F') }
+        ),
       ),
-    ),
-    "is_digit": build(
-      (
-        #|pub fn Char::is_digit(self : Self, radix : UInt) -> Bool { let v = self.to_uint()
-        #|  match radix {
-        #|    2..=10 => v >= 48 && v <= radix + 47
-        #|    11..=36 =>
-        #|      (v >= 48 && v <= 57) ||
-        #|      (v >= 65 && v <= radix + 54) ||
-        #|      (v >= 97 && v <= radix + 86)
-        #|    _ => panic()
-        #|  } }
+      "is_digit": build(
+        (
+          #|pub fn Char::is_digit(self : Self, radix : UInt) -> Bool { let v = self.to_uint()
+          #|  match radix {
+          #|    2..=10 => v >= 48 && v <= radix + 47
+          #|    11..=36 =>
+          #|      (v >= 48 && v <= 57) ||
+          #|      (v >= 65 && v <= radix + 54) ||
+          #|      (v >= 97 && v <= radix + 86)
+          #|    _ => panic()
+          #|  } }
+        ),
       ),
-    ),
-    "is_whitespace": build(
-      (
-        #|pub fn Char::is_whitespace(self : Self) -> Bool { self
-        #|  is ('\\u0009'..='\\u000D'
-        #|  | '\\u0020'
-        #|  | '\\u0085'
-        #|  | '\\u00A0'
-        #|  | '\\u1680'
-        #|  | '\\u2000'..='\\u200A'
-        #|  | '\\u2028'
-        #|  | '\\u2029'
-        #|  | '\\u202F'
-        #|  | '\\u205F'
-        #|  | '\\u3000') }
+      "is_whitespace": build(
+        (
+          #|pub fn Char::is_whitespace(self : Self) -> Bool { self
+          #|  is ('\\u0009'..='\\u000D'
+          #|  | '\\u0020'
+          #|  | '\\u0085'
+          #|  | '\\u00A0'
+          #|  | '\\u1680'
+          #|  | '\\u2000'..='\\u200A'
+          #|  | '\\u2028'
+          #|  | '\\u2029'
+          #|  | '\\u202F'
+          #|  | '\\u205F'
+          #|  | '\\u3000') }
+        ),
       ),
-    ),
-    "is_numeric": build(
-      (
-        #|pub fn Char::is_numeric(self : Self) -> Bool { self
-        #|  is ('\\u0030'..='\\u0039'
-        #|  | '\\u00B2'
-        #|  | '\\u00B3'
-        #|  | '\\u00B9'
-        #|  | '\\u00BC'
-        #|  | '\\u00BD'
-        #|  | '\\u00BE'
-        #|  | '\\u0660'..='\\u0669'
-        #|  | '\\u06F0'..='\\u06F9'
-        #|  | '\\u07C0'..='\\u07F9'
-        #|  | '\\u0966'..='\\u096F'
-        #|  | '\\u09E6'..='\\u09EF'
-        #|  | '\\u09F4'..='\\u09F9'
-        #|  | '\\u0A66'..='\\u0A6F'
-        #|  | '\\u0AE6'..='\\u0AEF'
-        #|  | '\\u0B66'..='\\u0B6F'
-        #|  | '\\u0B72'..='\\u0B77'
-        #|  | '\\u0BE6'..='\\u0BEF'
-        #|  | '\\u0BF0'..='\\u0BF2'
-        #|  | '\\u0C66'..='\\u0C6F'
-        #|  | '\\u0C78'..='\\u0C7E'
-        #|  | '\\u0CE6'..='\\u0CEF'
-        #|  | '\\u0D58'..='\\u0D5E'
-        #|  | '\\u0D66'..='\\u0D6F'
-        #|  | '\\u0D70'..='\\u0D78'
-        #|  | '\\u0DE6'..='\\u0DEF'
-        #|  | '\\u0E50'..='\\u0E59'
-        #|  | '\\u0ED0'..='\\u0ED9'
-        #|  | '\\u0F20'..='\\u0F33'
-        #|  | '\\u1040'..='\\u1049'
-        #|  | '\\u1090'..='\\u1099'
-        #|  | '\\u1369'..='\\u137C'
-        #|  | '\\u16EE'..='\\u16F0'
-        #|  | '\\u17E0'..='\\u17E9'
-        #|  | '\\u17F0'..='\\u17F9'
-        #|  | '\\u1810'..='\\u1819'
-        #|  | '\\u1946'..='\\u194F'
-        #|  | '\\u19D0'..='\\u19DA'
-        #|  | '\\u1A80'..='\\u1A89'
-        #|  | '\\u1A90'..='\\u1A99'
-        #|  | '\\u1B50'..='\\u1B59'
-        #|  | '\\u1BB0'..='\\u1BB9'
-        #|  | '\\u1C40'..='\\u1C49'
-        #|  | '\\u1C50'..='\\u1C59'
-        #|  | '\\u2070'
-        #|  | '\\u2074'..='\\u2079'
-        #|  | '\\u2080'..='\\u2089'
-        #|  | '\\u2150'..='\\u2189'
-        #|  | '\\u2460'..='\\u249B'
-        #|  | '\\u24EA'..='\\u24FF'
-        #|  | '\\u2776'..='\\u2793'
-        #|  | '\\u2CFD'
-        #|  | '\\u3007'
-        #|  | '\\u3021'..='\\u3029'
-        #|  | '\\u3038'..='\\u303A'
-        #|  | '\\u3192'..='\\u3195'
-        #|  | '\\u3220'..='\\u3229'
-        #|  | '\\u3248'..='\\u324F'
-        #|  | '\\u3251'..='\\u325F'
-        #|  | '\\u3280'..='\\u3289'
-        #|  | '\\u32B1'..='\\u32BF'
-        #|  | '\\uA620'..='\\uA629'
-        #|  | '\\uA6E6'..='\\uA6EF'
-        #|  | '\\uA830'..='\\uA835'
-        #|  | '\\uA8D0'..='\\uA8D9'
-        #|  | '\\uA900'..='\\uA909'
-        #|  | '\\uA9D0'..='\\uA9D9'
-        #|  | '\\uA9F0'..='\\uA9F9'
-        #|  | '\\uAA50'..='\\uAA59'
-        #|  | '\\uABF0'..='\\uABF9'
-        #|  | '\\uFF10'..='\\uFF19'
-        #|  | '\\u{10107}'..='\\u{10133}'
-        #|  | '\\u{10140}'..='\\u{10178}'
-        #|  | '\\u{1018A}'..='\\u{1018B}'
-        #|  | '\\u{102E1}'..='\\u{102FB}'
-        #|  | '\\u{10320}'..='\\u{10323}'
-        #|  | '\\u{10341}'
-        #|  | '\\u{1034A}'
-        #|  | '\\u{103D1}'..='\\u{103D5}'
-        #|  | '\\u{104A0}'..='\\u{104A9}'
-        #|  | '\\u{10858}'..='\\u{1085F}'
-        #|  | '\\u{10879}'..='\\u{1087F}'
-        #|  | '\\u{108A7}'..='\\u{108AF}'
-        #|  | '\\u{108FB}'..='\\u{108FF}'
-        #|  | '\\u{10916}'..='\\u{1091B}'
-        #|  | '\\u{109BC}'..='\\u{109BD}'
-        #|  | '\\u{109C0}'..='\\u{109CF}'
-        #|  | '\\u{10A40}'..='\\u{10A48}'
-        #|  | '\\u{10A7D}'..='\\u{10A7E}'
-        #|  | '\\u{10A9D}'..='\\u{10A9F}'
-        #|  | '\\u{10AEB}'..='\\u{10AEF}'
-        #|  | '\\u{10B58}'..='\\u{10B5F}'
-        #|  | '\\u{10B78}'..='\\u{10B7F}'
-        #|  | '\\u{10BA9}'..='\\u{10BAF}'
-        #|  | '\\u{10CFA}'..='\\u{10CFF}'
-        #|  | '\\u{10D30}'..='\\u{10D39}'
-        #|  | '\\u{10D40}'..='\\u{10D49}'
-        #|  | '\\u{10E60}'..='\\u{10E7E}'
-        #|  | '\\u{10F1D}'..='\\u{10F26}'
-        #|  | '\\u{10F51}'..='\\u{10F54}'
-        #|  | '\\u{10FC5}'..='\\u{10FCB}'
-        #|  | '\\u{11052}'..='\\u{1106F}'
-        #|  | '\\u{110F0}'..='\\u{110F9}'
-        #|  | '\\u{11136}'..='\\u{1113F}'
-        #|  | '\\u{111D0}'..='\\u{111D9}'
-        #|  | '\\u{111E1}'..='\\u{111F4}'
-        #|  | '\\u{112F0}'..='\\u{112F9}'
-        #|  | '\\u{11450}'..='\\u{11459}'
-        #|  | '\\u{114D0}'..='\\u{114D9}'
-        #|  | '\\u{11650}'..='\\u{11659}'
-        #|  | '\\u{116C0}'..='\\u{116C9}'
-        #|  | '\\u{116D0}'..='\\u{116E3}'
-        #|  | '\\u{11730}'..='\\u{1173B}'
-        #|  | '\\u{118E0}'..='\\u{118F2}'
-        #|  | '\\u{11950}'..='\\u{11959}'
-        #|  | '\\u{11BF0}'..='\\u{11BF9}'
-        #|  | '\\u{11C50}'..='\\u{11C6C}'
-        #|  | '\\u{11D50}'..='\\u{11D59}'
-        #|  | '\\u{11DA0}'..='\\u{11DA9}'
-        #|  | '\\u{11F50}'..='\\u{11F59}'
-        #|  | '\\u{11FC0}'..='\\u{11FD4}'
-        #|  | '\\u{12400}'..='\\u{1246E}'
-        #|  | '\\u{16130}'..='\\u{16139}'
-        #|  | '\\u{16A60}'..='\\u{16A69}'
-        #|  | '\\u{16AC0}'..='\\u{16AC9}'
-        #|  | '\\u{16B50}'..='\\u{16B59}'
-        #|  | '\\u{16B5B}'..='\\u{16B61}'
-        #|  | '\\u{16D70}'..='\\u{16D79}'
-        #|  | '\\u{16D80}'..='\\u{16E96}'
-        #|  | '\\u{1CCF0}'..='\\u{1CCF9}'
-        #|  | '\\u{1D2C0}'..='\\u{1D2F3}'
-        #|  | '\\u{1D360}'..='\\u{1D378}'
-        #|  | '\\u{1D7CE}'..='\\u{1D7FF}'
-        #|  | '\\u{1E140}'..='\\u{1E149}'
-        #|  | '\\u{1E2F0}'..='\\u{1E2F9}'
-        #|  | '\\u{1E4F0}'..='\\u{1E4F9}'
-        #|  | '\\u{1E5F1}'..='\\u{1E5FA}'
-        #|  | '\\u{1E8C7}'..='\\u{1E8CF}'
-        #|  | '\\u{1E950}'..='\\u{1E959}'
-        #|  | '\\u{1EC71}'..='\\u{1ECB4}'
-        #|  | '\\u{1ED01}'..='\\u{1ED3D}'
-        #|  | '\\u{1F100}'..='\\u{1F10C}'
-        #|  | '\\u{1FBF0}'..='\\u{1FBF9}') }
+      "is_numeric": build(
+        (
+          #|pub fn Char::is_numeric(self : Self) -> Bool { self
+          #|  is ('\\u0030'..='\\u0039'
+          #|  | '\\u00B2'
+          #|  | '\\u00B3'
+          #|  | '\\u00B9'
+          #|  | '\\u00BC'
+          #|  | '\\u00BD'
+          #|  | '\\u00BE'
+          #|  | '\\u0660'..='\\u0669'
+          #|  | '\\u06F0'..='\\u06F9'
+          #|  | '\\u07C0'..='\\u07F9'
+          #|  | '\\u0966'..='\\u096F'
+          #|  | '\\u09E6'..='\\u09EF'
+          #|  | '\\u09F4'..='\\u09F9'
+          #|  | '\\u0A66'..='\\u0A6F'
+          #|  | '\\u0AE6'..='\\u0AEF'
+          #|  | '\\u0B66'..='\\u0B6F'
+          #|  | '\\u0B72'..='\\u0B77'
+          #|  | '\\u0BE6'..='\\u0BEF'
+          #|  | '\\u0BF0'..='\\u0BF2'
+          #|  | '\\u0C66'..='\\u0C6F'
+          #|  | '\\u0C78'..='\\u0C7E'
+          #|  | '\\u0CE6'..='\\u0CEF'
+          #|  | '\\u0D58'..='\\u0D5E'
+          #|  | '\\u0D66'..='\\u0D6F'
+          #|  | '\\u0D70'..='\\u0D78'
+          #|  | '\\u0DE6'..='\\u0DEF'
+          #|  | '\\u0E50'..='\\u0E59'
+          #|  | '\\u0ED0'..='\\u0ED9'
+          #|  | '\\u0F20'..='\\u0F33'
+          #|  | '\\u1040'..='\\u1049'
+          #|  | '\\u1090'..='\\u1099'
+          #|  | '\\u1369'..='\\u137C'
+          #|  | '\\u16EE'..='\\u16F0'
+          #|  | '\\u17E0'..='\\u17E9'
+          #|  | '\\u17F0'..='\\u17F9'
+          #|  | '\\u1810'..='\\u1819'
+          #|  | '\\u1946'..='\\u194F'
+          #|  | '\\u19D0'..='\\u19DA'
+          #|  | '\\u1A80'..='\\u1A89'
+          #|  | '\\u1A90'..='\\u1A99'
+          #|  | '\\u1B50'..='\\u1B59'
+          #|  | '\\u1BB0'..='\\u1BB9'
+          #|  | '\\u1C40'..='\\u1C49'
+          #|  | '\\u1C50'..='\\u1C59'
+          #|  | '\\u2070'
+          #|  | '\\u2074'..='\\u2079'
+          #|  | '\\u2080'..='\\u2089'
+          #|  | '\\u2150'..='\\u2189'
+          #|  | '\\u2460'..='\\u249B'
+          #|  | '\\u24EA'..='\\u24FF'
+          #|  | '\\u2776'..='\\u2793'
+          #|  | '\\u2CFD'
+          #|  | '\\u3007'
+          #|  | '\\u3021'..='\\u3029'
+          #|  | '\\u3038'..='\\u303A'
+          #|  | '\\u3192'..='\\u3195'
+          #|  | '\\u3220'..='\\u3229'
+          #|  | '\\u3248'..='\\u324F'
+          #|  | '\\u3251'..='\\u325F'
+          #|  | '\\u3280'..='\\u3289'
+          #|  | '\\u32B1'..='\\u32BF'
+          #|  | '\\uA620'..='\\uA629'
+          #|  | '\\uA6E6'..='\\uA6EF'
+          #|  | '\\uA830'..='\\uA835'
+          #|  | '\\uA8D0'..='\\uA8D9'
+          #|  | '\\uA900'..='\\uA909'
+          #|  | '\\uA9D0'..='\\uA9D9'
+          #|  | '\\uA9F0'..='\\uA9F9'
+          #|  | '\\uAA50'..='\\uAA59'
+          #|  | '\\uABF0'..='\\uABF9'
+          #|  | '\\uFF10'..='\\uFF19'
+          #|  | '\\u{10107}'..='\\u{10133}'
+          #|  | '\\u{10140}'..='\\u{10178}'
+          #|  | '\\u{1018A}'..='\\u{1018B}'
+          #|  | '\\u{102E1}'..='\\u{102FB}'
+          #|  | '\\u{10320}'..='\\u{10323}'
+          #|  | '\\u{10341}'
+          #|  | '\\u{1034A}'
+          #|  | '\\u{103D1}'..='\\u{103D5}'
+          #|  | '\\u{104A0}'..='\\u{104A9}'
+          #|  | '\\u{10858}'..='\\u{1085F}'
+          #|  | '\\u{10879}'..='\\u{1087F}'
+          #|  | '\\u{108A7}'..='\\u{108AF}'
+          #|  | '\\u{108FB}'..='\\u{108FF}'
+          #|  | '\\u{10916}'..='\\u{1091B}'
+          #|  | '\\u{109BC}'..='\\u{109BD}'
+          #|  | '\\u{109C0}'..='\\u{109CF}'
+          #|  | '\\u{10A40}'..='\\u{10A48}'
+          #|  | '\\u{10A7D}'..='\\u{10A7E}'
+          #|  | '\\u{10A9D}'..='\\u{10A9F}'
+          #|  | '\\u{10AEB}'..='\\u{10AEF}'
+          #|  | '\\u{10B58}'..='\\u{10B5F}'
+          #|  | '\\u{10B78}'..='\\u{10B7F}'
+          #|  | '\\u{10BA9}'..='\\u{10BAF}'
+          #|  | '\\u{10CFA}'..='\\u{10CFF}'
+          #|  | '\\u{10D30}'..='\\u{10D39}'
+          #|  | '\\u{10D40}'..='\\u{10D49}'
+          #|  | '\\u{10E60}'..='\\u{10E7E}'
+          #|  | '\\u{10F1D}'..='\\u{10F26}'
+          #|  | '\\u{10F51}'..='\\u{10F54}'
+          #|  | '\\u{10FC5}'..='\\u{10FCB}'
+          #|  | '\\u{11052}'..='\\u{1106F}'
+          #|  | '\\u{110F0}'..='\\u{110F9}'
+          #|  | '\\u{11136}'..='\\u{1113F}'
+          #|  | '\\u{111D0}'..='\\u{111D9}'
+          #|  | '\\u{111E1}'..='\\u{111F4}'
+          #|  | '\\u{112F0}'..='\\u{112F9}'
+          #|  | '\\u{11450}'..='\\u{11459}'
+          #|  | '\\u{114D0}'..='\\u{114D9}'
+          #|  | '\\u{11650}'..='\\u{11659}'
+          #|  | '\\u{116C0}'..='\\u{116C9}'
+          #|  | '\\u{116D0}'..='\\u{116E3}'
+          #|  | '\\u{11730}'..='\\u{1173B}'
+          #|  | '\\u{118E0}'..='\\u{118F2}'
+          #|  | '\\u{11950}'..='\\u{11959}'
+          #|  | '\\u{11BF0}'..='\\u{11BF9}'
+          #|  | '\\u{11C50}'..='\\u{11C6C}'
+          #|  | '\\u{11D50}'..='\\u{11D59}'
+          #|  | '\\u{11DA0}'..='\\u{11DA9}'
+          #|  | '\\u{11F50}'..='\\u{11F59}'
+          #|  | '\\u{11FC0}'..='\\u{11FD4}'
+          #|  | '\\u{12400}'..='\\u{1246E}'
+          #|  | '\\u{16130}'..='\\u{16139}'
+          #|  | '\\u{16A60}'..='\\u{16A69}'
+          #|  | '\\u{16AC0}'..='\\u{16AC9}'
+          #|  | '\\u{16B50}'..='\\u{16B59}'
+          #|  | '\\u{16B5B}'..='\\u{16B61}'
+          #|  | '\\u{16D70}'..='\\u{16D79}'
+          #|  | '\\u{16D80}'..='\\u{16E96}'
+          #|  | '\\u{1CCF0}'..='\\u{1CCF9}'
+          #|  | '\\u{1D2C0}'..='\\u{1D2F3}'
+          #|  | '\\u{1D360}'..='\\u{1D378}'
+          #|  | '\\u{1D7CE}'..='\\u{1D7FF}'
+          #|  | '\\u{1E140}'..='\\u{1E149}'
+          #|  | '\\u{1E2F0}'..='\\u{1E2F9}'
+          #|  | '\\u{1E4F0}'..='\\u{1E4F9}'
+          #|  | '\\u{1E5F1}'..='\\u{1E5FA}'
+          #|  | '\\u{1E8C7}'..='\\u{1E8CF}'
+          #|  | '\\u{1E950}'..='\\u{1E959}'
+          #|  | '\\u{1EC71}'..='\\u{1ECB4}'
+          #|  | '\\u{1ED01}'..='\\u{1ED3D}'
+          #|  | '\\u{1F100}'..='\\u{1F10C}'
+          #|  | '\\u{1FBF0}'..='\\u{1FBF9}') }
+        ),
       ),
-    ),
-    "is_printable": build(
-      (
-        #|pub fn Char::is_printable(self : Self) -> Bool { // Check for control characters (Cc)
-        #|  if self.is_control() {
-        #|    return false
-        #|  }
-        #|  let self = self.to_int()
-        #|  // Private use areas (Co)
-        #|  if self is (0xE000..=0xF8FF | 0xF0000..=0xFFFFD | 0x100000..=0x10FFFD) {
-        #|    return false
-        #|  }
-        #|  // Format characters (Cf)
-        #|  if self
-        #|    is ('\\u{00AD}'
-        #|    | '\\u{0600}'..='\\u{0605}'
-        #|    | '\\u{061C}'
-        #|    | '\\u{06DD}'
-        #|    | '\\u{070F}'
-        #|    | '\\u{0890}'..='\\u{0891}'
-        #|    | '\\u{08E2}'
-        #|    | '\\u{180E}'
-        #|    | '\\u{200B}'..='\\u{200F}'
-        #|    | '\\u{202A}'..='\\u{202E}'
-        #|    | '\\u{2060}'..='\\u{2064}'
-        #|    | '\\u{2066}'..='\\u{206F}'
-        #|    | '\\u{feff}'
-        #|    | '\\u{FFF9}'..='\\u{FFFB}'
-        #|    | '\\u{110BD}'
-        #|    | '\\u{110CD}'
-        #|    | '\\u{13430}'..='\\u{1343F}'
-        #|    | '\\u{1BCA0}'..='\\u{1BCA3}'
-        #|    | '\\u{1D173}'..='\\u{1D17A}'
-        #|    | '\\u{E0001}'
-        #|    | '\\u{E0020}'..='\\u{E007F}') {
-        #|    return false
-        #|  }
-        #|  // Surrogate (Cs)
-        #|  if self.is_surrogate() {
-        #|    return false
-        #|  }
-        #|  // Line and paragraph separators (Zl, Zp)
-        #|  if self == '\\u{2028}' || self == '\\u{2029}' {
-        #|    return false
-        #|  }
-        #|  // Noncharacter
-        #|  if self
-        #|    is (0xFDD0..=0xFDEF
-        #|    | 0xFFFE..=0xFFFF
-        #|    | 0x1FFFE..=0x1FFFF
-        #|    | 0x2FFFE..=0x2FFFF
-        #|    | 0x3FFFE..=0x3FFFF
-        #|    | 0x4FFFE..=0x4FFFF
-        #|    | 0x5FFFE..=0x5FFFF
-        #|    | 0x6FFFE..=0x6FFFF
-        #|    | 0x7FFFE..=0x7FFFF
-        #|    | 0x8FFFE..=0x8FFFF
-        #|    | 0x9FFFE..=0x9FFFF
-        #|    | 0xAFFFE..=0xAFFFF
-        #|    | 0xBFFFE..=0xBFFFF
-        #|    | 0xCFFFE..=0xCFFFF
-        #|    | 0xDFFFE..=0xDFFFF
-        #|    | 0xEFFFE..=0xEFFFF
-        #|    | 0xFFFFE..=0xFFFFF
-        #|    | 0x10FFFE..=0x10FFFF) {
-        #|    return false
-        #|  }
-        #|  true }
+      "is_printable": build(
+        (
+          #|pub fn Char::is_printable(self : Self) -> Bool { // Check for control characters (Cc)
+          #|  if self.is_control() {
+          #|    return false
+          #|  }
+          #|  let self = self.to_int()
+          #|  // Private use areas (Co)
+          #|  if self is (0xE000..=0xF8FF | 0xF0000..=0xFFFFD | 0x100000..=0x10FFFD) {
+          #|    return false
+          #|  }
+          #|  // Format characters (Cf)
+          #|  if self
+          #|    is ('\\u{00AD}'
+          #|    | '\\u{0600}'..='\\u{0605}'
+          #|    | '\\u{061C}'
+          #|    | '\\u{06DD}'
+          #|    | '\\u{070F}'
+          #|    | '\\u{0890}'..='\\u{0891}'
+          #|    | '\\u{08E2}'
+          #|    | '\\u{180E}'
+          #|    | '\\u{200B}'..='\\u{200F}'
+          #|    | '\\u{202A}'..='\\u{202E}'
+          #|    | '\\u{2060}'..='\\u{2064}'
+          #|    | '\\u{2066}'..='\\u{206F}'
+          #|    | '\\u{feff}'
+          #|    | '\\u{FFF9}'..='\\u{FFFB}'
+          #|    | '\\u{110BD}'
+          #|    | '\\u{110CD}'
+          #|    | '\\u{13430}'..='\\u{1343F}'
+          #|    | '\\u{1BCA0}'..='\\u{1BCA3}'
+          #|    | '\\u{1D173}'..='\\u{1D17A}'
+          #|    | '\\u{E0001}'
+          #|    | '\\u{E0020}'..='\\u{E007F}') {
+          #|    return false
+          #|  }
+          #|  // Surrogate (Cs)
+          #|  if self.is_surrogate() {
+          #|    return false
+          #|  }
+          #|  // Line and paragraph separators (Zl, Zp)
+          #|  if self == '\\u{2028}' || self == '\\u{2029}' {
+          #|    return false
+          #|  }
+          #|  // Noncharacter
+          #|  if self
+          #|    is (0xFDD0..=0xFDEF
+          #|    | 0xFFFE..=0xFFFF
+          #|    | 0x1FFFE..=0x1FFFF
+          #|    | 0x2FFFE..=0x2FFFF
+          #|    | 0x3FFFE..=0x3FFFF
+          #|    | 0x4FFFE..=0x4FFFF
+          #|    | 0x5FFFE..=0x5FFFF
+          #|    | 0x6FFFE..=0x6FFFF
+          #|    | 0x7FFFE..=0x7FFFF
+          #|    | 0x8FFFE..=0x8FFFF
+          #|    | 0x9FFFE..=0x9FFFF
+          #|    | 0xAFFFE..=0xAFFFF
+          #|    | 0xBFFFE..=0xBFFFF
+          #|    | 0xCFFFE..=0xCFFFF
+          #|    | 0xDFFFE..=0xDFFFF
+          #|    | 0xEFFFE..=0xEFFFF
+          #|    | 0xFFFFE..=0xFFFFF
+          #|    | 0x10FFFE..=0x10FFFF) {
+          #|    return false
+          #|  }
+          #|  true }
+        ),
       ),
-    ),
-    "to_ascii_lowercase": build(
-      (
-        #|pub fn Char::to_ascii_lowercase(self : Self) -> Char { if self.is_ascii_uppercase() {
-        #|    return (self.to_int() + 32).unsafe_to_char()
-        #|  }
-        #|  self }
+      "to_ascii_lowercase": build(
+        (
+          #|pub fn Char::to_ascii_lowercase(self : Self) -> Char { if self.is_ascii_uppercase() {
+          #|    return (self.to_int() + 32).unsafe_to_char()
+          #|  }
+          #|  self }
+        ),
       ),
-    ),
-    "to_ascii_uppercase": build(
-      (
-        #|pub fn Char::to_ascii_uppercase(self : Self) -> Char { if self.is_ascii_lowercase() {
-        #|    return (self.to_int() - 32).unsafe_to_char()
-        #|  }
-        #|  self }
+      "to_ascii_uppercase": build(
+        (
+          #|pub fn Char::to_ascii_uppercase(self : Self) -> Char { if self.is_ascii_lowercase() {
+          #|    return (self.to_int() - 32).unsafe_to_char()
+          #|  }
+          #|  self }
+        ),
       ),
-    ),
-    "char_to_string": build(
-      (
-        #|fn char_to_string(char : Char) -> String { [char] }
+      "char_to_string": build(
+        (
+          #|fn char_to_string(char : Char) -> String { [char] }
+        ),
       ),
-    ),
-    "utf16_len": build(
-      (
-        #|pub fn Char::utf16_len(self : Self) -> Int { let code = self.to_int()
-        #|  if code <= 0xFFFF {
-        #|    1
-        #|  } else {
-        #|    2
-        #|  } }
+      "utf16_len": build(
+        (
+          #|pub fn Char::utf16_len(self : Self) -> Int { let code = self.to_int()
+          #|  if code <= 0xFFFF {
+          #|    1
+          #|  } else {
+          #|    2
+          #|  } }
+        ),
       ),
-    ),
-    "is_bmp": build(
-      (
-        #|pub fn Char::is_bmp(self : Self) -> Bool { self.to_int() <= 0xFFFF }
+      "is_bmp": build(
+        (
+          #|pub fn Char::is_bmp(self : Self) -> Bool { self.to_int() <= 0xFFFF }
+        ),
       ),
-    ),
-  }
-})
+    }
+  },
+)
 
 ///|
-let cmp_module : RuntimeModule = RuntimeModule::new("moonbitlang/core/cmp", fn(
-  _env,
-  build,
-) {
-  {
-    "maximum_by_key": build(
-      (
-        #|pub fn[T, K : Compare] maximum_by_key(x : T, y : T, f : (T) -> K) -> T { if f(x) > f(y) {
-        #|    x
-        #|  } else {
-        #|    y
-        #|  } }
+let moonbitlang_core_cmp_module : RuntimeModule = RuntimeModule::new(
+  "moonbitlang/core/cmp",
+  deps={ "moonbitlang/core/builtin": moonbitlang_core_builtin_module },
+  fn(_env, build) {
+    {
+      "maximum_by_key": build(
+        (
+          #|pub fn[T, K : Compare] maximum_by_key(x : T, y : T, f : (T) -> K) -> T { if f(x) > f(y) {
+          #|    x
+          #|  } else {
+          #|    y
+          #|  } }
+        ),
       ),
-    ),
-    "minimum_by_key": build(
-      (
-        #|pub fn[T, K : Compare] minimum_by_key(x : T, y : T, f : (T) -> K) -> T { if f(x) > f(y) {
-        #|    y
-        #|  } else {
-        #|    x
-        #|  } }
+      "minimum_by_key": build(
+        (
+          #|pub fn[T, K : Compare] minimum_by_key(x : T, y : T, f : (T) -> K) -> T { if f(x) > f(y) {
+          #|    y
+          #|  } else {
+          #|    x
+          #|  } }
+        ),
       ),
-    ),
-    "maximum": build(
-      (
-        #|pub fn[T : Compare] maximum(x : T, y : T) -> T { if x > y {
-        #|    x
-        #|  } else {
-        #|    y
-        #|  } }
+      "maximum": build(
+        (
+          #|pub fn[T : Compare] maximum(x : T, y : T) -> T { if x > y {
+          #|    x
+          #|  } else {
+          #|    y
+          #|  } }
+        ),
       ),
-    ),
-    "minimum": build(
-      (
-        #|pub fn[T : Compare] minimum(x : T, y : T) -> T { if x > y {
-        #|    y
-        #|  } else {
-        #|    x
-        #|  } }
+      "minimum": build(
+        (
+          #|pub fn[T : Compare] minimum(x : T, y : T) -> T { if x > y {
+          #|    y
+          #|  } else {
+          #|    x
+          #|  } }
+        ),
       ),
-    ),
-  }
-})
+    }
+  },
+)
 
 ///|
-let deque_module : RuntimeModule = RuntimeModule::new(
+let moonbitlang_core_deque_module : RuntimeModule = RuntimeModule::new(
   "moonbitlang/core/deque",
+  deps={
+    "moonbitlang/core/builtin": moonbitlang_core_builtin_module,
+    "moonbitlang/core/json": moonbitlang_core_json_module,
+    "moonbitlang/core/array": moonbitlang_core_array_module,
+    "moonbitlang/core/string": moonbitlang_core_string_module,
+  },
   fn(_env, build) {
     {
       "pop_front_exn": build(
@@ -6570,8 +6623,14 @@ let deque_module : RuntimeModule = RuntimeModule::new(
 )
 
 ///|
-let double_module : RuntimeModule = RuntimeModule::new(
+let moonbitlang_core_double_module : RuntimeModule = RuntimeModule::new(
   "moonbitlang/core/double",
+  deps={
+    "moonbitlang/core/builtin": moonbitlang_core_builtin_module,
+    "moonbitlang/core/int64": moonbitlang_core_int64_module,
+    "moonbitlang/core/uint64": moonbitlang_core_uint64_module,
+    "moonbitlang/core/double/internal/ryu": moonbitlang_core_double_internal_ryu_module,
+  },
   fn(_env, build) {
     {
       "sinh": build(
@@ -8308,158 +8367,699 @@ let double_module : RuntimeModule = RuntimeModule::new(
 )
 
 ///|
-let env_module : RuntimeModule = RuntimeModule::new("moonbitlang/core/env", fn(
-  _env,
-  build,
-) {
-  {
-    "args": build(
-      (
-        #|pub fn args() -> Array[String] { get_cli_args_internal() }
+let moonbitlang_core_double_internal_ryu_module : RuntimeModule = RuntimeModule::new(
+  "moonbitlang/core/double/internal/ryu",
+  deps={
+    "moonbitlang/core/builtin": moonbitlang_core_builtin_module,
+    "moonbitlang/core/bool": moonbitlang_core_bool_module,
+  },
+  fn(_env, build) {
+    {
+      "string_from_bytes": build(
+        (
+          #|fn string_from_bytes(bytes : FixedArray[Byte], from : Int, to : Int) -> String { let buf = StringBuilder::new(size_hint=bytes.length())
+          #|  for i in from..<to {
+          #|    buf.write_char(bytes[i].to_char())
+          #|  }
+          #|  buf.to_string() }
+        ),
       ),
-    ),
-    "now": build(
-      (
-        #|pub fn now() -> UInt64 { now_internal() }
+      "umul128": build(
+        (
+          #|fn umul128(a : UInt64, b : UInt64) -> (UInt64, UInt64) { let aLo = a & 0xffffffff
+          #|  let aHi = a >> 32
+          #|  let bLo = b & 0xffffffff
+          #|  let bHi = b >> 32
+          #|  let x = aLo * bLo
+          #|  let y = aHi * bLo + (x >> 32)
+          #|  let z = aLo * bHi + (y & 0xffffffff)
+          #|  let w = aHi * bHi + (y >> 32) + (z >> 32)
+          #|  let lo = a * b
+          #|  let hi = w
+          #|  (lo, hi) }
+        ),
       ),
-    ),
-    "current_dir": build(
-      (
-        #|pub fn current_dir() -> String? { current_dir_internal() }
+      "shiftright128": build(
+        (
+          #|fn shiftright128(lo : UInt64, hi : UInt64, dist : Int) -> UInt64 { (hi << (64 - dist)) | (lo >> dist) }
+        ),
       ),
-    ),
-    "string_from_extern": build(
-      (
-        #|fn string_from_extern(e : XExternString) -> String { let buf = StringBuilder::new()
-        #|  let handle = begin_read_string(e)
-        #|  while true {
-        #|    let ch = string_read_char(handle)
-        #|    if ch == -1 {
-        #|      break
-        #|    } else {
-        #|      buf.write_char(ch.unsafe_to_char())
-        #|    }
-        #|  }
-        #|  finish_read_string(handle)
-        #|  buf.to_string() }
+      "pow5Factor": build(
+        (
+          #|fn pow5Factor(value : UInt64) -> Int { // We want to find the largest power of 5 that divides value.
+          #|  if value % 5UL != 0UL {
+          #|    return 0
+          #|  }
+          #|  if value % 25UL != 0UL {
+          #|    return 1
+          #|  }
+          #|  if value % 125UL != 0UL {
+          #|    return 2
+          #|  }
+          #|  if value % 625UL != 0UL {
+          #|    return 3
+          #|  }
+          #|  let mut count = 4
+          #|  let mut value = value / 625UL
+          #|  while value > 0UL {
+          #|    if value % 5UL != 0UL {
+          #|      return count
+          #|    }
+          #|    value = value / 5UL
+          #|    count = count + 1
+          #|  }
+          #|  abort(\"IllegalArgumentException \\{value}\") }
+        ),
       ),
-    ),
-    "string_array_from_extern": build(
-      (
-        #|fn string_array_from_extern(e : XExternStringArray) -> Array[String] { let buf = Array::new()
-        #|  let handle = begin_read_string_array(e)
-        #|  while true {
-        #|    let extern_str = string_array_read_string(handle)
-        #|    let str = string_from_extern(extern_str)
-        #|    // keep \"ffi_end_of_/string_array\" same with moonrun
-        #|    if str == \"ffi_end_of_/string_array\" {
-        #|      break
-        #|    } else {
-        #|      buf.push(str)
-        #|    }
-        #|  }
-        #|  finish_read_string_array(handle)
-        #|  buf }
+      "multipleOfPowerOf5": build(
+        (
+          #|fn multipleOfPowerOf5(value : UInt64, p : Int) -> Bool { pow5Factor(value) >= p }
+        ),
       ),
-    ),
-    "get_cli_args_internal": build(
-      (
-        #|fn get_cli_args_internal() -> Array[String] { let args = get_cli_args_ffi()
-        #|  string_array_from_extern(args) }
+      "multipleOfPowerOf2": build(
+        (
+          #|fn multipleOfPowerOf2(value : UInt64, p : Int) -> Bool { (value & ((1UL << p) - 1UL)) == 0UL }
+        ),
       ),
-    ),
-    "current_dir_internal": build(
-      (
-        #|fn current_dir_internal() -> String? { let dir = current_dir_ffi()
-        #|  let dir = string_from_extern(dir)
-        #|  if dir == \"\" {
-        #|    None
-        #|  } else {
-        #|    Some(dir)
-        #|  } }
+      "gPOW5_TABLE_SIZE": (None, Int(26)),
+      "double_computePow5": build(
+        (
+          #|fn double_computePow5(i : Int) -> (UInt64, UInt64) { let base = i / gPOW5_TABLE_SIZE
+          #|  let base2 = base * gPOW5_TABLE_SIZE
+          #|  let offset = i - base2
+          #|  let mul0 = gDOUBLE_POW5_SPLIT2[base * 2]
+          #|  let mul1 = gDOUBLE_POW5_SPLIT2[base * 2 + 1]
+          #|  if offset == 0 {
+          #|    return (mul0, mul1)
+          #|  }
+          #|  let m : UInt64 = gDOUBLE_POW5_TABLE[offset]
+          #|  let (low1, high1) = umul128(m, mul1)
+          #|  let (low0, high0) = umul128(m, mul0)
+          #|  let sum : UInt64 = high0 + low1
+          #|  let mut high1 = high1
+          #|  if sum < high0 {
+          #|    high1 = high1 + 1UL
+          #|  }
+          #|  let delta : Int = pow5bits(i) - pow5bits(base2)
+          #|  let a = shiftright128(low0, sum, delta) +
+          #|    ((gPOW5_OFFSETS[i / 16] >> ((i % 16) << 1)) & 3).to_uint64()
+          #|  let b = shiftright128(sum, high1, delta)
+          #|  (a, b) }
+        ),
       ),
-    ),
-    "get_cli_args_internal": build(
-      (
-        #|fn get_cli_args_internal() -> Array[String] { let tmp = get_cli_args_ffi()
-        #|  let res = Array::new(capacity=tmp.length())
-        #|  for i in 0..<tmp.length() {
-        #|    res.push(utf8_bytes_to_mbt_string(tmp[i]))
-        #|  }
-        #|  res }
+      "double_computeInvPow5": build(
+        (
+          #|fn double_computeInvPow5(i : Int) -> (UInt64, UInt64) { let base = (i + gPOW5_TABLE_SIZE - 1) / gPOW5_TABLE_SIZE
+          #|  let base2 = base * gPOW5_TABLE_SIZE
+          #|  let offset = base2 - i
+          #|  let mul0 = gDOUBLE_POW5_INV_SPLIT2[base * 2]
+          #|  let mul1 = gDOUBLE_POW5_INV_SPLIT2[base * 2 + 1]
+          #|  if offset == 0 {
+          #|    return (mul0, mul1)
+          #|  }
+          #|  let m = gDOUBLE_POW5_TABLE[offset]
+          #|  let (low1, high1) = umul128(m, mul1)
+          #|  let (low0, high0) = umul128(m, mul0)
+          #|  let sum = high0 + low1
+          #|  let mut high1 = high1
+          #|  if sum < high0 {
+          #|    high1 = high1 + 1
+          #|  }
+          #|  let delta : Int = pow5bits(base2) - pow5bits(i)
+          #|  let a = shiftright128(low0, sum, delta) +
+          #|    1 +
+          #|    ((gPOW5_INV_OFFSETS[i / 16] >> ((i % 16) << 1)) & 3).to_uint64()
+          #|  let b = shiftright128(sum, high1, delta)
+          #|  (a, b) }
+        ),
       ),
-    ),
-    "utf8_bytes_to_mbt_string": build(
-      (
-        #|fn utf8_bytes_to_mbt_string(bytes : Bytes) -> String { let res = StringBuilder::new()
-        #|  let len = bytes.length()
-        #|  let mut i = 0
-        #|  while i < len {
-        #|    let mut c = bytes[i].to_int()
-        #|    // zero byte indicates end of string
-        #|    if c == 0 {
-        #|      break
-        #|    } else if c < 0x80 {
-        #|      res.write_char(c.unsafe_to_char())
-        #|      i += 1
-        #|    } else if c < 0xE0 {
-        #|      if i + 1 >= len {
-        #|        break
-        #|      }
-        #|      c = ((c & 0x1F) << 6) | (bytes[i + 1].to_int() & 0x3F)
-        #|      res.write_char(c.unsafe_to_char())
-        #|      i += 2
-        #|    } else if c < 0xF0 {
-        #|      if i + 2 >= len {
-        #|        break
-        #|      }
-        #|      c = ((c & 0x0F) << 12) |
-        #|        ((bytes[i + 1].to_int() & 0x3F) << 6) |
-        #|        (bytes[i + 2].to_int() & 0x3F)
-        #|      res.write_char(c.unsafe_to_char())
-        #|      i += 3
-        #|    } else {
-        #|      if i + 3 >= len {
-        #|        break
-        #|      }
-        #|      c = ((c & 0x07) << 18) |
-        #|        ((bytes[i + 1].to_int() & 0x3F) << 12) |
-        #|        ((bytes[i + 2].to_int() & 0x3F) << 6) |
-        #|        (bytes[i + 3].to_int() & 0x3F)
-        #|      c -= 0x10000
-        #|      res.write_char(((c >> 10) + 0xD800).unsafe_to_char())
-        #|      res.write_char(((c & 0x3FF) + 0xDC00).unsafe_to_char())
-        #|      i += 4
-        #|    }
-        #|  }
-        #|  res.to_string() }
+      "decimal_length17": build(
+        (
+          #|fn decimal_length17(v : UInt64) -> Int { // This is slightly faster than a loop.
+          #|  // The average output length is 16.38 digits, so we check high-to-low.
+          #|  // Function precondition: v is not an 18, 19, or 20-digit number.
+          #|  // (17 digits are sufficient for round-tripping.)
+          #|  if v >= 10000000000000000 {
+          #|    return 17
+          #|  }
+          #|  if v >= 1000000000000000 {
+          #|    return 16
+          #|  }
+          #|  if v >= 100000000000000 {
+          #|    return 15
+          #|  }
+          #|  if v >= 10000000000000 {
+          #|    return 14
+          #|  }
+          #|  if v >= 1000000000000 {
+          #|    return 13
+          #|  }
+          #|  if v >= 100000000000 {
+          #|    return 12
+          #|  }
+          #|  if v >= 10000000000 {
+          #|    return 11
+          #|  }
+          #|  if v >= 1000000000 {
+          #|    return 10
+          #|  }
+          #|  if v >= 100000000 {
+          #|    return 9
+          #|  }
+          #|  if v >= 10000000 {
+          #|    return 8
+          #|  }
+          #|  if v >= 1000000 {
+          #|    return 7
+          #|  }
+          #|  if v >= 100000 {
+          #|    return 6
+          #|  }
+          #|  if v >= 10000 {
+          #|    return 5
+          #|  }
+          #|  if v >= 1000 {
+          #|    return 4
+          #|  }
+          #|  if v >= 100 {
+          #|    return 3
+          #|  }
+          #|  if v >= 10 {
+          #|    return 2
+          #|  }
+          #|  return 1 }
+        ),
       ),
-    ),
-    "now_internal": build(
-      (
-        #|fn now_internal() -> UInt64 { // time returns seconds since 1970-01-01 00:00:00 UTC
-        #|  // to be consistent with other backends, we convert to milliseconds
-        #|  time(0) * 1000 }
+      "d2d": build(
+        (
+          #|fn d2d(ieeeMantissa : UInt64, ieeeExponent : UInt) -> FloatingDecimal64 { let mut e2 : Int = 0
+          #|  let mut m2 : UInt64 = 0
+          #|  if ieeeExponent == 0 {
+          #|    // Denormal number - no implicit leading 1, and the exponent is 1, not 0.
+          #|    e2 = 1 - gDOUBLE_BIAS - gDOUBLE_MANTISSA_BITS - 2
+          #|    m2 = ieeeMantissa
+          #|  } else {
+          #|    // Add implicit leading 1.
+          #|    e2 = ieeeExponent.reinterpret_as_int() -
+          #|      gDOUBLE_BIAS -
+          #|      gDOUBLE_MANTISSA_BITS -
+          #|      2
+          #|    m2 = (1UL << gDOUBLE_MANTISSA_BITS) | ieeeMantissa
+          #|  }
+          #|  let even = (m2 & 1UL) == 0UL
+          #|  let mv = 4UL *
+          #|    // Step 2: Determine the interval of valid decimal representations.
+          #|    m2
+          #|  // Implicit bool -> int conversion. True is 1, false is 0.
+          #|  let mmShift = ieeeMantissa != 0UL || ieeeExponent <= 1
+          #|  // We would compute mp and mm like this:
+          #|  // uint64_t mp = 4 * m2 + 2;
+          #|  // uint64_t mm = mv - 1 - mmShift;
+          #|  // Step 3: Convert to a decimal power base using 128-bit arithmetic.
+          #|  let mut vr = 0UL
+          #|  let mut vp = 0UL
+          #|  let mut vm = 0UL
+          #|  let mut e10 : Int = 0
+          #|  let mut vmIsTrailingZeros = false
+          #|  let mut vrIsTrailingZeros = false
+          #|  if e2 >= 0 {
+          #|    // I tried special-casing q == 0, but there was no effect on performance.
+          #|    // This expression is slightly faster than max(0, log10Pow2(e2) - 1).
+          #|    let q : Int = log10Pow2(e2) - (e2 > 3).to_int()
+          #|    e10 = q
+          #|    let k = gDOUBLE_POW5_INV_BITCOUNT + pow5bits(q) - 1
+          #|    let i = -e2 + q + k
+          #|    let pow5 = double_computeInvPow5(q)
+          #|    let vs = mulShiftAll64(m2, pow5, i, mmShift)
+          #|    vr = vs.0
+          #|    vp = vs.1
+          #|    vm = vs.2
+          #|    if q <= 21 {
+          #|      // This should use q <= 22, but I think 21 is also safe. Smaller values
+          #|      // may still be safe, but it's more difficult to reason about them.
+          #|      // Only one of mp, mv, and mm can be a multiple of 5, if any.
+          #|      let mvMod5 : Int = mv.to_int() - 5 * (mv / 5UL).to_int()
+          #|      if mvMod5 == 0 {
+          #|        vrIsTrailingZeros = multipleOfPowerOf5(mv, q)
+          #|      } else if even {
+          #|        // Same as min(e2 + (~mm & 1), pow5Factor(mm)) >= q
+          #|        // <=> e2 + (~mm & 1) >= q && pow5Factor(mm) >= q
+          #|        // <=> true && pow5Factor(mm) >= q, since e2 >= q.
+          #|        vmIsTrailingZeros = multipleOfPowerOf5(
+          #|          mv - 1UL - mmShift.to_uint64(),
+          #|          q,
+          #|        )
+          #|      } else {
+          #|        vp = vp - multipleOfPowerOf5(mv + 2UL, q).to_uint64()
+          #|      }
+          #|    }
+          #|  } else {
+          #|    // This expression is slightly faster than max(0, log10Pow5(-e2) - 1).
+          #|    let q : Int = log10Pow5(-e2) - (-e2 > 1).to_int()
+          #|    e10 = q + e2
+          #|    let i : Int = -e2 - q
+          #|    let k = pow5bits(i) - gDOUBLE_POW5_BITCOUNT
+          #|    let j = q - k
+          #|    let pow5 = double_computePow5(i)
+          #|    let vs = mulShiftAll64(m2, pow5, j, mmShift)
+          #|    vr = vs.0
+          #|    vp = vs.1
+          #|    vm = vs.2
+          #|    if q <= 1 {
+          #|      // {vr,vp,vm} is trailing zeros if {mv,mp,mm} has at least q trailing 0 bits.
+          #|      // mv = 4 * m2, so it always has at least two trailing 0 bits.
+          #|      vrIsTrailingZeros = true
+          #|      if even {
+          #|        vmIsTrailingZeros = mmShift.to_int() == 1
+          #|      } else {
+          #|        vp = vp - 1
+          #|      }
+          #|    } else if q < 63 {
+          #|      vrIsTrailingZeros = multipleOfPowerOf2(mv, q)
+          #|    }
+          #|  }
+          #|  // Step 4: Find the shortest decimal representation in the interval of valid representations.
+          #|  let mut removed : Int = 0
+          #|  let mut lastRemovedDigit : Int = 0
+          #|  let mut output : UInt64 = 0UL
+          #|  // On average, we remove ~2 digits.
+          #|  if vmIsTrailingZeros || vrIsTrailingZeros {
+          #|    // General case, which happens rarely (~0.7%).
+          #|    while true {
+          #|      let vpDiv10 = vp / 10
+          #|      let vmDiv10 = vm / 10
+          #|      if vpDiv10 <= vmDiv10 {
+          #|        break
+          #|      }
+          #|      let vmMod10 : Int = vm.to_int() - 10 * vmDiv10.to_int()
+          #|      let vrDiv10 = vr / 10
+          #|      let vrMod10 : Int = vr.to_int() - 10 * vrDiv10.to_int()
+          #|      vmIsTrailingZeros = vmIsTrailingZeros && vmMod10 == 0
+          #|      vrIsTrailingZeros = vrIsTrailingZeros && lastRemovedDigit == 0
+          #|      lastRemovedDigit = vrMod10
+          #|      vr = vrDiv10
+          #|      vp = vpDiv10
+          #|      vm = vmDiv10
+          #|      removed = removed + 1
+          #|    }
+          #|    if vmIsTrailingZeros {
+          #|      while true {
+          #|        let vmDiv10 = vm / 10
+          #|        let vmMod10 : Int = vm.to_int() - 10 * vmDiv10.to_int()
+          #|        if vmMod10 != 0 {
+          #|          break
+          #|        }
+          #|        let vpDiv10 = vp / 10
+          #|        let vrDiv10 = vr / 10
+          #|        let vrMod10 : Int = vr.to_int() - 10 * vrDiv10.to_int()
+          #|        vrIsTrailingZeros = vrIsTrailingZeros && lastRemovedDigit == 0
+          #|        lastRemovedDigit = vrMod10
+          #|        vr = vrDiv10
+          #|        vp = vpDiv10
+          #|        vm = vmDiv10
+          #|        removed = removed + 1
+          #|      }
+          #|    }
+          #|    if vrIsTrailingZeros && lastRemovedDigit == 5 && vr % 2 == 0 {
+          #|      lastRemovedDigit = 4
+          #|    }
+          #|    output = vr +
+          #|      ((vr == vm && (!even || !vmIsTrailingZeros)) || lastRemovedDigit >= 5)
+          #|      .to_int64()
+          #|      .reinterpret_as_uint64()
+          #|  } else {
+          #|    // Specialized for the common case (~99.3%). Percentages below are relative to this.
+          #|    let mut roundUp = false
+          #|    let vpDiv100 = vp / 100
+          #|    let vmDiv100 = vm / 100
+          #|    if vpDiv100 > vmDiv100 {
+          #|      let vrDiv100 = vr / 100
+          #|      let vrMod100 : Int = vr.to_int() - 100 * vrDiv100.to_int()
+          #|      roundUp = vrMod100 >= 50
+          #|      vr = vrDiv100
+          #|      vp = vpDiv100
+          #|      vm = vmDiv100
+          #|      removed = removed + 2
+          #|    }
+          #|    // Loop iterations below (approximately), without optimization above:
+          #|    // 0: 0.03%, 1: 13.8%, 2: 70.6%, 3: 14.0%, 4: 1.40%, 5: 0.14%, 6+: 0.02%
+          #|    // Loop iterations below (approximately), with optimization above:
+          #|    // 0: 70.6%, 1: 27.8%, 2: 1.40%, 3: 0.14%, 4+: 0.02%
+          #|    while true {
+          #|      let vpDiv10 = vp / 10
+          #|      let vmDiv10 = vm / 10
+          #|      if vpDiv10 <= vmDiv10 {
+          #|        break
+          #|      }
+          #|      let vrDiv10 = vr / 10
+          #|      let vrMod10 : Int = vr.to_int() - 10 * vrDiv10.to_int()
+          #|      roundUp = vrMod10 >= 5
+          #|      vr = vrDiv10
+          #|      vp = vpDiv10
+          #|      vm = vmDiv10
+          #|      removed = removed + 1
+          #|    }
+          #|    output = vr + (vr == vm || roundUp).to_uint64()
+          #|  }
+          #|  let exp : Int = e10 + removed
+          #|  let fd : FloatingDecimal64 = { mantissa: output, exponent: exp }
+          #|  fd }
+        ),
       ),
-    ),
-    "current_dir_internal": build(
-      (
-        #|fn current_dir_internal() -> String? { // TODO: On Windows getcwd may fail if the path is too long(Windows allows paths up to 32k characters)
-        #|  let buf = Bytes::new(4096)
-        #|  let res = getcwd(buf, buf.length())
-        #|  if res == 0 {
-        #|    None
-        #|  } else {
-        #|    Some(utf8_bytes_to_mbt_string(buf))
-        #|  } }
+      "to_chars": build(
+        (
+          #|fn to_chars(v : FloatingDecimal64, sign : Bool) -> String { // Step 5: Print the decimal representation.
+          #|  let result = FixedArray::make(25, Byte::default())
+          #|  let mut index : Int = 0
+          #|  if sign {
+          #|    result[index] = b'-'
+          #|    index += 1
+          #|  }
+          #|  let mut output = v.mantissa
+          #|  let olength = decimal_length17(output)
+          #|  let mut exp : Int = v.exponent + olength - 1
+          #|  let scientificNotation = !(exp >= -6 && exp < 21)
+          #|  if scientificNotation {
+          #|    // Print the decimal digits.
+          #|    for i in 0..<(olength - 1) {
+          #|      let c = output % 10
+          #|      output /= 10
+          #|      // 48 is ASCII '0', the same applies below.
+          #|      result[index + olength - i] = (48 + c.to_int()).to_byte()
+          #|    }
+          #|    result[index] = (48 + output.to_int() % 10).to_byte()
+          #|    if olength > 1 {
+          #|      result[index + 1] = b'.'
+          #|    } else {
+          #|      // If there are no decimals, suppress .0
+          #|      index -= 1
+          #|    }
+          #|    index += olength + 1
+          #|    // Print the exponent.
+          #|    result[index] = b'e'
+          #|    index += 1
+          #|    if exp < 0 {
+          #|      result[index] = b'-'
+          #|      index += 1
+          #|      exp = -exp
+          #|    } else {
+          #|      result[index] = b'+'
+          #|      index += 1
+          #|    }
+          #|    if exp >= 100 {
+          #|      let a = exp / 100
+          #|      let b = exp / 10 % 10
+          #|      let c = exp % 10
+          #|      result[index + 0] = (48 + a).to_byte()
+          #|      result[index + 1] = (48 + b).to_byte()
+          #|      result[index + 2] = (48 + c).to_byte()
+          #|      index += 3
+          #|    } else if exp >= 10 {
+          #|      let a = exp / 10
+          #|      let b = exp % 10
+          #|      result[index + 0] = (48 + a).to_byte()
+          #|      result[index + 1] = (48 + b).to_byte()
+          #|      index += 2
+          #|    } else {
+          #|      result[index] = (48 + exp).to_byte()
+          #|      index += 1
+          #|    }
+          #|    string_from_bytes(result, 0, index)
+          #|  } else {
+          #|    // Otherwise follow the ECMAScript spec.
+          #|    if exp < 0 {
+          #|      // Decimal dot is before any of the digits.
+          #|      result[index] = b'0'
+          #|      index += 1
+          #|      result[index] = b'.'
+          #|      index += 1
+          #|      for i = -1; i > exp; i = i - 1 {
+          #|        result[index] = b'0'
+          #|        index += 1
+          #|      }
+          #|      let current = index
+          #|      for i in 0..<olength {
+          #|        result[current + olength - i - 1] = (48 + (output % 10).to_int()).to_byte()
+          #|        output /= 10
+          #|        index += 1
+          #|      }
+          #|    } else if exp + 1 >= olength {
+          #|      // Decimal dot is after any of the digits.
+          #|      for i in 0..<olength {
+          #|        result[index + olength - i - 1] = (48 + (output % 10).to_int()).to_byte()
+          #|        output /= 10
+          #|      }
+          #|      index += olength
+          #|      for i in olength..<(exp + 1) {
+          #|        result[index] = b'0'
+          #|        index += 1
+          #|      }
+          #|    } else {
+          #|      // Decimal dot is somewhere between the digits.
+          #|      let mut current = index + 1
+          #|      for i in 0..<olength {
+          #|        if olength - i - 1 == exp {
+          #|          result[current + olength - i - 1] = b'.'
+          #|          current -= 1
+          #|        }
+          #|        result[current + olength - i - 1] = (48 + (output % 10).to_int()).to_byte()
+          #|        output /= 10
+          #|      }
+          #|      index += olength + 1
+          #|    }
+          #|    return string_from_bytes(result, 0, index)
+          #|  } }
+        ),
       ),
-    ),
-  }
-})
+      "ryu_to_string": build(
+        (
+          #|pub fn ryu_to_string(val : Double) -> String { if val == 0.0 {
+          #|    return \"0\"
+          #|  }
+          #|  // Step 1: Decode the floating-point number, and unify normalized and subnormal cases.
+          #|  let bits : UInt64 = val.reinterpret_as_uint64()
+          #|  // Decode bits into sign, mantissa, and exponent.
+          #|  let ieeeSign = (
+          #|      (bits >> (gDOUBLE_MANTISSA_BITS + gDOUBLE_EXPONENT_BITS)) & 1UL
+          #|    ) !=
+          #|    0UL
+          #|  let ieeeMantissa : UInt64 = bits & ((1UL << gDOUBLE_MANTISSA_BITS) - 1UL)
+          #|  let ieeeExponent : Int = ((bits >> gDOUBLE_MANTISSA_BITS) &
+          #|  ((1UL << gDOUBLE_EXPONENT_BITS) - 1UL)).to_int()
+          #|  if ieeeExponent == (1 << gDOUBLE_EXPONENT_BITS) - 1 ||
+          #|    (ieeeExponent == 0 && ieeeMantissa == 0UL) {
+          #|    return copy_special_str(ieeeSign, ieeeExponent != 0, ieeeMantissa != 0UL)
+          #|  }
+          #|  let mut v : FloatingDecimal64 = { mantissa: 0UL, exponent: 0 }
+          #|  let small = d2d_small_int(ieeeMantissa, ieeeExponent)
+          #|  match small {
+          #|    Some(f) => {
+          #|      let mut x = f
+          #|      while true {
+          #|        let q : UInt64 = x.mantissa / 10
+          #|        let r = x.mantissa - 10UL * q
+          #|        if r != 0 {
+          #|          break
+          #|        }
+          #|        x = { mantissa: q, exponent: x.exponent + 1 }
+          #|      }
+          #|      v = x
+          #|    }
+          #|    None => v = d2d(ieeeMantissa, ieeeExponent.reinterpret_as_uint())
+          #|  }
+          #|  to_chars(v, ieeeSign) }
+        ),
+      ),
+      "pow5bits": build(
+        (
+          #|fn pow5bits(e : Int) -> Int { ((e * 1217359).reinterpret_as_uint() >> 19).reinterpret_as_int() + 1 }
+        ),
+      ),
+      "copy_special_str": build(
+        (
+          #|fn copy_special_str(sign : Bool, exponent : Bool, mantissa : Bool) -> String { if mantissa {
+          #|    return \"NaN\"
+          #|  }
+          #|  let s = if sign { \"-\" } else { \"\" }
+          #|  if exponent {
+          #|    return s + \"Infinity\"
+          #|  }
+          #|  return s + \"0.0\" }
+        ),
+      ),
+      "log10Pow5": build(
+        (
+          #|fn log10Pow5(e : Int) -> Int { ((e * 732923).reinterpret_as_uint() >> 20).reinterpret_as_int() }
+        ),
+      ),
+      "log10Pow2": build(
+        (
+          #|fn log10Pow2(e : Int) -> Int { ((e * 78913).reinterpret_as_uint() >> 18).reinterpret_as_int() }
+        ),
+      ),
+    }
+  },
+)
 
 ///|
-let float_module : RuntimeModule = RuntimeModule::new(
+let moonbitlang_core_env_module : RuntimeModule = RuntimeModule::new(
+  "moonbitlang/core/env",
+  deps={ "moonbitlang/core/builtin": moonbitlang_core_builtin_module },
+  fn(_env, build) {
+    {
+      "args": build(
+        (
+          #|pub fn args() -> Array[String] { get_cli_args_internal() }
+        ),
+      ),
+      "now": build(
+        (
+          #|pub fn now() -> UInt64 { now_internal() }
+        ),
+      ),
+      "current_dir": build(
+        (
+          #|pub fn current_dir() -> String? { current_dir_internal() }
+        ),
+      ),
+      "string_from_extern": build(
+        (
+          #|fn string_from_extern(e : XExternString) -> String { let buf = StringBuilder::new()
+          #|  let handle = begin_read_string(e)
+          #|  while true {
+          #|    let ch = string_read_char(handle)
+          #|    if ch == -1 {
+          #|      break
+          #|    } else {
+          #|      buf.write_char(ch.unsafe_to_char())
+          #|    }
+          #|  }
+          #|  finish_read_string(handle)
+          #|  buf.to_string() }
+        ),
+      ),
+      "string_array_from_extern": build(
+        (
+          #|fn string_array_from_extern(e : XExternStringArray) -> Array[String] { let buf = Array::new()
+          #|  let handle = begin_read_string_array(e)
+          #|  while true {
+          #|    let extern_str = string_array_read_string(handle)
+          #|    let str = string_from_extern(extern_str)
+          #|    // keep \"ffi_end_of_/string_array\" same with moonrun
+          #|    if str == \"ffi_end_of_/string_array\" {
+          #|      break
+          #|    } else {
+          #|      buf.push(str)
+          #|    }
+          #|  }
+          #|  finish_read_string_array(handle)
+          #|  buf }
+        ),
+      ),
+      "get_cli_args_internal": build(
+        (
+          #|fn get_cli_args_internal() -> Array[String] { let args = get_cli_args_ffi()
+          #|  string_array_from_extern(args) }
+        ),
+      ),
+      "current_dir_internal": build(
+        (
+          #|fn current_dir_internal() -> String? { let dir = current_dir_ffi()
+          #|  let dir = string_from_extern(dir)
+          #|  if dir == \"\" {
+          #|    None
+          #|  } else {
+          #|    Some(dir)
+          #|  } }
+        ),
+      ),
+      "get_cli_args_internal": build(
+        (
+          #|fn get_cli_args_internal() -> Array[String] { let tmp = get_cli_args_ffi()
+          #|  let res = Array::new(capacity=tmp.length())
+          #|  for i in 0..<tmp.length() {
+          #|    res.push(utf8_bytes_to_mbt_string(tmp[i]))
+          #|  }
+          #|  res }
+        ),
+      ),
+      "utf8_bytes_to_mbt_string": build(
+        (
+          #|fn utf8_bytes_to_mbt_string(bytes : Bytes) -> String { let res = StringBuilder::new()
+          #|  let len = bytes.length()
+          #|  let mut i = 0
+          #|  while i < len {
+          #|    let mut c = bytes[i].to_int()
+          #|    // zero byte indicates end of string
+          #|    if c == 0 {
+          #|      break
+          #|    } else if c < 0x80 {
+          #|      res.write_char(c.unsafe_to_char())
+          #|      i += 1
+          #|    } else if c < 0xE0 {
+          #|      if i + 1 >= len {
+          #|        break
+          #|      }
+          #|      c = ((c & 0x1F) << 6) | (bytes[i + 1].to_int() & 0x3F)
+          #|      res.write_char(c.unsafe_to_char())
+          #|      i += 2
+          #|    } else if c < 0xF0 {
+          #|      if i + 2 >= len {
+          #|        break
+          #|      }
+          #|      c = ((c & 0x0F) << 12) |
+          #|        ((bytes[i + 1].to_int() & 0x3F) << 6) |
+          #|        (bytes[i + 2].to_int() & 0x3F)
+          #|      res.write_char(c.unsafe_to_char())
+          #|      i += 3
+          #|    } else {
+          #|      if i + 3 >= len {
+          #|        break
+          #|      }
+          #|      c = ((c & 0x07) << 18) |
+          #|        ((bytes[i + 1].to_int() & 0x3F) << 12) |
+          #|        ((bytes[i + 2].to_int() & 0x3F) << 6) |
+          #|        (bytes[i + 3].to_int() & 0x3F)
+          #|      c -= 0x10000
+          #|      res.write_char(((c >> 10) + 0xD800).unsafe_to_char())
+          #|      res.write_char(((c & 0x3FF) + 0xDC00).unsafe_to_char())
+          #|      i += 4
+          #|    }
+          #|  }
+          #|  res.to_string() }
+        ),
+      ),
+      "now_internal": build(
+        (
+          #|fn now_internal() -> UInt64 { // time returns seconds since 1970-01-01 00:00:00 UTC
+          #|  // to be consistent with other backends, we convert to milliseconds
+          #|  time(0) * 1000 }
+        ),
+      ),
+      "current_dir_internal": build(
+        (
+          #|fn current_dir_internal() -> String? { // TODO: On Windows getcwd may fail if the path is too long(Windows allows paths up to 32k characters)
+          #|  let buf = Bytes::new(4096)
+          #|  let res = getcwd(buf, buf.length())
+          #|  if res == 0 {
+          #|    None
+          #|  } else {
+          #|    Some(utf8_bytes_to_mbt_string(buf))
+          #|  } }
+        ),
+      ),
+    }
+  },
+)
+
+///|
+let moonbitlang_core_float_module : RuntimeModule = RuntimeModule::new(
   "moonbitlang/core/float",
+  deps={
+    "moonbitlang/core/builtin": moonbitlang_core_builtin_module,
+    "moonbitlang/core/double": moonbitlang_core_double_module,
+    "moonbitlang/core/uint": moonbitlang_core_uint_module,
+  },
   fn(_env, build) {
     {
       "exp_bias": (None, Int(127)),
@@ -9446,8 +10046,16 @@ let float_module : RuntimeModule = RuntimeModule::new(
 )
 
 ///|
-let hashmap_module : RuntimeModule = RuntimeModule::new(
+let moonbitlang_core_hashmap_module : RuntimeModule = RuntimeModule::new(
   "moonbitlang/core/hashmap",
+  deps={
+    "moonbitlang/core/builtin": moonbitlang_core_builtin_module,
+    "moonbitlang/core/test": moonbitlang_core_test_module,
+    "moonbitlang/core/array": moonbitlang_core_array_module,
+    "moonbitlang/core/tuple": moonbitlang_core_tuple_module,
+    "moonbitlang/core/quickcheck": moonbitlang_core_quickcheck_module,
+    "moonbitlang/core/int": moonbitlang_core_int_module,
+  },
   fn(_env, build) {
     {
       "op_get": build(
@@ -9705,8 +10313,14 @@ let hashmap_module : RuntimeModule = RuntimeModule::new(
 )
 
 ///|
-let hashset_module : RuntimeModule = RuntimeModule::new(
+let moonbitlang_core_hashset_module : RuntimeModule = RuntimeModule::new(
   "moonbitlang/core/hashset",
+  deps={
+    "moonbitlang/core/builtin": moonbitlang_core_builtin_module,
+    "moonbitlang/core/test": moonbitlang_core_test_module,
+    "moonbitlang/core/array": moonbitlang_core_array_module,
+    "moonbitlang/core/quickcheck": moonbitlang_core_quickcheck_module,
+  },
   fn(_env, build) {
     {
       "default_init_capacity": (None, Int(8)),
@@ -10033,38 +10647,3336 @@ let hashset_module : RuntimeModule = RuntimeModule::new(
 )
 
 ///|
-let int_module : RuntimeModule = RuntimeModule::new("moonbitlang/core/int", fn(
-  _env,
-  build,
-) {
-  {
-    "max_value": (None, Int(2147483647)),
-    "min_value": (None, Int(-2147483648)),
-    "abs": build(
-      (
-        #|pub fn Int::abs(self : Int) -> Int { if self < 0 {
-        #|    -self
-        #|  } else {
-        #|    self
-        #|  } }
+let moonbitlang_core_immut_array_module : RuntimeModule = RuntimeModule::new(
+  "moonbitlang/core/immut/array",
+  deps={
+    "moonbitlang/core/builtin": moonbitlang_core_builtin_module,
+    "moonbitlang/core/quickcheck": moonbitlang_core_quickcheck_module,
+    "core/array": moonbitlang_core_array_module,
+  },
+  fn(_env, build) {
+    {
+      "is_node": build(
+        (
+          #|fn[A] Tree::is_node(self : Tree[A]) -> Bool { self is Node(_, _) }
+        ),
       ),
-    ),
-    "to_be_bytes": build(
-      (
-        #|pub fn to_be_bytes(self : Int) -> Bytes { self.reinterpret_as_uint().to_be_bytes() }
+      "is_leaf": build(
+        (
+          #|fn[A] Tree::is_leaf(self : Tree[A]) -> Bool { self is Leaf(_) }
+        ),
       ),
-    ),
-    "to_le_bytes": build(
-      (
-        #|pub fn to_le_bytes(self : Int) -> Bytes { self.reinterpret_as_uint().to_le_bytes() }
+      "right_child": build(
+        (
+          #|fn[A] Tree::right_child(self : Tree[A]) -> Tree[A] { match self {
+          #|    Node(children, _) => children[children.length() - 1]
+          #|    Leaf(_) | Empty => abort(\"Should not get children on non-`Node`s\")
+          #|  } }
+        ),
       ),
-    ),
-  }
-})
+      "left_child": build(
+        (
+          #|fn[A] Tree::left_child(self : Tree[A]) -> Tree[A] { match self {
+          #|    Node(children, _) => children[0]
+          #|    Leaf(_) | Empty => abort(\"Should not get children on non-`Node`s\")
+          #|  } }
+        ),
+      ),
+      "leaf_elements": build(
+        (
+          #|fn[A] Tree::leaf_elements(self : Tree[A]) -> FixedArray[A] { guard self is Leaf(children) else {
+          #|    abort(\"Should not call `get_leaf_elements` on non-leaf nodes\")
+          #|  }
+          #|  children }
+        ),
+      ),
+      "node_children": build(
+        (
+          #|fn[A] Tree::node_children(self : Tree[A]) -> FixedArray[Tree[A]] { guard self is Node(children, _) else {
+          #|    abort(\"Should not call `node_children` on non-`Node`s\")
+          #|  }
+          #|  children }
+        ),
+      ),
+      "local_size": build(
+        (
+          #|fn[A] Tree::local_size(self : Tree[A]) -> Int { match self {
+          #|    Empty => 0
+          #|    Leaf(l) => l.length()
+          #|    Node(children, _) => children.length()
+          #|  } }
+        ),
+      ),
+      "size": build(
+        (
+          #|fn[A] Tree::size(self : Tree[A], shift : Int) -> Int { match self {
+          #|    Empty => 0
+          #|    Leaf(l) => l.length()
+          #|    Node(_, Some(sizes)) => sizes[sizes.length() - 1]
+          #|    Node(children, None) => {
+          #|      let len_1 = children.length() - 1
+          #|      (len_1 << shift) + children[len_1].size(shift - num_bits)
+          #|    }
+          #|  } }
+        ),
+      ),
+      "new": build(
+        (
+          #|pub fn[A] new() -> T[A] { { tree: Tree::empty(), size: 0, shift: 0 } }
+        ),
+      ),
+      "make": build(
+        (
+          #|pub fn[A] make(len : Int, value : A) -> T[A] { let quot = len / branching_factor
+          #|  let rem = len % branching_factor
+          #|  let leaves = if rem == 0 {
+          #|    Array::make(quot, FixedArray::make(branching_factor, value))
+          #|  } else {
+          #|    let arr : Array[FixedArray[A]] = Array::make(
+          #|      quot + 1,
+          #|      FixedArray::make(branching_factor, value),
+          #|    )
+          #|    arr[quot] = FixedArray::make(rem, value)
+          #|    arr
+          #|  }
+          #|  let size = len
+          #|  let (shift, cap) = shift_cap_of_size(size)
+          #|  let tree = if size == 0 { Empty } else { from_leaves(leaves[:], cap) }
+          #|  { shift, tree, size } }
+        ),
+      ),
+      "makei": build(
+        (
+          #|pub fn[A] makei(len : Int, f : (Int) -> A raise?) -> T[A] raise? { let quot = len / branching_factor
+          #|  let rem = len % branching_factor
+          #|  let leaves = if rem == 0 {
+          #|    Array::makei(quot, k => FixedArray::makei(branching_factor, i => f(
+          #|      k * branching_factor + i,
+          #|    )))
+          #|  } else {
+          #|    let arr : Array[FixedArray[A]] = Array::make(quot + 1, [])
+          #|    for k in 0..<quot {
+          #|      arr[k] = FixedArray::makei(branching_factor, i => f(
+          #|        k * branching_factor + i,
+          #|      ))
+          #|    }
+          #|    arr[quot] = FixedArray::makei(rem, i => f(quot * branching_factor + i))
+          #|    arr
+          #|  }
+          #|  let size = len
+          #|  let (shift, cap) = shift_cap_of_size(size)
+          #|  let tree = if size == 0 { Empty } else { from_leaves(leaves[:], cap) }
+          #|  { shift, tree, size } }
+        ),
+      ),
+      "of": build(
+        (
+          #|pub fn[A] of(arr : FixedArray[A]) -> T[A] { makei(arr.length(), i => arr[i]) }
+        ),
+      ),
+      "copy": build(
+        (
+          #|pub fn[A] copy(self : T[A]) -> T[A] { fn copy(t : Tree[A]) -> Tree[A] {
+          #|    match t {
+          #|      Leaf(l) => Leaf(l.copy())
+          #|      Empty => Empty
+          #|      Node(node, sizes) =>
+          #|        Node(
+          #|          FixedArray::makei(node.length(), i => copy(node[i])),
+          #|          match sizes {
+          #|            Some(sizes) => Some(FixedArray::copy(sizes))
+          #|            None => None
+          #|          },
+          #|        )
+          #|    }
+          #|  }
+          #|  { tree: copy(self.tree), size: self.size, shift: self.shift } }
+        ),
+      ),
+      "from_array": build(
+        (
+          #|pub fn[A] from_array(arr : Array[A]) -> T[A] { makei(arr.length(), i => arr[i]) }
+        ),
+      ),
+      "from_iter": build(
+        (
+          #|pub fn[A] from_iter(iter : Iter[A]) -> T[A] { let mut buf : FixedArray[A] = []
+          #|  let mut index = 0
+          #|  let leaves = []
+          #|  iter.each(x => if index == 0 {
+          #|    buf = FixedArray::make(branching_factor, x)
+          #|    index += 1
+          #|  } else if index < branching_factor {
+          #|    buf[index] = x
+          #|    index += 1
+          #|  } else {
+          #|    leaves.push(buf)
+          #|    index = 1
+          #|    buf = FixedArray::make(branching_factor, x)
+          #|  })
+          #|  if index == branching_factor {
+          #|    leaves.push(buf)
+          #|  } else if index > 0 {
+          #|    let res = FixedArray::make(index, buf[0])
+          #|    buf.blit_to(res, len=index)
+          #|    leaves.push(res)
+          #|  }
+          #|  let size = leaves.fold(init=0, (acc, xs) => acc + xs.length())
+          #|  let (shift, cap) = shift_cap_of_size(size)
+          #|  let tree = if size == 0 { Empty } else { from_leaves(leaves[:], cap) }
+          #|  { shift, tree, size } }
+        ),
+      ),
+      "to_array": build(
+        (
+          #|pub fn[A] to_array(self : T[A]) -> Array[A] { if self.is_empty() {
+          #|    []
+          #|  } else {
+          #|    let arr = Array::make(self.length(), self[0])
+          #|    self.eachi((i, v) => arr[i] = v)
+          #|    arr
+          #|  } }
+        ),
+      ),
+      "is_empty": build(
+        (
+          #|pub fn[A] is_empty(self : T[A]) -> Bool { self.size == 0 }
+        ),
+      ),
+      "length": build(
+        (
+          #|pub fn[A] length(self : T[A]) -> Int { self.size }
+        ),
+      ),
+      "op_get": build(
+        (
+          #|pub fn[A] op_get(self : T[A], index : Int) -> A { if index == 0 {
+          #|    self.tree.get_first()
+          #|  } else if index == self.size - 1 {
+          #|    self.tree.get_last()
+          #|  } else {
+          #|    self.tree.get(index, self.shift)
+          #|  } }
+        ),
+      ),
+      "get": build(
+        (
+          #|pub fn[A] get(self : T[A], index : Int) -> A? { guard 0 <= index && index < self.size else { None }
+          #|  Some(self[index]) }
+        ),
+      ),
+      "set": build(
+        (
+          #|pub fn[A] set(self : T[A], index : Int, value : A) -> T[A] { {
+          #|    tree: self.tree.set(index, self.shift, value),
+          #|    size: self.size,
+          #|    shift: self.shift,
+          #|  } }
+        ),
+      ),
+      "push": build(
+        (
+          #|pub fn[A] push(self : T[A], value : A) -> T[A] { let (tree, shift) = self.tree.push_end(self.shift, value)
+          #|  { tree, size: self.size + 1, shift } }
+        ),
+      ),
+      "concat": build(
+        (
+          #|pub fn[A] concat(self : T[A], other : T[A]) -> T[A] { if self.is_empty() {
+          #|    return other
+          #|  }
+          #|  if other.is_empty() {
+          #|    return self
+          #|  }
+          #|  let (tree, shift) = Tree::concat(
+          #|    self.tree,
+          #|    self.shift,
+          #|    other.tree,
+          #|    other.shift,
+          #|    true,
+          #|  )
+          #|  { tree, size: self.size + other.size, shift } }
+        ),
+      ),
+      "iter": build(
+        (
+          #|pub fn[A] iter(self : T[A]) -> Iter[A] { self.tree.iter() }
+        ),
+      ),
+      "each": build(
+        (
+          #|pub fn[A] each(self : T[A], f : (A) -> Unit raise?) -> Unit raise? { self.tree.each(f) }
+        ),
+      ),
+      "eachi": build(
+        (
+          #|pub fn[A] eachi(self : T[A], f : (Int, A) -> Unit raise?) -> Unit raise? { self.tree.eachi(f, self.shift, 0) }
+        ),
+      ),
+      "fold": build(
+        (
+          #|pub fn[A, B] fold(self : T[A], init~ : B, f : (B, A) -> B raise?) -> B raise? { self.tree.fold(init, f) }
+        ),
+      ),
+      "fold_left": build(
+        (
+          #|pub fn[A] fold_left(self : T[A], f : (A, A) -> A raise?, init~ : A) -> A raise? { self.fold(init~, f) }
+        ),
+      ),
+      "map": build(
+        (
+          #|pub fn[A, B] map(self : T[A], f : (A) -> B raise?) -> T[B] raise? { { tree: self.tree.map(f), size: self.size, shift: self.shift } }
+        ),
+      ),
+      "shift_cap_of_size": build(
+        (
+          #|fn shift_cap_of_size(size : Int) -> (Int, Int) { let mut cap = branching_factor
+          #|  let mut depth = 0
+          #|  while cap < size {
+          #|    cap *= branching_factor
+          #|    depth += 1
+          #|  }
+          #|  let shift = num_bits * depth
+          #|  (shift, cap) }
+        ),
+      ),
+      "new": build(
+        (
+          #|pub fn[A] T::new() -> T[A] { new() }
+        ),
+      ),
+      "from_iter": build(
+        (
+          #|pub fn[A] T::from_iter(iter : Iter[A]) -> T[A] { from_iter(iter) }
+        ),
+      ),
+      "from_array": build(
+        (
+          #|pub fn[A] T::from_array(arr : Array[A]) -> T[A] { from_array(arr) }
+        ),
+      ),
+      "make": build(
+        (
+          #|pub fn[A] T::make(len : Int, value : A) -> T[A] { make(len, value) }
+        ),
+      ),
+      "makei": build(
+        (
+          #|pub fn[A] T::makei(len : Int, f : (Int) -> A) -> T[A] { makei(len, f) }
+        ),
+      ),
+      "of": build(
+        (
+          #|pub fn[A] T::of(arr : FixedArray[A]) -> T[A] { of(arr) }
+        ),
+      ),
+      "immutable_set": build(
+        (
+          #|fn[T] immutable_set(arr : FixedArray[T], i : Int, v : T) -> FixedArray[T] { let arr = arr.copy()
+          #|  arr[i] = v
+          #|  arr }
+        ),
+      ),
+      "immutable_push": build(
+        (
+          #|fn[T] immutable_push(arr : FixedArray[T], val : T) -> FixedArray[T] { let len = arr.length()
+          #|  let new_arr = FixedArray::make(len + 1, val)
+          #|  arr.blit_to(new_arr, len~)
+          #|  new_arr[len] = val
+          #|  new_arr }
+        ),
+      ),
+      "shr_as_uint": build(
+        (
+          #|fn shr_as_uint(x : Int, y : Int) -> Int { (x.reinterpret_as_uint() >> y).reinterpret_as_int() }
+        ),
+      ),
+      "radix_indexing": build(
+        (
+          #|fn radix_indexing(index : Int, shift : Int) -> Int { shr_as_uint(index, shift) & bitmask }
+        ),
+      ),
+      "get_branch_index": build(
+        (
+          #|fn get_branch_index(sizes : FixedArray[Int], index : Int) -> Int { let mut lo = 0
+          #|  let mut hi = sizes.length()
+          #|  while LINEAR_THRESHOLD < hi - lo {
+          #|    let mid = (lo + hi) / 2
+          #|    if sizes[mid] <= index {
+          #|      lo = mid
+          #|    } else {
+          #|      hi = mid
+          #|    }
+          #|  }
+          #|  while sizes[lo] <= index {
+          #|    lo += 1
+          #|  }
+          #|  lo }
+        ),
+      ),
+      "copy_sizes": build(
+        (
+          #|fn copy_sizes(sizes : FixedArray[Int]?) -> FixedArray[Int]? { match sizes {
+          #|    Some(sizes) => Some(sizes.copy())
+          #|    None => None
+          #|  } }
+        ),
+      ),
+      "min": build(
+        (
+          #|fn min(a : Int, b : Int) -> Int { if a < b {
+          #|    a
+          #|  } else {
+          #|    b
+          #|  } }
+        ),
+      ),
+      "num_bits": (None, Int(5)),
+      "empty": build(
+        (
+          #|fn[T] Tree::empty() -> Tree[T] { Tree::Empty }
+        ),
+      ),
+      "new_branch_left": build(
+        (
+          #|fn[T] new_branch_left(leaf : FixedArray[T], shift : Int) -> Tree[T] { match shift {
+          #|    0 => Leaf(leaf)
+          #|    s => Node([new_branch_left(leaf, s - num_bits)], None) // size is None because we can use radix indexing
+          #|  } }
+        ),
+      ),
+      "get_first": build(
+        (
+          #|fn[T] Tree::get_first(self : Tree[T]) -> T { match self {
+          #|    Leaf(leaf) => leaf[0]
+          #|    Node(node, _) => node[0].get_first()
+          #|    Empty => abort(\"Index out of bounds\")
+          #|  } }
+        ),
+      ),
+      "get_last": build(
+        (
+          #|fn[T] Tree::get_last(self : Tree[T]) -> T { match self {
+          #|    Leaf(leaf) => leaf[leaf.length() - 1]
+          #|    Node(node, _) => node[node.length() - 1].get_last()
+          #|    Empty => abort(\"Index out of bounds\")
+          #|  } }
+        ),
+      ),
+      "get": build(
+        (
+          #|fn[T] Tree::get(self : Tree[T], index : Int, shift : Int) -> T { fn get_radix(node : Tree[T], shift : Int) -> T {
+          #|    match node {
+          #|      Leaf(leaf) => leaf[index & bitmask]
+          #|      Node(node, None) =>
+          #|        get_radix(node[radix_indexing(index, shift)], shift - num_bits)
+          #|      Node(_, Some(_)) =>
+          #|        abort(\"Unreachable: Node should not have sizes in get_radix\")
+          #|      Empty => abort(\"Index out of bounds\")
+          #|    }
+          #|  }
+          #|  match self {
+          #|    Leaf(leaf) => leaf[index]
+          #|    Node(children, Some(sizes)) => {
+          #|      let branch_index = get_branch_index(sizes, index)
+          #|      let sub_index = if branch_index == 0 {
+          #|        index
+          #|      } else {
+          #|        index - sizes[branch_index - 1]
+          #|      }
+          #|      children[branch_index].get(sub_index, shift - num_bits)
+          #|    }
+          #|    Node(_, None) => get_radix(self, shift)
+          #|    Empty => abort(\"Index out of bounds\")
+          #|  } }
+        ),
+      ),
+      "set": build(
+        (
+          #|fn[T] Tree::set(self : Tree[T], index : Int, shift : Int, value : T) -> Tree[T] { // TODO: optimize this as loop
+          #|  fn set_radix(node : Tree[T], shift : Int) -> Tree[T] {
+          #|    match node {
+          #|      Leaf(leaf) => Leaf(immutable_set(leaf, index & bitmask, value))
+          #|      Node(node, None) => {
+          #|        let sub_idx = radix_indexing(index, shift)
+          #|        Node(
+          #|          immutable_set(
+          #|            node,
+          #|            sub_idx,
+          #|            set_radix(node[radix_indexing(index, shift)], shift - num_bits),
+          #|          ),
+          #|          None,
+          #|        )
+          #|      }
+          #|      Node(_, Some(_)) =>
+          #|        abort(\"Unreachable: Node should not have sizes in set_radix\")
+          #|      Empty => abort(\"Index out of bounds\")
+          #|    }
+          #|  }
+          #|  match self {
+          #|    Leaf(leaf) => Leaf(immutable_set(leaf, index & bitmask, value))
+          #|    Node(children, Some(sizes)) => {
+          #|      let branch_index = get_branch_index(sizes, index)
+          #|      let sub_index = if branch_index == 0 {
+          #|        index
+          #|      } else {
+          #|        index - sizes[branch_index - 1]
+          #|      }
+          #|      Node(
+          #|        immutable_set(
+          #|          children,
+          #|          branch_index,
+          #|          children[branch_index].set(sub_index, shift - num_bits, value),
+          #|        ),
+          #|        Some(sizes),
+          #|      )
+          #|    }
+          #|    Node(_children, None) => set_radix(self, shift)
+          #|    Empty => abort(\"Index out of bounds\")
+          #|  } }
+        ),
+      ),
+      "push_end": build(
+        (
+          #|fn[T] Tree::push_end(self : Tree[T], shift : Int, value : T) -> (Tree[T], Int) { fn update_sizes_last(sizes : FixedArray[Int]?) -> FixedArray[Int]? {
+          #|    match sizes {
+          #|      Some(sizes) => {
+          #|        let new_sizes = sizes.copy()
+          #|        new_sizes[new_sizes.length() - 1] += 1
+          #|        Some(new_sizes)
+          #|      }
+          #|      None => None
+          #|    }
+          #|  }
+          #|  fn push_sizes_last(sizes : FixedArray[Int]?) -> FixedArray[Int]? {
+          #|    match sizes {
+          #|      Some(sizes) => Some(immutable_push(sizes, 1 + sizes[sizes.length() - 1]))
+          #|      None => None
+          #|    }
+          #|  }
+          #|  fn worker(node : Tree[T], shift : Int) -> Tree[T]? {
+          #|    match node {
+          #|      Leaf(leaf) => {
+          #|        if shift != 0 {
+          #|          abort(
+          #|            \"Unreachable: Leaf should not have a non-zero shift, which means we have not reached the bottom of the tree\",
+          #|          )
+          #|        }
+          #|        if leaf.length() < branching_factor {
+          #|          Some(Leaf(immutable_push(leaf, value)))
+          #|        } else {
+          #|          None
+          #|        }
+          #|      }
+          #|      Node(nodes, sizes) => {
+          #|        let len = nodes.length()
+          #|        match worker(nodes[len - 1], shift - num_bits) {
+          #|          // We have successfully pushed the value, now duplicate its ancestor nodes.
+          #|          Some(new_node) => {
+          #|            let new_nodes = nodes.copy()
+          #|            new_nodes[len - 1] = new_node
+          #|            let sizes = update_sizes_last(sizes)
+          #|            Some(Node(new_nodes, sizes))
+          #|          }
+          #|          // We need to create a new node to push the value.
+          #|          None =>
+          #|            if len < branching_factor {
+          #|              let sizes = push_sizes_last(sizes)
+          #|              Some(
+          #|                Node(
+          #|                  immutable_push(
+          #|                    nodes,
+          #|                    new_branch_left([value], shift - num_bits),
+          #|                  ),
+          #|                  sizes,
+          #|                ),
+          #|              )
+          #|            } else {
+          #|              None
+          #|            }
+          #|        }
+          #|      }
+          #|      Empty => Some(Leaf([value]))
+          #|    }
+          #|  }
+          #|  match worker(self, shift) {
+          #|    Some(new_tree) => (new_tree, shift)
+          #|    None => {
+          #|      let new_branch = new_branch_left([value], shift)
+          #|      (
+          #|        match self {
+          #|          Leaf(_leaf) => Node([self, new_branch], None)
+          #|          Node(_nodes, Some(sizes)) => {
+          #|            let len = sizes[sizes.length() - 1]
+          #|            let sizes = FixedArray::from_array([len, 1 + len])
+          #|            Node([self, new_branch], Some(sizes))
+          #|          }
+          #|          Node(_nodes, None) => Node([self, new_branch], None)
+          #|          Empty =>
+          #|            abort(
+          #|              \"Unreachable: Empty tree should have fallen into the Some(new_tree) branch\",
+          #|            )
+          #|        },
+          #|        shift + num_bits,
+          #|      )
+          #|    }
+          #|  } }
+        ),
+      ),
+      "each": build(
+        (
+          #|fn[A] Tree::each(self : Tree[A], f : (A) -> Unit raise?) -> Unit raise? { match self {
+          #|    Empty => ()
+          #|    Leaf(l) => l.each(f)
+          #|    Node(ns, _) => ns.each(t => t.each(f))
+          #|  } }
+        ),
+      ),
+      "iter": build(
+        (
+          #|fn[A] Tree::iter(self : Tree[A]) -> Iter[A] { Iter::new(yield_ => match self {
+          #|    Empty => IterContinue
+          #|    Leaf(l) => l.iter().run(yield_)
+          #|    Node(ns, _) =>
+          #|      for n in ns {
+          #|        guard n.iter().run(yield_) is IterContinue else { break IterEnd }
+          #|      } else {
+          #|        IterContinue
+          #|      }
+          #|  }) }
+        ),
+      ),
+      "map": build(
+        (
+          #|fn[A, B] Tree::map(self : Tree[A], f : (A) -> B raise?) -> Tree[B] raise? { match self {
+          #|    Empty => Empty
+          #|    Leaf(l) => Leaf(l.map(f))
+          #|    Node(n, szs) =>
+          #|      Node(FixedArray::makei(n.length(), i => n[i].map(f)), copy_sizes(szs))
+          #|  } }
+        ),
+      ),
+      "redis_plan": build(
+        (
+          #|fn[A] redis_plan(t : FixedArray[Tree[A]]) -> (FixedArray[Int], Int) { let node_counts = FixedArray::makei(t.length(), i => t[i].local_size())
+          #|  let total_nodes = node_counts.fold(init=0, (acc, x) => acc + x)
+          #|  // round up to the nearest integer of S/branching_factor
+          #|  let opt_len = (total_nodes + branching_factor - 1) / branching_factor
+          #|  let mut new_len = t.length()
+          #|  let mut i = 0
+          #|  while opt_len + e_max_2 < new_len {
+          #|    // Skip over all nodes satisfying the invariant.
+          #|    while node_counts[i] > branching_factor - e_max_2 {
+          #|      i += 1
+          #|    }
+          #|    // Found short node, so redistribute over the next nodes
+          #|    let mut remaining_nodes = node_counts[i]
+          #|    while remaining_nodes > 0 {
+          #|      let min_size = min(remaining_nodes + node_counts[i + 1], branching_factor)
+          #|      node_counts[i] = min_size
+          #|      remaining_nodes = remaining_nodes + node_counts[i + 1] - min_size
+          #|      i += 1
+          #|    }
+          #|    for j in i..<(new_len - 1) {
+          #|      node_counts[j] = node_counts[j + 1]
+          #|    }
+          #|    new_len -= 1
+          #|    i -= 1
+          #|  }
+          #|  return (node_counts, new_len) }
+        ),
+      ),
+    }
+  },
+)
 
 ///|
-let int16_module : RuntimeModule = RuntimeModule::new(
+let moonbitlang_core_immut_hashmap_module : RuntimeModule = RuntimeModule::new(
+  "moonbitlang/core/immut/hashmap",
+  deps={
+    "moonbitlang/core/builtin": moonbitlang_core_builtin_module,
+    "moonbitlang/core/array": moonbitlang_core_array_module,
+    "moonbitlang/core/tuple": moonbitlang_core_tuple_module,
+    "moonbitlang/core/quickcheck": moonbitlang_core_quickcheck_module,
+    "moonbitlang/core/immut/internal/sparse_array": moonbitlang_core_immut_internal_sparse_array_module,
+    "moonbitlang/core/immut/internal/path": moonbitlang_core_immut_internal_path_module,
+    "moonbitlang/core/list": moonbitlang_core_list_module,
+  },
+  fn(_env, build) {
+    {
+      "new": build(
+        (
+          #|pub fn[K, V] new() -> T[K, V] { None }
+        ),
+      ),
+      "singleton": build(
+        (
+          #|pub fn[K : Hash, V] singleton(key : K, value : V) -> T[K, V] { Some(Flat(key, value, @path.of(key))) }
+        ),
+      ),
+      "contains": build(
+        (
+          #|pub fn[K : Eq + Hash, V] contains(self : T[K, V], key : K) -> Bool { self.get(key) is Some(_) }
+        ),
+      ),
+      "find": build(
+        (
+          #|pub fn[K : Eq + Hash, V] find(self : T[K, V], key : K) -> V? { self.get(key) }
+        ),
+      ),
+      "get": build(
+        (
+          #|pub fn[K : Eq + Hash, V] get(self : T[K, V], key : K) -> V? { match self.0 {
+          #|    None => None
+          #|    Some(node) => node.get_with_path(key, @path.of(key))
+          #|  } }
+        ),
+      ),
+      "op_get": build(
+        (
+          #|pub fn[K : Eq + Hash, V] op_get(self : T[K, V], key : K) -> V? { self.get(key) }
+        ),
+      ),
+      "map": build(
+        (
+          #|pub fn[K, V, A] map(self : T[K, V], f : (V) -> A raise?) -> T[K, A] raise? { self.map_with_key((_k, v) => f(v)) }
+        ),
+      ),
+      "add": build(
+        (
+          #|pub fn[K : Eq + Hash, V] add(self : T[K, V], key : K, value : V) -> T[K, V] { match self.0 {
+          #|    None => Some(Flat(key, value, @path.of(key)))
+          #|    Some(node) => Some(node.add_with_path(key, value, @path.of(key)))
+          #|  } }
+        ),
+      ),
+      "remove": build(
+        (
+          #|pub fn[K : Eq + Hash, V] remove(self : T[K, V], key : K) -> T[K, V] { match self.0 {
+          #|    None => None
+          #|    Some(node) => node.remove_with_path(key, @path.of(key))
+          #|  } }
+        ),
+      ),
+      "size": build(
+        (
+          #|pub fn[K, V] size(self : T[K, V]) -> Int { fn node_size(node) {
+          #|    match node {
+          #|      Leaf(_, _, bucket) => 1 + bucket.length()
+          #|      Flat(_) => 1
+          #|      Branch(children) =>
+          #|        for i = 0, total_size = 0; i < children.data.length(); {
+          #|          continue i + 1, total_size + node_size(children.data[i])
+          #|        } else {
+          #|          total_size
+          #|        }
+          #|    }
+          #|  }
+          #|  match self.0 {
+          #|    None => 0
+          #|    Some(node) => node_size(node)
+          #|  } }
+        ),
+      ),
+      "union": build(
+        (
+          #|pub fn[K : Eq, V] T::union(self : T[K, V], other : T[K, V]) -> T[K, V] { fn go(node1 : Node[_], node2) {
+          #|    match (node1, node2) {
+          #|      (_, Flat(key2, value2, path2)) => node1.add_with_path(key2, value2, path2)
+          #|      (Flat(key1, value1, path1), _) =>
+          #|        match node2.get_with_path(key1, path1) {
+          #|          Some(_) => node2
+          #|          None => node2.add_with_path(key1, value1, path1)
+          #|        }
+          #|      (Branch(children1), Branch(children2)) =>
+          #|        Branch(children1.union(children2, go))
+          #|      (Leaf(key1, value1, bucket1), Leaf(key2, value2, bucket2)) => {
+          #|        let kvs1 = bucket1.add((key1, value1))
+          #|        let kvs2 = bucket2.add((key2, value2))
+          #|        match kvs1.filter(kv => kvs2.lookup(kv.0) is None) {
+          #|          Empty => node2
+          #|          More(head, tail~) => Leaf(key2, value2, bucket2 + tail.add(head))
+          #|        }
+          #|      }
+          #|      _ => abort(\"Unreachable\")
+          #|    }
+          #|  }
+          #|  match (self.0, other.0) {
+          #|    (None, x) | (x, None) => x
+          #|    (Some(a), Some(b)) => Some(go(a, b))
+          #|  } }
+        ),
+      ),
+      "intersection": build(
+        (
+          #|pub fn[K : Eq, V] T::intersection(self : T[K, V], other : T[K, V]) -> T[K, V] { fn go(node1 : Node[_], node2) {
+          #|    match (node1, node2) {
+          #|      (_, Flat(key2, _, path2)) =>
+          #|        match node1.get_with_path(key2, path2) {
+          #|          Some(_) => Some(node2)
+          #|          None => None
+          #|        }
+          #|      (Flat(key1, _, path1), _) =>
+          #|        match node2.get_with_path(key1, path1) {
+          #|          Some(value2) => Some(Flat(key1, value2, path1))
+          #|          None => None
+          #|        }
+          #|      (Branch(children1), Branch(children2)) =>
+          #|        match children1.intersection(children2, go) {
+          #|          None => None
+          #|          Some({ data: [Flat(key, value, path)], elem_info }) =>
+          #|            Some(Flat(key, value, path.push(elem_info.first_idx())))
+          #|          Some(children) => Some(Branch(children))
+          #|        }
+          #|      (Leaf(key1, value1, bucket1), Leaf(key2, value2, bucket2)) => {
+          #|        let kvs1 = bucket1.add((key1, value1))
+          #|        let kvs2 = bucket2.add((key2, value2))
+          #|        match kvs2.filter(kv => kvs1.lookup(kv.0) is Some(_)) {
+          #|          Empty => None
+          #|          More(head, tail~) => Some(Leaf(head.0, head.1, tail))
+          #|        }
+          #|      }
+          #|      _ => abort(\"Unreachable\")
+          #|    }
+          #|  }
+          #|  match (self.0, other.0) {
+          #|    (None, _) | (_, None) => None
+          #|    (Some(a), Some(b)) => go(a, b)
+          #|  } }
+        ),
+      ),
+      "difference": build(
+        (
+          #|pub fn[K : Eq, V] T::difference(self : T[K, V], other : T[K, V]) -> T[K, V] { fn go(node1 : Node[_], node2) {
+          #|    match (node1, node2) {
+          #|      (node, Flat(k, _, path)) => node.remove_with_path(k, path)
+          #|      (Flat(key, _, path), _) =>
+          #|        match node2.get_with_path(key, path) {
+          #|          Some(_) => None
+          #|          None => Some(node1)
+          #|        }
+          #|      (Branch(children1), Branch(children2)) =>
+          #|        match children1.difference(children2, go) {
+          #|          None => None
+          #|          Some({ data: [Flat(key, value, path)], elem_info }) =>
+          #|            Some(Flat(key, value, path.push(elem_info.first_idx())))
+          #|          Some(children) => Some(Branch(children))
+          #|        }
+          #|      (Leaf(key1, value1, bucket1), Leaf(key2, value2, bucket2)) => {
+          #|        let kvs1 = bucket1.add((key1, value1))
+          #|        let kvs2 = bucket2.add((key2, value2))
+          #|        match kvs1.filter(kv => not(kvs2.lookup(kv.0) is Some(_))) {
+          #|          Empty => None
+          #|          More(head, tail~) => Some(Leaf(head.0, head.1, tail))
+          #|        }
+          #|      }
+          #|      _ => abort(\"Unreachable\")
+          #|    }
+          #|  }
+          #|  match (self.0, other.0) {
+          #|    (None, _) => None
+          #|    (_, None) => self
+          #|    (Some(a), Some(b)) => go(a, b)
+          #|  } }
+        ),
+      ),
+      "each": build(
+        (
+          #|pub fn[K, V] each(self : T[K, V], f : (K, V) -> Unit raise?) -> Unit raise? { fn go(node) raise? {
+          #|    match node {
+          #|      Leaf(k, v, bucket) => {
+          #|        f(k, v)
+          #|        bucket.each(kv => f(kv.0, kv.1))
+          #|      }
+          #|      Flat(k, v, _) => f(k, v)
+          #|      Branch(children) => children.each(go)
+          #|    }
+          #|  }
+          #|  match self.0 {
+          #|    None => ()
+          #|    Some(node) => go(node)
+          #|  } }
+        ),
+      ),
+      "keys": build(
+        (
+          #|pub fn[K, V] keys(self : T[K, V]) -> Iter[K] { self.iter().map(p => p.0) }
+        ),
+      ),
+      "values": build(
+        (
+          #|pub fn[K, V] values(self : T[K, V]) -> Iter[V] { self.iter().map(p => p.1) }
+        ),
+      ),
+      "elems": build(
+        (
+          #|pub fn[K, V] elems(self : T[K, V]) -> Iter[V] { self.values() }
+        ),
+      ),
+      "iter": build(
+        (
+          #|pub fn[K, V] iter(self : T[K, V]) -> Iter[(K, V)] { fn go(node) -> Iter[(K, V)] {
+          #|    match node {
+          #|      Leaf(k, v, bucket) => Iter::singleton((k, v)) + bucket.iter()
+          #|      Flat(k, v, _) => Iter::singleton((k, v))
+          #|      Branch(children) => children.data.iter().flat_map(go)
+          #|    }
+          #|  }
+          #|  match self.0 {
+          #|    None => Iter::empty()
+          #|    Some(node) => go(node)
+          #|  } }
+        ),
+      ),
+      "iter2": build(
+        (
+          #|pub fn[K, V] iter2(self : T[K, V]) -> Iter2[K, V] { Iter2::new(yield_ => for kv in self {
+          #|    guard yield_(kv.0, kv.1) is IterContinue else { break IterEnd }
+          #|  } else {
+          #|    IterContinue
+          #|  }) }
+        ),
+      ),
+      "from_iter": build(
+        (
+          #|pub fn[K : Eq + Hash, V] from_iter(iter : Iter[(K, V)]) -> T[K, V] { iter.fold(init=new(), (m, e) => m.add(e.0, e.1)) }
+        ),
+      ),
+      "from_array": build(
+        (
+          #|pub fn[K : Eq + Hash, V] from_array(arr : Array[(K, V)]) -> T[K, V] { loop (arr.length(), new()) {
+          #|    (0, map) => map
+          #|    (n, map) => {
+          #|      let (k, v) = arr[n - 1]
+          #|      continue (n - 1, map.add(k, v))
+          #|    }
+          #|  } }
+        ),
+      ),
+      "to_array": build(
+        (
+          #|pub fn[K, V] to_array(self : T[K, V]) -> Array[(K, V)] { let arr = Array::new(capacity=self.size())
+          #|  self.each((k, v) => arr.push((k, v)))
+          #|  arr }
+        ),
+      ),
+      "of": build(
+        (
+          #|pub fn[K : Eq + Hash, V] of(arr : FixedArray[(K, V)]) -> T[K, V] { loop (arr.length(), new()) {
+          #|    (0, map) => map
+          #|    (n, map) => {
+          #|      let (k, v) = arr[n - 1]
+          #|      continue (n - 1, map.add(k, v))
+          #|    }
+          #|  } }
+        ),
+      ),
+    }
+  },
+)
+
+///|
+let moonbitlang_core_immut_hashset_module : RuntimeModule = RuntimeModule::new(
+  "moonbitlang/core/immut/hashset",
+  deps={
+    "moonbitlang/core/builtin": moonbitlang_core_builtin_module,
+    "moonbitlang/core/array": moonbitlang_core_array_module,
+    "moonbitlang/core/immut/internal/sparse_array": moonbitlang_core_immut_internal_sparse_array_module,
+    "moonbitlang/core/quickcheck": moonbitlang_core_quickcheck_module,
+    "moonbitlang/core/immut/internal/path": moonbitlang_core_immut_internal_path_module,
+    "moonbitlang/core/list": moonbitlang_core_list_module,
+  },
+  fn(_env, build) {
+    {
+      "new": build(
+        (
+          #|pub fn[A] new() -> T[A] { None }
+        ),
+      ),
+      "contains": build(
+        (
+          #|pub fn[A : Eq + Hash] contains(self : T[A], key : A) -> Bool { self.0 is Some(node) && node.contains(key, @path.of(key)) }
+        ),
+      ),
+      "contains": build(
+        (
+          #|fn[A : Eq] Node::contains(self : Node[A], key : A, path : Path) -> Bool { loop (self, path) {
+          #|    (Leaf(key1, bucket), _) => key == key1 || bucket.contains(key)
+          #|    (Flat(key1, path1), path) => path == path1 && key == key1
+          #|    (Branch(children), path) => {
+          #|      let idx = path.idx()
+          #|      if children[idx] is Some(child) {
+          #|        continue (child, path.next())
+          #|      }
+          #|      false
+          #|    }
+          #|  } }
+        ),
+      ),
+      "join_2": build(
+        (
+          #|fn[A] join_2(key1 : A, path1 : Path, key2 : A, path2 : Path) -> Node[A] { let idx1 = path1.idx()
+          #|  let idx2 = path2.idx()
+          #|  if idx1 == idx2 {
+          #|    let node = if path1.is_last() {
+          #|      Leaf(key2, @list.singleton(key1))
+          #|    } else {
+          #|      join_2(key1, path1.next(), key2, path2.next())
+          #|    }
+          #|    Branch(@sparse_array.singleton(idx1, node))
+          #|  } else {
+          #|    let (node1, node2) = if path1.is_last() {
+          #|      (Leaf(key1, @list.empty()), Leaf(key2, @list.empty()))
+          #|    } else {
+          #|      (Flat(key1, path1.next()), Flat(key2, path2.next()))
+          #|    }
+          #|    Branch(@sparse_array.doubleton(idx1, node1, idx2, node2))
+          #|  } }
+        ),
+      ),
+      "add_with_path": build(
+        (
+          #|fn[A : Eq] add_with_path(self : Node[A], key : A, path : Path) -> Node[A] { match self {
+          #|    Leaf(key1, bucket) =>
+          #|      if key == key1 || bucket.contains(key) {
+          #|        self
+          #|      } else {
+          #|        Leaf(key, bucket.add(key1))
+          #|      }
+          #|    Flat(key1, path1) =>
+          #|      if path == path1 && key == key1 {
+          #|        self
+          #|      } else {
+          #|        join_2(key1, path1, key, path)
+          #|      }
+          #|    Branch(children) => {
+          #|      let idx = path.idx()
+          #|      match children[idx] {
+          #|        Some(child) => {
+          #|          let child = child.add_with_path(key, path.next())
+          #|          Branch(children.replace(idx, child))
+          #|        }
+          #|        None => {
+          #|          let child = Flat(key, path.next())
+          #|          Branch(children.add(idx, child))
+          #|        }
+          #|      }
+          #|    }
+          #|  } }
+        ),
+      ),
+      "add": build(
+        (
+          #|pub fn[A : Eq + Hash] add(self : T[A], key : A) -> T[A] { match self.0 {
+          #|    None => Some(Flat(key, @path.of(key)))
+          #|    Some(node) => Some(node.add_with_path(key, @path.of(key)))
+          #|  } }
+        ),
+      ),
+      "remove": build(
+        (
+          #|pub fn[A : Eq + Hash] remove(self : T[A], key : A) -> T[A] { match self.0 {
+          #|    None => None
+          #|    Some(node) => node.remove_with_path(key, @path.of(key))
+          #|  } }
+        ),
+      ),
+      "remove_with_path": build(
+        (
+          #|fn[A : Eq] remove_with_path(self : Node[A], key : A, path : Path) -> Node[A]? { match self {
+          #|    Leaf(key1, bucket) =>
+          #|      if key1 == key {
+          #|        match bucket {
+          #|          @list.Empty => None
+          #|          More(key2, tail=xs) => Some(Leaf(key2, xs))
+          #|        }
+          #|      } else if bucket.find_index(key.op_equal(_)) is Some(index) {
+          #|        Some(Leaf(key1, bucket.remove_at(index)))
+          #|      } else {
+          #|        Some(self)
+          #|      }
+          #|    Flat(key1, path1) =>
+          #|      if path == path1 && key == key1 {
+          #|        None
+          #|      } else {
+          #|        Some(self)
+          #|      }
+          #|    Branch(children) => {
+          #|      let idx = path.idx()
+          #|      match children[idx] {
+          #|        None => Some(self)
+          #|        Some(child) => {
+          #|          let new_child = child.remove_with_path(key, path.next())
+          #|          let new_children = match (children.size(), new_child) {
+          #|            (1, None) => return None
+          #|            (_, None) => children.remove(idx)
+          #|            (_, Some(new_child)) => children.replace(idx, new_child)
+          #|          }
+          #|          match new_children.data {
+          #|            [Flat(key1, path1)] =>
+          #|              Some(Flat(key1, path1.push(new_children.elem_info.first_idx())))
+          #|            _ => Some(Branch(new_children))
+          #|          }
+          #|        }
+          #|      }
+          #|    }
+          #|  } }
+        ),
+      ),
+      "size": build(
+        (
+          #|pub fn[A] size(self : T[A]) -> Int { fn node_size(node) {
+          #|    match node {
+          #|      Leaf(_, bucket) => 1 + bucket.length()
+          #|      Flat(_) => 1
+          #|      Branch(children) =>
+          #|        for i = 0, total_size = 0; i < children.data.length(); {
+          #|          continue i + 1, total_size + node_size(children.data[i])
+          #|        } else {
+          #|          total_size
+          #|        }
+          #|    }
+          #|  }
+          #|  match self.0 {
+          #|    None => 0
+          #|    Some(node) => node_size(node)
+          #|  } }
+        ),
+      ),
+      "union": build(
+        (
+          #|pub fn[K : Eq] T::union(self : T[K], other : T[K]) -> T[K] { fn go(node1, node2) {
+          #|    match (node1, node2) {
+          #|      (node, Flat(key, path)) | (Flat(key, path), node) =>
+          #|        node.add_with_path(key, path)
+          #|      (Branch(children1), Branch(children2)) =>
+          #|        Branch(children1.union(children2, go))
+          #|      (Leaf(key1, bucket1), Leaf(key2, bucket2)) => {
+          #|        let keys1 = bucket1.add(key1)
+          #|        let keys2 = bucket2.add(key2)
+          #|        match keys1.filter(k => !keys2.contains(k)) {
+          #|          Empty => node2
+          #|          More(head, tail~) => Leaf(key2, bucket2 + tail.add(head))
+          #|        }
+          #|      }
+          #|      _ => abort(\"Unreachable\")
+          #|    }
+          #|  }
+          #|  match (self.0, other.0) {
+          #|    (None, x) | (x, None) => x
+          #|    (Some(a), Some(b)) => Some(go(a, b))
+          #|  } }
+        ),
+      ),
+      "intersection": build(
+        (
+          #|pub fn[K : Eq] T::intersection(self : T[K], other : T[K]) -> T[K] { fn go(node1, node2) {
+          #|    match (node1, node2) {
+          #|      (node, Flat(key, path) as flat) | (Flat(key, path) as flat, node) =>
+          #|        if node.contains(key, path) {
+          #|          Some(flat)
+          #|        } else {
+          #|          None
+          #|        }
+          #|      (Branch(children1), Branch(children2)) =>
+          #|        match children1.intersection(children2, go) {
+          #|          None => None
+          #|          Some({ data: [Flat(key, path)], elem_info }) =>
+          #|            Some(Flat(key, path.push(elem_info.first_idx())))
+          #|          Some(children) => Some(Branch(children))
+          #|        }
+          #|      (Leaf(key1, bucket1), Leaf(key2, bucket2)) => {
+          #|        let keys1 = bucket1.add(key1)
+          #|        let keys2 = bucket2.add(key2)
+          #|        match keys1.filter(keys2.contains(_)) {
+          #|          Empty => None
+          #|          More(head, tail~) => Some(Leaf(head, tail))
+          #|        }
+          #|      }
+          #|      _ => abort(\"Unreachable\")
+          #|    }
+          #|  }
+          #|  match (self.0, other.0) {
+          #|    (None, _) | (_, None) => None
+          #|    (Some(a), Some(b)) => go(a, b)
+          #|  } }
+        ),
+      ),
+      "difference": build(
+        (
+          #|pub fn[K : Eq] T::difference(self : T[K], other : T[K]) -> T[K] { fn go(node1 : Node[_], node2) {
+          #|    match (node1, node2) {
+          #|      (node, Flat(k, path)) => node.remove_with_path(k, path)
+          #|      (Flat(key, path) as flat, node) =>
+          #|        if node.contains(key, path) {
+          #|          None
+          #|        } else {
+          #|          Some(flat)
+          #|        }
+          #|      (Branch(children1), Branch(children2)) =>
+          #|        match children1.difference(children2, go) {
+          #|          None => None
+          #|          Some({ data: [Flat(key, path)], elem_info }) =>
+          #|            Some(Flat(key, path.push(elem_info.first_idx())))
+          #|          Some(children) => Some(Branch(children))
+          #|        }
+          #|      (Leaf(key1, bucket1), Leaf(key2, bucket2)) => {
+          #|        let keys1 = bucket1.add(key1)
+          #|        let keys2 = bucket2.add(key2)
+          #|        match keys1.filter(k => !keys2.contains(k)) {
+          #|          Empty => None
+          #|          More(head, tail~) => Some(Leaf(head, tail))
+          #|        }
+          #|      }
+          #|      _ => abort(\"Unreachable\")
+          #|    }
+          #|  }
+          #|  match (self.0, other.0) {
+          #|    (None, _) => None
+          #|    (_, None) => self
+          #|    (Some(a), Some(b)) => go(a, b)
+          #|  } }
+        ),
+      ),
+      "is_empty": build(
+        (
+          #|pub fn[A] is_empty(self : T[A]) -> Bool { self.0 is None }
+        ),
+      ),
+      "each": build(
+        (
+          #|pub fn[A] each(self : T[A], f : (A) -> Unit raise?) -> Unit raise? { fn go(node) raise? {
+          #|    match node {
+          #|      Leaf(k, bucket) => {
+          #|        f(k)
+          #|        bucket.each(f)
+          #|      }
+          #|      Flat(k, _) => f(k)
+          #|      Branch(children) => children.each(go)
+          #|    }
+          #|  }
+          #|  match self.0 {
+          #|    None => ()
+          #|    Some(node) => go(node)
+          #|  } }
+        ),
+      ),
+      "iter": build(
+        (
+          #|pub fn[A] iter(self : T[A]) -> Iter[A] { fn go(node) -> Iter[A] {
+          #|    match node {
+          #|      Leaf(k, bucket) => Iter::singleton(k) + bucket.iter()
+          #|      Flat(k, _) => Iter::singleton(k)
+          #|      Branch(children) => children.data.iter().flat_map(go)
+          #|    }
+          #|  }
+          #|  match self.0 {
+          #|    None => Iter::empty()
+          #|    Some(node) => go(node)
+          #|  } }
+        ),
+      ),
+      "from_iter": build(
+        (
+          #|pub fn[A : Eq + Hash] from_iter(iter : Iter[A]) -> T[A] { iter.fold(init=new(), (s, e) => s.add(e)) }
+        ),
+      ),
+      "from_array": build(
+        (
+          #|pub fn[A : Eq + Hash] from_array(arr : Array[A]) -> T[A] { loop (arr.length(), new()) {
+          #|    (0, set) => set
+          #|    (n, set) => {
+          #|      let k = arr[n - 1]
+          #|      continue (n - 1, set.add(k))
+          #|    }
+          #|  } }
+        ),
+      ),
+      "of": build(
+        (
+          #|pub fn[A : Eq + Hash] of(arr : FixedArray[A]) -> T[A] { loop (arr.length(), new()) {
+          #|    (0, set) => set
+          #|    (n, set) => {
+          #|      let k = arr[n - 1]
+          #|      continue (n - 1, set.add(k))
+          #|    }
+          #|  } }
+        ),
+      ),
+    }
+  },
+)
+
+///|
+let moonbitlang_core_immut_internal_path_module : RuntimeModule = RuntimeModule::new(
+  "moonbitlang/core/immut/internal/path",
+  deps={ "moonbitlang/core/builtin": moonbitlang_core_builtin_module },
+  fn(_env, build) {
+    {
+      "of": build(
+        (
+          #|pub fn[A : Hash] of(key : A) -> Path { key.hash().reinterpret_as_uint() | HEAD_TAG }
+        ),
+      ),
+      "is_last": build(
+        (
+          #|pub fn Path::is_last(self : Path) -> Bool { let Path(self) = self
+          #|  self <= MAX_TAIL }
+        ),
+      ),
+      "push": build(
+        (
+          #|pub fn Path::push(self : Path, idx : Int) -> Path { let Path(self) = self
+          #|  (self << SEGMENT_LENGTH) | idx.reinterpret_as_uint() }
+        ),
+      ),
+      "idx": build(
+        (
+          #|pub fn Path::idx(self : Path) -> Int { let Path(self) = self
+          #|  (self & INDEX_MASK).reinterpret_as_int() }
+        ),
+      ),
+      "next": build(
+        (
+          #|pub fn Path::next(self : Path) -> Path { let Path(self) = self
+          #|  self >> SEGMENT_LENGTH }
+        ),
+      ),
+    }
+  },
+)
+
+///|
+let moonbitlang_core_immut_internal_sparse_array_module : RuntimeModule = RuntimeModule::new(
+  "moonbitlang/core/immut/internal/sparse_array",
+  deps={
+    "moonbitlang/core/builtin": moonbitlang_core_builtin_module,
+    "moonbitlang/core/array": moonbitlang_core_array_module,
+  },
+  fn(_env, build) {
+    {
+      "empty": build(
+        (
+          #|pub fn[X] empty() -> SparseArray[X] { { elem_info: empty_bitset, data: [] } }
+        ),
+      ),
+      "singleton": build(
+        (
+          #|pub fn[X] singleton(idx : Int, value : X) -> SparseArray[X] { { elem_info: empty_bitset.add(idx), data: [value] } }
+        ),
+      ),
+      "op_get": build(
+        (
+          #|pub fn[X] op_get(self : SparseArray[X], idx : Int) -> X? { if self.elem_info.has(idx) {
+          #|    Some(self.data[self.elem_info.index_of(idx)])
+          #|  } else {
+          #|    None
+          #|  } }
+        ),
+      ),
+      "unsafe_get": build(
+        (
+          #|fn[X] unsafe_get(self : SparseArray[X], idx : Int) -> X { self.data[self.elem_info.index_of(idx)] }
+        ),
+      ),
+      "add": build(
+        (
+          #|pub fn[X] add(self : SparseArray[X], idx : Int, value : X) -> SparseArray[X] { let old_data = self.data
+          #|  let old_len = old_data.length()
+          #|  let new_len = old_len + 1
+          #|  let pos_of_new_item = self.elem_info.index_of(idx)
+          #|  let new_data = FixedArray::make(new_len, value)
+          #|  old_data.blit_to(new_data, len=pos_of_new_item)
+          #|  old_data.blit_to(
+          #|    new_data,
+          #|    len=old_len - pos_of_new_item,
+          #|    src_offset=pos_of_new_item,
+          #|    dst_offset=pos_of_new_item + 1,
+          #|  )
+          #|  { elem_info: self.elem_info.add(idx), data: new_data } }
+        ),
+      ),
+      "remove": build(
+        (
+          #|pub fn[X] remove(self : SparseArray[X], idx : Int) -> SparseArray[X] { let old_data = self.data
+          #|  let old_len = old_data.length()
+          #|  let pos_of_removed_item = self.elem_info.index_of(idx)
+          #|  let new_data = FixedArray::make(old_len - 1, old_data.unsafe_get(0))
+          #|  old_data.blit_to(
+          #|    new_data,
+          #|    len=pos_of_removed_item,
+          #|    src_offset=0,
+          #|    dst_offset=0,
+          #|  )
+          #|  old_data.blit_to(
+          #|    new_data,
+          #|    len=old_len - pos_of_removed_item - 1,
+          #|    src_offset=pos_of_removed_item + 1,
+          #|    dst_offset=pos_of_removed_item,
+          #|  )
+          #|  { elem_info: self.elem_info.remove(idx), data: new_data } }
+        ),
+      ),
+      "size": build(
+        (
+          #|pub fn[X] size(self : SparseArray[X]) -> Int { self.data.length() }
+        ),
+      ),
+      "each": build(
+        (
+          #|pub fn[X] each(self : SparseArray[X], f : (X) -> Unit raise?) -> Unit raise? { for i in 0..<self.elem_info.size() {
+          #|    f(self.data[i])
+          #|  } }
+        ),
+      ),
+      "has": build(
+        (
+          #|pub fn Bitset::has(self : Bitset, idx : Int) -> Bool { (self.0 & (1U << idx)) != 0 }
+        ),
+      ),
+      "index_of": build(
+        (
+          #|pub fn Bitset::index_of(self : Bitset, idx : Int) -> Int { (self.0 & ((1U << idx) - 1)).popcnt() }
+        ),
+      ),
+      "first_idx": build(
+        (
+          #|pub fn Bitset::first_idx(self : Bitset) -> Int { self.0.ctz() }
+        ),
+      ),
+      "union": build(
+        (
+          #|pub fn Bitset::union(self : Bitset, other : Bitset) -> Bitset { Bitset(self.0 | other.0) }
+        ),
+      ),
+      "intersection": build(
+        (
+          #|pub fn Bitset::intersection(self : Bitset, other : Bitset) -> Bitset { Bitset(self.0 & other.0) }
+        ),
+      ),
+      "add": build(
+        (
+          #|pub fn Bitset::add(self : Bitset, idx : Int) -> Bitset { Bitset(self.0 | (1U << idx)) }
+        ),
+      ),
+      "remove": build(
+        (
+          #|pub fn Bitset::remove(self : Bitset, idx : Int) -> Bitset { Bitset(self.0 ^ (1U << idx)) }
+        ),
+      ),
+      "size": build(
+        (
+          #|pub fn Bitset::size(self : Bitset) -> Int { let Bitset(self) = self
+          #|  self.popcnt() }
+        ),
+      ),
+    }
+  },
+)
+
+///|
+let moonbitlang_core_immut_list_module : RuntimeModule = RuntimeModule::new(
+  "moonbitlang/core/immut/list",
+  deps={
+    "moonbitlang/core/builtin": moonbitlang_core_builtin_module,
+    "moonbitlang/core/array": moonbitlang_core_array_module,
+    "moonbitlang/core/quickcheck": moonbitlang_core_quickcheck_module,
+    "moonbitlang/core/json": moonbitlang_core_json_module,
+    "moonbitlang/core/option": moonbitlang_core_option_module,
+  },
+  fn(_env, build) {
+    {
+      "add": build(
+        (
+          #|pub fn[A] add(self : T[A], head : A) -> T[A] { Cons(head, self) }
+        ),
+      ),
+      "to_json": build(
+        (
+          #|pub fn[A : ToJson] to_json(self : T[A]) -> Json { ToJson::to_json(self) }
+        ),
+      ),
+      "from_array": build(
+        (
+          #|pub fn[A] from_array(arr : Array[A]) -> T[A] { for i = arr.length() - 1, list = Nil; i >= 0; {
+          #|    continue i - 1, Cons(arr[i], list)
+          #|  } else {
+          #|    list
+          #|  } }
+        ),
+      ),
+      "length": build(
+        (
+          #|pub fn[A] length(self : T[A]) -> Int { loop (self, 0) {
+          #|    (Nil, len) => len
+          #|    (Cons(_, rest), acc) => continue (rest, acc + 1)
+          #|  } }
+        ),
+      ),
+      "each": build(
+        (
+          #|pub fn[A] each(self : T[A], f : (A) -> Unit raise?) -> Unit raise? { loop self {
+          #|    Nil => ()
+          #|    Cons(head, tail) => {
+          #|      f(head)
+          #|      continue tail
+          #|    }
+          #|  } }
+        ),
+      ),
+      "eachi": build(
+        (
+          #|pub fn[A] eachi(self : T[A], f : (Int, A) -> Unit raise?) -> Unit raise? { loop (self, 0) {
+          #|    (Nil, _) => ()
+          #|    (Cons(x, xs), i) => {
+          #|      f(i, x)
+          #|      continue (xs, i + 1)
+          #|    }
+          #|  } }
+        ),
+      ),
+      "map": build(
+        (
+          #|pub fn[A, B] map(self : T[A], f : (A) -> B) -> T[B] { match self {
+          #|    Nil => Nil
+          #|    Cons(head, tail) => Cons(f(head), tail.map(f))
+          #|  } }
+        ),
+      ),
+      "mapi": build(
+        (
+          #|pub fn[A, B] mapi(self : T[A], f : (Int, A) -> B raise?) -> T[B] raise? { fn go(xs : T[A], i : Int, f : (Int, A) -> B raise?) -> T[B] raise? {
+          #|    match xs {
+          #|      Nil => Nil
+          #|      Cons(x, xs) => Cons(f(i, x), go(xs, i + 1, f))
+          #|    }
+          #|  }
+          #|  go(self, 0, f) }
+        ),
+      ),
+      "rev_map": build(
+        (
+          #|pub fn[A, B] rev_map(self : T[A], f : (A) -> B raise?) -> T[B] raise? { loop (Nil, self) {
+          #|    (acc, Nil) => acc
+          #|    (acc, Cons(x, xs)) => continue (Cons(f(x), acc), xs)
+          #|  } }
+        ),
+      ),
+      "to_array": build(
+        (
+          #|pub fn[A] to_array(self : T[A]) -> Array[A] { match self {
+          #|    Nil => []
+          #|    Cons(x, xs) => {
+          #|      let arr = [x]
+          #|      loop xs {
+          #|        Nil => ()
+          #|        Cons(x, xs) => {
+          #|          arr.push(x)
+          #|          continue xs
+          #|        }
+          #|      }
+          #|      arr
+          #|    }
+          #|  } }
+        ),
+      ),
+      "filter": build(
+        (
+          #|pub fn[A] filter(self : T[A], f : (A) -> Bool raise?) -> T[A] raise? { match self {
+          #|    Nil => Nil
+          #|    Cons(head, tail) =>
+          #|      if f(head) {
+          #|        Cons(head, tail.filter(f))
+          #|      } else {
+          #|        tail.filter(f)
+          #|      }
+          #|  } }
+        ),
+      ),
+      "all": build(
+        (
+          #|pub fn[A] all(self : T[A], f : (A) -> Bool raise?) -> Bool raise? { loop self {
+          #|    Nil => true
+          #|    Cons(head, tail) => if f(head) { continue tail } else { false }
+          #|  } }
+        ),
+      ),
+      "any": build(
+        (
+          #|pub fn[A] any(self : T[A], f : (A) -> Bool raise?) -> Bool raise? { match self {
+          #|    Nil => false
+          #|    Cons(head, tail) => f(head) || tail.any(f)
+          #|  } }
+        ),
+      ),
+      "tail": build(
+        (
+          #|pub fn[A] tail(self : T[A]) -> T[A] { match self {
+          #|    Nil => Nil
+          #|    Cons(_, tail) => tail
+          #|  } }
+        ),
+      ),
+      "unsafe_head": build(
+        (
+          #|pub fn[A] unsafe_head(self : T[A]) -> A { match self {
+          #|    Nil => abort(\"head of empty list\")
+          #|    Cons(head, _) => head
+          #|  } }
+        ),
+      ),
+      "head_exn": build(
+        (
+          #|pub fn[A] head_exn(self : T[A]) -> A { self.unsafe_head() }
+        ),
+      ),
+      "head": build(
+        (
+          #|pub fn[A] head(self : T[A]) -> A? { match self {
+          #|    Nil => None
+          #|    Cons(head, _) => Some(head)
+          #|  } }
+        ),
+      ),
+      "unsafe_last": build(
+        (
+          #|pub fn[A] unsafe_last(self : T[A]) -> A { loop self {
+          #|    Nil => abort(\"last of empty list\")
+          #|    Cons(head, Nil) => head
+          #|    Cons(_, tail) => continue tail
+          #|  } }
+        ),
+      ),
+      "last": build(
+        (
+          #|pub fn[A] last(self : T[A]) -> A? { loop self {
+          #|    Nil => None
+          #|    Cons(head, Nil) => Some(head)
+          #|    Cons(_, tail) => continue tail
+          #|  } }
+        ),
+      ),
+      "concat": build(
+        (
+          #|pub fn[A] concat(self : T[A], other : T[A]) -> T[A] { match self {
+          #|    Nil => other
+          #|    Cons(head, tail) => Cons(head, tail.concat(other))
+          #|  } }
+        ),
+      ),
+      "rev_concat": build(
+        (
+          #|pub fn[A] rev_concat(self : T[A], other : T[A]) -> T[A] { loop (self, other) {
+          #|    (Nil, other) => other
+          #|    (Cons(head, tail), other) => continue (tail, Cons(head, other))
+          #|  } }
+        ),
+      ),
+      "rev": build(
+        (
+          #|pub fn[A] rev(self : T[A]) -> T[A] { self.rev_concat(Nil) }
+        ),
+      ),
+      "fold": build(
+        (
+          #|pub fn[A, B] fold(self : T[A], init~ : B, f : (B, A) -> B raise?) -> B raise? { match self {
+          #|    Nil => init
+          #|    Cons(head, tail) => tail.fold(f, init=f(init, head))
+          #|  } }
+        ),
+      ),
+      "zip": build(
+        (
+          #|pub fn[A, B] zip(self : T[A], other : T[B]) -> T[(A, B)]? { let mut acc = Nil
+          #|  let res = loop (self, other) {
+          #|    (Nil, Nil) => break Some(acc)
+          #|    (Cons(x, xs), Cons(y, ys)) => {
+          #|      acc = Cons((x, y), acc)
+          #|      continue (xs, ys)
+          #|    }
+          #|    (_, _) => break None
+          #|  }
+          #|  res.map(T::rev) }
+        ),
+      ),
+      "concat_map": build(
+        (
+          #|pub fn[A, B] concat_map(self : T[A], f : (A) -> T[B]) -> T[B] { self.flat_map(f) }
+        ),
+      ),
+      "flat_map": build(
+        (
+          #|pub fn[A, B] flat_map(self : T[A], f : (A) -> T[B] raise?) -> T[B] raise? { match self {
+          #|    Nil => Nil
+          #|    Cons(head, tail) => f(head).concat(tail.flat_map(f))
+          #|  } }
+        ),
+      ),
+      "filter_map": build(
+        (
+          #|pub fn[A, B] filter_map(self : T[A], f : (A) -> B?) -> T[B] { loop (Nil, self) {
+          #|    (acc, Nil) => acc.rev()
+          #|    (acc, Cons(x, xs)) =>
+          #|      match f(x) {
+          #|        Some(v) => continue (acc.add(v), xs)
+          #|        None => continue (acc, xs)
+          #|      }
+          #|  } }
+        ),
+      ),
+      "unsafe_nth": build(
+        (
+          #|pub fn[A] unsafe_nth(self : T[A], n : Int) -> A { loop (self, n) {
+          #|    (Nil, _) => abort(\"nth: index out of bounds\")
+          #|    (Cons(head, _), 0) => head
+          #|    (Cons(_, tail), n) => continue (tail, n - 1)
+          #|  } }
+        ),
+      ),
+      "nth_exn": build(
+        (
+          #|pub fn[A] nth_exn(self : T[A], n : Int) -> A { self.unsafe_nth(n) }
+        ),
+      ),
+      "nth": build(
+        (
+          #|pub fn[A] nth(self : T[A], n : Int) -> A? { loop (self, n) {
+          #|    (Nil, _) => None
+          #|    (Cons(head, _), 0) => Some(head)
+          #|    (Cons(_, tail), n) => continue (tail, n - 1)
+          #|  } }
+        ),
+      ),
+      "repeat": build(
+        (
+          #|pub fn[A] repeat(n : Int, x : A) -> T[A] { if n == 0 {
+          #|    Nil
+          #|  } else {
+          #|    Cons(x, repeat(n - 1, x))
+          #|  } }
+        ),
+      ),
+      "intersperse": build(
+        (
+          #|pub fn[A] intersperse(self : T[A], separator : A) -> T[A] { match self {
+          #|    Nil => Nil
+          #|    Cons(head, Nil) => Cons(head, Nil)
+          #|    Cons(head, tail) => Cons(head, Cons(separator, tail.intersperse(separator)))
+          #|  } }
+        ),
+      ),
+      "is_empty": build(
+        (
+          #|pub fn[A] is_empty(self : T[A]) -> Bool { self is Nil }
+        ),
+      ),
+      "unzip": build(
+        (
+          #|pub fn[A, B] unzip(self : T[(A, B)]) -> (T[A], T[B]) { let mut xs = Nil
+          #|  let mut ys = Nil
+          #|  // implemented with loop to avoid stack overflow
+          #|  loop self.rev() {
+          #|    Nil => break (xs, ys)
+          #|    Cons((x, y), tail) => {
+          #|      xs = Cons(x, xs)
+          #|      ys = Cons(y, ys)
+          #|      continue tail
+          #|    }
+          #|  } }
+        ),
+      ),
+      "flatten": build(
+        (
+          #|pub fn[A] flatten(self : T[T[A]]) -> T[A] { match self {
+          #|    Nil => Nil
+          #|    Cons(head, tail) => head.concat(tail.flatten())
+          #|  } }
+        ),
+      ),
+      "unsafe_maximum": build(
+        (
+          #|pub fn[A : Compare] unsafe_maximum(self : T[A]) -> A { match self {
+          #|    Nil => abort(\"maximum: empty list\")
+          #|    Cons(x, Nil) => x
+          #|    Cons(x, xs) => {
+          #|      let y = xs.unsafe_maximum()
+          #|      if x > y {
+          #|        x
+          #|      } else {
+          #|        y
+          #|      }
+          #|    }
+          #|  } }
+        ),
+      ),
+      "maximum": build(
+        (
+          #|pub fn[A : Compare] maximum(self : T[A]) -> A? { match self {
+          #|    Nil => None
+          #|    Cons(x, Nil) => Some(x)
+          #|    Cons(x, xs) =>
+          #|      match xs.maximum() {
+          #|        None => Some(x)
+          #|        Some(y) => Some(if x > y { x } else { y })
+          #|      }
+          #|  } }
+        ),
+      ),
+      "unsafe_minimum": build(
+        (
+          #|pub fn[A : Compare] unsafe_minimum(self : T[A]) -> A { match self {
+          #|    Nil => abort(\"minimum: empty list\")
+          #|    Cons(x, Nil) => x
+          #|    Cons(x, xs) => {
+          #|      let y = xs.unsafe_minimum()
+          #|      if x < y {
+          #|        x
+          #|      } else {
+          #|        y
+          #|      }
+          #|    }
+          #|  } }
+        ),
+      ),
+      "minimum": build(
+        (
+          #|pub fn[A : Compare] minimum(self : T[A]) -> A? { match self {
+          #|    Nil => None
+          #|    Cons(x, Nil) => Some(x)
+          #|    Cons(x, xs) =>
+          #|      match xs.minimum() {
+          #|        None => Some(x)
+          #|        Some(y) => Some(if x < y { x } else { y })
+          #|      }
+          #|  } }
+        ),
+      ),
+      "sort": build(
+        (
+          #|pub fn[A : Compare] sort(self : T[A]) -> T[A] { match self {
+          #|    Nil => Nil
+          #|    Cons(x, xs) => {
+          #|      let smaller = xs.filter(y => y < x)
+          #|      let greater = xs.filter(y => y >= x)
+          #|      smaller.sort().concat(Cons(x, greater.sort()))
+          #|    }
+          #|  } }
+        ),
+      ),
+      "contains": build(
+        (
+          #|pub fn[A : Eq] contains(self : T[A], value : A) -> Bool { loop self {
+          #|    Nil => false
+          #|    Cons(x, xs) => if x == value { true } else { continue xs }
+          #|  } }
+        ),
+      ),
+      "unfold": build(
+        (
+          #|pub fn[A, S] unfold(f : (S) -> (A, S)? raise?, init~ : S) -> T[A] raise? { match f(init) {
+          #|    Some((element, new_state)) => Cons(element, unfold(init=new_state, f))
+          #|    None => Nil
+          #|  } }
+        ),
+      ),
+      "take": build(
+        (
+          #|pub fn[A] take(self : T[A], n : Int) -> T[A] { fn go(n, t) {
+          #|    match (n, t) {
+          #|      (_, Nil) => Nil
+          #|      (1, Cons(x, _)) => Cons(x, Nil)
+          #|      (n, Cons(x, xs)) => Cons(x, go(n - 1, xs))
+          #|    }
+          #|  }
+          #|  if n <= 0 {
+          #|    Nil
+          #|  } else {
+          #|    go(n, self)
+          #|  } }
+        ),
+      ),
+      "drop": build(
+        (
+          #|pub fn[A] drop(self : T[A], n : Int) -> T[A] { if n <= 0 {
+          #|    self
+          #|  } else {
+          #|    loop (n, self) {
+          #|      (_, Nil) => Nil
+          #|      (1, Cons(_, xs)) => xs
+          #|      (n, Cons(_, xs)) => continue (n - 1, xs)
+          #|    }
+          #|  } }
+        ),
+      ),
+      "take_while": build(
+        (
+          #|pub fn[A] take_while(self : T[A], p : (A) -> Bool) -> T[A] { match self {
+          #|    Nil => Nil
+          #|    Cons(x, xs) => if p(x) { Cons(x, xs.take_while(p)) } else { Nil }
+          #|  } }
+        ),
+      ),
+      "drop_while": build(
+        (
+          #|pub fn[A] drop_while(self : T[A], p : (A) -> Bool raise?) -> T[A] raise? { loop self {
+          #|    Nil => Nil
+          #|    Cons(x, xs) => if p(x) { continue xs } else { Cons(x, xs) }
+          #|  } }
+        ),
+      ),
+      "lookup": build(
+        (
+          #|pub fn[A : Eq, B] lookup(self : T[(A, B)], v : A) -> B? { loop self {
+          #|    Nil => None
+          #|    Cons((x, y), xs) => if x == v { Some(y) } else { continue xs }
+          #|  } }
+        ),
+      ),
+      "find": build(
+        (
+          #|pub fn[A] find(self : T[A], f : (A) -> Bool raise?) -> A? raise? { loop self {
+          #|    Nil => None
+          #|    Cons(element, list) =>
+          #|      if f(element) {
+          #|        Some(element)
+          #|      } else {
+          #|        continue list
+          #|      }
+          #|  } }
+        ),
+      ),
+      "findi": build(
+        (
+          #|pub fn[A] findi(self : T[A], f : (A, Int) -> Bool raise?) -> A? raise? { loop (self, 0) {
+          #|    (list, index) =>
+          #|      match list {
+          #|        Nil => None
+          #|        Cons(element, list) =>
+          #|          if f(element, index) {
+          #|            Some(element)
+          #|          } else {
+          #|            continue (list, index + 1)
+          #|          }
+          #|      }
+          #|  } }
+        ),
+      ),
+      "remove_at": build(
+        (
+          #|pub fn[A] remove_at(self : T[A], index : Int) -> T[A] { match (index, self) {
+          #|    (0, Cons(_, tail)) => tail
+          #|    (_, Cons(head, tail)) => Cons(head, tail.remove_at(index - 1))
+          #|    (_, Nil) => Nil
+          #|    // abort(\"remove_at: index out of bounds\")
+          #|  } }
+        ),
+      ),
+      "remove": build(
+        (
+          #|pub fn[A : Eq] remove(self : T[A], elem : A) -> T[A] { match self {
+          #|    Nil => Nil
+          #|    Cons(head, tail) =>
+          #|      if head == elem {
+          #|        tail
+          #|      } else {
+          #|        Cons(head, tail.remove(elem))
+          #|      }
+          #|  } }
+        ),
+      ),
+      "is_prefix": build(
+        (
+          #|pub fn[A : Eq] is_prefix(self : T[A], prefix : T[A]) -> Bool { loop (self, prefix) {
+          #|    (_, Nil) => true
+          #|    (Nil, Cons(_)) => false
+          #|    (Cons(h1, t1), Cons(h2, t2)) =>
+          #|      if h1 == h2 {
+          #|        continue (t1, t2)
+          #|      } else {
+          #|        false
+          #|      }
+          #|  } }
+        ),
+      ),
+      "is_suffix": build(
+        (
+          #|pub fn[A : Eq] is_suffix(self : T[A], suffix : T[A]) -> Bool { self.rev().is_prefix(suffix.rev()) }
+        ),
+      ),
+      "intercalate": build(
+        (
+          #|pub fn[A] intercalate(self : T[T[A]], sep : T[A]) -> T[A] { self.intersperse(sep).flatten() }
+        ),
+      ),
+      "default": build(
+        (
+          #|pub fn[X] default() -> T[X] { Nil }
+        ),
+      ),
+      "iter": build(
+        (
+          #|pub fn[A] iter(self : T[A]) -> Iter[A] { Iter::new(yield_ => loop self {
+          #|    Nil => IterContinue
+          #|    Cons(head, tail) => {
+          #|      if yield_(head) == IterEnd {
+          #|        break IterEnd
+          #|      }
+          #|      continue tail
+          #|    }
+          #|  }) }
+        ),
+      ),
+      "iter2": build(
+        (
+          #|pub fn[A] iter2(self : T[A]) -> Iter2[Int, A] { Iter2::new(yield_ => loop (self, 0) {
+          #|    (Nil, _) => IterEnd
+          #|    (Cons(head, tail), i) => {
+          #|      if yield_(i, head) == IterEnd {
+          #|        break IterEnd
+          #|      }
+          #|      continue (tail, i + 1)
+          #|    }
+          #|  }) }
+        ),
+      ),
+      "from_iter": build(
+        (
+          #|pub fn[A] from_iter(iter : Iter[A]) -> T[A] { iter.fold(init=Nil, (acc, e) => Cons(e, acc)).rev() }
+        ),
+      ),
+      "from_iter_rev": build(
+        (
+          #|pub fn[A] from_iter_rev(iter : Iter[A]) -> T[A] { iter.fold(init=Nil, (acc, e) => Cons(e, acc)) }
+        ),
+      ),
+      "of": build(
+        (
+          #|pub fn[A] of(arr : FixedArray[A]) -> T[A] { for i = arr.length() - 1, list = Nil; i >= 0; {
+          #|    continue i - 1, Cons(arr[i], list)
+          #|  } else {
+          #|    list
+          #|  } }
+        ),
+      ),
+      "singleton": build(
+        (
+          #|pub fn[A] singleton(x : A) -> T[A] { Cons(x, Nil) }
+        ),
+      ),
+      "init_": build(
+        (
+          #|pub fn[A] init_(self : T[A]) -> T[A] { fn aux(self) {
+          #|    match self {
+          #|      Nil => Nil
+          #|      Cons(_, Nil) => Nil
+          #|      Cons(head, tail) => Cons(head, aux(tail))
+          #|    }
+          #|  }
+          #|  aux(self) }
+        ),
+      ),
+      "equal": build(
+        (
+          #|pub fn[A : Eq] equal(self : T[A], other : T[A]) -> Bool { loop (self, other) {
+          #|    (Nil, Nil) => true
+          #|    (Cons(h, t), Cons(h1, t1)) => if h == h1 { continue (t, t1) } else { false }
+          #|    (_, _) => false
+          #|  } }
+        ),
+      ),
+      "from_array": build(
+        (
+          #|pub fn[A] T::from_array(arr : Array[A]) -> T[A] { from_array(arr) }
+        ),
+      ),
+      "default": build(
+        (
+          #|pub fn[X] T::default() -> T[X] { Nil }
+        ),
+      ),
+      "from_iter": build(
+        (
+          #|pub fn[A] T::from_iter(iter : Iter[A]) -> T[A] { from_iter(iter) }
+        ),
+      ),
+      "of": build(
+        (
+          #|pub fn[A] T::of(arr : FixedArray[A]) -> T[A] { of(arr) }
+        ),
+      ),
+    }
+  },
+)
+
+///|
+let moonbitlang_core_immut_priority_queue_module : RuntimeModule = RuntimeModule::new(
+  "moonbitlang/core/immut/priority_queue",
+  deps={
+    "moonbitlang/core/builtin": moonbitlang_core_builtin_module,
+    "moonbitlang/core/array": moonbitlang_core_array_module,
+    "moonbitlang/core/quickcheck": moonbitlang_core_quickcheck_module,
+  },
+  fn(_env, build) {
+    {
+      "new": build(
+        (
+          #|pub fn[A] new() -> T[A] { { node: Empty, size: 0 } }
+        ),
+      ),
+      "from_array": build(
+        (
+          #|pub fn[A : Compare] from_array(array : Array[A]) -> T[A] { let mut pq = new()
+          #|  for i in 0..<array.length() {
+          #|    pq = pq.push(array[i])
+          #|  }
+          #|  pq }
+        ),
+      ),
+      "to_array": build(
+        (
+          #|pub fn[A : Compare] to_array(self : T[A]) -> Array[A] { let arr : Array[A] = []
+          #|  fn go(x : Node[A]) {
+          #|    match x {
+          #|      Empty => return
+          #|      Leaf(a) => arr.push(a)
+          #|      Branch(a, left=l, right=r) => {
+          #|        arr.push(a)
+          #|        go(l)
+          #|        go(r)
+          #|      }
+          #|    }
+          #|  }
+          #|  go(self.node)
+          #|  arr.sort_by((x, y) => y.compare(x))
+          #|  arr }
+        ),
+      ),
+      "iter": build(
+        (
+          #|pub fn[A : Compare] iter(self : T[A]) -> Iter[A] { Iter::new(yield_ => {
+          #|    let arr = self.to_array()
+          #|    for i in 0..<arr.length() {
+          #|      guard yield_(arr[i]) is IterContinue else { break IterEnd }
+          #|    } else {
+          #|      IterContinue
+          #|    }
+          #|  }) }
+        ),
+      ),
+      "from_iter": build(
+        (
+          #|pub fn[A : Compare] T::from_iter(iter : Iter[A]) -> T[A] { iter.fold(init=new(), (s, e) => s.push(e)) }
+        ),
+      ),
+      "path": build(
+        (
+          #|fn path(size : Int) -> Path { loop (size, 0) {
+          #|    (1, y) => Path(y)
+          #|    (x, y) => continue (x >> 1, (y << 1) | (x & 1))
+          #|  } }
+        ),
+      ),
+      "is_left": build(
+        (
+          #|fn is_left(self : Path) -> Bool { (self.0 & 1) == 0 }
+        ),
+      ),
+      "next": build(
+        (
+          #|fn next(self : Path) -> Path { Path(self.0 >> 1) }
+        ),
+      ),
+      "pop": build(
+        (
+          #|pub fn[A : Compare] pop(self : T[A]) -> T[A]? { match self.node {
+          #|    Empty => None
+          #|    Leaf(_) => Some({ node: Empty, size: 0 })
+          #|    Branch(_) => {
+          #|      let (value, temp) = self.node.remove_last_leaf(path(self.size))
+          #|      Some({ node: temp.change_and_down(value), size: self.size - 1 })
+          #|    }
+          #|  } }
+        ),
+      ),
+      "remove_last_leaf": build(
+        (
+          #|fn[A : Compare] remove_last_leaf(self : Node[A], path : Path) -> (A, Node[A]) { match self {
+          #|    Empty => abort(\"Priority queue is empty!\")
+          #|    Leaf(a) => (a, Empty)
+          #|    Branch(a, left=Leaf(l_top), right=Empty) => (l_top, Leaf(a))
+          #|    Branch(a, left=l, right=r) =>
+          #|      if path.is_left() {
+          #|        let (e, ld) = l.remove_last_leaf(path.next())
+          #|        (e, Branch(a, left=ld, right=r))
+          #|      } else {
+          #|        let (e, rd) = r.remove_last_leaf(path.next())
+          #|        (e, Branch(a, left=l, right=rd))
+          #|      }
+          #|  } }
+        ),
+      ),
+      "change_and_down": build(
+        (
+          #|fn[A : Compare] change_and_down(self : Node[A], value : A) -> Node[A] { match self {
+          #|    Empty => abort(\"unreachable\")
+          #|    Leaf(_) => Leaf(value)
+          #|    Branch(_, left=l, right=r) =>
+          #|      match (l, r) {
+          #|        (Leaf(l_top), Empty) =>
+          #|          if value >= l_top {
+          #|            Branch(value, left=l, right=Empty)
+          #|          } else {
+          #|            Branch(l_top, left=Leaf(value), right=Empty)
+          #|          }
+          #|        (Branch(l_top, ..) | Leaf(l_top), Branch(r_top, ..) | Leaf(r_top)) =>
+          #|          if value >= l_top && value >= r_top {
+          #|            Branch(value, left=l, right=r)
+          #|          } else if l_top >= r_top {
+          #|            Branch(l_top, left=l.change_and_down(value), right=r)
+          #|          } else {
+          #|            Branch(r_top, left=l, right=r.change_and_down(value))
+          #|          }
+          #|        _ => abort(\"unreachable\")
+          #|      }
+          #|  } }
+        ),
+      ),
+      "unsafe_pop": build(
+        (
+          #|pub fn[A : Compare] unsafe_pop(self : T[A]) -> T[A] { match self.node {
+          #|    Empty => abort(\"Priority queue is empty!\")
+          #|    Leaf(_) => { node: Empty, size: 0 }
+          #|    Branch(_) => {
+          #|      let (value, temp) = self.node.remove_last_leaf(path(self.size))
+          #|      { node: temp.change_and_down(value), size: self.size - 1 }
+          #|    }
+          #|  } }
+        ),
+      ),
+      "push": build(
+        (
+          #|pub fn[A : Compare] push(self : T[A], value : A) -> T[A] { match self.node {
+          #|    Empty => { node: Leaf(value), size: 1 }
+          #|    Leaf(_) | Branch(_) => {
+          #|      let size = self.size + 1
+          #|      { node: self.node.push(value, path(size)), size }
+          #|    }
+          #|  } }
+        ),
+      ),
+      "push": build(
+        (
+          #|fn[A : Compare] Node::push(self : Node[A], value : A, path : Path) -> Node[A] { match self {
+          #|    Empty => Leaf(value)
+          #|    Leaf(a) => {
+          #|      let (high, low) = if a > value { (a, value) } else { (value, a) }
+          #|      Branch(high, left=Leaf(low), right=Empty)
+          #|    }
+          #|    Branch(a, left=l, right=r) => {
+          #|      let (high, low) = if a > value { (a, value) } else { (value, a) }
+          #|      if path.is_left() {
+          #|        Branch(high, left=l.push(low, path.next()), right=r)
+          #|      } else {
+          #|        Branch(high, left=l, right=r.push(low, path.next()))
+          #|      }
+          #|    }
+          #|  } }
+        ),
+      ),
+      "peek": build(
+        (
+          #|pub fn[A] peek(self : T[A]) -> A? { match self.node {
+          #|    Empty => None
+          #|    Leaf(a) => Some(a)
+          #|    Branch(a, ..) => Some(a)
+          #|  } }
+        ),
+      ),
+      "is_empty": build(
+        (
+          #|pub fn[A] is_empty(self : T[A]) -> Bool { self.node is Empty }
+        ),
+      ),
+      "length": build(
+        (
+          #|pub fn[A] length(self : T[A]) -> Int { self.size }
+        ),
+      ),
+      "of": build(
+        (
+          #|pub fn[A : Compare] of(arr : FixedArray[A]) -> T[A] { let mut pq = new()
+          #|  for i in 0..<arr.length() {
+          #|    pq = pq.push(arr[i])
+          #|  }
+          #|  pq }
+        ),
+      ),
+      "pop_exn": build(
+        (
+          #|pub fn[A : Compare] pop_exn(self : T[A]) -> T[A] { self.unsafe_pop() }
+        ),
+      ),
+    }
+  },
+)
+
+///|
+let moonbitlang_core_immut_sorted_map_module : RuntimeModule = RuntimeModule::new(
+  "moonbitlang/core/immut/sorted_map",
+  deps={
+    "moonbitlang/core/builtin": moonbitlang_core_builtin_module,
+    "moonbitlang/core/tuple": moonbitlang_core_tuple_module,
+    "moonbitlang/core/string": moonbitlang_core_string_module,
+    "moonbitlang/core/array": moonbitlang_core_array_module,
+    "moonbitlang/core/quickcheck": moonbitlang_core_quickcheck_module,
+    "moonbitlang/core/json": moonbitlang_core_json_module,
+  },
+  fn(_env, build) {
+    {
+      "add": build(
+        (
+          #|pub fn[K : Compare, V] add(self : T[K, V], key : K, value : V) -> T[K, V] { match self {
+          #|    Empty => singleton(key, value)
+          #|    Tree(k, value=v, l, r, ..) => {
+          #|      let c = key.compare(k)
+          #|      if c == 0 {
+          #|        make_tree(k, value, l, r)
+          #|      } else if c < 0 {
+          #|        balance(k, v, l.add(key, value), r)
+          #|      } else {
+          #|        balance(k, v, l, r.add(key, value))
+          #|      }
+          #|    }
+          #|  } }
+        ),
+      ),
+      "split_max": build(
+        (
+          #|fn[K : Compare, V] split_max(self : T[K, V]) -> (K, V, T[K, V]) { match self {
+          #|    Tree(k, value=v, l, Empty, ..) => (k, v, l)
+          #|    Tree(k, value=v, l, r, ..) => {
+          #|      let (k1, v1, r) = r.split_max()
+          #|      (k1, v1, balance(k, v, l, r))
+          #|    }
+          #|    Empty => abort(\"Map::split_max error\")
+          #|  } }
+        ),
+      ),
+      "split_min": build(
+        (
+          #|fn[K : Compare, V] split_min(self : T[K, V]) -> (K, V, T[K, V]) { match self {
+          #|    Tree(k, value=v, Empty, r, ..) => (k, v, r)
+          #|    Tree(k, value=v, l, r, ..) => {
+          #|      let (k1, v1, l) = l.split_min()
+          #|      (k1, v1, balance(k, v, l, r))
+          #|    }
+          #|    Empty => abort(\"Map::split_min error\")
+          #|  } }
+        ),
+      ),
+      "glue": build(
+        (
+          #|fn[K : Compare, V] glue(l : T[K, V], r : T[K, V]) -> T[K, V] { match (l, r) {
+          #|    (Empty, r) => r
+          #|    (l, Empty) => l
+          #|    (l, r) =>
+          #|      if l.size() > r.size() {
+          #|        let (k, v, l) = l.split_max()
+          #|        balance(k, v, l, r)
+          #|      } else {
+          #|        let (k, v, r) = r.split_min()
+          #|        balance(k, v, l, r)
+          #|      }
+          #|  } }
+        ),
+      ),
+      "remove": build(
+        (
+          #|pub fn[K : Compare, V] remove(self : T[K, V], key : K) -> T[K, V] { match self {
+          #|    Empty => Empty
+          #|    Tree(k, value=v, l, r, ..) => {
+          #|      let c = key.compare(k)
+          #|      if c == 0 {
+          #|        glue(l, r)
+          #|      } else if c < 0 {
+          #|        balance(k, v, l.remove(key), r)
+          #|      } else {
+          #|        balance(k, v, l, r.remove(key))
+          #|      }
+          #|    }
+          #|  } }
+        ),
+      ),
+      "to_array": build(
+        (
+          #|pub fn[K, V] to_array(self : T[K, V]) -> Array[(K, V)] { let arr = []
+          #|  self.each((k, v) => arr.push((k, v)))
+          #|  arr }
+        ),
+      ),
+      "ratio": (None, Int(5)),
+      "balance": build(
+        (
+          #|fn[K, V] balance(key : K, value : V, l : T[K, V], r : T[K, V]) -> T[K, V] { //       1                   2
+          #|  //      / \\                 / \\
+          #|  //     x   2       --->    1   z
+          #|  //        / \\             / \\
+          #|  //       y   z           x   y
+          #|  fn single_l(k1, v1, x, r) {
+          #|    guard r is Tree(k2, value=v2, y, z, ..)
+          #|    make_tree(k2, v2, make_tree(k1, v1, x, y), z)
+          #|  }
+          #|  fn single_r(k2, v2, l, z) {
+          #|    guard l is Tree(k1, value=v1, x, y, ..)
+          #|    make_tree(k1, v1, x, make_tree(k2, v2, y, z))
+          #|  }
+          #|  //      1                 2
+          #|  //     / \\              /   \\
+          #|  //    x   3            1     3
+          #|  //       / \\    -->   / \\   / \\
+          #|  //      2   z        x  y1 y2  z
+          #|  //     / \\
+          #|  //    y1 y2
+          #|  fn double_l(k1, v1, x, r) {
+          #|    guard r is Tree(k3, value=v3, Tree(k2, value=v2, y1, y2, ..), z, ..)
+          #|    make_tree(k2, v2, make_tree(k1, v1, x, y1), make_tree(k3, v3, y2, z))
+          #|  }
+          #|  //      3                 2
+          #|  //     / \\              /   \\
+          #|  //    1   z            1     3
+          #|  //   / \\        -->   / \\   / \\
+          #|  //  x  2             x  y1 y2  z
+          #|  //    / \\
+          #|  //   y1 y2
+          #|  fn double_r(k3, v3, l, z) {
+          #|    guard l is Tree(k1, value=v1, x, Tree(k2, value=v2, y1, y2, ..), ..)
+          #|    make_tree(k2, v2, make_tree(k1, v1, x, y1), make_tree(k3, v3, y2, z))
+          #|  }
+          #|  let ln = l.size()
+          #|  let rn = r.size()
+          #|  if ln + rn < 2 {
+          #|    make_tree(key, value, l, r)
+          #|  } else if rn > ratio * ln {
+          #|    // right is too big
+          #|    guard r is Tree(_, rl, rr, ..)
+          #|    let rln = rl.size()
+          #|    let rrn = rr.size()
+          #|    if rln < rrn {
+          #|      single_l(key, value, l, r)
+          #|    } else {
+          #|      double_l(key, value, l, r)
+          #|    }
+          #|  } else if ln > ratio * rn {
+          #|    // left is too big
+          #|    guard l is Tree(_, ll, lr, ..)
+          #|    let lln = ll.size()
+          #|    let lrn = lr.size()
+          #|    if lrn < lln {
+          #|      single_r(key, value, l, r)
+          #|    } else {
+          #|      double_r(key, value, l, r)
+          #|    }
+          #|  } else {
+          #|    make_tree(key, value, l, r)
+          #|  } }
+        ),
+      ),
+      "insert": build(
+        (
+          #|pub fn[K : Compare, V] insert(self : T[K, V], key : K, value : V) -> T[K, V] { self.add(key, value) }
+        ),
+      ),
+      "new": build(
+        (
+          #|pub fn[K, V] T::new() -> T[K, V] { Empty }
+        ),
+      ),
+      "singleton": build(
+        (
+          #|pub fn[K, V] T::singleton(key : K, value : V) -> T[K, V] { singleton(key, value) }
+        ),
+      ),
+      "from_array": build(
+        (
+          #|pub fn[K : Compare, V] T::from_array(array : Array[(K, V)]) -> T[K, V] { from_array(array) }
+        ),
+      ),
+      "from_iter": build(
+        (
+          #|pub fn[K : Compare, V] T::from_iter(iter : Iter[(K, V)]) -> T[K, V] { from_iter(iter) }
+        ),
+      ),
+      "of": build(
+        (
+          #|pub fn[K : Compare, V] T::of(array : FixedArray[(K, V)]) -> T[K, V] { of(array) }
+        ),
+      ),
+      "empty": build(
+        (
+          #|pub fn[K, V] T::empty() -> T[K, V] { Empty }
+        ),
+      ),
+      "new": build(
+        (
+          #|pub fn[K, V] new() -> T[K, V] { Empty }
+        ),
+      ),
+      "singleton": build(
+        (
+          #|pub fn[K, V] singleton(key : K, value : V) -> T[K, V] { Tree(key, value~, size=1, Empty, Empty) }
+        ),
+      ),
+      "contains": build(
+        (
+          #|pub fn[K : Compare, V] contains(self : T[K, V], key : K) -> Bool { loop self {
+          #|    Empty => false
+          #|    Tree(k, l, r, ..) => {
+          #|      let c = key.compare(k)
+          #|      if c == 0 {
+          #|        true
+          #|      } else if c < 0 {
+          #|        continue l
+          #|      } else {
+          #|        continue r
+          #|      }
+          #|    }
+          #|  } }
+        ),
+      ),
+      "size": build(
+        (
+          #|pub fn[K, V] size(self : T[K, V]) -> Int { match self {
+          #|    Empty => 0
+          #|    Tree(_) as t => t.size
+          #|  } }
+        ),
+      ),
+      "is_empty": build(
+        (
+          #|pub fn[K, V] is_empty(self : T[K, V]) -> Bool { self.size() == 0 }
+        ),
+      ),
+      "make_tree": build(
+        (
+          #|fn[K, V] make_tree(key : K, value : V, l : T[K, V], r : T[K, V]) -> T[K, V] { let size = l.size() + r.size() + 1
+          #|  Tree(key, value~, size~, l, r) }
+        ),
+      ),
+      "lookup": build(
+        (
+          #|pub fn[K : Compare, V] lookup(self : T[K, V], key : K) -> V? { self.get(key) }
+        ),
+      ),
+      "get": build(
+        (
+          #|pub fn[K : Compare, V] get(self : T[K, V], key : K) -> V? { loop self {
+          #|    Empty => None
+          #|    Tree(k, value~, l, r, ..) => {
+          #|      let c = key.compare(k)
+          #|      if c == 0 {
+          #|        Some(value)
+          #|      } else if c < 0 {
+          #|        continue l
+          #|      } else {
+          #|        continue r
+          #|      }
+          #|    }
+          #|  } }
+        ),
+      ),
+      "op_get": build(
+        (
+          #|pub fn[K : Compare, V] op_get(self : T[K, V], key : K) -> V? { self.get(key) }
+        ),
+      ),
+      "each": build(
+        (
+          #|pub fn[K, V] each(self : T[K, V], f : (K, V) -> Unit) -> Unit { match self {
+          #|    Empty => ()
+          #|    Tree(k, value~, l, r, ..) => {
+          #|      l.each(f)
+          #|      f(k, value)
+          #|      r.each(f)
+          #|    }
+          #|  } }
+        ),
+      ),
+      "eachi": build(
+        (
+          #|pub fn[K, V] eachi(self : T[K, V], f : (Int, K, V) -> Unit) -> Unit { fn do_eachi(m : T[K, V], f, i) {
+          #|    match m {
+          #|      Empty => ()
+          #|      Tree(k, value~, l, r, ..) => {
+          #|        do_eachi(l, f, i)
+          #|        f(l.size() + i, k, value)
+          #|        do_eachi(r, f, l.size() + i + 1)
+          #|      }
+          #|    }
+          #|  }
+          #|  do_eachi(self, f, 0) }
+        ),
+      ),
+      "map": build(
+        (
+          #|pub fn[K, X, Y] map(self : T[K, X], f : (X) -> Y) -> T[K, Y] { match self {
+          #|    Empty => Empty
+          #|    Tree(k, value~, size~, l, r) =>
+          #|      Tree(k, value=f(value), size~, l.map(f), r.map(f))
+          #|  } }
+        ),
+      ),
+      "map_with_key": build(
+        (
+          #|pub fn[K, X, Y] map_with_key(self : T[K, X], f : (K, X) -> Y) -> T[K, Y] { match self {
+          #|    Empty => Empty
+          #|    Tree(k, value~, l, r, size~) =>
+          #|      Tree(k, value=f(k, value), size~, l.map_with_key(f), r.map_with_key(f))
+          #|  } }
+        ),
+      ),
+      "fold": build(
+        (
+          #|pub fn[K, V, A] fold(self : T[K, V], init~ : A, f : (A, V) -> A) -> A { self.foldl_with_key((acc, _k, v) => f(acc, v), init~) }
+        ),
+      ),
+      "debug_tree": build(
+        (
+          #|fn[K : Show, V : Show] debug_tree(self : T[K, V]) -> String { match self {
+          #|    Empty => \"_\"
+          #|    Tree(k, value~, l, r, ..) => {
+          #|      let l = l.debug_tree()
+          #|      let r = r.debug_tree()
+          #|      \"(\\{k},\\{value},\\{l},\\{r})\"
+          #|    }
+          #|  } }
+        ),
+      ),
+      "from_array": build(
+        (
+          #|pub fn[K : Compare, V] from_array(array : Array[(K, V)]) -> T[K, V] { for i = 0, mp = Empty; i < array.length(); {
+          #|    let (k, v) = array[i]
+          #|    continue i + 1, mp.add(k, v)
+          #|  } else {
+          #|    mp
+          #|  } }
+        ),
+      ),
+      "iter": build(
+        (
+          #|pub fn[K, V] iter(self : T[K, V]) -> Iter[(K, V)] { Iter::new(yield_ => {
+          #|    fn go(t) {
+          #|      match t {
+          #|        Empty => IterContinue
+          #|        Tree(k, value~, l, r, ..) =>
+          #|          if go(l) is IterEnd {
+          #|            IterEnd
+          #|          } else if yield_((k, value)) is IterEnd {
+          #|            IterEnd
+          #|          } else {
+          #|            go(r)
+          #|          }
+          #|      }
+          #|    }
+          #|    go(self)
+          #|  }) }
+        ),
+      ),
+      "iter2": build(
+        (
+          #|pub fn[K, V] iter2(self : T[K, V]) -> Iter2[K, V] { Iter2::new(yield_ => {
+          #|    fn go(t) {
+          #|      match t {
+          #|        Empty => IterContinue
+          #|        Tree(k, value~, l, r, ..) =>
+          #|          if go(l) is IterEnd {
+          #|            IterEnd
+          #|          } else if yield_(k, value) is IterEnd {
+          #|            IterEnd
+          #|          } else {
+          #|            go(r)
+          #|          }
+          #|      }
+          #|    }
+          #|    go(self)
+          #|  }) }
+        ),
+      ),
+      "from_iter": build(
+        (
+          #|pub fn[K : Compare, V] from_iter(iter : Iter[(K, V)]) -> T[K, V] { iter.fold(init=new(), (m, e) => m.add(e.0, e.1)) }
+        ),
+      ),
+      "keys": build(
+        (
+          #|pub fn[K, V] keys(self : T[K, V]) -> Array[K] { self.iter().map(p => p.0).collect() }
+        ),
+      ),
+      "values": build(
+        (
+          #|pub fn[K, V] values(self : T[K, V]) -> Iter[V] { self.iter().map(p => p.1) }
+        ),
+      ),
+      "elems": build(
+        (
+          #|pub fn[K, V] elems(self : T[K, V]) -> Array[V] { self.values().collect() }
+        ),
+      ),
+      "of": build(
+        (
+          #|pub fn[K : Compare, V] of(array : FixedArray[(K, V)]) -> T[K, V] { for i = 0, mp = Empty; i < array.length(); {
+          #|    let (k, v) = array[i]
+          #|    continue i + 1, mp.add(k, v)
+          #|  } else {
+          #|    mp
+          #|  } }
+        ),
+      ),
+      "to_json": build(
+        (
+          #|pub fn[K : Show, V : ToJson] to_json(self : T[K, V]) -> Json { ToJson::to_json(self) }
+        ),
+      ),
+      "new": build(
+        (
+          #|fn[K, V] InorderIterator::new(root : T[K, V]) -> InorderIterator[K, V] { let it = InorderIterator([])
+          #|  it.move_left(root)
+          #|  it }
+        ),
+      ),
+      "next": build(
+        (
+          #|fn[K, V] InorderIterator::next(self : InorderIterator[K, V]) -> (K, V)? { let InorderIterator(s) = self
+          #|  guard s.pop() is Some(curr) else { return None }
+          #|  guard curr is Tree(key, _, right, value~, ..)
+          #|  self.move_left(right)
+          #|  Some((key, value)) }
+        ),
+      ),
+    }
+  },
+)
+
+///|
+let moonbitlang_core_immut_sorted_set_module : RuntimeModule = RuntimeModule::new(
+  "moonbitlang/core/immut/sorted_set",
+  deps={
+    "moonbitlang/core/builtin": moonbitlang_core_builtin_module,
+    "moonbitlang/core/array": moonbitlang_core_array_module,
+    "moonbitlang/core/quickcheck": moonbitlang_core_quickcheck_module,
+    "moonbitlang/core/json": moonbitlang_core_json_module,
+  },
+  fn(_env, build) {
+    {
+      "new": build(
+        (
+          #|pub fn[A] T::new() -> T[A] { Empty }
+        ),
+      ),
+      "singleton": build(
+        (
+          #|pub fn[A] T::singleton(value : A) -> T[A] { singleton(value) }
+        ),
+      ),
+      "from_array": build(
+        (
+          #|pub fn[A : Compare] T::from_array(array : Array[A]) -> T[A] { from_array(array) }
+        ),
+      ),
+      "of": build(
+        (
+          #|pub fn[A : Compare] T::of(array : FixedArray[A]) -> T[A] { of(array) }
+        ),
+      ),
+      "iter": build(
+        (
+          #|pub fn[A] iter(self : T[A]) -> Iter[A] { Iter::new(yield_ => {
+          #|    fn go(t) {
+          #|      match t {
+          #|        Empty => IterContinue
+          #|        Node(left~, right~, value~, ..) =>
+          #|          if go(left) is IterEnd {
+          #|            IterEnd
+          #|          } else if yield_(value) is IterEnd {
+          #|            IterEnd
+          #|          } else {
+          #|            go(right)
+          #|          }
+          #|      }
+          #|    }
+          #|    go(self)
+          #|  }) }
+        ),
+      ),
+      "from_iter": build(
+        (
+          #|pub fn[A : Compare] from_iter(iter : Iter[A]) -> T[A] { iter.fold(init=new(), (s, e) => s.add(e)) }
+        ),
+      ),
+      "from_iter": build(
+        (
+          #|pub fn[A : Compare] T::from_iter(iter : Iter[A]) -> T[A] { from_iter(iter) }
+        ),
+      ),
+      "new": build(
+        (
+          #|fn[A] InorderIterator::new(root : T[A]) -> InorderIterator[A] { let it = InorderIterator([])
+          #|  it.move_left(root)
+          #|  it }
+        ),
+      ),
+      "next": build(
+        (
+          #|fn[A] InorderIterator::next(self : InorderIterator[A]) -> A? { let InorderIterator(s) = self
+          #|  guard s.pop() is Some(curr) else { return None }
+          #|  guard curr is Node(right~, value~, ..)
+          #|  self.move_left(right)
+          #|  Some(value) }
+        ),
+      ),
+      "new": build(
+        (
+          #|pub fn[A] new() -> T[A] { Empty }
+        ),
+      ),
+      "singleton": build(
+        (
+          #|pub fn[A] singleton(value : A) -> T[A] { Node(left=Empty, value~, right=Empty, size=1) }
+        ),
+      ),
+      "from_array": build(
+        (
+          #|pub fn[A : Compare] from_array(array : Array[A]) -> T[A] { for i = array.length() - 1, set = Empty; i >= 0; {
+          #|    continue i - 1, set.add(array[i])
+          #|  } else {
+          #|    set
+          #|  } }
+        ),
+      ),
+      "to_array": build(
+        (
+          #|pub fn[A] to_array(self : T[A]) -> Array[A] { let arr = []
+          #|  fn aux(set : T[A]) {
+          #|    match set {
+          #|      Empty => ()
+          #|      Node(left~, value~, right~, ..) => {
+          #|        aux(left)
+          #|        arr.push(value)
+          #|        aux(right)
+          #|        //TODO: rewrite [...aux(left),value,...aux(right)]
+          #|      }
+          #|    }
+          #|  }
+          #|  aux(self)
+          #|  arr }
+        ),
+      ),
+      "remove_min": build(
+        (
+          #|pub fn[A : Compare] remove_min(self : T[A]) -> T[A] { match self {
+          #|    Empty => abort(\"remove_min: empty ImmutableSet\")
+          #|    Node(left~, right~, value~, ..) =>
+          #|      if left is Empty {
+          #|        right
+          #|      } else {
+          #|        balance(left.remove_min(), value, right)
+          #|      }
+          #|  } }
+        ),
+      ),
+      "add": build(
+        (
+          #|pub fn[A : Compare] add(self : T[A], value : A) -> T[A] { match self {
+          #|    Empty => Node(left=Empty, value~, right=Empty, size=1)
+          #|    Node(left~, right~, value=node_value, ..) => {
+          #|      let compare_result = value.compare(node_value)
+          #|      if compare_result == 0 {
+          #|        self
+          #|      } else if compare_result < 0 {
+          #|        let ll = left.add(value)
+          #|        if physical_equal(left, ll) {
+          #|          self
+          #|        } else {
+          #|          balance(ll, node_value, right)
+          #|        }
+          #|      } else {
+          #|        let rr = right.add(value)
+          #|        if physical_equal(right, rr) {
+          #|          self
+          #|        } else {
+          #|          balance(left, node_value, rr)
+          #|        }
+          #|      }
+          #|    }
+          #|  } }
+        ),
+      ),
+      "remove": build(
+        (
+          #|pub fn[A : Compare] remove(self : T[A], value : A) -> T[A] { match self {
+          #|    Empty => Empty
+          #|    Node(left~, right~, value=node_value, ..) => {
+          #|      let compare_result = value.compare(node_value)
+          #|      if compare_result == 0 {
+          #|        left.merge(right)
+          #|      } else if compare_result < 0 {
+          #|        let new_left = left.remove(value)
+          #|        if physical_equal(left, new_left) {
+          #|          self
+          #|        } else {
+          #|          balance(new_left, node_value, right)
+          #|        }
+          #|      } else {
+          #|        let new_right = right.remove(value)
+          #|        if physical_equal(right, new_right) {
+          #|          self
+          #|        } else {
+          #|          balance(left, node_value, new_right)
+          #|        }
+          #|      }
+          #|    }
+          #|  } }
+        ),
+      ),
+      "min": build(
+        (
+          #|pub fn[A : Compare] min(self : T[A]) -> A { match self {
+          #|    Empty => abort(\"min: there are no values in sorted_set.\")
+          #|    Node(left~, value~, ..) => if left is Empty { value } else { left.min() }
+          #|  } }
+        ),
+      ),
+      "min_option": build(
+        (
+          #|pub fn[A : Compare] min_option(self : T[A]) -> A? { match self {
+          #|    Empty => None
+          #|    Node(left~, value~, ..) =>
+          #|      if left is Empty {
+          #|        Some(value)
+          #|      } else {
+          #|        left.min_option()
+          #|      }
+          #|  } }
+        ),
+      ),
+      "max": build(
+        (
+          #|pub fn[A : Compare] max(self : T[A]) -> A { match self {
+          #|    Empty => abort(\"max: there are no values in ImmutableSet.\")
+          #|    Node(right~, value~, ..) => if right is Empty { value } else { right.max() }
+          #|  } }
+        ),
+      ),
+      "max_option": build(
+        (
+          #|pub fn[A : Compare] max_option(self : T[A]) -> A? { match self {
+          #|    Empty => None
+          #|    Node(right~, value~, ..) =>
+          #|      if right is Empty {
+          #|        Some(value)
+          #|      } else {
+          #|        right.max_option()
+          #|      }
+          #|  } }
+        ),
+      ),
+      "split": build(
+        (
+          #|pub fn[A : Compare] split(self : T[A], divide : A) -> (T[A], Bool, T[A]) { match self {
+          #|    Empty => (Empty, false, Empty)
+          #|    Node(left~, right~, value~, ..) => {
+          #|      let compare_result = divide.compare(value)
+          #|      if compare_result == 0 {
+          #|        (left, true, right)
+          #|      } else if compare_result < 0 {
+          #|        let (left_left, present, right_left) = left.split(divide)
+          #|        (left_left, present, join(right_left, value, right))
+          #|      } else {
+          #|        let (left_right, present, right_right) = right.split(divide)
+          #|        (join(left, value, left_right), present, right_right)
+          #|      }
+          #|    }
+          #|  } }
+        ),
+      ),
+      "is_empty": build(
+        (
+          #|pub fn[A] is_empty(self : T[A]) -> Bool { self is Empty }
+        ),
+      ),
+      "contains": build(
+        (
+          #|pub fn[A : Compare] contains(self : T[A], value : A) -> Bool { match self {
+          #|    Empty => false
+          #|    Node(left~, right~, value=node_value, ..) => {
+          #|      let compare_result = value.compare(node_value)
+          #|      compare_result == 0 ||
+          #|      (if compare_result < 0 { left } else { right }).contains(value)
+          #|    }
+          #|  } }
+        ),
+      ),
+      "union": build(
+        (
+          #|pub fn[A : Compare] union(self : T[A], other : T[A]) -> T[A] { match (self, other) {
+          #|    (Empty, _) => other
+          #|    (_, Empty) => self
+          #|    (
+          #|      Node(left=l1, value=v1, right=r1, size=s1),
+          #|      Node(left=l2, value=v2, right=r2, size=s2),
+          #|    ) =>
+          #|      if s1 >= s2 {
+          #|        if s2 == 1 {
+          #|          self.add(v2)
+          #|        } else {
+          #|          let (l2, _, r2) = other.split(v1)
+          #|          join(l1.union(l2), v1, r1.union(r2))
+          #|        }
+          #|      } else if s1 == 1 {
+          #|        other.add(v1)
+          #|      } else {
+          #|        let (l1, _, r1) = self.split(v2)
+          #|        join(l1.union(l2), v2, r1.union(r2))
+          #|      }
+          #|  } }
+        ),
+      ),
+      "inter": build(
+        (
+          #|pub fn[A : Compare] inter(self : T[A], other : T[A]) -> T[A] { self.intersection(other) }
+        ),
+      ),
+      "intersection": build(
+        (
+          #|pub fn[A : Compare] intersection(self : T[A], other : T[A]) -> T[A] { match (self, other) {
+          #|    (Empty, _) | (_, Empty) => Empty
+          #|    (Node(left=l1, value=v1, right=r1, ..), _) =>
+          #|      match other.split(v1) {
+          #|        (l2, false, r2) => l1.intersection(l2).concat(r1.intersection(r2))
+          #|        (l2, true, r2) => join(l1.intersection(l2), v1, r1.intersection(r2))
+          #|      }
+          #|  } }
+        ),
+      ),
+      "diff": build(
+        (
+          #|pub fn[A : Compare] diff(self : T[A], other : T[A]) -> T[A] { self.difference(other) }
+        ),
+      ),
+      "difference": build(
+        (
+          #|pub fn[A : Compare] difference(self : T[A], other : T[A]) -> T[A] { match (self, other) {
+          #|    (Empty, _) => Empty
+          #|    (_, Empty) => self
+          #|    (Node(left=l1, value=v1, right=r1, ..), _) =>
+          #|      match other.split(v1) {
+          #|        (l2, false, r2) => join(l1.difference(l2), v1, r1.difference(r2))
+          #|        (l2, true, r2) => l1.difference(l2).concat(r1.difference(r2))
+          #|      }
+          #|  } }
+        ),
+      ),
+      "symmetric_difference": build(
+        (
+          #|pub fn[A : Compare] symmetric_difference(self : T[A], other : T[A]) -> T[A] { match (self, other) {
+          #|    (Empty, _) => other
+          #|    (_, Empty) => self
+          #|    (Node(left=l1, value=v1, right=r1, ..), _) =>
+          #|      match other.split(v1) {
+          #|        (l2, false, r2) =>
+          #|          join(l1.symmetric_difference(l2), v1, r1.symmetric_difference(r2))
+          #|        (l2, true, r2) =>
+          #|          l1.symmetric_difference(l2).concat(r1.symmetric_difference(r2))
+          #|      }
+          #|  } }
+        ),
+      ),
+      "subset": build(
+        (
+          #|pub fn[A : Compare] subset(self : T[A], other : T[A]) -> Bool { match (self, other) {
+          #|    (Empty, _) => true
+          #|    (_, Empty) => false
+          #|    (
+          #|      Node(left=l1, value=v1, right=r1, ..),
+          #|      Node(left=l2, value=v2, right=r2, ..),
+          #|    ) => {
+          #|      let compare_result = v1.compare(v2)
+          #|      if compare_result == 0 {
+          #|        l1.subset(l2) && r1.subset(r2)
+          #|      } else if compare_result < 0 {
+          #|        Node(left=l1, value=v1, right=Empty, size=1).subset(l2) &&
+          #|        r1.subset(self)
+          #|      } else {
+          #|        Node(left=Empty, value=v1, right=r1, size=1).subset(r2) &&
+          #|        l1.subset(self)
+          #|      }
+          #|    }
+          #|  } }
+        ),
+      ),
+      "disjoint": build(
+        (
+          #|pub fn[A : Compare] disjoint(self : T[A], other : T[A]) -> Bool { match (self, other) {
+          #|    (Empty, _) | (_, Empty) => true
+          #|    (Node(left=l1, value=v1, right=r1, ..), _) =>
+          #|      if physical_equal(self, other) {
+          #|        false
+          #|      } else {
+          #|        match other.split_bis(v1) {
+          #|          NotFound(l2, r2) => l1.disjoint(l2) && r1.disjoint(r2())
+          #|          Found => false
+          #|        }
+          #|      }
+          #|  } }
+        ),
+      ),
+      "each": build(
+        (
+          #|pub fn[A] each(self : T[A], f : (A) -> Unit raise?) -> Unit raise? { match self {
+          #|    Empty => ()
+          #|    Node(left~, value~, right~, ..) => {
+          #|      left.each(f)
+          #|      f(value)
+          #|      right.each(f)
+          #|    }
+          #|  } }
+        ),
+      ),
+      "all": build(
+        (
+          #|pub fn[A : Compare] all(self : T[A], f : (A) -> Bool raise?) -> Bool raise? { match self {
+          #|    Empty => true
+          #|    Node(left~, value~, right~, ..) => f(value) && left.all(f) && right.all(f)
+          #|  } }
+        ),
+      ),
+      "any": build(
+        (
+          #|pub fn[A : Compare] any(self : T[A], f : (A) -> Bool raise?) -> Bool raise? { match self {
+          #|    Empty => false
+          #|    Node(left~, value~, right~, ..) => f(value) || left.any(f) || right.any(f)
+          #|  } }
+        ),
+      ),
+      "filter": build(
+        (
+          #|pub fn[A : Compare] filter(self : T[A], f : (A) -> Bool raise?) -> T[A] raise? { match self {
+          #|    Empty => Empty
+          #|    Node(left~, value~, right~, ..) => {
+          #|      let l = left.filter(f)
+          #|      let v = f(value)
+          #|      let r = right.filter(f)
+          #|      if v {
+          #|        if physical_equal(l, left) && physical_equal(r, right) {
+          #|          self
+          #|        } else {
+          #|          join(l, value, r)
+          #|        }
+          #|      } else {
+          #|        l.concat(r)
+          #|      }
+          #|    }
+          #|  } }
+        ),
+      ),
+      "to_json": build(
+        (
+          #|pub fn[A : ToJson] to_json(self : T[A]) -> Json { ToJson::to_json(self) }
+        ),
+      ),
+      "split_bis": build(
+        (
+          #|fn[A : Compare] split_bis(self : T[A], value : A) -> SplitBis[A] { match self {
+          #|    Empty => NotFound(Empty, () => Empty)
+          #|    Node(left~, value=node_value, right~, ..) => {
+          #|      let compare_result = value.compare(node_value)
+          #|      if compare_result == 0 {
+          #|        Found
+          #|      } else if compare_result < 0 {
+          #|        match left.split_bis(value) {
+          #|          Found => Found
+          #|          NotFound(ll, rl) => NotFound(ll, () => join(rl(), node_value, right))
+          #|        }
+          #|      } else {
+          #|        match right.split_bis(value) {
+          #|          Found => Found
+          #|          NotFound(lr, rr) => NotFound(join(left, node_value, lr), rr)
+          #|        }
+          #|      }
+          #|    }
+          #|  } }
+        ),
+      ),
+      "size": build(
+        (
+          #|pub fn[A] size(self : T[A]) -> Int { match self {
+          #|    Empty => 0
+          #|    Node(size~, ..) => size
+          #|  } }
+        ),
+      ),
+      "create": build(
+        (
+          #|fn[A] create(left : T[A], value : A, right : T[A]) -> T[A] { Node(left~, right~, value~, size=left.size() + right.size() + 1) }
+        ),
+      ),
+      "balance": build(
+        (
+          #|fn[A] balance(left : T[A], value : A, right : T[A]) -> T[A] { let left_size = left.size()
+          #|  let right_size = right.size()
+          #|  if left_size + right_size < 2 {
+          #|    create(left, value, right)
+          #|  } else if left_size > right_size * BALANCE_RATIO {
+          #|    match left {
+          #|      Empty => abort(\"balance: left is empty.\")
+          #|      Node(left=ll, value=lv, right=lr, ..) =>
+          #|        if ll.size() >= lr.size() {
+          #|          create(ll, lv, create(lr, value, right))
+          #|        } else {
+          #|          match lr {
+          #|            Empty => abort(\"balance: right left.right is empty.\")
+          #|            Node(left=lrl, value=lrv, right=lrr, ..) =>
+          #|              create(create(ll, lv, lrl), lrv, create(lrr, value, right))
+          #|          }
+          #|        }
+          #|    }
+          #|  } else if right_size > left_size * BALANCE_RATIO {
+          #|    match right {
+          #|      Empty => abort(\"balance: right is empty\")
+          #|      Node(left=rl, value=rv, right=rr, ..) =>
+          #|        if rr.size() >= rl.size() {
+          #|          create(create(left, value, rl), rv, rr)
+          #|        } else {
+          #|          match rl {
+          #|            Empty => abort(\"balance: right.left is empty\")
+          #|            Node(left=rll, value=rlv, right=rlr, ..) =>
+          #|              create(create(left, value, rll), rlv, create(rlr, rv, rr))
+          #|          }
+          #|        }
+          #|    }
+          #|  } else {
+          #|    create(left, value, right)
+          #|  } }
+        ),
+      ),
+      "add_min_value": build(
+        (
+          #|fn[A : Compare] add_min_value(self : T[A], value : A) -> T[A] { match self {
+          #|    Empty => singleton(value)
+          #|    Node(left~, value=node_value, right~, ..) =>
+          #|      balance(left.add_min_value(value), node_value, right)
+          #|  } }
+        ),
+      ),
+      "add_max_value": build(
+        (
+          #|fn[A : Compare] add_max_value(self : T[A], value : A) -> T[A] { match self {
+          #|    Empty => singleton(value)
+          #|    Node(left~, value=node_value, right~, ..) =>
+          #|      balance(left, node_value, right.add_max_value(value))
+          #|  } }
+        ),
+      ),
+      "join": build(
+        (
+          #|fn[A : Compare] join(left : T[A], value : A, right : T[A]) -> T[A] { match (left, right) {
+          #|    (Empty, _) => right.add_min_value(value)
+          #|    (_, Empty) => left.add_max_value(value)
+          #|    (
+          #|      Node(left=ll, value=lv, right=lr, size=ls),
+          #|      Node(left=rl, value=rv, right=rr, size=rs),
+          #|    ) =>
+          #|      if ls > rs * BALANCE_RATIO {
+          #|        balance(ll, lv, join(lr, value, right))
+          #|      } else if rs > ls * BALANCE_RATIO {
+          #|        balance(join(left, value, rl), rv, rr)
+          #|      } else {
+          #|        create(left, value, right)
+          #|      }
+          #|  } }
+        ),
+      ),
+      "try_join": build(
+        (
+          #|fn[A : Compare] try_join(left : T[A], value : A, right : T[A]) -> T[A] { if (left == Empty || left.max().compare(value) < 0) &&
+          #|    (right == Empty || value.compare(right.min()) < 0) {
+          #|    join(left, value, right)
+          #|  } else {
+          #|    left.union(right.add(value))
+          #|  } }
+        ),
+      ),
+      "merge": build(
+        (
+          #|fn[A : Compare] merge(self : T[A], other : T[A]) -> T[A] { match (self, other) {
+          #|    (Empty, _) => other
+          #|    (_, Empty) => self
+          #|    _ => balance(self, other.min(), other.remove_min())
+          #|  } }
+        ),
+      ),
+      "concat": build(
+        (
+          #|fn[A : Compare] concat(self : T[A], other : T[A]) -> T[A] { match (self, other) {
+          #|    (Empty, _) => other
+          #|    (_, Empty) => self
+          #|    _ => join(self, other.min(), other.remove_min())
+          #|  } }
+        ),
+      ),
+      "of": build(
+        (
+          #|pub fn[A : Compare] of(array : FixedArray[A]) -> T[A] { for i = array.length() - 1, set = Empty; i >= 0; {
+          #|    continue i - 1, set.add(array[i])
+          #|  } else {
+          #|    set
+          #|  } }
+        ),
+      ),
+    }
+  },
+)
+
+///|
+let moonbitlang_core_int_module : RuntimeModule = RuntimeModule::new(
+  "moonbitlang/core/int",
+  deps={
+    "moonbitlang/core/builtin": moonbitlang_core_builtin_module,
+    "moonbitlang/core/uint": moonbitlang_core_uint_module,
+  },
+  fn(_env, build) {
+    {
+      "max_value": (None, Int(2147483647)),
+      "min_value": (None, Int(-2147483648)),
+      "abs": build(
+        (
+          #|pub fn Int::abs(self : Int) -> Int { if self < 0 {
+          #|    -self
+          #|  } else {
+          #|    self
+          #|  } }
+        ),
+      ),
+      "to_be_bytes": build(
+        (
+          #|pub fn to_be_bytes(self : Int) -> Bytes { self.reinterpret_as_uint().to_be_bytes() }
+        ),
+      ),
+      "to_le_bytes": build(
+        (
+          #|pub fn to_le_bytes(self : Int) -> Bytes { self.reinterpret_as_uint().to_le_bytes() }
+        ),
+      ),
+    }
+  },
+)
+
+///|
+let moonbitlang_core_int16_module : RuntimeModule = RuntimeModule::new(
   "moonbitlang/core/int16",
+  deps={
+    "moonbitlang/core/builtin": moonbitlang_core_builtin_module,
+    "moonbitlang/core/json": moonbitlang_core_json_module,
+  },
   fn(_env, build) {
     {
       "abs": build(
@@ -10086,8 +13998,14 @@ let int16_module : RuntimeModule = RuntimeModule::new(
 )
 
 ///|
-let int64_module : RuntimeModule = RuntimeModule::new(
+let moonbitlang_core_int64_module : RuntimeModule = RuntimeModule::new(
   "moonbitlang/core/int64",
+  deps={
+    "moonbitlang/core/builtin": moonbitlang_core_builtin_module,
+    "moonbitlang/core/bytes": moonbitlang_core_bytes_module,
+    "moonbitlang/core/uint": moonbitlang_core_uint_module,
+    "moonbitlang/core/uint64": moonbitlang_core_uint64_module,
+  },
   fn(_env, build) {
     {
       "max_value": (None, Int64(9223372036854775807L)),
@@ -10146,3950 +14064,3977 @@ let int64_module : RuntimeModule = RuntimeModule::new(
 )
 
 ///|
-let json_module : RuntimeModule = RuntimeModule::new("moonbitlang/core/json", fn(
-  _env,
-  build,
-) {
-  {
-    "read_char": build(
-      (
-        #|fn ParseContext::read_char(ctx : ParseContext) -> Char? { if ctx.offset < ctx.end_offset {
-        #|    let c1 = ctx.input.unsafe_charcode_at(ctx.offset)
-        #|    ctx.offset += 1
-        #|    if c1 >= 0xD800 && c1 <= 0xDBFF {
-        #|      if ctx.offset < ctx.end_offset {
-        #|        let c2 = ctx.input.unsafe_charcode_at(ctx.offset)
-        #|        if c2 >= 0xDC00 && c2 <= 0xDFFF {
-        #|          ctx.offset += 1
-        #|          let c3 = (c1 << 10) + c2 - 0x35fdc00
-        #|          return Some(c3.unsafe_to_char())
-        #|        }
-        #|      }
-        #|    }
-        #|    Some(c1.unsafe_to_char())
-        #|  } else {
-        #|    None
-        #|  } }
+let moonbitlang_core_json_module : RuntimeModule = RuntimeModule::new(
+  "moonbitlang/core/json",
+  deps={
+    "moonbitlang/core/builtin": moonbitlang_core_builtin_module,
+    "moonbitlang/core/char": moonbitlang_core_char_module,
+    "moonbitlang/core/double": moonbitlang_core_double_module,
+    "moonbitlang/core/string": moonbitlang_core_string_module,
+    "moonbitlang/core/strconv": moonbitlang_core_strconv_module,
+    "moonbitlang/core/option": moonbitlang_core_option_module,
+  },
+  fn(_env, build) {
+    {
+      "read_char": build(
+        (
+          #|fn ParseContext::read_char(ctx : ParseContext) -> Char? { if ctx.offset < ctx.end_offset {
+          #|    let c1 = ctx.input.unsafe_charcode_at(ctx.offset)
+          #|    ctx.offset += 1
+          #|    if c1 >= 0xD800 && c1 <= 0xDBFF {
+          #|      if ctx.offset < ctx.end_offset {
+          #|        let c2 = ctx.input.unsafe_charcode_at(ctx.offset)
+          #|        if c2 >= 0xDC00 && c2 <= 0xDFFF {
+          #|          ctx.offset += 1
+          #|          let c3 = (c1 << 10) + c2 - 0x35fdc00
+          #|          return Some(c3.unsafe_to_char())
+          #|        }
+          #|      }
+          #|    }
+          #|    Some(c1.unsafe_to_char())
+          #|  } else {
+          #|    None
+          #|  } }
+        ),
       ),
-    ),
-    "lex_skip_whitespace": build(
-      (
-        #|fn ParseContext::lex_skip_whitespace(ctx : ParseContext) -> Unit { for {
-        #|    match ctx.read_char() {
-        #|      Some('\\t' | ' ' | '\\n' | '\\r') => continue
-        #|      Some(c) => {
-        #|        if c > '\\u{7f}' && non_ascii_whitespace.contains(c) {
-        #|          continue
-        #|        }
-        #|        ctx.offset -= 1
-        #|        break
-        #|      }
-        #|      None => break
-        #|    }
-        #|  } }
+      "lex_skip_whitespace": build(
+        (
+          #|fn ParseContext::lex_skip_whitespace(ctx : ParseContext) -> Unit { for {
+          #|    match ctx.read_char() {
+          #|      Some('\\t' | ' ' | '\\n' | '\\r') => continue
+          #|      Some(c) => {
+          #|        if c > '\\u{7f}' && non_ascii_whitespace.contains(c) {
+          #|          continue
+          #|        }
+          #|        ctx.offset -= 1
+          #|        break
+          #|      }
+          #|      None => break
+          #|    }
+          #|  } }
+        ),
       ),
-    ),
-    "decode_error": build(
-      (
-        #|fn[T] decode_error(path : JsonPath, msg : String) -> T raise JsonDecodeError { raise JsonDecodeError((path, msg)) }
+      "decode_error": build(
+        (
+          #|fn[T] decode_error(path : JsonPath, msg : String) -> T raise JsonDecodeError { raise JsonDecodeError((path, msg)) }
+        ),
       ),
-    ),
-    "as_null": build(
-      (
-        #|pub fn as_null(self : JsonValue) -> Unit? { guard self is Null else { return None }
-        #|  Some(()) }
+      "as_null": build(
+        (
+          #|pub fn as_null(self : JsonValue) -> Unit? { guard self is Null else { return None }
+          #|  Some(()) }
+        ),
       ),
-    ),
-    "as_bool": build(
-      (
-        #|pub fn as_bool(self : JsonValue) -> Bool? { match self {
-        #|    True => Some(true)
-        #|    False => Some(false)
-        #|    _ => None
-        #|  } }
+      "as_bool": build(
+        (
+          #|pub fn as_bool(self : JsonValue) -> Bool? { match self {
+          #|    True => Some(true)
+          #|    False => Some(false)
+          #|    _ => None
+          #|  } }
+        ),
       ),
-    ),
-    "as_number": build(
-      (
-        #|pub fn as_number(self : JsonValue) -> Double? { guard self is Number(n, ..) else { return None }
-        #|  Some(n) }
+      "as_number": build(
+        (
+          #|pub fn as_number(self : JsonValue) -> Double? { guard self is Number(n, ..) else { return None }
+          #|  Some(n) }
+        ),
       ),
-    ),
-    "as_string": build(
-      (
-        #|pub fn as_string(self : JsonValue) -> String? { guard self is String(s) else { return None }
-        #|  Some(s) }
+      "as_string": build(
+        (
+          #|pub fn as_string(self : JsonValue) -> String? { guard self is String(s) else { return None }
+          #|  Some(s) }
+        ),
       ),
-    ),
-    "as_array": build(
-      (
-        #|pub fn as_array(self : JsonValue) -> Array[JsonValue]? { guard self is Array(arr) else { return None }
-        #|  Some(arr) }
+      "as_array": build(
+        (
+          #|pub fn as_array(self : JsonValue) -> Array[JsonValue]? { guard self is Array(arr) else { return None }
+          #|  Some(arr) }
+        ),
       ),
-    ),
-    "item": build(
-      (
-        #|pub fn item(self : JsonValue, index : Int) -> JsonValue? { match self.as_array() {
-        #|    Some(arr) => arr.get(index)
-        #|    None => None
-        #|  } }
+      "item": build(
+        (
+          #|pub fn item(self : JsonValue, index : Int) -> JsonValue? { match self.as_array() {
+          #|    Some(arr) => arr.get(index)
+          #|    None => None
+          #|  } }
+        ),
       ),
-    ),
-    "as_object": build(
-      (
-        #|pub fn as_object(self : JsonValue) -> Map[String, JsonValue]? { guard self is Object(obj) else { return None }
-        #|  Some(obj) }
+      "as_object": build(
+        (
+          #|pub fn as_object(self : JsonValue) -> Map[String, JsonValue]? { guard self is Object(obj) else { return None }
+          #|  Some(obj) }
+        ),
       ),
-    ),
-    "value": build(
-      (
-        #|pub fn value(self : JsonValue, key : String) -> JsonValue? { match self.as_object() {
-        #|    Some(obj) => obj.get(key)
-        #|    None => None
-        #|  } }
+      "value": build(
+        (
+          #|pub fn value(self : JsonValue, key : String) -> JsonValue? { match self.as_object() {
+          #|    Some(obj) => obj.get(key)
+          #|    None => None
+          #|  } }
+        ),
       ),
-    ),
-    "indent_str": build(
-      (
-        #|fn indent_str(level : Int, indent : Int) -> String { if indent == 0 {
-        #|    \"\"
-        #|  } else {
-        #|    \"\\n\" + \" \".repeat(indent * level)
-        #|  } }
+      "indent_str": build(
+        (
+          #|fn indent_str(level : Int, indent : Int) -> String { if indent == 0 {
+          #|    \"\"
+          #|  } else {
+          #|    \"\\n\" + \" \".repeat(indent * level)
+          #|  } }
+        ),
       ),
-    ),
-    "escape": build(
-      (
-        #|fn escape(str : String, escape_slash~ : Bool) -> String { fn to_hex_digit(i : Int) -> Char {
-        #|    if i < 10 {
-        #|      ('0'.to_int() + i).unsafe_to_char()
-        #|    } else {
-        #|      ('a'.to_int() + (i - 10)).unsafe_to_char()
-        #|    }
-        #|  }
-        #|  let buf = StringBuilder::new(size_hint=str.length())
-        #|  for c in str {
-        #|    match c {
-        #|      '\"' => buf.write_string(\"\\\\\\\"\")
-        #|      '\\\\' => buf.write_string(\"\\\\\\\\\")
-        #|      '/' =>
-        #|        if escape_slash {
-        #|          buf.write_string(\"\\\\/\")
-        #|        } else {
-        #|          buf.write_char(c)
-        #|        }
-        #|      '\\n' => buf.write_string(\"\\\\n\")
-        #|      '\\r' => buf.write_string(\"\\\\r\")
-        #|      '\\b' => buf.write_string(\"\\\\b\")
-        #|      '\\t' => buf.write_string(\"\\\\t\")
-        #|      _ => {
-        #|        let code = c.to_int()
-        #|        if code == 0x0C {
-        #|          buf.write_string(\"\\\\f\")
-        #|        } else if code < 0x20 {
-        #|          buf.write_string(\"\\\\u00\")
-        #|          buf.write_char(to_hex_digit(code / 16))
-        #|          buf.write_char(to_hex_digit(code % 16))
-        #|        } else {
-        #|          buf.write_char(c)
-        #|        }
-        #|      }
-        #|    }
-        #|  }
-        #|  buf.to_string() }
+      "escape": build(
+        (
+          #|fn escape(str : String, escape_slash~ : Bool) -> String { fn to_hex_digit(i : Int) -> Char {
+          #|    if i < 10 {
+          #|      ('0'.to_int() + i).unsafe_to_char()
+          #|    } else {
+          #|      ('a'.to_int() + (i - 10)).unsafe_to_char()
+          #|    }
+          #|  }
+          #|  let buf = StringBuilder::new(size_hint=str.length())
+          #|  for c in str {
+          #|    match c {
+          #|      '\"' => buf.write_string(\"\\\\\\\"\")
+          #|      '\\\\' => buf.write_string(\"\\\\\\\\\")
+          #|      '/' =>
+          #|        if escape_slash {
+          #|          buf.write_string(\"\\\\/\")
+          #|        } else {
+          #|          buf.write_char(c)
+          #|        }
+          #|      '\\n' => buf.write_string(\"\\\\n\")
+          #|      '\\r' => buf.write_string(\"\\\\r\")
+          #|      '\\b' => buf.write_string(\"\\\\b\")
+          #|      '\\t' => buf.write_string(\"\\\\t\")
+          #|      _ => {
+          #|        let code = c.to_int()
+          #|        if code == 0x0C {
+          #|          buf.write_string(\"\\\\f\")
+          #|        } else if code < 0x20 {
+          #|          buf.write_string(\"\\\\u00\")
+          #|          buf.write_char(to_hex_digit(code / 16))
+          #|          buf.write_char(to_hex_digit(code % 16))
+          #|        } else {
+          #|          buf.write_char(c)
+          #|        }
+          #|      }
+          #|    }
+          #|  }
+          #|  buf.to_string() }
+        ),
       ),
-    ),
-    "add_index": build(
-      (
-        #|pub fn add_index(self : JsonPath, index : Int) -> JsonPath { Index(self, index~) }
+      "add_index": build(
+        (
+          #|pub fn add_index(self : JsonPath, index : Int) -> JsonPath { Index(self, index~) }
+        ),
       ),
-    ),
-    "add_key": build(
-      (
-        #|pub fn add_key(self : JsonPath, key : String) -> JsonPath { Key(self, key~) }
+      "add_key": build(
+        (
+          #|pub fn add_key(self : JsonPath, key : String) -> JsonPath { Key(self, key~) }
+        ),
       ),
-    ),
-    "lex_string": build(
-      (
-        #|fn ParseContext::lex_string(ctx : ParseContext) -> String raise ParseError { let buf = StringBuilder::new()
-        #|  let mut start = ctx.offset
-        #|  fn flush(end : Int) {
-        #|    if start > 0 && end > start {
-        #|      buf.write_substring(ctx.input, start, end - start)
-        #|    }
-        #|  }
-        #|  for {
-        #|    match ctx.read_char() {
-        #|      Some('\"') => {
-        #|        flush(ctx.offset - 1)
-        #|        break
-        #|      }
-        #|      Some('\\n' | '\\r') => ctx.invalid_char(shift=-1)
-        #|      Some('\\\\') => {
-        #|        flush(ctx.offset - 1)
-        #|        match ctx.read_char() {
-        #|          Some('b') => buf.write_char('\\b')
-        #|          Some('f') => buf.write_char('\\u{0C}')
-        #|          Some('n') => buf.write_char('\\n')
-        #|          Some('r') => buf.write_char('\\r')
-        #|          Some('t') => buf.write_char('\\t')
-        #|          Some('\"') => buf.write_char('\"')
-        #|          Some('\\\\') => buf.write_char('\\\\')
-        #|          Some('/') => buf.write_char('/')
-        #|          Some('u') => {
-        #|            let c = ctx.lex_hex_digits(4)
-        #|            buf.write_char(c.unsafe_to_char())
-        #|          }
-        #|          Some(_) => ctx.invalid_char(shift=-1)
-        #|          None => raise InvalidEof
-        #|        }
-        #|        start = ctx.offset
-        #|      }
-        #|      Some(ch) =>
-        #|        if ch.to_int() < 32 {
-        #|          ctx.invalid_char(shift=-1)
-        #|        } else {
-        #|          continue
-        #|        }
-        #|      None => raise InvalidEof
-        #|    }
-        #|  }
-        #|  buf.to_string() }
+      "lex_string": build(
+        (
+          #|fn ParseContext::lex_string(ctx : ParseContext) -> String raise ParseError { let buf = StringBuilder::new()
+          #|  let mut start = ctx.offset
+          #|  fn flush(end : Int) {
+          #|    if start > 0 && end > start {
+          #|      buf.write_substring(ctx.input, start, end - start)
+          #|    }
+          #|  }
+          #|  for {
+          #|    match ctx.read_char() {
+          #|      Some('\"') => {
+          #|        flush(ctx.offset - 1)
+          #|        break
+          #|      }
+          #|      Some('\\n' | '\\r') => ctx.invalid_char(shift=-1)
+          #|      Some('\\\\') => {
+          #|        flush(ctx.offset - 1)
+          #|        match ctx.read_char() {
+          #|          Some('b') => buf.write_char('\\b')
+          #|          Some('f') => buf.write_char('\\u{0C}')
+          #|          Some('n') => buf.write_char('\\n')
+          #|          Some('r') => buf.write_char('\\r')
+          #|          Some('t') => buf.write_char('\\t')
+          #|          Some('\"') => buf.write_char('\"')
+          #|          Some('\\\\') => buf.write_char('\\\\')
+          #|          Some('/') => buf.write_char('/')
+          #|          Some('u') => {
+          #|            let c = ctx.lex_hex_digits(4)
+          #|            buf.write_char(c.unsafe_to_char())
+          #|          }
+          #|          Some(_) => ctx.invalid_char(shift=-1)
+          #|          None => raise InvalidEof
+          #|        }
+          #|        start = ctx.offset
+          #|      }
+          #|      Some(ch) =>
+          #|        if ch.to_int() < 32 {
+          #|          ctx.invalid_char(shift=-1)
+          #|        } else {
+          #|          continue
+          #|        }
+          #|      None => raise InvalidEof
+          #|    }
+          #|  }
+          #|  buf.to_string() }
+        ),
       ),
-    ),
-    "valid": build(
-      (
-        #|pub fn valid(input : String) -> Bool { try {
-        #|    parse(input) |> ignore
-        #|    true
-        #|  } catch {
-        #|    _ => return false
-        #|  } }
+      "valid": build(
+        (
+          #|pub fn valid(input : String) -> Bool { try {
+          #|    parse(input) |> ignore
+          #|    true
+          #|  } catch {
+          #|    _ => return false
+          #|  } }
+        ),
       ),
-    ),
-    "parse": build(
-      (
-        #|pub fn parse(input : String) -> JsonValue raise ParseError { let ctx = ParseContext::make(input)
-        #|  let val = ctx.parse_value()
-        #|  ctx.lex_skip_whitespace()
-        #|  if ctx.offset >= ctx.end_offset {
-        #|    val
-        #|  } else {
-        #|    ctx.invalid_char()
-        #|  } }
+      "parse": build(
+        (
+          #|pub fn parse(input : String) -> JsonValue raise ParseError { let ctx = ParseContext::make(input)
+          #|  let val = ctx.parse_value()
+          #|  ctx.lex_skip_whitespace()
+          #|  if ctx.offset >= ctx.end_offset {
+          #|    val
+          #|  } else {
+          #|    ctx.invalid_char()
+          #|  } }
+        ),
       ),
-    ),
-    "parse_value": build(
-      (
-        #|fn ParseContext::parse_value(ctx : ParseContext) -> JsonValue raise ParseError { let tok = ctx.lex_value(allow_rbracket=false)
-        #|  ctx.parse_value2(tok) }
+      "parse_value": build(
+        (
+          #|fn ParseContext::parse_value(ctx : ParseContext) -> JsonValue raise ParseError { let tok = ctx.lex_value(allow_rbracket=false)
+          #|  ctx.parse_value2(tok) }
+        ),
       ),
-    ),
-    "parse_object": build(
-      (
-        #|fn ParseContext::parse_object(ctx : ParseContext) -> JsonValue raise ParseError { let map = Map::new()
-        #|  loop ctx.lex_property_name() {
-        #|    RBrace => Json::object(map)
-        #|    String(name) => {
-        #|      ctx.lex_after_property_name()
-        #|      map[name] = ctx.parse_value()
-        #|      match ctx.lex_after_object_value() {
-        #|        Comma => continue ctx.lex_property_name2()
-        #|        RBrace => Json::object(map)
-        #|        _ => abort(\"unreachable\")
-        #|      }
-        #|    }
-        #|    _ => abort(\"unreachable\")
-        #|  } }
+      "parse_object": build(
+        (
+          #|fn ParseContext::parse_object(ctx : ParseContext) -> JsonValue raise ParseError { let map = Map::new()
+          #|  loop ctx.lex_property_name() {
+          #|    RBrace => Json::object(map)
+          #|    String(name) => {
+          #|      ctx.lex_after_property_name()
+          #|      map[name] = ctx.parse_value()
+          #|      match ctx.lex_after_object_value() {
+          #|        Comma => continue ctx.lex_property_name2()
+          #|        RBrace => Json::object(map)
+          #|        _ => abort(\"unreachable\")
+          #|      }
+          #|    }
+          #|    _ => abort(\"unreachable\")
+          #|  } }
+        ),
       ),
-    ),
-    "parse_array": build(
-      (
-        #|fn ParseContext::parse_array(ctx : ParseContext) -> JsonValue raise ParseError { let vec = []
-        #|  loop ctx.lex_value(allow_rbracket=true) {
-        #|    RBracket => Json::array(vec)
-        #|    tok => {
-        #|      vec.push(ctx.parse_value2(tok))
-        #|      let tok2 = ctx.lex_after_array_value()
-        #|      match tok2 {
-        #|        Comma => continue ctx.lex_value(allow_rbracket=false)
-        #|        RBracket => Json::array(vec)
-        #|        _ => abort(\"unreachable\")
-        #|      }
-        #|    }
-        #|  } }
+      "parse_array": build(
+        (
+          #|fn ParseContext::parse_array(ctx : ParseContext) -> JsonValue raise ParseError { let vec = []
+          #|  loop ctx.lex_value(allow_rbracket=true) {
+          #|    RBracket => Json::array(vec)
+          #|    tok => {
+          #|      vec.push(ctx.parse_value2(tok))
+          #|      let tok2 = ctx.lex_after_array_value()
+          #|      match tok2 {
+          #|        Comma => continue ctx.lex_value(allow_rbracket=false)
+          #|        RBracket => Json::array(vec)
+          #|        _ => abort(\"unreachable\")
+          #|      }
+          #|    }
+          #|  } }
+        ),
       ),
-    ),
-    "offset_to_position": build(
-      (
-        #|fn offset_to_position(input : String, offset : Int) -> Position { let mut line = 1
-        #|  let mut column = 0
-        #|  for i in 0..<offset {
-        #|    if input.unsafe_charcode_at(i) == '\\n' {
-        #|      line += 1
-        #|      column = 0
-        #|    } else {
-        #|      column += 1
-        #|    }
-        #|  }
-        #|  return Position::{ line, column } }
+      "offset_to_position": build(
+        (
+          #|fn offset_to_position(input : String, offset : Int) -> Position { let mut line = 1
+          #|  let mut column = 0
+          #|  for i in 0..<offset {
+          #|    if input.unsafe_charcode_at(i) == '\\n' {
+          #|      line += 1
+          #|      column = 0
+          #|    } else {
+          #|      column += 1
+          #|    }
+          #|  }
+          #|  return Position::{ line, column } }
+        ),
       ),
-    ),
-    "make": build(
-      (
-        #|fn ParseContext::make(input : String) -> ParseContext { { offset: 0, input, end_offset: input.length() } }
+      "make": build(
+        (
+          #|fn ParseContext::make(input : String) -> ParseContext { { offset: 0, input, end_offset: input.length() } }
+        ),
       ),
-    ),
-    "of": build(
-      (
-        #|fn CharClass::of(array : Array[(Char, Char)]) -> CharClass { CharClass(array) }
+      "of": build(
+        (
+          #|fn CharClass::of(array : Array[(Char, Char)]) -> CharClass { CharClass(array) }
+        ),
       ),
-    ),
-    "contains": build(
-      (
-        #|fn contains(self : CharClass, c : Char) -> Bool { let CharClass(self) = self
-        #|  for left = 0, right = self.length(); left < right; {
-        #|    let middle = (left + right) / 2
-        #|    let (min, max) = self[middle]
-        #|    if c < min {
-        #|      continue left, middle
-        #|    } else if c > max {
-        #|      continue middle + 1, right
-        #|    } else {
-        #|      break true
-        #|    }
-        #|  } else {
-        #|    false
-        #|  } }
+      "contains": build(
+        (
+          #|fn contains(self : CharClass, c : Char) -> Bool { let CharClass(self) = self
+          #|  for left = 0, right = self.length(); left < right; {
+          #|    let middle = (left + right) / 2
+          #|    let (min, max) = self[middle]
+          #|    if c < min {
+          #|      continue left, middle
+          #|    } else if c > max {
+          #|      continue middle + 1, right
+          #|    } else {
+          #|      break true
+          #|    }
+          #|  } else {
+          #|    false
+          #|  } }
+        ),
       ),
-    ),
-  }
-})
+    }
+  },
+)
 
 ///|
-let list_module : RuntimeModule = RuntimeModule::new("moonbitlang/core/list", fn(
-  _env,
-  build,
-) {
-  {
-    "new": build(
-      (
-        #|pub fn[A] new() -> List[A] { Empty }
-      ),
-    ),
-    "empty": build(
-      (
-        #|pub fn[A] empty() -> List[A] { Empty }
-      ),
-    ),
-    "construct": build(
-      (
-        #|pub fn[A] construct(head : A, tail : List[A]) -> List[A] { More(head, tail~) }
-      ),
-    ),
-    "prepend": build(
-      (
-        #|pub fn[A] prepend(self : List[A], head : A) -> List[A] { More(head, tail=self) }
-      ),
-    ),
-    "add": build(
-      (
-        #|pub fn[A] add(self : List[A], head : A) -> List[A] { More(head, tail=self) }
-      ),
-    ),
-    "to_json": build(
-      (
-        #|pub fn[A : ToJson] to_json(self : List[A]) -> Json { ToJson::to_json(self) }
-      ),
-    ),
-    "from_array": build(
-      (
-        #|pub fn[A] from_array(arr : Array[A]) -> List[A] { for i = arr.length() - 1, list = Empty; i >= 0; {
-        #|    continue i - 1, More(arr[i], tail=list)
-        #|  } else {
-        #|    list
-        #|  } }
-      ),
-    ),
-    "length": build(
-      (
-        #|pub fn[A] length(self : List[A]) -> Int { loop (self, 0) {
-        #|    (Empty, len) => len
-        #|    (More(_, tail=rest), acc) => continue (rest, acc + 1)
-        #|  } }
-      ),
-    ),
-    "each": build(
-      (
-        #|pub fn[A] each(self : List[A], f : (A) -> Unit raise?) -> Unit raise? { loop self {
-        #|    Empty => ()
-        #|    More(head, tail~) => {
-        #|      f(head)
-        #|      continue tail
-        #|    }
-        #|  } }
-      ),
-    ),
-    "eachi": build(
-      (
-        #|pub fn[A] eachi(self : List[A], f : (Int, A) -> Unit raise?) -> Unit raise? { loop (self, 0) {
-        #|    (Empty, _) => ()
-        #|    (More(x, tail=xs), i) => {
-        #|      f(i, x)
-        #|      continue (xs, i + 1)
-        #|    }
-        #|  } }
-      ),
-    ),
-    "map": build(
-      (
-        #|pub fn[A, B] map(self : List[A], f : (A) -> B raise?) -> List[B] raise? { match self {
-        #|    Empty => Empty
-        #|    More(hd, tail~) => {
-        #|      let dest = More(f(hd), tail=Empty)
-        #|      loop (dest, tail) {
-        #|        (_, Empty) => ()
-        #|        (More(_) as dest, More(hd, tail~)) => {
-        #|          dest.tail = More(f(hd), tail=Empty)
-        #|          continue (dest.tail, tail)
-        #|        }
-        #|        // unreachable
-        #|        (Empty, _) => panic()
-        #|      }
-        #|      dest
-        #|    }
-        #|  } }
-      ),
-    ),
-    "mapi": build(
-      (
-        #|pub fn[A, B] mapi(self : List[A], f : (Int, A) -> B raise?) -> List[B] raise? { match self {
-        #|    Empty => Empty
-        #|    More(hd, tail~) => {
-        #|      let dest = More(f(0, hd), tail=Empty)
-        #|      loop (1, dest, tail) {
-        #|        (_, _, Empty) => ()
-        #|        (i, More(_) as dest, More(hd, tail~)) => {
-        #|          dest.tail = More(f(i, hd), tail=Empty)
-        #|          continue (i + 1, dest.tail, tail)
-        #|        }
-        #|        // unreachable
-        #|        (_, Empty, _) => panic()
-        #|      }
-        #|      dest
-        #|    }
-        #|  } }
-      ),
-    ),
-    "rev_map": build(
-      (
-        #|pub fn[A, B] rev_map(self : List[A], f : (A) -> B raise?) -> List[B] raise? { loop (Empty, self) {
-        #|    (acc, Empty) => acc
-        #|    (acc, More(x, tail=xs)) => continue (More(f(x), tail=acc), xs)
-        #|  } }
-      ),
-    ),
-    "to_array": build(
-      (
-        #|pub fn[A] to_array(self : List[A]) -> Array[A] { match self {
-        #|    Empty => []
-        #|    More(x, tail=xs) => {
-        #|      let arr = [x]
-        #|      loop xs {
-        #|        Empty => ()
-        #|        More(x, tail=xs) => {
-        #|          arr.push(x)
-        #|          continue xs
-        #|        }
-        #|      }
-        #|      arr
-        #|    }
-        #|  } }
-      ),
-    ),
-    "filter": build(
-      (
-        #|pub fn[A] filter(self : List[A], f : (A) -> Bool raise?) -> List[A] raise? { loop self {
-        #|    Empty => Empty
-        #|    More(head, tail~) =>
-        #|      if !f(head) {
-        #|        continue tail
-        #|      } else {
-        #|        let dest = More(head, tail=Empty)
-        #|        loop (dest, tail) {
-        #|          (_, Empty) => ()
-        #|          (More(_) as dest, More(hd, tail~)) =>
-        #|            if f(hd) {
-        #|              dest.tail = More(hd, tail=Empty)
-        #|              continue (dest.tail, tail)
-        #|            } else {
-        #|              continue (dest, tail)
-        #|            }
-        #|          (Empty, _) =>
-        #|            // unreachable
-        #|            panic()
-        #|        }
-        #|        dest
-        #|      }
-        #|  } }
-      ),
-    ),
-    "all": build(
-      (
-        #|pub fn[A] all(self : List[A], f : (A) -> Bool raise?) -> Bool raise? { loop self {
-        #|    Empty => true
-        #|    More(head, tail~) => if f(head) { continue tail } else { false }
-        #|  } }
-      ),
-    ),
-    "any": build(
-      (
-        #|pub fn[A] any(self : List[A], f : (A) -> Bool raise?) -> Bool raise? { loop self {
-        #|    Empty => false
-        #|    More(head, tail~) => if f(head) { true } else { continue tail }
-        #|  } }
-      ),
-    ),
-    "unsafe_head": build(
-      (
-        #|pub fn[A] unsafe_head(self : List[A]) -> A { match self {
-        #|    Empty => abort(\"head of empty list\")
-        #|    More(head, tail=_) => head
-        #|  } }
-      ),
-    ),
-    "unsafe_tail": build(
-      (
-        #|pub fn[A] unsafe_tail(self : List[A]) -> List[A] { match self {
-        #|    Empty => abort(\"tail of empty list\")
-        #|    More(_, tail~) => tail
-        #|  } }
-      ),
-    ),
-    "head": build(
-      (
-        #|pub fn[A] head(self : List[A]) -> A? { match self {
-        #|    Empty => None
-        #|    More(head, tail=_) => Some(head)
-        #|  } }
-      ),
-    ),
-    "unsafe_last": build(
-      (
-        #|pub fn[A] unsafe_last(self : List[A]) -> A { loop self {
-        #|    Empty => abort(\"last of empty list\")
-        #|    More(head, tail=Empty) => head
-        #|    More(_, tail~) => continue tail
-        #|  } }
-      ),
-    ),
-    "last": build(
-      (
-        #|pub fn[A] last(self : List[A]) -> A? { loop self {
-        #|    Empty => None
-        #|    More(head, tail=Empty) => Some(head)
-        #|    More(_, tail~) => continue tail
-        #|  } }
-      ),
-    ),
-    "concat": build(
-      (
-        #|pub fn[A] concat(self : List[A], other : List[A]) -> List[A] { match self {
-        #|    Empty => other
-        #|    More(hd, tail=Empty) => More(hd, tail=other)
-        #|    More(hd, tail~) => {
-        #|      let dest = More(hd, tail=Empty)
-        #|      loop (dest, tail) {
-        #|        (More(_) as dest, Empty) => dest.tail = other
-        #|        (More(_) as dest, More(head, tail~)) => {
-        #|          dest.tail = More(head, tail=Empty)
-        #|          continue (dest.tail, tail)
-        #|        }
-        #|        // unreachable
-        #|        (Empty, _) => panic()
-        #|      }
-        #|      dest
-        #|    }
-        #|  } }
-      ),
-    ),
-    "rev_concat": build(
-      (
-        #|pub fn[A] rev_concat(self : List[A], other : List[A]) -> List[A] { loop (self, other) {
-        #|    (Empty, other) => other
-        #|    (More(head, tail~), other) => continue (tail, More(head, tail=other))
-        #|  } }
-      ),
-    ),
-    "rev": build(
-      (
-        #|pub fn[A] rev(self : List[A]) -> List[A] { self.rev_concat(Empty) }
-      ),
-    ),
-    "zip": build(
-      (
-        #|pub fn[A, B] List::zip(self : List[A], other : List[B]) -> List[(A, B)] { let res = loop (self, other, Empty) {
-        #|    (Empty, _, acc) => break acc
-        #|    (_, Empty, acc) => break acc
-        #|    (More(x, tail=xs), More(y, tail=ys), acc) =>
-        #|      continue (xs, ys, More((x, y), tail=acc))
-        #|  }
-        #|  res.reverse_inplace() }
-      ),
-    ),
-    "filter_map": build(
-      (
-        #|pub fn[A, B] filter_map(self : List[A], f : (A) -> B? raise?) -> List[B] raise? { loop self {
-        #|    Empty => Empty
-        #|    More(hd, tail~) =>
-        #|      match f(hd) {
-        #|        None => continue tail
-        #|        Some(head) => {
-        #|          let dest = More(head, tail=Empty)
-        #|          loop (dest, tail) {
-        #|            (_, Empty) => ()
-        #|            (More(_) as dest, More(hd, tail~)) =>
-        #|              match f(hd) {
-        #|                None => continue (dest, tail)
-        #|                Some(head) => {
-        #|                  dest.tail = More(head, tail=Empty)
-        #|                  continue (dest.tail, tail)
-        #|                }
-        #|              }
-        #|            (Empty, _) => panic()
-        #|          }
-        #|          dest
-        #|        }
-        #|      }
-        #|  } }
-      ),
-    ),
-    "unsafe_nth": build(
-      (
-        #|pub fn[A] unsafe_nth(self : List[A], n : Int) -> A { loop (self, n) {
-        #|    (Empty, _) => abort(\"nth: index out of bounds\")
-        #|    (More(head, tail=_), 0) => head
-        #|    (More(_, tail~), n) => continue (tail, n - 1)
-        #|  } }
-      ),
-    ),
-    "nth": build(
-      (
-        #|pub fn[A] nth(self : List[A], n : Int) -> A? { loop (self, n) {
-        #|    (Empty, _) => None
-        #|    (More(head, tail=_), 0) => Some(head)
-        #|    (More(_, tail~), n) => continue (tail, n - 1)
-        #|  } }
-      ),
-    ),
-    "repeat": build(
-      (
-        #|pub fn[A] repeat(n : Int, x : A) -> List[A] { loop (Empty, n) {
-        #|    (acc, n) => if n <= 0 { acc } else { continue (More(x, tail=acc), n - 1) }
-        #|  } }
-      ),
-    ),
-    "intersperse": build(
-      (
-        #|pub fn[A] intersperse(self : List[A], separator : A) -> List[A] { match self {
-        #|    Empty => Empty
-        #|    More(head, tail=Empty) => More(head, tail=Empty)
-        #|    More(head, tail~) => {
-        #|      let dest = More(head, tail=Empty)
-        #|      loop (dest, tail) {
-        #|        (_, Empty) => ()
-        #|        (More(_) as dest, More(hd, tail=tl)) => {
-        #|          let new_tail = More(hd, tail=Empty)
-        #|          dest.tail = More(separator, tail=new_tail)
-        #|          continue (new_tail, tl)
-        #|        }
-        #|        // unreachable
-        #|        (Empty, _) => panic()
-        #|      }
-        #|      dest
-        #|    }
-        #|  } }
-      ),
-    ),
-    "is_empty": build(
-      (
-        #|pub fn[A] is_empty(self : List[A]) -> Bool { self is Empty }
-      ),
-    ),
-    "unzip": build(
-      (
-        #|pub fn[A, B] unzip(self : List[(A, B)]) -> (List[A], List[B]) { match self {
-        #|    Empty => (Empty, Empty)
-        #|    More((x, y), tail~) => {
-        #|      let xs = More(x, tail=Empty)
-        #|      let ys = More(y, tail=Empty)
-        #|      loop (tail, xs, ys) {
-        #|        (Empty, _, _) => ()
-        #|        (More((x, y), tail~), More(_) as xptr, More(_) as yptr) => {
-        #|          xptr.tail = More(x, tail=Empty)
-        #|          yptr.tail = More(y, tail=Empty)
-        #|          continue (tail, xptr.tail, yptr.tail)
-        #|        }
-        #|        (_, _, _) => abort(\"unreachable\")
-        #|      }
-        #|      (xs, ys)
-        #|    }
-        #|  } }
-      ),
-    ),
-    "flatten": build(
-      (
-        #|pub fn[A] flatten(self : List[List[A]]) -> List[A] { loop self {
-        #|    Empty => Empty
-        #|    More(head, tail~) =>
-        #|      match head {
-        #|        // continue until we have at least one element
-        #|        Empty => continue tail
-        #|        More(hd, tail=tl) => {
-        #|          let dest = More(hd, tail=Empty)
-        #|          // copy all the elements of `head` first
-        #|          let dest1 = loop (dest, tl) {
-        #|            (dest, Empty) => dest
-        #|            (More(_) as dest, More(hd, tail~)) => {
-        #|              dest.tail = More(hd, tail=Empty)
-        #|              continue (dest.tail, tail)
-        #|            }
-        #|            (Empty, _) => panic()
-        #|          }
-        #|          // continue looping on the `tail` of `self`
-        #|          loop_over_tail~: loop (dest1, tail) {
-        #|            (_, Empty) => ()
-        #|            (More(_) as dest, More(t_hd, tail=Empty)) => dest.tail = t_hd
-        #|            (dest, More(t_hd, tail=t_tl)) =>
-        #|              loop (dest, t_hd) {
-        #|                (dest, Empty) => continue loop_over_tail~ (dest, t_tl)
-        #|                (More(_) as dest, More(hd, tail~)) => {
-        #|                  dest.tail = More(hd, tail=Empty)
-        #|                  continue (dest.tail, tail)
-        #|                }
-        #|                (Empty, _) => panic()
-        #|              }
-        #|          }
-        #|          dest
-        #|        }
-        #|      }
-        #|  } }
-      ),
-    ),
-    "unsafe_maximum": build(
-      (
-        #|pub fn[A : Compare] unsafe_maximum(self : List[A]) -> A { match self {
-        #|    Empty => abort(\"maximum: empty list\")
-        #|    More(head, tail~) =>
-        #|      loop (tail, head) {
-        #|        (Empty, curr_max) => curr_max
-        #|        (More(item, tail~), curr_max) =>
-        #|          continue (tail, if item > curr_max { item } else { curr_max })
-        #|      }
-        #|  } }
-      ),
-    ),
-    "maximum": build(
-      (
-        #|pub fn[A : Compare] maximum(self : List[A]) -> A? { match self {
-        #|    Empty => None
-        #|    More(head, tail~) =>
-        #|      loop (tail, head) {
-        #|        (Empty, curr_max) => Some(curr_max)
-        #|        (More(item, tail~), curr_max) =>
-        #|          continue (tail, if item > curr_max { item } else { curr_max })
-        #|      }
-        #|  } }
-      ),
-    ),
-    "unsafe_minimum": build(
-      (
-        #|pub fn[A : Compare] unsafe_minimum(self : List[A]) -> A { match self {
-        #|    Empty => abort(\"minimum: empty list\")
-        #|    More(head, tail~) =>
-        #|      loop (tail, head) {
-        #|        (Empty, curr_min) => curr_min
-        #|        (More(item, tail~), curr_min) =>
-        #|          continue (tail, if item < curr_min { item } else { curr_min })
-        #|      }
-        #|  } }
-      ),
-    ),
-    "minimum": build(
-      (
-        #|pub fn[A : Compare] minimum(self : List[A]) -> A? { match self {
-        #|    Empty => None
-        #|    More(head, tail~) =>
-        #|      loop (tail, head) {
-        #|        (Empty, curr_min) => Some(curr_min)
-        #|        (More(item, tail~), curr_min) =>
-        #|          continue (tail, if item < curr_min { item } else { curr_min })
-        #|      }
-        #|  } }
-      ),
-    ),
-    "sort": build(
-      (
-        #|pub fn[A : Compare] sort(self : List[A]) -> List[A] { let arr = self.to_array()
-        #|  arr.sort()
-        #|  from_array(arr) }
-      ),
-    ),
-    "contains": build(
-      (
-        #|pub fn[A : Eq] contains(self : List[A], value : A) -> Bool { loop self {
-        #|    Empty => false
-        #|    More(x, tail=xs) => if x == value { true } else { continue xs }
-        #|  } }
-      ),
-    ),
-    "unfold": build(
-      (
-        #|pub fn[A, S] unfold(f : (S) -> (A, S)? raise?, init~ : S) -> List[A] raise? { match f(init) {
-        #|    None => Empty
-        #|    Some((element, new_state)) => {
-        #|      let dest = More(element, tail=Empty)
-        #|      loop (dest, f(new_state)) {
-        #|        (_, None) => ()
-        #|        (More(_) as dest, Some((element, new_state))) => {
-        #|          dest.tail = More(element, tail=Empty)
-        #|          continue (dest.tail, f(new_state))
-        #|        }
-        #|        (Empty, _) => panic()
-        #|      }
-        #|      dest
-        #|    }
-        #|  } }
-      ),
-    ),
-    "rev_unfold": build(
-      (
-        #|pub fn[A, S] rev_unfold(f : (S) -> (A, S)? raise?, init~ : S) -> List[A] raise? { loop (f(init), Empty) {
-        #|    (None, acc) => acc
-        #|    (Some((x, s)), acc) => continue (f(s), More(x, tail=acc))
-        #|  } }
-      ),
-    ),
-    "take": build(
-      (
-        #|pub fn[A] take(self : List[A], n : Int) -> List[A] { if n <= 0 {
-        #|    Empty
-        #|  } else {
-        #|    match self {
-        #|      Empty => Empty
-        #|      More(head, tail~) => {
-        #|        let dest = More(head, tail=Empty)
-        #|        loop (dest, tail, n - 1) {
-        #|          (_, Empty, _) => ()
-        #|          (_, _, 0) => ()
-        #|          (More(_) as dest, More(x, tail=xs), n) => {
-        #|            dest.tail = More(x, tail=Empty)
-        #|            continue (dest.tail, xs, n - 1)
-        #|          }
-        #|          (Empty, _, _) => panic()
-        #|        }
-        #|        dest
-        #|      }
-        #|    }
-        #|  } }
-      ),
-    ),
-    "drop": build(
-      (
-        #|pub fn[A] drop(self : List[A], n : Int) -> List[A] { if n <= 0 {
-        #|    self
-        #|  } else {
-        #|    loop (n, self) {
-        #|      (_, Empty) => Empty
-        #|      (1, More(_, tail=xs)) => xs
-        #|      (n, More(_, tail=xs)) => continue (n - 1, xs)
-        #|    }
-        #|  } }
-      ),
-    ),
-    "take_while": build(
-      (
-        #|pub fn[A] take_while(self : List[A], p : (A) -> Bool raise?) -> List[A] raise? { match self {
-        #|    Empty => Empty
-        #|    More(head, tail~) =>
-        #|      if p(head) {
-        #|        let dest = More(head, tail=Empty)
-        #|        loop (dest, tail) {
-        #|          (_, Empty) => ()
-        #|          (More(_) as dest, More(x, tail=xs)) if p(x) => {
-        #|            dest.tail = More(x, tail=Empty)
-        #|            continue (dest.tail, xs)
-        #|          }
-        #|          (More(_), _) => ()
-        #|          (Empty, _) => panic()
-        #|        }
-        #|        dest
-        #|      } else {
-        #|        Empty
-        #|      }
-        #|  } }
-      ),
-    ),
-    "drop_while": build(
-      (
-        #|pub fn[A] drop_while(self : List[A], p : (A) -> Bool raise?) -> List[A] raise? { loop self {
-        #|    Empty => Empty
-        #|    More(x, tail=xs) => if p(x) { continue xs } else { More(x, tail=xs) }
-        #|  } }
-      ),
-    ),
-    "lookup": build(
-      (
-        #|pub fn[A : Eq, B] lookup(self : List[(A, B)], v : A) -> B? { loop self {
-        #|    Empty => None
-        #|    More((x, y), tail=xs) => if x == v { Some(y) } else { continue xs }
-        #|  } }
-      ),
-    ),
-    "find": build(
-      (
-        #|pub fn[A] find(self : List[A], f : (A) -> Bool raise?) -> A? raise? { loop self {
-        #|    Empty => None
-        #|    More(element, tail=list) =>
-        #|      if f(element) {
-        #|        Some(element)
-        #|      } else {
-        #|        continue list
-        #|      }
-        #|  } }
-      ),
-    ),
-    "findi": build(
-      (
-        #|pub fn[A] findi(self : List[A], f : (A, Int) -> Bool raise?) -> A? raise? { loop (self, 0) {
-        #|    (list, index) =>
-        #|      match list {
-        #|        Empty => None
-        #|        More(element, tail=list) =>
-        #|          if f(element, index) {
-        #|            Some(element)
-        #|          } else {
-        #|            continue (list, index + 1)
-        #|          }
-        #|      }
-        #|  } }
-      ),
-    ),
-    "remove_at": build(
-      (
-        #|pub fn[A] remove_at(self : List[A], index : Int) -> List[A] { match (index, self) {
-        #|    (_, Empty) => Empty
-        #|    (_..<0, _) => self
-        #|    (0, More(_, tail~)) => tail
-        #|    (n, More(head, tail~)) => {
-        #|      let dest = More(head, tail=Empty)
-        #|      loop (dest, tail, n - 1) {
-        #|        (_, Empty, _) => ()
-        #|        (More(_) as dest, More(_, tail~), 0) => dest.tail = tail
-        #|        (More(_) as dest, More(x, tail=xs), n) => {
-        #|          dest.tail = More(x, tail=Empty)
-        #|          continue (dest.tail, xs, n - 1)
-        #|        }
-        #|        (Empty, _, _) => panic()
-        #|      }
-        #|      dest
-        #|    }
-        #|  } }
-      ),
-    ),
-    "remove": build(
-      (
-        #|pub fn[A : Eq] remove(self : List[A], elem : A) -> List[A] { match self {
-        #|    Empty => Empty
-        #|    More(head, tail~) if head == elem => tail
-        #|    More(head, tail~) => {
-        #|      let dest = More(head, tail~)
-        #|      loop (dest, tail) {
-        #|        (_, Empty) => ()
-        #|        (More(_) as dest, More(x, tail=xs)) =>
-        #|          if x == elem {
-        #|            dest.tail = xs
-        #|          } else {
-        #|            dest.tail = More(x, tail=Empty)
-        #|            continue (dest.tail, xs)
-        #|          }
-        #|        (Empty, _) => panic()
-        #|      }
-        #|      dest
-        #|    }
-        #|  } }
-      ),
-    ),
-    "is_prefix": build(
-      (
-        #|pub fn[A : Eq] is_prefix(self : List[A], prefix : List[A]) -> Bool { loop (self, prefix) {
-        #|    (_, Empty) => true
-        #|    (Empty, More(_)) => false
-        #|    (More(h1, tail=t1), More(h2, tail=t2)) =>
-        #|      if h1 == h2 {
-        #|        continue (t1, t2)
-        #|      } else {
-        #|        false
-        #|      }
-        #|  } }
-      ),
-    ),
-    "is_suffix": build(
-      (
-        #|pub fn[A : Eq] is_suffix(self : List[A], suffix : List[A]) -> Bool { self.rev().is_prefix(suffix.rev()) }
-      ),
-    ),
-    "intercalate": build(
-      (
-        #|pub fn[A] intercalate(self : List[List[A]], sep : List[A]) -> List[A] { self.intersperse(sep).flatten() }
-      ),
-    ),
-    "default": build(
-      (
-        #|pub fn[X] default() -> List[X] { Empty }
-      ),
-    ),
-    "iter": build(
-      (
-        #|pub fn[A] iter(self : List[A]) -> Iter[A] { Iter::new(yield_ => loop self {
-        #|    Empty => IterContinue
-        #|    More(head, tail~) => {
-        #|      if yield_(head) == IterEnd {
-        #|        break IterEnd
-        #|      }
-        #|      continue tail
-        #|    }
-        #|  }) }
-      ),
-    ),
-    "iter2": build(
-      (
-        #|pub fn[A] iter2(self : List[A]) -> Iter2[Int, A] { Iter2::new(yield_ => loop (self, 0) {
-        #|    (Empty, _) => IterEnd
-        #|    (More(head, tail~), i) => {
-        #|      if yield_(i, head) == IterEnd {
-        #|        break IterEnd
-        #|      }
-        #|      continue (tail, i + 1)
-        #|    }
-        #|  }) }
-      ),
-    ),
-    "from_iter": build(
-      (
-        #|pub fn[A] from_iter(iter : Iter[A]) -> List[A] { let mut res = Empty
-        #|  let mut ptr = Empty
-        #|  for x in iter {
-        #|    match (res, ptr) {
-        #|      (Empty, _) => {
-        #|        res = More(x, tail=Empty)
-        #|        ptr = res
-        #|      }
-        #|      (More(_), More(_) as ptr_) => {
-        #|        ptr_.tail = More(x, tail=Empty)
-        #|        ptr = ptr_.tail
-        #|      }
-        #|      (_, _) => panic()
-        #|    }
-        #|  }
-        #|  res }
-      ),
-    ),
-    "from_iter_rev": build(
-      (
-        #|pub fn[A] from_iter_rev(iter : Iter[A]) -> List[A] { iter.fold(init=Empty, (acc, e) => More(e, tail=acc)) }
-      ),
-    ),
-    "of": build(
-      (
-        #|pub fn[A] of(arr : FixedArray[A]) -> List[A] { for i = arr.length() - 1, list = Empty; i >= 0; {
-        #|    continue i - 1, More(arr[i], tail=list)
-        #|  } else {
-        #|    list
-        #|  } }
-      ),
-    ),
-    "singleton": build(
-      (
-        #|pub fn[A] singleton(x : A) -> List[A] { More(x, tail=Empty) }
-      ),
-    ),
-    "reverse_inplace": build(
-      (
-        #|fn[A] reverse_inplace(self : List[A]) -> List[A] { match self {
-        #|    Empty | More(_, tail=Empty) => self
-        #|    More(head, tail~) =>
-        #|      loop (More(head, tail=Empty), tail) {
-        #|        (result, Empty) => result
-        #|        (result, More(_, tail=xs) as new_result) => {
-        #|          new_result.tail = result
-        #|          continue (new_result, xs)
-        #|        }
-        #|      }
-        #|  } }
-      ),
-    ),
-    "rev_fold": build(
-      (
-        #|pub fn[A, B] rev_fold(self : List[A], init~ : B, f : (B, A) -> B) -> B { let xs = self.to_array()
-        #|  let mut acc = init
-        #|  for x in xs.rev_iter() {
-        #|    acc = f(acc, x)
-        #|  }
-        #|  acc }
-      ),
-    ),
-    "rev_foldi": build(
-      (
-        #|pub fn[A, B] rev_foldi(self : List[A], init~ : B, f : (Int, B, A) -> B) -> B { self.rev().foldi(init~, (i, b, a) => f(i, b, a)) }
-      ),
-    ),
-    "tail": build(
-      (
-        #|pub fn[A] tail(self : List[A]) -> List[A] { match self {
-        #|    Empty => Empty
-        #|    More(_, tail~) => tail
-        #|  } }
-      ),
-    ),
-  }
-})
+let moonbitlang_core_list_module : RuntimeModule = RuntimeModule::new(
+  "moonbitlang/core/list",
+  deps={
+    "moonbitlang/core/builtin": moonbitlang_core_builtin_module,
+    "moonbitlang/core/array": moonbitlang_core_array_module,
+    "moonbitlang/core/quickcheck": moonbitlang_core_quickcheck_module,
+    "moonbitlang/core/json": moonbitlang_core_json_module,
+  },
+  fn(_env, build) {
+    {
+      "new": build(
+        (
+          #|pub fn[A] new() -> List[A] { Empty }
+        ),
+      ),
+      "empty": build(
+        (
+          #|pub fn[A] empty() -> List[A] { Empty }
+        ),
+      ),
+      "construct": build(
+        (
+          #|pub fn[A] construct(head : A, tail : List[A]) -> List[A] { More(head, tail~) }
+        ),
+      ),
+      "prepend": build(
+        (
+          #|pub fn[A] prepend(self : List[A], head : A) -> List[A] { More(head, tail=self) }
+        ),
+      ),
+      "add": build(
+        (
+          #|pub fn[A] add(self : List[A], head : A) -> List[A] { More(head, tail=self) }
+        ),
+      ),
+      "to_json": build(
+        (
+          #|pub fn[A : ToJson] to_json(self : List[A]) -> Json { ToJson::to_json(self) }
+        ),
+      ),
+      "from_array": build(
+        (
+          #|pub fn[A] from_array(arr : Array[A]) -> List[A] { for i = arr.length() - 1, list = Empty; i >= 0; {
+          #|    continue i - 1, More(arr[i], tail=list)
+          #|  } else {
+          #|    list
+          #|  } }
+        ),
+      ),
+      "length": build(
+        (
+          #|pub fn[A] length(self : List[A]) -> Int { loop (self, 0) {
+          #|    (Empty, len) => len
+          #|    (More(_, tail=rest), acc) => continue (rest, acc + 1)
+          #|  } }
+        ),
+      ),
+      "each": build(
+        (
+          #|pub fn[A] each(self : List[A], f : (A) -> Unit raise?) -> Unit raise? { loop self {
+          #|    Empty => ()
+          #|    More(head, tail~) => {
+          #|      f(head)
+          #|      continue tail
+          #|    }
+          #|  } }
+        ),
+      ),
+      "eachi": build(
+        (
+          #|pub fn[A] eachi(self : List[A], f : (Int, A) -> Unit raise?) -> Unit raise? { loop (self, 0) {
+          #|    (Empty, _) => ()
+          #|    (More(x, tail=xs), i) => {
+          #|      f(i, x)
+          #|      continue (xs, i + 1)
+          #|    }
+          #|  } }
+        ),
+      ),
+      "map": build(
+        (
+          #|pub fn[A, B] map(self : List[A], f : (A) -> B raise?) -> List[B] raise? { match self {
+          #|    Empty => Empty
+          #|    More(hd, tail~) => {
+          #|      let dest = More(f(hd), tail=Empty)
+          #|      loop (dest, tail) {
+          #|        (_, Empty) => ()
+          #|        (More(_) as dest, More(hd, tail~)) => {
+          #|          dest.tail = More(f(hd), tail=Empty)
+          #|          continue (dest.tail, tail)
+          #|        }
+          #|        // unreachable
+          #|        (Empty, _) => panic()
+          #|      }
+          #|      dest
+          #|    }
+          #|  } }
+        ),
+      ),
+      "mapi": build(
+        (
+          #|pub fn[A, B] mapi(self : List[A], f : (Int, A) -> B raise?) -> List[B] raise? { match self {
+          #|    Empty => Empty
+          #|    More(hd, tail~) => {
+          #|      let dest = More(f(0, hd), tail=Empty)
+          #|      loop (1, dest, tail) {
+          #|        (_, _, Empty) => ()
+          #|        (i, More(_) as dest, More(hd, tail~)) => {
+          #|          dest.tail = More(f(i, hd), tail=Empty)
+          #|          continue (i + 1, dest.tail, tail)
+          #|        }
+          #|        // unreachable
+          #|        (_, Empty, _) => panic()
+          #|      }
+          #|      dest
+          #|    }
+          #|  } }
+        ),
+      ),
+      "rev_map": build(
+        (
+          #|pub fn[A, B] rev_map(self : List[A], f : (A) -> B raise?) -> List[B] raise? { loop (Empty, self) {
+          #|    (acc, Empty) => acc
+          #|    (acc, More(x, tail=xs)) => continue (More(f(x), tail=acc), xs)
+          #|  } }
+        ),
+      ),
+      "to_array": build(
+        (
+          #|pub fn[A] to_array(self : List[A]) -> Array[A] { match self {
+          #|    Empty => []
+          #|    More(x, tail=xs) => {
+          #|      let arr = [x]
+          #|      loop xs {
+          #|        Empty => ()
+          #|        More(x, tail=xs) => {
+          #|          arr.push(x)
+          #|          continue xs
+          #|        }
+          #|      }
+          #|      arr
+          #|    }
+          #|  } }
+        ),
+      ),
+      "filter": build(
+        (
+          #|pub fn[A] filter(self : List[A], f : (A) -> Bool raise?) -> List[A] raise? { loop self {
+          #|    Empty => Empty
+          #|    More(head, tail~) =>
+          #|      if !f(head) {
+          #|        continue tail
+          #|      } else {
+          #|        let dest = More(head, tail=Empty)
+          #|        loop (dest, tail) {
+          #|          (_, Empty) => ()
+          #|          (More(_) as dest, More(hd, tail~)) =>
+          #|            if f(hd) {
+          #|              dest.tail = More(hd, tail=Empty)
+          #|              continue (dest.tail, tail)
+          #|            } else {
+          #|              continue (dest, tail)
+          #|            }
+          #|          (Empty, _) =>
+          #|            // unreachable
+          #|            panic()
+          #|        }
+          #|        dest
+          #|      }
+          #|  } }
+        ),
+      ),
+      "all": build(
+        (
+          #|pub fn[A] all(self : List[A], f : (A) -> Bool raise?) -> Bool raise? { loop self {
+          #|    Empty => true
+          #|    More(head, tail~) => if f(head) { continue tail } else { false }
+          #|  } }
+        ),
+      ),
+      "any": build(
+        (
+          #|pub fn[A] any(self : List[A], f : (A) -> Bool raise?) -> Bool raise? { loop self {
+          #|    Empty => false
+          #|    More(head, tail~) => if f(head) { true } else { continue tail }
+          #|  } }
+        ),
+      ),
+      "unsafe_head": build(
+        (
+          #|pub fn[A] unsafe_head(self : List[A]) -> A { match self {
+          #|    Empty => abort(\"head of empty list\")
+          #|    More(head, tail=_) => head
+          #|  } }
+        ),
+      ),
+      "unsafe_tail": build(
+        (
+          #|pub fn[A] unsafe_tail(self : List[A]) -> List[A] { match self {
+          #|    Empty => abort(\"tail of empty list\")
+          #|    More(_, tail~) => tail
+          #|  } }
+        ),
+      ),
+      "head": build(
+        (
+          #|pub fn[A] head(self : List[A]) -> A? { match self {
+          #|    Empty => None
+          #|    More(head, tail=_) => Some(head)
+          #|  } }
+        ),
+      ),
+      "unsafe_last": build(
+        (
+          #|pub fn[A] unsafe_last(self : List[A]) -> A { loop self {
+          #|    Empty => abort(\"last of empty list\")
+          #|    More(head, tail=Empty) => head
+          #|    More(_, tail~) => continue tail
+          #|  } }
+        ),
+      ),
+      "last": build(
+        (
+          #|pub fn[A] last(self : List[A]) -> A? { loop self {
+          #|    Empty => None
+          #|    More(head, tail=Empty) => Some(head)
+          #|    More(_, tail~) => continue tail
+          #|  } }
+        ),
+      ),
+      "concat": build(
+        (
+          #|pub fn[A] concat(self : List[A], other : List[A]) -> List[A] { match self {
+          #|    Empty => other
+          #|    More(hd, tail=Empty) => More(hd, tail=other)
+          #|    More(hd, tail~) => {
+          #|      let dest = More(hd, tail=Empty)
+          #|      loop (dest, tail) {
+          #|        (More(_) as dest, Empty) => dest.tail = other
+          #|        (More(_) as dest, More(head, tail~)) => {
+          #|          dest.tail = More(head, tail=Empty)
+          #|          continue (dest.tail, tail)
+          #|        }
+          #|        // unreachable
+          #|        (Empty, _) => panic()
+          #|      }
+          #|      dest
+          #|    }
+          #|  } }
+        ),
+      ),
+      "rev_concat": build(
+        (
+          #|pub fn[A] rev_concat(self : List[A], other : List[A]) -> List[A] { loop (self, other) {
+          #|    (Empty, other) => other
+          #|    (More(head, tail~), other) => continue (tail, More(head, tail=other))
+          #|  } }
+        ),
+      ),
+      "rev": build(
+        (
+          #|pub fn[A] rev(self : List[A]) -> List[A] { self.rev_concat(Empty) }
+        ),
+      ),
+      "zip": build(
+        (
+          #|pub fn[A, B] List::zip(self : List[A], other : List[B]) -> List[(A, B)] { let res = loop (self, other, Empty) {
+          #|    (Empty, _, acc) => break acc
+          #|    (_, Empty, acc) => break acc
+          #|    (More(x, tail=xs), More(y, tail=ys), acc) =>
+          #|      continue (xs, ys, More((x, y), tail=acc))
+          #|  }
+          #|  res.reverse_inplace() }
+        ),
+      ),
+      "filter_map": build(
+        (
+          #|pub fn[A, B] filter_map(self : List[A], f : (A) -> B? raise?) -> List[B] raise? { loop self {
+          #|    Empty => Empty
+          #|    More(hd, tail~) =>
+          #|      match f(hd) {
+          #|        None => continue tail
+          #|        Some(head) => {
+          #|          let dest = More(head, tail=Empty)
+          #|          loop (dest, tail) {
+          #|            (_, Empty) => ()
+          #|            (More(_) as dest, More(hd, tail~)) =>
+          #|              match f(hd) {
+          #|                None => continue (dest, tail)
+          #|                Some(head) => {
+          #|                  dest.tail = More(head, tail=Empty)
+          #|                  continue (dest.tail, tail)
+          #|                }
+          #|              }
+          #|            (Empty, _) => panic()
+          #|          }
+          #|          dest
+          #|        }
+          #|      }
+          #|  } }
+        ),
+      ),
+      "unsafe_nth": build(
+        (
+          #|pub fn[A] unsafe_nth(self : List[A], n : Int) -> A { loop (self, n) {
+          #|    (Empty, _) => abort(\"nth: index out of bounds\")
+          #|    (More(head, tail=_), 0) => head
+          #|    (More(_, tail~), n) => continue (tail, n - 1)
+          #|  } }
+        ),
+      ),
+      "nth": build(
+        (
+          #|pub fn[A] nth(self : List[A], n : Int) -> A? { loop (self, n) {
+          #|    (Empty, _) => None
+          #|    (More(head, tail=_), 0) => Some(head)
+          #|    (More(_, tail~), n) => continue (tail, n - 1)
+          #|  } }
+        ),
+      ),
+      "repeat": build(
+        (
+          #|pub fn[A] repeat(n : Int, x : A) -> List[A] { loop (Empty, n) {
+          #|    (acc, n) => if n <= 0 { acc } else { continue (More(x, tail=acc), n - 1) }
+          #|  } }
+        ),
+      ),
+      "intersperse": build(
+        (
+          #|pub fn[A] intersperse(self : List[A], separator : A) -> List[A] { match self {
+          #|    Empty => Empty
+          #|    More(head, tail=Empty) => More(head, tail=Empty)
+          #|    More(head, tail~) => {
+          #|      let dest = More(head, tail=Empty)
+          #|      loop (dest, tail) {
+          #|        (_, Empty) => ()
+          #|        (More(_) as dest, More(hd, tail=tl)) => {
+          #|          let new_tail = More(hd, tail=Empty)
+          #|          dest.tail = More(separator, tail=new_tail)
+          #|          continue (new_tail, tl)
+          #|        }
+          #|        // unreachable
+          #|        (Empty, _) => panic()
+          #|      }
+          #|      dest
+          #|    }
+          #|  } }
+        ),
+      ),
+      "is_empty": build(
+        (
+          #|pub fn[A] is_empty(self : List[A]) -> Bool { self is Empty }
+        ),
+      ),
+      "unzip": build(
+        (
+          #|pub fn[A, B] unzip(self : List[(A, B)]) -> (List[A], List[B]) { match self {
+          #|    Empty => (Empty, Empty)
+          #|    More((x, y), tail~) => {
+          #|      let xs = More(x, tail=Empty)
+          #|      let ys = More(y, tail=Empty)
+          #|      loop (tail, xs, ys) {
+          #|        (Empty, _, _) => ()
+          #|        (More((x, y), tail~), More(_) as xptr, More(_) as yptr) => {
+          #|          xptr.tail = More(x, tail=Empty)
+          #|          yptr.tail = More(y, tail=Empty)
+          #|          continue (tail, xptr.tail, yptr.tail)
+          #|        }
+          #|        (_, _, _) => abort(\"unreachable\")
+          #|      }
+          #|      (xs, ys)
+          #|    }
+          #|  } }
+        ),
+      ),
+      "flatten": build(
+        (
+          #|pub fn[A] flatten(self : List[List[A]]) -> List[A] { loop self {
+          #|    Empty => Empty
+          #|    More(head, tail~) =>
+          #|      match head {
+          #|        // continue until we have at least one element
+          #|        Empty => continue tail
+          #|        More(hd, tail=tl) => {
+          #|          let dest = More(hd, tail=Empty)
+          #|          // copy all the elements of `head` first
+          #|          let dest1 = loop (dest, tl) {
+          #|            (dest, Empty) => dest
+          #|            (More(_) as dest, More(hd, tail~)) => {
+          #|              dest.tail = More(hd, tail=Empty)
+          #|              continue (dest.tail, tail)
+          #|            }
+          #|            (Empty, _) => panic()
+          #|          }
+          #|          // continue looping on the `tail` of `self`
+          #|          loop_over_tail~: loop (dest1, tail) {
+          #|            (_, Empty) => ()
+          #|            (More(_) as dest, More(t_hd, tail=Empty)) => dest.tail = t_hd
+          #|            (dest, More(t_hd, tail=t_tl)) =>
+          #|              loop (dest, t_hd) {
+          #|                (dest, Empty) => continue loop_over_tail~ (dest, t_tl)
+          #|                (More(_) as dest, More(hd, tail~)) => {
+          #|                  dest.tail = More(hd, tail=Empty)
+          #|                  continue (dest.tail, tail)
+          #|                }
+          #|                (Empty, _) => panic()
+          #|              }
+          #|          }
+          #|          dest
+          #|        }
+          #|      }
+          #|  } }
+        ),
+      ),
+      "unsafe_maximum": build(
+        (
+          #|pub fn[A : Compare] unsafe_maximum(self : List[A]) -> A { match self {
+          #|    Empty => abort(\"maximum: empty list\")
+          #|    More(head, tail~) =>
+          #|      loop (tail, head) {
+          #|        (Empty, curr_max) => curr_max
+          #|        (More(item, tail~), curr_max) =>
+          #|          continue (tail, if item > curr_max { item } else { curr_max })
+          #|      }
+          #|  } }
+        ),
+      ),
+      "maximum": build(
+        (
+          #|pub fn[A : Compare] maximum(self : List[A]) -> A? { match self {
+          #|    Empty => None
+          #|    More(head, tail~) =>
+          #|      loop (tail, head) {
+          #|        (Empty, curr_max) => Some(curr_max)
+          #|        (More(item, tail~), curr_max) =>
+          #|          continue (tail, if item > curr_max { item } else { curr_max })
+          #|      }
+          #|  } }
+        ),
+      ),
+      "unsafe_minimum": build(
+        (
+          #|pub fn[A : Compare] unsafe_minimum(self : List[A]) -> A { match self {
+          #|    Empty => abort(\"minimum: empty list\")
+          #|    More(head, tail~) =>
+          #|      loop (tail, head) {
+          #|        (Empty, curr_min) => curr_min
+          #|        (More(item, tail~), curr_min) =>
+          #|          continue (tail, if item < curr_min { item } else { curr_min })
+          #|      }
+          #|  } }
+        ),
+      ),
+      "minimum": build(
+        (
+          #|pub fn[A : Compare] minimum(self : List[A]) -> A? { match self {
+          #|    Empty => None
+          #|    More(head, tail~) =>
+          #|      loop (tail, head) {
+          #|        (Empty, curr_min) => Some(curr_min)
+          #|        (More(item, tail~), curr_min) =>
+          #|          continue (tail, if item < curr_min { item } else { curr_min })
+          #|      }
+          #|  } }
+        ),
+      ),
+      "sort": build(
+        (
+          #|pub fn[A : Compare] sort(self : List[A]) -> List[A] { let arr = self.to_array()
+          #|  arr.sort()
+          #|  from_array(arr) }
+        ),
+      ),
+      "contains": build(
+        (
+          #|pub fn[A : Eq] contains(self : List[A], value : A) -> Bool { loop self {
+          #|    Empty => false
+          #|    More(x, tail=xs) => if x == value { true } else { continue xs }
+          #|  } }
+        ),
+      ),
+      "unfold": build(
+        (
+          #|pub fn[A, S] unfold(f : (S) -> (A, S)? raise?, init~ : S) -> List[A] raise? { match f(init) {
+          #|    None => Empty
+          #|    Some((element, new_state)) => {
+          #|      let dest = More(element, tail=Empty)
+          #|      loop (dest, f(new_state)) {
+          #|        (_, None) => ()
+          #|        (More(_) as dest, Some((element, new_state))) => {
+          #|          dest.tail = More(element, tail=Empty)
+          #|          continue (dest.tail, f(new_state))
+          #|        }
+          #|        (Empty, _) => panic()
+          #|      }
+          #|      dest
+          #|    }
+          #|  } }
+        ),
+      ),
+      "rev_unfold": build(
+        (
+          #|pub fn[A, S] rev_unfold(f : (S) -> (A, S)? raise?, init~ : S) -> List[A] raise? { loop (f(init), Empty) {
+          #|    (None, acc) => acc
+          #|    (Some((x, s)), acc) => continue (f(s), More(x, tail=acc))
+          #|  } }
+        ),
+      ),
+      "take": build(
+        (
+          #|pub fn[A] take(self : List[A], n : Int) -> List[A] { if n <= 0 {
+          #|    Empty
+          #|  } else {
+          #|    match self {
+          #|      Empty => Empty
+          #|      More(head, tail~) => {
+          #|        let dest = More(head, tail=Empty)
+          #|        loop (dest, tail, n - 1) {
+          #|          (_, Empty, _) => ()
+          #|          (_, _, 0) => ()
+          #|          (More(_) as dest, More(x, tail=xs), n) => {
+          #|            dest.tail = More(x, tail=Empty)
+          #|            continue (dest.tail, xs, n - 1)
+          #|          }
+          #|          (Empty, _, _) => panic()
+          #|        }
+          #|        dest
+          #|      }
+          #|    }
+          #|  } }
+        ),
+      ),
+      "drop": build(
+        (
+          #|pub fn[A] drop(self : List[A], n : Int) -> List[A] { if n <= 0 {
+          #|    self
+          #|  } else {
+          #|    loop (n, self) {
+          #|      (_, Empty) => Empty
+          #|      (1, More(_, tail=xs)) => xs
+          #|      (n, More(_, tail=xs)) => continue (n - 1, xs)
+          #|    }
+          #|  } }
+        ),
+      ),
+      "take_while": build(
+        (
+          #|pub fn[A] take_while(self : List[A], p : (A) -> Bool raise?) -> List[A] raise? { match self {
+          #|    Empty => Empty
+          #|    More(head, tail~) =>
+          #|      if p(head) {
+          #|        let dest = More(head, tail=Empty)
+          #|        loop (dest, tail) {
+          #|          (_, Empty) => ()
+          #|          (More(_) as dest, More(x, tail=xs)) if p(x) => {
+          #|            dest.tail = More(x, tail=Empty)
+          #|            continue (dest.tail, xs)
+          #|          }
+          #|          (More(_), _) => ()
+          #|          (Empty, _) => panic()
+          #|        }
+          #|        dest
+          #|      } else {
+          #|        Empty
+          #|      }
+          #|  } }
+        ),
+      ),
+      "drop_while": build(
+        (
+          #|pub fn[A] drop_while(self : List[A], p : (A) -> Bool raise?) -> List[A] raise? { loop self {
+          #|    Empty => Empty
+          #|    More(x, tail=xs) => if p(x) { continue xs } else { More(x, tail=xs) }
+          #|  } }
+        ),
+      ),
+      "lookup": build(
+        (
+          #|pub fn[A : Eq, B] lookup(self : List[(A, B)], v : A) -> B? { loop self {
+          #|    Empty => None
+          #|    More((x, y), tail=xs) => if x == v { Some(y) } else { continue xs }
+          #|  } }
+        ),
+      ),
+      "find": build(
+        (
+          #|pub fn[A] find(self : List[A], f : (A) -> Bool raise?) -> A? raise? { loop self {
+          #|    Empty => None
+          #|    More(element, tail=list) =>
+          #|      if f(element) {
+          #|        Some(element)
+          #|      } else {
+          #|        continue list
+          #|      }
+          #|  } }
+        ),
+      ),
+      "findi": build(
+        (
+          #|pub fn[A] findi(self : List[A], f : (A, Int) -> Bool raise?) -> A? raise? { loop (self, 0) {
+          #|    (list, index) =>
+          #|      match list {
+          #|        Empty => None
+          #|        More(element, tail=list) =>
+          #|          if f(element, index) {
+          #|            Some(element)
+          #|          } else {
+          #|            continue (list, index + 1)
+          #|          }
+          #|      }
+          #|  } }
+        ),
+      ),
+      "remove_at": build(
+        (
+          #|pub fn[A] remove_at(self : List[A], index : Int) -> List[A] { match (index, self) {
+          #|    (_, Empty) => Empty
+          #|    (_..<0, _) => self
+          #|    (0, More(_, tail~)) => tail
+          #|    (n, More(head, tail~)) => {
+          #|      let dest = More(head, tail=Empty)
+          #|      loop (dest, tail, n - 1) {
+          #|        (_, Empty, _) => ()
+          #|        (More(_) as dest, More(_, tail~), 0) => dest.tail = tail
+          #|        (More(_) as dest, More(x, tail=xs), n) => {
+          #|          dest.tail = More(x, tail=Empty)
+          #|          continue (dest.tail, xs, n - 1)
+          #|        }
+          #|        (Empty, _, _) => panic()
+          #|      }
+          #|      dest
+          #|    }
+          #|  } }
+        ),
+      ),
+      "remove": build(
+        (
+          #|pub fn[A : Eq] remove(self : List[A], elem : A) -> List[A] { match self {
+          #|    Empty => Empty
+          #|    More(head, tail~) if head == elem => tail
+          #|    More(head, tail~) => {
+          #|      let dest = More(head, tail~)
+          #|      loop (dest, tail) {
+          #|        (_, Empty) => ()
+          #|        (More(_) as dest, More(x, tail=xs)) =>
+          #|          if x == elem {
+          #|            dest.tail = xs
+          #|          } else {
+          #|            dest.tail = More(x, tail=Empty)
+          #|            continue (dest.tail, xs)
+          #|          }
+          #|        (Empty, _) => panic()
+          #|      }
+          #|      dest
+          #|    }
+          #|  } }
+        ),
+      ),
+      "is_prefix": build(
+        (
+          #|pub fn[A : Eq] is_prefix(self : List[A], prefix : List[A]) -> Bool { loop (self, prefix) {
+          #|    (_, Empty) => true
+          #|    (Empty, More(_)) => false
+          #|    (More(h1, tail=t1), More(h2, tail=t2)) =>
+          #|      if h1 == h2 {
+          #|        continue (t1, t2)
+          #|      } else {
+          #|        false
+          #|      }
+          #|  } }
+        ),
+      ),
+      "is_suffix": build(
+        (
+          #|pub fn[A : Eq] is_suffix(self : List[A], suffix : List[A]) -> Bool { self.rev().is_prefix(suffix.rev()) }
+        ),
+      ),
+      "intercalate": build(
+        (
+          #|pub fn[A] intercalate(self : List[List[A]], sep : List[A]) -> List[A] { self.intersperse(sep).flatten() }
+        ),
+      ),
+      "default": build(
+        (
+          #|pub fn[X] default() -> List[X] { Empty }
+        ),
+      ),
+      "iter": build(
+        (
+          #|pub fn[A] iter(self : List[A]) -> Iter[A] { Iter::new(yield_ => loop self {
+          #|    Empty => IterContinue
+          #|    More(head, tail~) => {
+          #|      if yield_(head) == IterEnd {
+          #|        break IterEnd
+          #|      }
+          #|      continue tail
+          #|    }
+          #|  }) }
+        ),
+      ),
+      "iter2": build(
+        (
+          #|pub fn[A] iter2(self : List[A]) -> Iter2[Int, A] { Iter2::new(yield_ => loop (self, 0) {
+          #|    (Empty, _) => IterEnd
+          #|    (More(head, tail~), i) => {
+          #|      if yield_(i, head) == IterEnd {
+          #|        break IterEnd
+          #|      }
+          #|      continue (tail, i + 1)
+          #|    }
+          #|  }) }
+        ),
+      ),
+      "from_iter": build(
+        (
+          #|pub fn[A] from_iter(iter : Iter[A]) -> List[A] { let mut res = Empty
+          #|  let mut ptr = Empty
+          #|  for x in iter {
+          #|    match (res, ptr) {
+          #|      (Empty, _) => {
+          #|        res = More(x, tail=Empty)
+          #|        ptr = res
+          #|      }
+          #|      (More(_), More(_) as ptr_) => {
+          #|        ptr_.tail = More(x, tail=Empty)
+          #|        ptr = ptr_.tail
+          #|      }
+          #|      (_, _) => panic()
+          #|    }
+          #|  }
+          #|  res }
+        ),
+      ),
+      "from_iter_rev": build(
+        (
+          #|pub fn[A] from_iter_rev(iter : Iter[A]) -> List[A] { iter.fold(init=Empty, (acc, e) => More(e, tail=acc)) }
+        ),
+      ),
+      "of": build(
+        (
+          #|pub fn[A] of(arr : FixedArray[A]) -> List[A] { for i = arr.length() - 1, list = Empty; i >= 0; {
+          #|    continue i - 1, More(arr[i], tail=list)
+          #|  } else {
+          #|    list
+          #|  } }
+        ),
+      ),
+      "singleton": build(
+        (
+          #|pub fn[A] singleton(x : A) -> List[A] { More(x, tail=Empty) }
+        ),
+      ),
+      "reverse_inplace": build(
+        (
+          #|fn[A] reverse_inplace(self : List[A]) -> List[A] { match self {
+          #|    Empty | More(_, tail=Empty) => self
+          #|    More(head, tail~) =>
+          #|      loop (More(head, tail=Empty), tail) {
+          #|        (result, Empty) => result
+          #|        (result, More(_, tail=xs) as new_result) => {
+          #|          new_result.tail = result
+          #|          continue (new_result, xs)
+          #|        }
+          #|      }
+          #|  } }
+        ),
+      ),
+      "rev_fold": build(
+        (
+          #|pub fn[A, B] rev_fold(self : List[A], init~ : B, f : (B, A) -> B) -> B { let xs = self.to_array()
+          #|  let mut acc = init
+          #|  for x in xs.rev_iter() {
+          #|    acc = f(acc, x)
+          #|  }
+          #|  acc }
+        ),
+      ),
+      "rev_foldi": build(
+        (
+          #|pub fn[A, B] rev_foldi(self : List[A], init~ : B, f : (Int, B, A) -> B) -> B { self.rev().foldi(init~, (i, b, a) => f(i, b, a)) }
+        ),
+      ),
+      "tail": build(
+        (
+          #|pub fn[A] tail(self : List[A]) -> List[A] { match self {
+          #|    Empty => Empty
+          #|    More(_, tail~) => tail
+          #|  } }
+        ),
+      ),
+    }
+  },
+)
 
 ///|
-let math_module : RuntimeModule = RuntimeModule::new("moonbitlang/core/math", fn(
-  _env,
-  build,
-) {
-  {
-    "ln": build(
-      (
-        #|pub fn ln(x : Double) -> Double { let l1 = 6.666666666666735130e-01 // 3FE55555 55555593
-        #|  let l2 = 3.999999999940941908e-01 // 3FD99999 9997FA04
-        #|  let l3 = 2.857142874366239149e-01 // 3FD24924 94229359
-        #|  let l4 = 2.222219843214978396e-01 // 3FCC71C5 1D8E78AF
-        #|  let l5 = 1.818357216161805012e-01 // 3FC74664 96CB03DE
-        #|  let l6 = 1.531383769920937332e-01 // 3FC39A09 D078C69F
-        #|  let l7 = 1.479819860511658591e-01 // 3FC2F112 DF3E5244
-        #|  if x < 0.0 {
-        #|    return @double.not_a_number
-        #|  } else if x.is_nan() || x.is_inf() {
-        #|    return x
-        #|  } else if x == 0.0 {
-        #|    return @double.neg_infinity
-        #|  }
-        #|  let (f1, ki) = frexp(x)
-        #|  let (f, k) = if f1 < SQRT2 / 2.0 {
-        #|    (f1 * 2.0 - 1.0, (ki - 1).to_double())
-        #|  } else {
-        #|    (f1 - 1.0, ki.to_double())
-        #|  }
-        #|  let s = f / (2.0 + f)
-        #|  let s2 = s * s
-        #|  let s4 = s2 * s2
-        #|  let t1 = s2 * (l1 + s4 * (l3 + s4 * (l5 + s4 * l7)))
-        #|  let t2 = s4 * (l2 + s4 * (l4 + s4 * l6))
-        #|  let r = t1 + t2
-        #|  let hfsq = 0.5 * f * f
-        #|  k * LN2_HI - (hfsq - (s * (hfsq + r) + k * LN2_LO) - f) }
-      ),
-    ),
-    "log2": build(
-      (
-        #|pub fn log2(x : Double) -> Double { let (f, e) = frexp(x)
-        #|  if f == 0.5 {
-        #|    return e.to_double() - 1.0
-        #|  }
-        #|  ln(f) / LN2 + e.to_double() }
-      ),
-    ),
-    "log10": build(
-      (
-        #|pub fn log10(x : Double) -> Double { if x < 0.0 {
-        #|    return @double.not_a_number
-        #|  } else if x.is_nan() || x.is_inf() {
-        #|    return x
-        #|  } else if x == 0.0 {
-        #|    return @double.neg_infinity
-        #|  }
-        #|  let ivln10 = 4.34294481903251816668e-01
-        #|  let log10_2hi = 3.01029995663611771306e-01
-        #|  let log10_2lo = 3.69423907715893078616e-13
-        #|  let (f, e) = frexp(x)
-        #|  let (f, e) = if e >= 1 {
-        #|    (f * 2.0, (e - 1).to_double())
-        #|  } else {
-        #|    (f, e.to_double())
-        #|  }
-        #|  let z = e * log10_2lo + ivln10 * ln(f)
-        #|  z + e * log10_2hi }
-      ),
-    ),
-    "ln_1p": build(
-      (
-        #|pub fn ln_1p(x : Double) -> Double { if x < -1.0 || x.is_nan() {
-        #|    return @double.not_a_number
-        #|  }
-        #|  if x == -1.0 {
-        #|    return @double.neg_infinity
-        #|  }
-        #|  if x.is_inf() {
-        #|    return @double.infinity
-        #|  }
-        #|  let ln2_hi = 6.93147180369123816490e-01
-        #|  let ln2_lo = 1.90821492927058770002e-10
-        #|  let two54 = 1.80143985094819840000e+16
-        #|  let lp1 = 6.666666666666735130e-01
-        #|  let lp2 = 3.999999999940941908e-01
-        #|  let lp3 = 2.857142874366239149e-01
-        #|  let lp4 = 2.222219843214978396e-01
-        #|  let lp5 = 1.818357216161805012e-01
-        #|  let lp6 = 1.531383769920937332e-01
-        #|  let zero = 0.0
-        #|  let lp7 = 1.479819860511658591e-01
-        #|  let hx = get_high_word(x).reinterpret_as_int()
-        #|  let ax = hx & 0x7fffffff
-        #|  let mut f = 0.0
-        #|  let mut c = 0.0
-        #|  let mut s = 0.0
-        #|  let mut z = 0.0
-        #|  let mut r = 0.0
-        #|  let mut u = 0.0
-        #|  let mut hu = 0
-        #|  let mut k = 1
-        #|  if hx < 0x3FDA827A {
-        #|    if ax < 0x3e200000 {
-        #|      if two54 + x > zero && ax < 0x3c900000 {
-        #|        return x
-        #|      } else {
-        #|        return x - x * x * 0.5
-        #|      }
-        #|    }
-        #|    if hx > 0 || hx <= 0xbfd2bec3 {
-        #|      k = 0
-        #|      f = x
-        #|      hu = 1
-        #|    }
-        #|  }
-        #|  if k != 0 {
-        #|    if hx < 0x43400000 {
-        #|      u = 1.0 + x
-        #|      hu = get_high_word(u).reinterpret_as_int()
-        #|      k = (hu >> 20) - 1023
-        #|      c = if k > 0 { 1.0 - (u - x) } else { x - (u - 1.0) }
-        #|      c /= u
-        #|    } else {
-        #|      u = x
-        #|      hu = get_high_word(u).reinterpret_as_int()
-        #|      k = (hu >> 20) - 1023
-        #|      c = 0.0
-        #|    }
-        #|    hu = hu & 0x000fffff
-        #|    if hu < 0x6a09e {
-        #|      u = set_high_word(u, hu.reinterpret_as_uint() | 0x3ff00000)
-        #|    } else {
-        #|      k += 1
-        #|      u = set_high_word(u, hu.reinterpret_as_uint() | 0x3fe00000)
-        #|      hu = (0x00100000 - hu) >> 2
-        #|    }
-        #|    f = u - 1.0
-        #|  }
-        #|  let hfsq = 0.5 * f * f
-        #|  if hu == 0 {
-        #|    if f == zero {
-        #|      if k == 0 {
-        #|        return zero
-        #|      } else {
-        #|        c += k.to_double() * ln2_lo
-        #|        return k.to_double() * ln2_hi + c
-        #|      }
-        #|    }
-        #|    r = hfsq * (1.0 - 0.66666666666666666 * f)
-        #|    if k == 0 {
-        #|      return f - r
-        #|    } else {
-        #|      return k.to_double() * ln2_hi - (r - (k.to_double() * ln2_lo + c) - f)
-        #|    }
-        #|  }
-        #|  s = f / (2.0 + f)
-        #|  z = s * s
-        #|  r = z *
-        #|    (lp1 + z * (lp2 + z * (lp3 + z * (lp4 + z * (lp5 + z * (lp6 + z * lp7))))))
-        #|  if k == 0 {
-        #|    return f - (hfsq - s * (hfsq + r))
-        #|  } else {
-        #|    return k.to_double() * ln2_hi -
-        #|      (hfsq - (s * (hfsq + r) + (k.to_double() * ln2_lo + c)) - f)
-        #|  } }
-      ),
-    ),
-    "sin": build(
-      (
-        #|pub fn sin(x : Double) -> Double { if x.is_inf() || x.is_nan() {
-        #|    return @double.not_a_number
-        #|  }
-        #|  let y = [0.0, 0.0]
-        #|  let z = 0.0
-        #|  if x.abs() <= PI_OVER_4 {
-        #|    return __kernel_sin(x, z, 0)
-        #|  } else {
-        #|    let n = rem_pio2(x, y)
-        #|    match n & 3 {
-        #|      0 => __kernel_sin(y[0], y[1], 1)
-        #|      1 => __kernel_cos(y[0], y[1])
-        #|      2 => -__kernel_sin(y[0], y[1], 1)
-        #|      _ => -__kernel_cos(y[0], y[1])
-        #|    }
-        #|  } }
-      ),
-    ),
-    "cos": build(
-      (
-        #|pub fn cos(x : Double) -> Double { if x.is_inf() || x.is_nan() {
-        #|    return @double.not_a_number
-        #|  }
-        #|  let y = [0.0, 0.0]
-        #|  let z = 0.0
-        #|  if x.abs() <= PI_OVER_4 {
-        #|    return __kernel_cos(x, z)
-        #|  } else {
-        #|    let n = rem_pio2(x, y)
-        #|    match n & 3 {
-        #|      0 => __kernel_cos(y[0], y[1])
-        #|      1 => -__kernel_sin(y[0], y[1], 1)
-        #|      2 => -__kernel_cos(y[0], y[1])
-        #|      _ => __kernel_sin(y[0], y[1], 1)
-        #|    }
-        #|  } }
-      ),
-    ),
-    "tan": build(
-      (
-        #|pub fn tan(x : Double) -> Double { if x.is_inf() || x.is_nan() {
-        #|    return @double.not_a_number
-        #|  }
-        #|  let y = Array::make(2, 0.0)
-        #|  let z = 0.0
-        #|  if x.abs() <= PI_OVER_4 {
-        #|    __kernal_tan(x, z, 1)
-        #|  } else {
-        #|    let n = rem_pio2(x, y)
-        #|    __kernal_tan(y[0], y[1], 1 - ((n & 1) << 1))
-        #|  } }
-      ),
-    ),
-    "asin": build(
-      (
-        #|pub fn asin(x : Double) -> Double { let huge = 1.0e+300
-        #|  let pio4_hi = 7.85398163397448278999e-01
-        #|  let pio2_hi = 1.57079632679489655800
-        #|  let pio2_lo = 6.12323399573676603587e-17
-        #|  let ps0 = 1.66666666666666657415e-01
-        #|  let ps1 = -3.25565818622400915405e-01
-        #|  let ps2 = 2.01212532134862925881e-01
-        #|  let ps3 = -4.00555345006794114027e-02
-        #|  let ps4 = 7.91534994289814532176e-04
-        #|  let ps5 = 3.47933107596021167570e-05
-        #|  let qs1 = -2.40339491173441421878e+00
-        #|  let qs2 = 2.02094576023350569471e+00
-        #|  let qs3 = -6.88283971605453293030e-01
-        #|  let qs4 = 7.70381505559019352791e-02
-        #|  let ix = get_high_word(x).reinterpret_as_int() & 0x7fffffff
-        #|  let absx = x.abs()
-        #|  if absx >= 1.0 {
-        #|    if absx == 1.0 {
-        #|      return x * pio2_hi + x * pio2_lo
-        #|    } else {
-        #|      return @double.not_a_number
-        #|    }
-        #|  } else if absx < 0.5 {
-        #|    if ix < 0x3e400000 {
-        #|      if huge + x > 1.0 {
-        #|        return x
-        #|      }
-        #|    } else {
-        #|      let t = x * x
-        #|      let p = t *
-        #|        (ps0 + t * (ps1 + t * (ps2 + t * (ps3 + t * (ps4 + t * ps5)))))
-        #|      let q = 1.0 + t * (qs1 + t * (qs2 + t * (qs3 + t * qs4)))
-        #|      let w = p / q
-        #|      return x + x * w
-        #|    }
-        #|  }
-        #|  let w = 1.0 - absx
-        #|  let t = w * 0.5
-        #|  let p = t * (ps0 + t * (ps1 + t * (ps2 + t * (ps3 + t * (ps4 + t * ps5)))))
-        #|  let q = 1.0 + t * (qs1 + t * (qs2 + t * (qs3 + t * qs4)))
-        #|  let s = t.sqrt()
-        #|  if ix >= 0x3FEF3333 {
-        #|    let w = p / q
-        #|    let t = pio2_hi - (2.0 * (s + s * w) - pio2_lo)
-        #|    return if x > 0.0 { t } else { -t }
-        #|  } else {
-        #|    let mut w = s
-        #|    w = set_low_word(w, 0)
-        #|    let c = (t - w * w) / (s + w)
-        #|    let r = p / q
-        #|    let p = 2.0 * s * r - (pio2_lo - 2.0 * c)
-        #|    let q = pio4_hi - 2.0 * w
-        #|    let t = pio4_hi - (p - q)
-        #|    return if x > 0.0 { t } else { -t }
-        #|  } }
-      ),
-    ),
-    "acos": build(
-      (
-        #|pub fn acos(x : Double) -> Double { let one : Double = 1.0
-        #|  let pi : Double = 3.14159265358979311600
-        #|  let pio2_hi : Double = 1.57079632679489655800
-        #|  let pio2_lo : Double = 6.12323399573676603587e-17
-        #|  let ps0 : Double = 1.66666666666666657415e-01
-        #|  let ps1 : Double = -3.25565818622400915405e-01
-        #|  let ps2 : Double = 2.01212532134862925881e-01
-        #|  let ps3 : Double = -4.00555345006794114027e-02
-        #|  let ps4 : Double = 7.91534994289814532176e-04
-        #|  let ps5 : Double = 3.47933107596021167570e-05
-        #|  let qs1 : Double = -2.40339491173441421878e+00
-        #|  let qs2 : Double = 2.02094576023350569471e+00
-        #|  let qs3 : Double = -6.88283971605453293030e-01
-        #|  let qs4 : Double = 7.70381505559019352791e-02
-        #|  let ix = get_high_word(x).reinterpret_as_int() & 0x7fffffff
-        #|  let absx = x.abs()
-        #|  if absx >= 1.0 {
-        #|    if absx == 1.0 {
-        #|      if x > 0 {
-        #|        return 0.0
-        #|      } else {
-        #|        return pi + 2.0 * pio2_lo
-        #|      }
-        #|    }
-        #|    return @double.not_a_number
-        #|  }
-        #|  if absx < 0.5 {
-        #|    if ix <= 0x3c600000 {
-        #|      return pio2_hi + pio2_lo
-        #|    }
-        #|    let z = x * x
-        #|    let p = z * (ps0 + z * (ps1 + z * (ps2 + z * (ps3 + z * (ps4 + z * ps5)))))
-        #|    let q = one + z * (qs1 + z * (qs2 + z * (qs3 + z * qs4)))
-        #|    let r = p / q
-        #|    pio2_hi - (x - (pio2_lo - x * r))
-        #|  } else if x < 0 {
-        #|    let z = (one + x) * 0.5
-        #|    let p = z * (ps0 + z * (ps1 + z * (ps2 + z * (ps3 + z * (ps4 + z * ps5)))))
-        #|    let q = one + z * (qs1 + z * (qs2 + z * (qs3 + z * qs4)))
-        #|    let s = z.sqrt()
-        #|    let r = p / q
-        #|    let w = r * s - pio2_lo
-        #|    pi - 2.0 * (s + w)
-        #|  } else {
-        #|    let z = (one - x) * 0.5
-        #|    let s = z.sqrt()
-        #|    let df = s
-        #|    let c = (z - df * df) / (s + df)
-        #|    let p = z * (ps0 + z * (ps1 + z * (ps2 + z * (ps3 + z * (ps4 + z * ps5)))))
-        #|    let q = one + z * (qs1 + z * (qs2 + z * (qs3 + z * qs4)))
-        #|    let r = p / q
-        #|    let w = r * s + c
-        #|    2.0 * (df + w)
-        #|  } }
-      ),
-    ),
-    "atan": build(
-      (
-        #|pub fn atan(x : Double) -> Double { if x.is_nan() || x == 0.0 {
-        #|    return x
-        #|  }
-        #|  let atan_hi = [
-        #|    4.63647609000806093515e-01, 7.85398163397448278999e-01, 9.82793723247329054082e-01,
-        #|    1.57079632679489655800e+00,
-        #|  ]
-        #|  let atan_lo = [
-        #|    2.26987774529616870924e-17, 3.06161699786838301793e-17, 1.39033110312309984516e-17,
-        #|    6.12323399573676603587e-17,
-        #|  ]
-        #|  let a_t = [
-        #|    3.33333333333329318027e-01, -1.99999999998764832476e-01, 1.42857142725034663711e-01,
-        #|    -1.11111104054623557880e-01, 9.09088713343650656196e-02, -7.69187620504482999495e-02,
-        #|    6.66107313738753120669e-02, -5.83357013379057348645e-02, 4.97687799461593236017e-02,
-        #|    -3.65315727442169155270e-02, 1.62858201153657823623e-02,
-        #|  ]
-        #|  let one = 1.0
-        #|  let huge = 1.0e300
-        #|  let ix = get_high_word(x).reinterpret_as_int() & 0x7fffffff
-        #|  let mut id = 0
-        #|  let mut z = 0.0
-        #|  let mut w = 0.0
-        #|  let mut x = x
-        #|  let x_is_neg = x < 0.0
-        #|  if ix >= 0x44100000 {
-        #|    if x > 0 {
-        #|      return atan_hi[3] + atan_lo[3]
-        #|    } else {
-        #|      return -atan_hi[3] - atan_lo[3]
-        #|    }
-        #|  }
-        #|  if ix < 0x3fdc0000 {
-        #|    if ix < 0x3e200000 {
-        #|      if huge + x > one {
-        #|        return x
-        #|      }
-        #|    }
-        #|    id = -1
-        #|  } else {
-        #|    x = x.abs()
-        #|    if ix < 0x3ff30000 {
-        #|      if ix < 0x3fe60000 {
-        #|        id = 0
-        #|        x = (2.0 * x - one) / (2.0 + x)
-        #|      } else {
-        #|        id = 1
-        #|        x = (x - one) / (x + one)
-        #|      }
-        #|    } else if ix < 0x40038000 {
-        #|      id = 2
-        #|      x = (x - 1.5) / (one + 1.5 * x)
-        #|    } else {
-        #|      id = 3
-        #|      x = -1.0 / x
-        #|    }
-        #|  }
-        #|  z = x * x
-        #|  w = z * z
-        #|  let s1 = z *
-        #|    (
-        #|      a_t[0] +
-        #|      w * (a_t[2] + w * (a_t[4] + w * (a_t[6] + w * (a_t[8] + w * a_t[10]))))
-        #|    )
-        #|  let s2 = w *
-        #|    (a_t[1] + w * (a_t[3] + w * (a_t[5] + w * (a_t[7] + w * a_t[9]))))
-        #|  if id < 0 {
-        #|    x - x * (s1 + s2)
-        #|  } else {
-        #|    z = atan_hi[id] - (x * (s1 + s2) - atan_lo[id] - x)
-        #|    if x_is_neg {
-        #|      -z
-        #|    } else {
-        #|      z
-        #|    }
-        #|  } }
-      ),
-    ),
-    "atan2": build(
-      (
-        #|pub fn atan2(y : Double, x : Double) -> Double { if x.is_nan() || y.is_nan() {
-        #|    return @double.not_a_number
-        #|  }
-        #|  let tiny = 1.0e-300
-        #|  let zero = 0.0
-        #|  let pi_o_4 = 7.8539816339744827900E-01
-        #|  let pi_o_2 = 1.5707963267948965580E+00
-        #|  let pi = 3.1415926535897931160E+00
-        #|  let pi_lo = 1.2246467991473531772E-16
-        #|  let hx = get_high_word(x).reinterpret_as_int()
-        #|  let hy = get_high_word(y).reinterpret_as_int()
-        #|  let ix = hx & 0x7fffffff
-        #|  let iy = hy & 0x7fffffff
-        #|  if x == 1.0 {
-        #|    return atan(y)
-        #|  }
-        #|  let m = ((hy >> 31) & 1) | ((hx >> 30) & 2)
-        #|  if y == 0 {
-        #|    match m {
-        #|      0 | 1 => return y
-        #|      2 => return pi + tiny
-        #|      _ => return -pi - tiny
-        #|    }
-        #|  }
-        #|  if x == 0 {
-        #|    return if hy < 0 { -pi_o_2 - tiny } else { pi_o_2 + tiny }
-        #|  }
-        #|  if x.is_inf() {
-        #|    if y.is_inf() {
-        #|      match m {
-        #|        0 => return pi_o_4 + tiny
-        #|        1 => return -pi_o_4 - tiny
-        #|        2 => return 3.0 * pi_o_4 + tiny
-        #|        _ => return -3.0 * pi_o_4 - tiny
-        #|      }
-        #|    } else {
-        #|      match m {
-        #|        0 => return zero
-        #|        1 => return -zero
-        #|        2 => return pi + tiny
-        #|        _ => return -pi - tiny
-        #|      }
-        #|    }
-        #|  }
-        #|  if y.is_inf() {
-        #|    return if hy < 0 { -pi_o_2 - tiny } else { pi_o_2 + tiny }
-        #|  }
-        #|  let k = (iy - ix) >> 20
-        #|  let z = if k > 60 {
-        #|    pi_o_2 + 0.5 * pi_lo
-        #|  } else if hx < 0 && k < -60 {
-        #|    0.0
-        #|  } else {
-        #|    atan(abs(y / x))
-        #|  }
-        #|  match m {
-        #|    0 => z
-        #|    1 => -z
-        #|    2 => pi - (z - pi_lo)
-        #|    _ => z - pi_lo - pi
-        #|  } }
-      ),
-    ),
-    "rem_pio2": build(
-      (
-        #|fn rem_pio2(x : Double, y : Array[Double]) -> Int { let hx = get_high_word(x).reinterpret_as_int()
-        #|  let ix : Int = hx & 0x7fffffff
-        #|  let mut z = 0.0
-        #|  if ix <= 0x3fe921fb {
-        #|    // |x| <= pi/4, no reduction needed
-        #|    y[0] = x
-        #|    y[1] = 0.0
-        #|    return 0
-        #|  }
-        #|  if ix < 0x4002d97c {
-        #|    // |x| < 3pi/4, special case with n = +-1
-        #|    if hx > 0 {
-        #|      z = x - PIO2_1
-        #|      if ix != 0x3ff921fb {
-        #|        // 33+53 bit pi is good enough
-        #|        y[0] = z - PIO2_1T
-        #|        y[1] = z - y[0] - PIO2_1T
-        #|      } else {
-        #|        // Near pi/2, use 33+33+53 bit pi
-        #|        z = z - PIO2_2
-        #|        y[0] = z - PIO2_2T
-        #|        y[1] = z - y[0] - PIO2_2T
-        #|      }
-        #|      return 1
-        #|    } else {
-        #|      // Negative x
-        #|      z = x + PIO2_1
-        #|      if ix != 0x3ff921fb {
-        #|        // 33+53 bit pi is good enough
-        #|        y[0] = z + PIO2_1T
-        #|        y[1] = z - y[0] + PIO2_1T
-        #|      } else {
-        #|        // Near pi/2, use 33+33+53 bit pi
-        #|        let z = z + PIO2_2
-        #|        y[0] = z + PIO2_2T
-        #|        y[1] = z - y[0] + PIO2_2T
-        #|      }
-        #|      return -1
-        #|    }
-        #|  }
-        #|  if ix <= 0x413921fb {
-        #|    // |x| <= 2^19 * (pi/2), medium size
-        #|    let t = x.abs()
-        #|    let n = (t * INV_PIO2 + HALF).to_int()
-        #|    let fn_ = n.to_double()
-        #|    let mut r = t - fn_ * PIO2_1
-        #|    let mut w = fn_ * PIO2_1T
-        #|    if n < 32 && ix != npio2_hw[n - 1] {
-        #|      y[0] = r - w
-        #|    } else {
-        #|      let j = ix >> 20
-        #|      y[0] = r - w
-        #|      let i = j - ((get_high_word(y[0]) >> 20).reinterpret_as_int() & 0x7ff)
-        #|      if i > 16 {
-        #|        // 2nd iteration needed, good to 118 bits
-        #|        let t = r
-        #|        w = fn_ * PIO2_2
-        #|        r = t - w
-        #|        w = fn_ * PIO2_2T - (t - r - w)
-        #|        y[0] = r - w
-        #|        let i = j - ((get_high_word(y[0]) >> 20).reinterpret_as_int() & 0x7ff)
-        #|        if i > 49 {
-        #|          // 3rd iteration needed, 151 bits accuracy
-        #|          let t = r
-        #|          w = fn_ * PIO2_3
-        #|          r = t - w
-        #|          w = fn_ * PIO2_3T - (t - r - w)
-        #|          y[0] = r - w
-        #|        }
-        #|      }
-        #|    }
-        #|    y[1] = r - y[0] - w
-        #|    if hx > 0 {
-        #|      return n
-        #|    } else {
-        #|      y[0] = -y[0]
-        #|      y[1] = -y[1]
-        #|      return -n
-        #|    }
-        #|  }
-        #|  // All other (large) arguments
-        #|  if ix >= 0x7ff00000 {
-        #|    // x is inf or NaN
-        #|    y[0] = x - x
-        #|    y[1] = y[0]
-        #|    return 0
-        #|  }
-        #|  // Set z = scalbn(|x|, ilogb(x) - 23)
-        #|  z = set_low_word(z, get_low_word(x))
-        #|  let e0 = (ix >> 20) - 1046 // e0 = ilogb(z) - 23
-        #|  z = set_high_word(z, (ix - (e0 << 20)).reinterpret_as_uint())
-        #|  let tx = [0.0, 0.0, 0.0]
-        #|  for i in 0..<2 {
-        #|    tx[i] = z.to_int().to_double()
-        #|    z = (z - tx[i]) * TWO24
-        #|  }
-        #|  tx[2] = z
-        #|  let mut nx = 3
-        #|  while tx[nx - 1] == 0.0 {
-        #|    nx -= 1
-        #|  }
-        #|  let n = __kernel_rem_pio2(tx, y, e0, nx, 2)
-        #|  if hx > 0 {
-        #|    n
-        #|  } else {
-        #|    y[0] = -y[0]
-        #|    y[1] = -y[1]
-        #|    -n
-        #|  } }
-      ),
-    ),
-    "__kernel_sin": build(
-      (
-        #|fn __kernel_sin(x : Double, y : Double, iy : Int) -> Double { let s1 = -1.66666666666666324348e-01
-        #|  let s2 = 8.33333333332248946124e-03
-        #|  let s3 = -1.98412698298579493134e-04
-        #|  let s4 = 2.75573137070700676789e-06
-        #|  let s5 = -2.50507602534068634195e-08
-        #|  let s6 = 1.58969099521155010221e-10
-        #|  let mut z = 0.0
-        #|  let mut r = 0.0
-        #|  let mut v = 0.0
-        #|  let ix = get_high_word(x) & 0x7fffffff
-        #|  if ix < 0x3e400000 {
-        #|    if x.to_int() == 0 {
-        #|      return x
-        #|    }
-        #|  }
-        #|  z = x * x
-        #|  v = z * x
-        #|  r = s2 + z * (s3 + z * (s4 + z * (s5 + z * s6)))
-        #|  if iy == 0 {
-        #|    x + v * (s1 + z * r)
-        #|  } else {
-        #|    x - (z * (0.5 * y - v * r) - y - v * s1)
-        #|  } }
-      ),
-    ),
-    "__kernel_cos": build(
-      (
-        #|fn __kernel_cos(x : Double, y : Double) -> Double { let one = 1.00000000000000000000e+00
-        #|  let c1 = 4.16666666666666019037e-02
-        #|  let c2 = -1.38888888888741095749e-03
-        #|  let c3 = 2.48015872894767294178e-05
-        #|  let c4 = -2.75573143513906633035e-07
-        #|  let c5 = 2.08757232129817482790e-09
-        #|  let c6 = -1.13596475577881948265e-11
-        #|  let mut a = 0.0
-        #|  let mut hz = 0.0
-        #|  let mut z = 0.0
-        #|  let mut r = 0.0
-        #|  let mut qx = 0.0
-        #|  let ix = get_high_word(x) & 0x7fffffff
-        #|  if ix < 0x3e400000 {
-        #|    if x.to_int() == 0 {
-        #|      return one
-        #|    }
-        #|  }
-        #|  z = x * x
-        #|  r = z * (c1 + z * (c2 + z * (c3 + z * (c4 + z * (c5 + z * c6)))))
-        #|  if ix < 0x3fd33333 {
-        #|    return one - (0.5 * z - (z * r - x * y))
-        #|  } else {
-        #|    if ix > 0x3fe90000 {
-        #|      qx = 0.28125
-        #|    } else {
-        #|      qx = ((ix - 0x00200000).to_uint64() << 32).reinterpret_as_double()
-        #|    }
-        #|    hz = 0.5 * z - qx
-        #|    a = one - qx
-        #|    return a - (hz - (z * r - x * y))
-        #|  } }
-      ),
-    ),
-    "__kernal_tan": build(
-      (
-        #|fn __kernal_tan(x : Double, y : Double, iy : Int) -> Double { let one = 1.0
-        #|  let pio4 = 7.85398163397448278999e-01
-        #|  let pio4lo = 3.06161699786838301793e-17
-        #|  let mut x = x
-        #|  let mut y = y
-        #|  let mut z = 0.0
-        #|  let mut r = 0.0
-        #|  let mut v = 0.0
-        #|  let mut w = 0.0
-        #|  let mut s = 0.0
-        #|  let t = [
-        #|    3.33333333333334091986e-01, // 3FD55555, 55555563 */
-        #|     1.33333333333201242699e-01, // 3FC11111, 1110FE7A */
-        #|     5.39682539762260521377e-02, // 3FABA1BA, 1BB341FE */
-        #|     2.18694882948595424599e-02, // 3F9664F4, 8406D637 */
-        #|     8.86323982359930005737e-03, // 3F8226E3, E96E8493 */
-        #|     3.59207910759131235356e-03, // 3F6D6D22, C9560328 */
-        #|     1.45620945432529025516e-03, // 3F57DBC8, FEE08315 */
-        #|     5.88041240820264096874e-04, // 3F4344D8, F2F26501 */
-        #|     2.46463134818469906812e-04, // 3F3026F7, 1A8D1068 */
-        #|     7.81794442939557092300e-05, // 3F147E88, A03792A6 */
-        #|     7.14072491382608190305e-05, // 3F12B80F, 32F0A7E9 */
-        #|     -1.85586374855275456654e-05, // BEF375CB, DB605373 */
-        #|     2.59073051863633712884e-05, // 3EFB2A70, 74BF7AD4 */
-        #|     1.00000000000000000000e+00, // 3FF00000, 00000000 (one) */
-        #|     7.85398163397448278999e-01, // 3FE921FB, 54442D18 (pio4) */
-        #|     3.06161699786838301793e-17, // 3C81A626, 33145C07 (pio4lo) */
-        #|  ]
-        #|  let hx = get_high_word(x).reinterpret_as_int()
-        #|  let ix = hx & 0x7fffffff
-        #|  if ix < 0x3e300000 {
-        #|    if x.to_int() == 0 {
-        #|      if (ix | get_low_word(x).reinterpret_as_int() | (iy + 1)) == 0 {
-        #|        return one / x.abs()
-        #|      } else if iy == 1 {
-        #|        return x
-        #|      } else {
-        #|        w = x + y
-        #|        z = w
-        #|        z = set_low_word(z, 0)
-        #|        v = y - (z - x)
-        #|        let a = -one / w
-        #|        let mut t = a
-        #|        t = set_low_word(t, 0)
-        #|        s = one + t * z
-        #|        return t + a * (s + t * v)
-        #|      }
-        #|    }
-        #|  }
-        #|  if ix >= 0x3fe59428 {
-        #|    if hx < 0 {
-        #|      x = -x
-        #|      y = -y
-        #|    }
-        #|    z = pio4 - x
-        #|    w = pio4lo - y
-        #|    x = z + w
-        #|    y = 0.0
-        #|  }
-        #|  z = x * x
-        #|  w = z * z
-        #|  r = t[1] + w * (t[3] + w * (t[5] + w * (t[7] + w * (t[9] + w * t[11]))))
-        #|  v = z *
-        #|    (t[2] + w * (t[4] + w * (t[6] + w * (t[8] + w * (t[10] + w * t[12])))))
-        #|  s = z * x
-        #|  r = y + z * (s * (r + v) + y)
-        #|  r += t[0] * s
-        #|  w = x + r
-        #|  if ix >= 0x3fe59428 {
-        #|    v = iy.to_double()
-        #|    return (1 - ((hx >> 30) & 2)).to_double() *
-        #|      (v - 2.0 * (x - (w * w / (w + v) - r)))
-        #|  }
-        #|  if iy == 1 {
-        #|    w
-        #|  } else {
-        #|    z = w
-        #|    z = set_low_word(z, 0)
-        #|    v = r - (z - x)
-        #|    let a = -1.0 / w
-        #|    let mut t = a
-        #|    t = set_low_word(t, 0)
-        #|    s = 1.0 + t * z
-        #|    t + a * (s + t * v)
-        #|  } }
-      ),
-    ),
-    "probable_prime": build(
-      (
-        #|pub fn probable_prime(bits : Int, rand : @random.Rand) -> @bigint.BigInt { for {
-        #|    let b = rand.bigint(bits)
-        #|    if is_probable_prime(b, rand) {
-        #|      break b
-        #|    }
-        #|  } }
-      ),
-    ),
-    "trial_divisions": build(
-      (
-        #|fn trial_divisions(n : @bigint.BigInt) -> Bool { // calculate the number of trial divisions based on the bit length of the candidate
-        #|  let td = match n.bit_length() {
-        #|    _..=512 => 64
-        #|    512..=1024 => 128
-        #|    1024..=2048 => 384
-        #|    2048..=4096 => 1024
-        #|    _ => 2048
-        #|  }
-        #|  for i in 1..<td {
-        #|    if n % small_primes[i] == 0 {
-        #|      return n == small_primes[i]
-        #|    }
-        #|  }
-        #|  true }
-      ),
-    ),
-    "sinh": build(
-      (
-        #|pub fn sinh(x : Double) -> Double { if x.is_nan() || x.is_inf() {
-        #|    return x
-        #|  }
-        #|  let ix = get_high_word(x).reinterpret_as_int() & 0x7fffffff
-        #|  let abs_x = x.abs()
-        #|  let shuge = 1.0e307
-        #|  let h = if x < 0.0 { -0.5 } else { 0.5 }
-        #|  if ix < 0x40360000 {
-        #|    if ix < 0x3e300000 {
-        #|      if shuge + x > 1.0 {
-        #|        return x
-        #|      }
-        #|    }
-        #|    let t = expm1(abs_x)
-        #|    if ix < 0x3ff00000 {
-        #|      return h * (2.0 * t - t * t / (t + 1.0))
-        #|    }
-        #|    return h * (t + t / (t + 1.0))
-        #|  }
-        #|  if ix < 0x40862E42 {
-        #|    return h * exp(abs_x)
-        #|  }
-        #|  if abs_x.reinterpret_as_uint64() < 0x408633ce8fb9f87d {
-        #|    let w = exp(0.5 * abs_x)
-        #|    let t = h * w
-        #|    return t * w
-        #|  }
-        #|  x * shuge }
-      ),
-    ),
-    "cosh": build(
-      (
-        #|pub fn cosh(x : Double) -> Double { if x.is_nan() {
-        #|    return x
-        #|  }
-        #|  if x.is_inf() {
-        #|    return @double.infinity
-        #|  }
-        #|  let ix = get_high_word(x).reinterpret_as_int() & 0x7fffffff
-        #|  if ix < 0x3fd62e43 {
-        #|    let t = expm1(x.abs())
-        #|    let w = 1.0 + t
-        #|    if ix < 0x3c800000 {
-        #|      return w
-        #|    }
-        #|    return 1.0 + t * t / (w + w)
-        #|  }
-        #|  if ix < 0x40360000 {
-        #|    let t = exp(x.abs())
-        #|    return 0.5 * t + 0.5 / t
-        #|  }
-        #|  if ix < 0x40862E42 {
-        #|    return (0.5 * x.abs()) |> exp
-        #|  }
-        #|  let lx = get_low_word(x).reinterpret_as_int()
-        #|  if ix < 0x408633ce || (ix == 0x408633ce && lx <= 0x8fb9f87d) {
-        #|    let w = exp(0.5 * x.abs())
-        #|    let t = 0.5 * w
-        #|    return t * w
-        #|  }
-        #|  @double.infinity }
-      ),
-    ),
-    "tanh": build(
-      (
-        #|pub fn tanh(x : Double) -> Double { if x.is_nan() {
-        #|    return x
-        #|  }
-        #|  if x.is_pos_inf() {
-        #|    return 1.0
-        #|  }
-        #|  if x.is_neg_inf() {
-        #|    return -1.0
-        #|  }
-        #|  let ix = get_high_word(x).reinterpret_as_int() & 0x7fffffff
-        #|  let tiny = 1.0e-300
-        #|  let z = if ix < 0x40360000 {
-        #|    if ix < 0x3c800000 {
-        #|      x * (1.0 + x)
-        #|    } else if ix >= 0x3ff00000 {
-        #|      let t = (2.0 * x.abs()) |> expm1
-        #|      1.0 - 2.0 / (t + 2.0)
-        #|    } else {
-        #|      let t = (-2.0 * x.abs()) |> expm1
-        #|      -t / (t + 2.0)
-        #|    }
-        #|  } else {
-        #|    1.0 - tiny
-        #|  }
-        #|  if x >= 0.0 {
-        #|    z
-        #|  } else {
-        #|    -z
-        #|  } }
-      ),
-    ),
-    "asinh": build(
-      (
-        #|pub fn asinh(x : Double) -> Double { if x.is_nan() || x.is_inf() {
-        #|    return x
-        #|  }
-        #|  let one : Double = 1.0
-        #|  let ln2 : Double = 6.93147180559945286227e-01
-        #|  let huge : Double = 1.0e300
-        #|  let hx = get_high_word(x).reinterpret_as_int()
-        #|  let ix = hx & 0x7fffffff
-        #|  if ix < 0x3e300000 {
-        #|    if huge + x > one {
-        #|      return x
-        #|    }
-        #|  }
-        #|  let w : Double = if ix > 0x41b00000 {
-        #|    ln(x.abs()) + ln2
-        #|  } else if ix > 0x40000000 {
-        #|    let t = x.abs()
-        #|    (2.0 * t + one / ((x * x + one).sqrt() + t)) |> ln
-        #|  } else {
-        #|    let t = x * x
-        #|    (x.abs() + t / (one + (one + t).sqrt())) |> ln_1p
-        #|  }
-        #|  if hx > 0 {
-        #|    w
-        #|  } else {
-        #|    -w
-        #|  } }
-      ),
-    ),
-    "acosh": build(
-      (
-        #|pub fn acosh(x : Double) -> Double { let one = 1.0
-        #|  let hx = get_high_word(x).reinterpret_as_int()
-        #|  if x < 1.0 || x.is_nan() {
-        #|    return @double.not_a_number
-        #|  } else if x == 1.0 {
-        #|    return 0.0
-        #|  } else if x.is_pos_inf() {
-        #|    return @double.infinity
-        #|  } else if hx >= 0x41b00000 {
-        #|    return ln(x) + LN2
-        #|  } else if hx > 0x40000000 {
-        #|    let t = x * x
-        #|    return (2.0 * x - one / (x + (t - one).sqrt())) |> ln
-        #|  } else {
-        #|    let t = x - one
-        #|    return (t + (2.0 * t + t * t).sqrt()) |> ln_1p
-        #|  } }
-      ),
-    ),
-    "atanh": build(
-      (
-        #|pub fn atanh(x : Double) -> Double { let hx : Int = get_high_word(x).reinterpret_as_int()
-        #|  let ix = hx & 0x7fffffff
-        #|  if x.abs() > 1.0 {
-        #|    return @double.not_a_number
-        #|  }
-        #|  if x == 1.0 {
-        #|    return @double.infinity
-        #|  }
-        #|  if x == -1.0 {
-        #|    return @double.neg_infinity
-        #|  }
-        #|  if ix < 0x3e300000 && 1.0e300 + x > 0.0 {
-        #|    return x
-        #|  }
-        #|  let x = x.abs()
-        #|  let t = if x <= 0.5 {
-        #|    let t = x + x
-        #|    0.5 * ln_1p(t + t * x / (1.0 - x))
-        #|  } else {
-        #|    0.5 * ln_1p((x + x) / (1.0 - x))
-        #|  }
-        #|  if hx >= 0 {
-        #|    t
-        #|  } else {
-        #|    -t
-        #|  } }
-      ),
-    ),
-    "cbrt": build(
-      (
-        #|pub fn cbrt(x : Double) -> Double { if x.is_inf() || x.is_nan() || x == 0.0 {
-        #|    return x
-        #|  }
-        #|  let b1 : UInt = 715094163 // B1 = (682-0.03306235651)*2**20
-        #|  let b2 : UInt = 696219795 // B2 = (664-0.03306235651)*2**20
-        #|  let c = 5.42857142857142815906e-01 // 19/35     = 0x3FE15F15, 0xF15F15F1
-        #|  let d = -7.05306122448979611050e-01 // -864/1225 = 0xBFE691DE, 0x2532C834
-        #|  let e = 1.41428571428571436819e+00 // 99/70     = 0x3FF6A0EA, 0x0EA0EA0F
-        #|  let f = 1.60714285714285720630e+00 // 45/28     = 0x3FF9B6DB, 0x6DB6DB6E
-        #|  let g = 3.57142857142857150787e-01 // 5/14      = 0x3FD6DB6D, 0xB6DB6DB7
-        #|  let hx = get_high_word(x).reinterpret_as_int()
-        #|  let sign = if x < 0.0 { true } else { false }
-        #|  let x = abs(x)
-        #|  let t = if hx < 0x00100000 {
-        #|    let t : UInt64 = 0x43500000_00000000
-        #|    let t : Double = t.reinterpret_as_double()
-        #|    let t = t * x
-        #|    set_high_word(0, get_high_word(t) / 3 + b2)
-        #|  } else {
-        #|    set_high_word(0, hx.reinterpret_as_uint() / 3 + b1)
-        #|  }
-        #|  let r = t * t / x
-        #|  let s = c + r * t
-        #|  let t = t * (g + f / (s + e + d / s))
-        #|  let t = set_high_word(0, get_high_word(t) + 0x00000001)
-        #|  let s = t * t
-        #|  let r = x / s
-        #|  let w = t + t
-        #|  let r = (r - t) / (w + r)
-        #|  let t = t + t * r
-        #|  if sign {
-        #|    -t
-        #|  } else {
-        #|    t
-        #|  } }
-      ),
-    ),
-    "hypot": build(
-      (
-        #|pub fn hypot(x : Double, y : Double) -> Double { if x.is_nan() || y.is_nan() {
-        #|    return @double.not_a_number
-        #|  }
-        #|  if x.is_inf() || y.is_inf() {
-        #|    return @double.infinity
-        #|  }
-        #|  let x = x.abs()
-        #|  let y = y.abs()
-        #|  let double_epsilon : Double = 0x0.0000000000001P-1022
-        #|  let (x, y) = if y > x { (y, x) } else { (x, y) }
-        #|  if x * double_epsilon >= y {
-        #|    return x
-        #|  }
-        #|  let r = y / x
-        #|  x * (1.0 + r * r).sqrt() }
-      ),
-    ),
-    "pow": build(
-      (
-        #|pub fn pow(x : Double, y : Double) -> Double { fn set_low_word(d : Double, v : UInt) -> Double {
-        #|    let bits : UInt64 = d.reinterpret_as_uint64()
-        #|    let bits = bits & 0xFFFF_FFFF_0000_0000
-        #|    let bits = bits | v.to_uint64()
-        #|    bits.reinterpret_as_double()
-        #|  }
-        #|  fn set_high_word(d : Double, v : UInt) -> Double {
-        #|    let bits : UInt64 = d.reinterpret_as_uint64()
-        #|    let bits = bits & 0x0000_0000_FFFF_FFFF
-        #|    let bits = bits | (v.to_uint64() << 32)
-        #|    bits.reinterpret_as_double()
-        #|  }
-        #|  fn get_high_word(x : Double) -> UInt {
-        #|    (x.reinterpret_as_uint64() >> 32).to_uint()
-        #|  }
-        #|  fn get_low_word(x : Double) -> UInt {
-        #|    x.reinterpret_as_uint64().to_uint()
-        #|  }
-        #|  // double z, ax, z_h, z_l, p_h, p_l;
-        #|  let mut z : Double = 0.0
-        #|  let mut ax : Double = 0.0
-        #|  let mut z_h : Double = 0.0
-        #|  let mut z_l : Double = 0.0
-        #|  let mut p_h : Double = 0.0
-        #|  let mut p_l : Double = 0.0
-        #|  // double y1, t1, t2, r, s, t, u, v, w
-        #|  let mut y1 : Double = 0.0
-        #|  let mut t1 : Double = 0.0
-        #|  let mut t2 : Double = 0.0
-        #|  let mut r : Double = 0.0
-        #|  let mut s : Double = 0.0
-        #|  let mut t : Double = 0.0
-        #|  let mut u : Double = 0.0
-        #|  let mut v : Double = 0.0
-        #|  let mut w : Double = 0.0
-        #|  // int i, j, k, yisint, n
-        #|  let mut i : Int = 0
-        #|  let mut j : Int = 0
-        #|  let mut k : Int = 0
-        #|  let mut yisint : Int = 0
-        #|  let mut n : Int = 0
-        #|  // int hx, hy, ix, iy;
-        #|  // unsigned lx, ly;
-        #|  //
-        #|  // EXTRACT_WORDS(hx, lx, x);
-        #|  // EXTRACT_WORDS(hy, ly, y);
-        #|  // ix = hx & 0x7fffffff;
-        #|  // iy = hy & 0x7fffffff;
-        #|  let hx : Int = (x.reinterpret_as_uint64() >> 32).to_int()
-        #|  let lx : UInt = (x.reinterpret_as_uint64() & 0xFFFFFFFF).to_uint()
-        #|  let hy : Int = (y.reinterpret_as_uint64() >> 32).to_int()
-        #|  let ly : UInt = (y.reinterpret_as_uint64() & 0xFFFFFFFF).to_uint()
-        #|  let mut ix : Int = hx & 0x7FFFFFFF
-        #|  let iy : Int = hy & 0x7FFFFFFF
-        #|  // y==zero: x**0 = 1
-        #|  if (iy.reinterpret_as_uint() | ly) == 0 {
-        #|    return ONE
-        #|  }
-        #|  // +-NaN return x+y
-        #|  if ix > 0x7FF00000 ||
-        #|    (ix == 0x7FF00000 && lx != 0) ||
-        #|    iy > 0x7FF00000 ||
-        #|    (iy == 0x7FF00000 && ly != 0) {
-        #|    return x + y
-        #|  }
-        #|  // determine if y is an odd int when x < 0
-        #|  // yisint = 0 ... y is not an integer
-        #|  // yisint = 1 ... y is an odd int
-        #|  // yisint = 2 ... y is an even int
-        #|  if hx < 0 {
-        #|    if iy >= 0x43400000 {
-        #|      yisint = 2 // even integer y
-        #|    } else if iy >= 0x3ff00000 {
-        #|      k = (iy >> 20) - 0x3ff // exponent
-        #|      if k > 20 {
-        #|        j = (ly >> (52 - k)).reinterpret_as_int()
-        #|        if j << (52 - k) == ly.reinterpret_as_int() {
-        #|          yisint = 2 - (j & 1)
-        #|        }
-        #|      } else if ly == 0 {
-        #|        j = iy >> (20 - k)
-        #|        if j << (20 - k) == iy {
-        #|          yisint = 2 - (j & 1)
-        #|        }
-        #|      }
-        #|    }
-        #|  }
-        #|  // special value of y
-        #|  if ly == 0 {
-        #|    if iy == 0x7ff00000 { // y is +-inf
-        #|      if ((ix.reinterpret_as_uint() - 0x3ff00000) | lx) == 0 {
-        #|        return y - y // inf**+-1 is NaN
-        #|      } else if ix >= 0x3ff00000 { // (|x|>1)**+-inf = inf,0
-        #|        return if hy >= 0 { y } else { ZERO }
-        #|      } else { // (|x|<1)**-,+inf = inf,0
-        #|        return if hy < 0 { -y } else { ZERO }
-        #|      }
-        #|    }
-        #|    if iy == 0x3ff00000 { // y is  +-1
-        #|      if hy < 0 {
-        #|        return ONE / x
-        #|      } else {
-        #|        return x
-        #|      }
-        #|    }
-        #|    if hy == 0x40000000 { // y is 2
-        #|      return x * x
-        #|    }
-        #|    if hy == 0x3fe00000 { // y is 0.5
-        #|      if hx >= 0 { // x >= +0
-        #|        return x.sqrt()
-        #|      }
-        #|    }
-        #|  }
-        #|  ax = x.abs()
-        #|  // special value of x
-        #|  if lx == 0 {
-        #|    if ix == 0x7ff00000 || ix == 0 || ix == 0x3ff00000 {
-        #|      z = ax // x is +-0,+-inf,+-1 */
-        #|      if hy < 0 {
-        #|        z = ONE / z // z = (1/|x|)
-        #|      }
-        #|      if hx < 0 {
-        #|        if ((ix - 0x3ff00000) | yisint) == 0 {
-        #|          // (-1)**non-int is NaN
-        #|          z = @double.not_a_number
-        #|        } else if yisint == 1 {
-        #|          z = -z // (x<0)**odd = -(|x|**odd)
-        #|        }
-        #|      }
-        #|      return z
-        #|    }
-        #|  }
-        #|  n = (hx >> 31) + 1
-        #|  // (x<0)**(non-int) is NaN
-        #|  if (n | yisint) == 0 {
-        #|    return @double.not_a_number
-        #|  }
-        #|  s = ONE // s (sign of result -ve**odd) = -1 else = 1
-        #|  if (n | (yisint - 1)) == 0 {
-        #|    s = -ONE // (-ve)**(odd int)
-        #|  }
-        #|  // |y| is huge
-        #|  if iy > 0x41e00000 { // if |y| > 2**31 */
-        #|    if iy > 0x43f00000 { // if |y| > 2**64, must o/uflow */
-        #|      if ix <= 0x3fefffff {
-        #|        return if hy < 0 { POW_huge * POW_huge } else { POW_tiny * POW_tiny }
-        #|      }
-        #|      if ix >= 0x3ff00000 {
-        #|        return if hy > 0 { POW_huge * POW_huge } else { POW_tiny * POW_tiny }
-        #|      }
-        #|    }
-        #|    // over/underflow if x is not close to one */
-        #|    if ix < 0x3fefffff {
-        #|      return if hy < 0 {
-        #|        s * POW_huge * POW_huge
-        #|      } else {
-        #|        s * POW_tiny * POW_tiny
-        #|      }
-        #|    }
-        #|    if ix > 0x3ff00000 {
-        #|      return if hy > 0 {
-        #|        s * POW_huge * POW_huge
-        #|      } else {
-        #|        s * POW_tiny * POW_tiny
-        #|      }
-        #|    }
-        #|    // now |1-x| is tiny <= 2**-20, suffice to compute
-        #|    // log(x) by x-x^2/2+x^3/3-x^4/4 */
-        #|    t = ax - ONE // t has 20 trailing zeros */
-        #|    w = t * t * (0.5 - t * (0.3333333333333333333333 - t * 0.25))
-        #|    u = POW_ivln2_h * t // POW_ivln2_h has 21 sig. bits */
-        #|    v = t * POW_ivln2_l - w * POW_ivln2
-        #|    t1 = u + v
-        #|    t1 = set_low_word(t1, 0)
-        #|    t2 = v - (t1 - u)
-        #|  } else {
-        #|    n = 0
-        #|    // take care subnormal number
-        #|    if ix < 0x00100000 {
-        #|      ax *= POW_two53
-        #|      n -= 53
-        #|      ix = get_high_word(ax).reinterpret_as_int()
-        #|    }
-        #|    n += (ix >> 20) - 0x3ff
-        #|    j = ix & 0x000fffff
-        #|    // determine interval
-        #|    ix = j | 0x3ff00000 // normalize ix
-        #|    if j <= 0x3988E {
-        #|      k = 0 // |x|<sqrt(3/2)
-        #|    } else if j < 0xBB67A {
-        #|      k = 1 // |x|<sqrt(3)
-        #|    } else {
-        #|      k = 0
-        #|      n += 1
-        #|      ix -= 0x00100000
-        #|    }
-        #|    ax = set_high_word(ax, ix.reinterpret_as_uint())
-        #|    // compute ss = s_h+s_l = (x-1)/(x+1) or (x-1.5)/(x+1.5)
-        #|    u = ax - pow_bp[k] // bp[0]=1.0, bp[1]=1.5
-        #|    v = ONE / (ax + pow_bp[k])
-        #|    let ss : Double = u * v
-        #|    let mut s_h : Double = ss
-        #|    s_h = set_low_word(s_h, 0)
-        #|    // t_h=ax+bp[k] High
-        #|    let mut t_h : Double = ZERO
-        #|    t_h = set_high_word(
-        #|      t_h,
-        #|      ((ix.reinterpret_as_uint() >> 1) | 0x20000000) +
-        #|      0x00080000 +
-        #|      (k.reinterpret_as_uint() << 18),
-        #|    )
-        #|    let mut t_l : Double = ax - (t_h - pow_bp[k])
-        #|    let s_l : Double = v * (u - s_h * t_h - s_h * t_l)
-        #|    // compute log(ax)
-        #|    let mut s2 : Double = ss * ss
-        #|    r = s2 *
-        #|      s2 *
-        #|      (
-        #|        POW_L1 +
-        #|        s2 *
-        #|        (POW_L2 + s2 * (POW_L3 + s2 * (POW_L4 + s2 * (POW_L5 + s2 * POW_L6))))
-        #|      )
-        #|    r += s_l * (s_h + ss)
-        #|    s2 = s_h * s_h
-        #|    t_h = 3.0 + s2 + r
-        #|    t_h = set_low_word(t_h, 0)
-        #|    t_l = r - (t_h - 3.0 - s2)
-        #|    // u+v = ss*(1+...)
-        #|    u = s_h * t_h
-        #|    v = s_l * t_h + t_l * ss
-        #|    // 2/(3log2)*(ss+...)
-        #|    p_h = u + v
-        #|    p_h = set_low_word(p_h, 0)
-        #|    p_l = v - (p_h - u)
-        #|    z_h = POW_cp_h * p_h // cp_h+cp_l = 2/(3*log2)
-        #|    z_l = POW_cp_l * p_h + p_l * POW_cp + pow_dp_l[k]
-        #|    // log2(ax) = (ss+..)*2/(3*log2) = n + dp_h + z_h + z_l
-        #|    t = n.to_double()
-        #|    t1 = z_h + z_l + pow_dp_h[k] + t
-        #|    t1 = set_low_word(t1, 0)
-        #|    t2 = z_l - (t1 - t - pow_dp_h[k] - z_h)
-        #|  }
-        #|  // split up y into y1+y2 and compute (y1+y2)*(t1+t2)
-        #|  y1 = y
-        #|  y1 = set_low_word(y1, 0)
-        #|  p_l = (y - y1) * t1 + y * t2
-        #|  p_h = y1 * t1
-        #|  z = p_l + p_h
-        #|  j = get_high_word(z).reinterpret_as_int()
-        #|  i = get_low_word(z).reinterpret_as_int()
-        #|  if j >= 0x40900000 { // z >= 1024
-        #|    if ((j - 0x40900000) | i) != 0 { // if z > 1024
-        #|      return s * POW_huge * POW_huge // overflow
-        #|    } else if p_l + POW_ovt > z - p_h {
-        #|      return s * POW_huge * POW_huge // overflow
-        #|    }
-        #|  } else if (j & 0x7fffffff) >= 0x4090cc00 { // z <= -1075
-        #|    if ((j - 0xc090cc00) | i) != 0 { // z < -1075
-        #|      return s * POW_tiny * POW_tiny // underflow
-        #|    } else if p_l <= z - p_h {
-        #|      return s * POW_tiny * POW_tiny // underflow
-        #|    }
-        #|  }
-        #|  //
-        #|  // compute 2**(p_h+p_l)
-        #|  //
-        #|  i = j & 0x7fffffff
-        #|  k = (i >> 20) - 0x3ff
-        #|  n = 0
-        #|  if i > 0x3fe00000 { // if |z| > 0.5, set n = [z+0.5]
-        #|    n = j + (0x00100000 >> (k + 1))
-        #|    k = ((n & 0x7fffffff) >> 20) - 0x3ff // new k for n
-        #|    t = ZERO
-        #|    t = set_high_word(t, (n & (0x000fffff >> k).lnot()).reinterpret_as_uint())
-        #|    n = ((n & 0x000fffff) | 0x00100000) >> (20 - k)
-        #|    if j < 0 {
-        #|      n = -n
-        #|    }
-        #|    p_h -= t
-        #|  }
-        #|  t = p_l + p_h
-        #|  t = set_low_word(t, 0)
-        #|  u = t * POW_lg2_h
-        #|  v = (p_l - (t - p_h)) * POW_lg2 + t * POW_lg2_l
-        #|  z = u + v
-        #|  w = v - (z - u)
-        #|  t = z * z
-        #|  t1 = z -
-        #|    t * (POW_P1 + t * (POW_P2 + t * (POW_P3 + t * (POW_P4 + t * POW_P5))))
-        #|  r = z * t1 / (t1 - TWO - (w + z * w))
-        #|  z = ONE - (r - z)
-        #|  j = get_high_word(z).reinterpret_as_int()
-        #|  j += (n.reinterpret_as_uint() << 20).reinterpret_as_int()
-        #|  if j >> 20 <= 0 {
-        #|    z = scalbn(z, n)
-        #|  } else { // subnormal output */
-        #|    let tmp = get_high_word(z).reinterpret_as_int()
-        #|    z = set_high_word(
-        #|      z,
-        #|      (tmp + (n.reinterpret_as_uint() << 20).reinterpret_as_int()).reinterpret_as_uint(),
-        #|    )
-        #|  }
-        #|  return s * z }
-      ),
-    ),
-    "maximum": build(
-      (
-        #|pub fn[T : Compare] maximum(x : T, y : T) -> T { if x > y {
-        #|    x
-        #|  } else {
-        #|    y
-        #|  } }
-      ),
-    ),
-    "minimum": build(
-      (
-        #|pub fn[T : Compare] minimum(x : T, y : T) -> T { if x > y {
-        #|    y
-        #|  } else {
-        #|    x
-        #|  } }
-      ),
-    ),
-    "cbrtf": build(
-      (
-        #|pub fn cbrtf(x : Float) -> Float { let b1 : UInt = 709958130 // B1 = (127-127.0/3-0.03306235651)*2**23 */
-        #|  let b2 : UInt = 642849266 // B2 = (127-127.0/3-24/3-0.03306235651)*2**23 */
-        #|  let mut ui : UInt = x.reinterpret_as_uint()
-        #|  let mut hx : UInt = ui & 0x7fffffff
-        #|  if hx >= 0x7f800000 {
-        #|    // cbrt(NaN,INF) is itx
-        #|    return x + x
-        #|  }
-        #|  // rough cbrt to 5 bits
-        #|  if hx < 0x00800000 {
-        #|    // zero or subnormal?
-        #|    if hx == 0 {
-        #|      return x
-        #|    } // cbrt(+-0) is itx
-        #|    ui = (x * (0x1.0p24 : Float)).reinterpret_as_uint()
-        #|    hx = ui & 0x7fffffff
-        #|    hx = hx / 3 + b2
-        #|  } else {
-        #|    hx = hx / 3 + b1
-        #|  }
-        #|  ui = ui & 0x80000000
-        #|  ui = ui | hx
-        #|  //
-        #|  // First step Newton iteration (solving t*t-x/t == 0) to 16 bits.  In
-        #|  // double precision so that its terms can be arranged for efficiency
-        #|  // without causing overflow or underflow.
-        #|  //
-        #|  let dx = x.to_double()
-        #|  let t = ui.reinterpret_as_float().to_double()
-        #|  let r = t * t * t
-        #|  let t = t * (dx + dx + r) / (dx + r + r)
-        #|  //
-        #|  // Second step Newton iteration to 47 bits.  In double precision for
-        #|  // efficiency and accuracy.
-        #|  //
-        #|  let r = t * t * t
-        #|  let t = t * (dx + dx + r) / (dx + r + r)
-        #|  // rounding to 24 bits is perfect in round-to-nearest mode
-        #|  t.to_float() }
-      ),
-    ),
-    "hypotf": build(
-      (
-        #|pub fn hypotf(x : Float, y : Float) -> Float { let epsilon : Float = 1.1920928955078125e-7
-        #|  let x = x.abs()
-        #|  let y = y.abs()
-        #|  if x.is_inf() || y.is_inf() {
-        #|    return @float.infinity
-        #|  }
-        #|  let (x, y) = if y > x { (y, x) } else { (x, y) }
-        #|  if x * epsilon >= y {
-        #|    return x
-        #|  }
-        #|  let rat = y / x
-        #|  x * (rat * rat + 1.0).sqrt() }
-      ),
-    ),
-    "pi": (None, String("0x3.243F6A8885A308CA8A54")),
-    "exp": build(
-      (
-        #|pub fn exp(x : Double) -> Double { fn get_high_word(x : Double) -> UInt {
-        #|    (x.reinterpret_as_uint64() >> 32).to_uint()
-        #|  }
-        #|  fn get_low_word(x : Double) -> UInt {
-        #|    x.reinterpret_as_uint64().to_uint()
-        #|  }
-        #|  fn insert_words(ix0 : UInt64, ix1 : UInt64) -> Double {
-        #|    let mut bits : UInt64 = 0
-        #|    bits = bits | (ix0 << 32)
-        #|    bits = bits | ix1
-        #|    bits.reinterpret_as_double()
-        #|  }
-        #|  let ori_x = x
-        #|  let mut x = x
-        #|  let one = 1.0
-        #|  let halF = [0.5, -0.5]
-        #|  let o_threshold = 7.09782712893383973096e+02
-        #|  let u_threshold = -7.45133219101941108420e+02
-        #|  let ln2HI = [6.93147180369123816490e-01, -6.93147180369123816490e-01]
-        #|  let ln2LO = [1.90821492927058770002e-10, -1.90821492927058770002e-10]
-        #|  let invln2 = 1.44269504088896338700e+00
-        #|  let p1 = 1.66666666666666019037e-01
-        #|  let p2 = -2.77777777770155933842e-03
-        #|  let p3 = 6.61375632143793436117e-05
-        #|  let p4 = -1.65339022054652515390e-06
-        #|  let p5 = 4.13813679705723846039e-08
-        #|  let e = 2.718281828459045
-        #|  let mut hi = 0.0
-        #|  let mut lo = 0.0
-        #|  let huge = 1.0e+300
-        #|  let twom1000 = 9.33263618503218878990e-302
-        #|  let two1023 = 8.988465674311579539e307
-        #|  let mut k : Int = 0
-        #|  let mut hx : UInt = get_high_word(ori_x)
-        #|  let xsb : Int = ((hx >> 31) & 1).reinterpret_as_int()
-        #|  hx = hx & 0x7FFFFFFF
-        #|  if hx >= 0x40862E42 {
-        #|    if hx >= 0x7FF00000 {
-        #|      let lx : UInt = get_low_word(ori_x)
-        #|      if ((hx & 0xFFFFF) | lx) != 0 {
-        #|        return ori_x + ori_x
-        #|      } else if xsb == 0 {
-        #|        return ori_x
-        #|      } else {
-        #|        return 0.0
-        #|      }
-        #|    }
-        #|    if ori_x > o_threshold {
-        #|      return huge * huge
-        #|    }
-        #|    if ori_x < u_threshold {
-        #|      return twom1000 * twom1000
-        #|    }
-        #|  }
-        #|  if hx > 0x3FD62E42 {
-        #|    if hx < 0x3FF0A2B2 {
-        #|      if ori_x == 1.0 {
-        #|        return e
-        #|      }
-        #|      hi = ori_x - ln2HI[xsb]
-        #|      lo = ln2LO[xsb]
-        #|      k = 1 - xsb - xsb
-        #|    } else {
-        #|      k = (invln2 * ori_x + halF[xsb]).to_int()
-        #|      let t = k.to_double()
-        #|      hi = ori_x - t * ln2HI[0]
-        #|      lo = t * ln2LO[0]
-        #|    }
-        #|    x = hi - lo
-        #|  } else if hx < 0x3E300000 {
-        #|    if huge + x > one {
-        #|      return one + x
-        #|    }
-        #|  } else {
-        #|    k = 0
-        #|  }
-        #|  let t = x * x
-        #|  let twopk = if k >= -1021 {
-        #|    insert_words(
-        #|      (0x3FF00000 + (k.reinterpret_as_uint() << 20).reinterpret_as_int())
-        #|      .to_int64()
-        #|      .reinterpret_as_uint64(),
-        #|      0,
-        #|    )
-        #|  } else {
-        #|    insert_words(
-        #|      0x3FF00000UL + ((k + 1000).reinterpret_as_uint() << 20).to_uint64(),
-        #|      0,
-        #|    )
-        #|  }
-        #|  let c = x - t * (p1 + t * (p2 + t * (p3 + t * (p4 + t * p5))))
-        #|  if k == 0 {
-        #|    return one - (x * c / (c - 2.0) - x)
-        #|  }
-        #|  let y = one - (lo - x * c / (2.0 - c) - hi)
-        #|  if k >= -1021 {
-        #|    if k == 1024 {
-        #|      return y * 2.0 * two1023
-        #|    } else {
-        #|      return y * twopk
-        #|    }
-        #|  } else {
-        #|    return y * twopk * twom1000
-        #|  } }
-      ),
-    ),
-    "expm1": build(
-      (
-        #|pub fn expm1(x : Double) -> Double { if x.is_nan() {
-        #|    return @double.not_a_number
-        #|  }
-        #|  let o_threshold = 7.09782712893383973096e+02
-        #|  if x > o_threshold {
-        #|    return @double.infinity
-        #|  }
-        #|  if x.is_inf() {
-        #|    return -1.0
-        #|  }
-        #|  let huge = 1.0e+300
-        #|  let tiny = 1.0e-300
-        #|  let ln2_hi = 6.93147180369123816490e-01
-        #|  let ln2_lo = 1.90821492927058770002e-10
-        #|  let invln2 = 1.44269504088896338700e+00
-        #|  let q1 = -3.33333333333331316428e-02
-        #|  let q2 = 1.58730158725481460165e-03
-        #|  let q3 = -7.93650757867487942473e-05
-        #|  let q4 = 4.00821782732936239552e-06
-        #|  let q5 = -2.01099218183624371326e-07
-        #|  let mut x = x
-        #|  let mut hx = get_high_word(x)
-        #|  let xsb : Int = (hx & 0x80000000).reinterpret_as_int()
-        #|  let mut y : Double = if xsb == 0 { x } else { -x }
-        #|  hx = hx & 0x7fffffff
-        #|  if hx >= 0x4043687A {
-        #|    if xsb != 0 {
-        #|      if x + tiny < 0.0 {
-        #|        return tiny - 1.0
-        #|      }
-        #|    }
-        #|  }
-        #|  let mut hi = 0.0
-        #|  let mut lo = 0.0
-        #|  let mut k = 0
-        #|  let mut c = 0.0
-        #|  let mut t = 0.0
-        #|  if hx > 0x3fd62e42 {
-        #|    if hx < 0x3FF0A2B2 {
-        #|      hi = if xsb == 0 { x - ln2_hi } else { x + ln2_hi }
-        #|      lo = if xsb == 0 { ln2_lo } else { -ln2_lo }
-        #|      k = if xsb == 0 { 1 } else { -1 }
-        #|    } else {
-        #|      k = (invln2 * x + (if xsb == 0 { 0.5 } else { -0.5 })).to_int()
-        #|      t = k.to_double()
-        #|      hi = x - t * ln2_hi
-        #|      lo = t * ln2_lo
-        #|    }
-        #|    x = hi - lo
-        #|    c = hi - x - lo
-        #|  } else if hx < 0x3c900000 {
-        #|    t = huge + x
-        #|    return x - (t - (huge + x))
-        #|  } else {
-        #|    k = 0
-        #|  }
-        #|  let hfx : Double = 0.5 * x
-        #|  let hxs : Double = x * hfx
-        #|  let r1 : Double = 1.0 +
-        #|    hxs * (q1 + hxs * (q2 + hxs * (q3 + hxs * (q4 + hxs * q5))))
-        #|  let t : Double = 3.0 - r1 * hfx
-        #|  let e : Double = hxs * ((r1 - t) / (6.0 - x * t))
-        #|  if k == 0 {
-        #|    return x - (x * e - hxs)
-        #|  } else {
-        #|    let e : Double = x * (e - c) - c
-        #|    let e : Double = e - hxs
-        #|    if k == -1 {
-        #|      return 0.5 * (x - e) - 0.5
-        #|    }
-        #|    if k == 1 {
-        #|      return if x < -0.25 {
-        #|        -2.0 * (e - (x + 0.5))
-        #|      } else {
-        #|        1.0 + 2.0 * (x - e)
-        #|      }
-        #|    }
-        #|    if k <= -2 || k > 56 {
-        #|      y = 1.0 - (e - x)
-        #|      y = set_high_word(y, get_high_word(y) + (k << 20).reinterpret_as_uint())
-        #|      return y - 1.0
-        #|    }
-        #|    let mut t : Double = 1.0
-        #|    if k < 20 {
-        #|      t = set_high_word(0, (0x3ff00000 - (0x200000 >> k)).reinterpret_as_uint())
-        #|      y = t - (e - x)
-        #|      y = set_high_word(y, get_high_word(y) + (k << 20).reinterpret_as_uint())
-        #|    } else {
-        #|      t = set_high_word(0, ((0x3ff - k) << 20).reinterpret_as_uint())
-        #|      y = x - (e + t) + 1.0
-        #|      y = set_high_word(y, get_high_word(y) + (k << 20).reinterpret_as_uint())
-        #|    }
-        #|  }
-        #|  y }
-      ),
-    ),
-    "abs": build(
-      (
-        #|fn abs(x : Double) -> Double { if x < 0.0 {
-        #|    -x
-        #|  } else {
-        #|    x
-        #|  } }
-      ),
-    ),
-    "set_low_word": build(
-      (
-        #|fn set_low_word(d : Double, v : UInt) -> Double { let bits : UInt64 = d.reinterpret_as_uint64()
-        #|  let bits = bits & 0xFFFF_FFFF_0000_0000
-        #|  let bits = bits | v.to_uint64()
-        #|  bits.reinterpret_as_double() }
-      ),
-    ),
-    "set_high_word": build(
-      (
-        #|fn set_high_word(d : Double, v : UInt) -> Double { let bits : UInt64 = d.reinterpret_as_uint64()
-        #|  let bits = bits & 0x0000_0000_FFFF_FFFF
-        #|  let bits = bits | (v.to_uint64() << 32)
-        #|  bits.reinterpret_as_double() }
-      ),
-    ),
-    "get_high_word": build(
-      (
-        #|fn get_high_word(x : Double) -> UInt { (x.reinterpret_as_uint64() >> 32).to_uint() }
-      ),
-    ),
-    "get_low_word": build(
-      (
-        #|fn get_low_word(x : Double) -> UInt { x.reinterpret_as_uint64().to_uint() }
-      ),
-    ),
-    "normalize": build(
-      (
-        #|fn normalize(f : Double) -> (Double, Int) { if f.abs() < @double.min_positive {
-        #|    return (f * (1L << 52).to_double(), -52)
-        #|  }
-        #|  (f, 0) }
-      ),
-    ),
-    "frexp": build(
-      (
-        #|fn frexp(f : Double) -> (Double, Int) { if f == 0.0 || f.is_inf() || f.is_nan() {
-        #|    return (f, 0)
-        #|  }
-        #|  let (norm_f, exp) = normalize(f)
-        #|  let u = norm_f.reinterpret_as_uint64()
-        #|  let exp = exp + ((u >> 52) & 0x7FF).to_int() - 1022
-        #|  let frac = ((u & (0x7FFUL << 52).lnot()) | (1022UL << 52)).reinterpret_as_double()
-        #|  return (frac, exp) }
-      ),
-    ),
-    "logf_off": (None, UInt(0x3f330000U)),
-    "logf_table_bits": (None, Int(4)),
-    "lnf": build(
-      (
-        #|pub fn lnf(x : Float) -> Float { let mut ix : UInt = x.reinterpret_as_uint()
-        #|  if ix == 0x3f800000U {
-        #|    return 0.0
-        #|  }
-        #|  if ix - 0x00800000U >= 0x7f800000U - 0x00800000U {
-        #|    if ix * 2 == 0 {
-        #|      return @float.neg_infinity
-        #|    }
-        #|    if ix == 0x7f800000U {
-        #|      return x
-        #|    }
-        #|    if (ix & 0x80000000U) != 0 || ix * 2 >= 0xff000000U {
-        #|      return @float.not_a_number
-        #|    }
-        #|    ix = (x * 0x1.0p23).reinterpret_as_uint()
-        #|    ix -= (23 << 23).reinterpret_as_uint()
-        #|  }
-        #|  let tmp = ix - logf_off
-        #|  let i = ((tmp >> (23 - logf_table_bits)) % logf_n).reinterpret_as_int()
-        #|  let k = tmp.reinterpret_as_int() >> 23
-        #|  let iz = ix - (tmp & 0xff800000U)
-        #|  let invc = logf_data.invc[i]
-        #|  let logc = logf_data.logc[i]
-        #|  let z = iz.reinterpret_as_float().to_double()
-        #|  let r = z * invc - 1
-        #|  let y0 = logc + k.to_double() * logf_data.ln2
-        #|  let r2 = r * r
-        #|  let y = logf_data.poly[1] * r + logf_data.poly[2]
-        #|  let y = logf_data.poly[0] * r2 + y
-        #|  let y = y * r2 + (y0 + r)
-        #|  y.to_float() }
-      ),
-    ),
-    "ln_1pf": build(
-      (
-        #|pub fn ln_1pf(x : Float) -> Float { let lg1_f : Float = 0.66666662693
-        #|  let lg2_f : Float = 0.40000972152
-        #|  let lg3_f : Float = 0.28498786688
-        #|  let lg4_f : Float = 0.24279078841
-        #|  let float_ln2_hi : Float = 6.9314575195e-01 // 0x3f317200
-        #|  let float_ln2_lo : Float = 1.4286067653e-06 // 0x35bfbe8e
-        #|  let mut ui : UInt = x.reinterpret_as_uint()
-        #|  let mut f : Float = 0
-        #|  let mut c : Float = 0
-        #|  let mut iu : UInt = 0
-        #|  let one : Float = 1.0
-        #|  let mut k = 1
-        #|  if ui < 0x3ed413d0 || ui >> 31 > 0 {
-        #|    if ui >= 0xbf800000 {
-        #|      if x == -1.0 {
-        #|        return x / 0.0
-        #|      }
-        #|      return (x - x) / 0.0
-        #|    }
-        #|    if ui << 1 < 0x33800000U << 1 {
-        #|      return x
-        #|    }
-        #|    if ui <= 0xbe95f619 {
-        #|      k = 0
-        #|      c = 0.0
-        #|      f = x
-        #|    }
-        #|  } else if ui >= 0x7f800000 {
-        #|    return x
-        #|  }
-        #|  if k > 0 {
-        #|    ui = (one + x).reinterpret_as_uint()
-        #|    iu = ui
-        #|    iu += 0x3f800000U - 0x3f3504f3U
-        #|    k = (iu >> 23).reinterpret_as_int() - 0x7f
-        #|    if k < 25 {
-        #|      let fui = ui.reinterpret_as_float()
-        #|      c = if k >= 2 { one - (fui - x) } else { x - (fui - 1.0) }
-        #|      c /= ui.reinterpret_as_float()
-        #|    } else {
-        #|      c = 0.0
-        #|    }
-        #|    iu = (iu & 0x007fffff) + 0x3f3504f3
-        #|    ui = iu
-        #|    f = ui.reinterpret_as_float() - 1.0
-        #|  }
-        #|  let s = f / (f + 2.0)
-        #|  let z = s * s
-        #|  let w = z * z
-        #|  let t1 = w * (lg2_f + w * lg4_f)
-        #|  let t2 = z * (lg1_f + w * lg3_f)
-        #|  let r = t2 + t1
-        #|  let hfsq = f * f * 0.5
-        #|  let dk = k.to_float()
-        #|  s * (hfsq + r) + (dk * float_ln2_lo + c) - hfsq + f + dk * float_ln2_hi }
-      ),
-    ),
-    "k_expo2f": build(
-      (
-        #|fn k_expo2f(x : Float) -> Float { let k = 235
-        #|  let k_ln2 = (0x4322e3bc).reinterpret_as_float()
-        #|  // note that k is odd and scale*scale overflows */
-        #|  let scale = ((0x7f + k / 2) << 23).reinterpret_as_float()
-        #|  // exp(x - k ln2) * 2**(k-1) */
-        #|  expf(x - k_ln2) * scale * scale }
-      ),
-    ),
-    "sinhf": build(
-      (
-        #|pub fn sinhf(x : Float) -> Float { let mut h : Float = 0.5
-        #|  let mut ix = x.reinterpret_as_uint()
-        #|  if ix >> 31 != 0 {
-        #|    h = -h
-        #|  }
-        #|  // |x|
-        #|  ix = ix & 0x7fffffff
-        #|  let absx = ix.reinterpret_as_float()
-        #|  let w = ix
-        #|  // |x| < log(FLT_MAX)
-        #|  if w < 0x42b17217 {
-        #|    let t = expm1f(absx)
-        #|    if w < 0x3f800000 {
-        #|      if w < 0x3f800000U - (12U << 23) {
-        #|        return x
-        #|      }
-        #|      return h * ((2.0 : Float) * t - t * t / (t + 1.0))
-        #|    }
-        #|    return h * (t + t / (t + 1.0))
-        #|  }
-        #|  // |x| > logf(FLT_MAX) or nan
-        #|  h * k_expo2f(absx) * 2.0 }
-      ),
-    ),
-    "coshf": build(
-      (
-        #|pub fn coshf(x : Float) -> Float { let mut x = x
-        #|  let mut ix = x.reinterpret_as_uint()
-        #|  ix = ix & 0x7fffffff
-        #|  x = ix.reinterpret_as_float()
-        #|  let w = ix
-        #|  // |x| < log(2)
-        #|  if w < 0x3f317217 {
-        #|    if w < 0x3f800000U - (12U << 23) {
-        #|      return 1.0
-        #|    }
-        #|    let t = expm1f(x)
-        #|    return (1.0 : Float) + t * t / ((2.0 : Float) * (t + 1.0))
-        #|  }
-        #|  // |x| < log(FLT_MAX)
-        #|  if w < 0x42b17217 {
-        #|    let t = expf(x)
-        #|    return (t + (1.0 : Float) / t) * 0.5
-        #|  }
-        #|  // |x| > log(FLT_MAX) or nan
-        #|  k_expo2f(x) }
-      ),
-    ),
-    "tanhf": build(
-      (
-        #|pub fn tanhf(x : Float) -> Float { let mut ix = x.reinterpret_as_uint()
-        #|  let sign = ix >> 31 != 0
-        #|  ix = ix & 0x7fffffff
-        #|  let x = ix.reinterpret_as_float()
-        #|  let w = ix
-        #|  let tt = if w > 0x3f0c9f54 {
-        #|    // |x| > log(3)/2 ~= 0.5493 or nan
-        #|    if w > 0x41200000 {
-        #|      // |x| > 10
-        #|      (1.0 : Float) + (0.0 : Float) / x
-        #|    } else {
-        #|      let t = expm1f(x * 2.0)
-        #|      (1.0 : Float) - (2.0 : Float) / (t + 2.0)
-        #|    }
-        #|  } else if w > 0x3e82c578 {
-        #|    // |x| > log(5/3)/2 ~= 0.2554
-        #|    let t = expm1f(x * 2.0)
-        #|    t / (t + 2.0)
-        #|  } else if w >= 0x00800000 {
-        #|    // |x| >= 0x1p-126
-        #|    let t = expm1f(x * -2.0)
-        #|    -t / (t + 2.0)
-        #|  } else {
-        #|    // |x| is subnormal
-        #|    x
-        #|  }
-        #|  if sign {
-        #|    -tt
-        #|  } else {
-        #|    tt
-        #|  } }
-      ),
-    ),
-    "asinhf": build(
-      (
-        #|pub fn asinhf(x : Float) -> Float { let u = x.reinterpret_as_uint()
-        #|  let i = u & 0x7fffffff
-        #|  let sign = u >> 31 != 0
-        #|  let ln2 : Float = 0.693147180559945309417232121458176568
-        #|  let x = i.reinterpret_as_float()
-        #|  let x = if i >= 0x3f800000U + (12U << 23) {
-        #|    // |x| >= 0x1p12 or inf or nan
-        #|    lnf(x) + ln2
-        #|  } else if i >= 0x3f800000U + (1U << 23) {
-        #|    // |x| >= 2
-        #|    lnf(x * 2.0 + (1.0 : Float) / ((x * x + 1.0).sqrt() + x))
-        #|  } else if i >= 0x3f800000U - (12U << 23) {
-        #|    // |x| >= 0x1p-12, up to 1.6ulp error in [0.125,0.5]
-        #|    ln_1pf(x + x * x / ((x * x + 1.0).sqrt() + 1.0))
-        #|  } else {
-        #|    // |x| < 0x1p-12, raise inexact if x!=0
-        #|    // x + 0x1.0p120
-        #|    x
-        #|  }
-        #|  if sign {
-        #|    -x
-        #|  } else {
-        #|    x
-        #|  } }
-      ),
-    ),
-    "acoshf": build(
-      (
-        #|pub fn acoshf(x : Float) -> Float { let ln2 : Float = 693147180559945309417232121458176568
-        #|  let u = x.reinterpret_as_uint()
-        #|  let a = u & 0x7fffffffU
-        #|  if a < 0x3f800000U + (1U << 23) {
-        #|    // |x| < 2, invalid if x < 1 or nan
-        #|    // up to 2ulp error in [1,1.125]
-        #|    return ln_1pf(
-        #|      x - 1.0 + ((x - 1.0) * (x - 1.0) + (2.0 : Float) * (x - 1.0)).sqrt(),
-        #|    )
-        #|  }
-        #|  if a < 0x3f800000U + (12U << 23) {
-        #|    // |x| < 0x1p12
-        #|    return lnf(x * 2.0 - (1.0 : Float) / (x + (x * x - 1.0).sqrt()))
-        #|  }
-        #|  // x >= 0x1p12
-        #|  return lnf(x) + ln2 }
-      ),
-    ),
-    "atanhf": build(
-      (
-        #|pub fn atanhf(x : Float) -> Float { let u = x.reinterpret_as_uint()
-        #|  let sign = u >> 31 != 0
-        #|  let u = u & 0x7fffffff
-        #|  let x = u.reinterpret_as_float()
-        #|  let x = if u < 0x3f800000U - (1U << 23) {
-        #|    if u < 0x3f800000U - (32U << 23) {
-        #|      x
-        #|    } else {
-        #|      // |x| < 0.5, up to 1.7ulp error
-        #|      ln_1pf(x * 2.0 + x * 2.0 * x / ((1.0 : Float) - x)) * 0.5
-        #|    }
-        #|  } else {
-        #|    // avoid overflow
-        #|    ln_1pf(x / ((1.0 : Float) - x) * 2.0) * 0.5
-        #|  }
-        #|  if sign {
-        #|    -x
-        #|  } else {
-        #|    x
-        #|  } }
-      ),
-    ),
-    "mulh": build(
-      (
-        #|fn mulh(a : UInt, b : UInt) -> UInt { let a = a.to_uint64()
-        #|  let b = b.to_uint64()
-        #|  let res = a * b
-        #|  (res >> 32).to_uint() }
-      ),
-    ),
-    "mul": build(
-      (
-        #|fn mul(a : UInt, b : UInt) -> (UInt, UInt) { let a = a.to_uint64()
-        #|  let b = b.to_uint64()
-        #|  let res = a * b
-        #|  ((res >> 32).to_uint(), res.to_uint()) }
-      ),
-    ),
-    "trig_reduce": build(
-      (
-        #|fn trig_reduce(x : Float, switch_over : Float) -> (Float, Int) { if x.abs() <= switch_over {
-        #|    let mut j : Float = 0.0
-        #|    let mut r : Float = 0.0
-        #|    j = x * (0x3f22f983).reinterpret_as_float() +
-        #|      (0x4b40_0000).reinterpret_as_float()
-        #|    j = (j.reinterpret_as_int() - 0x4b40_0000).to_float()
-        #|    r = x - j * (0x3fc90f80).reinterpret_as_float()
-        #|    r = r - j * (0x37354440).reinterpret_as_float()
-        #|    r = r - j * (0x2c34611a).reinterpret_as_float()
-        #|    return (r, j.to_int())
-        #|  }
-        #|  let xispos = x > 0.0
-        #|  let mut exp : Int = ((x.reinterpret_as_int() >> 23) & 0xff) - 126
-        #|  let ix = ((x.reinterpret_as_uint() & 0x007fffff) << 8) | 0x80000000
-        #|  let ind = exp >> 5
-        #|  exp = exp & 0x1f
-        #|  let two_over_pi : Array[UInt] = [
-        #|    0x00000000, 0x28be60db, 0x9391054a, 0x7f09d5f4, 0x7d4d3770, 0x36d8a566, 0x4f10e410,
-        #|    0000000000,
-        #|  ]
-        #|  let mut hi = two_over_pi[ind]
-        #|  let mut mi = two_over_pi[ind + 1]
-        #|  let mut lo = two_over_pi[ind + 2]
-        #|  let tp = two_over_pi[ind + 3]
-        #|  if exp > 0 {
-        #|    hi = (hi << exp) | (mi >> (32 - exp))
-        #|    mi = (mi << exp) | (lo >> (32 - exp))
-        #|    lo = (lo << exp) | (tp >> (32 - exp))
-        #|  }
-        #|  let phi = 0U
-        #|  let (h, l) = mul(ix, lo)
-        #|  let plo = phi + l
-        #|  let phi = h + (if plo < l { 1 } else { 0 })
-        #|  let (h, l) = mul(ix, mi)
-        #|  let mut plo = phi + l
-        #|  let phi = h + (if plo < l { 1 } else { 0 })
-        #|  let l = ix * hi
-        #|  let mut phi = phi + l
-        #|  let mut q : Int = (phi >> 30).reinterpret_as_int()
-        #|  phi = phi & 0x3fffffff
-        #|  if (phi & 0x2000_0000) != 0 {
-        #|    phi = phi - 0x4000_0000
-        #|    q = q + 1
-        #|  }
-        #|  let s : UInt = phi & 0x8000_0000
-        #|  if phi >= 0x8000_0000 {
-        #|    phi = phi.lnot()
-        #|    plo = 0U - plo
-        #|    //phi += (plo == 0).to_uint()
-        #|    phi += if plo == 0 { 1 } else { 0 }
-        #|  }
-        #|  exp = 0
-        #|  while phi < 0x8000_0000 {
-        #|    phi = (phi << 1) | (plo >> 31)
-        #|    plo = plo << 1
-        #|    exp = exp - 1
-        #|  }
-        #|  phi = mulh(phi, 0xc90f_daa2)
-        #|  if phi < 0x8000_0000 {
-        #|    phi = phi << 1
-        #|    exp = exp - 1
-        #|  }
-        #|  let mut r = s +
-        #|    ((exp + 128) << 23).reinterpret_as_uint() +
-        #|    (phi >> 8) +
-        #|    (if (phi & 0xff) > 0x7e { 1 } else { 0 })
-        #|  if !xispos {
-        #|    r = r ^ 0x8000_0000
-        #|    q = -q
-        #|  }
-        #|  let r = r.reinterpret_as_float()
-        #|  return (r, q) }
-      ),
-    ),
-    "sinf_poly": build(
-      (
-        #|fn sinf_poly(x : Float) -> Float { let s = x * x
-        #|  let mut r = (0x3640_5000).reinterpret_as_float()
-        #|  r = r * s - (0x3950_3486).reinterpret_as_float()
-        #|  r = r * s + (0x3c08_88c1).reinterpret_as_float()
-        #|  r = r * s - (0x3e2a_aaab).reinterpret_as_float()
-        #|  let t = x * s
-        #|  r = r * t + x
-        #|  r }
-      ),
-    ),
-    "cosf_poly": build(
-      (
-        #|fn cosf_poly(x : Float) -> Float { let s = x * x
-        #|  let mut r = (0x37cd_4000).reinterpret_as_float()
-        #|  r = r * s - (0x3ab6_077d).reinterpret_as_float()
-        #|  r = r * s + (0x3d2a_aaa8).reinterpret_as_float()
-        #|  r = r * s - (0x3f00_0000).reinterpret_as_float()
-        #|  r = r * s + (0x3f80_0000).reinterpret_as_float()
-        #|  r }
-      ),
-    ),
-    "sin_cos_core": build(
-      (
-        #|fn sin_cos_core(x : Float, q : Int) -> Float { let mut r = if (q & 1) != 0 { cosf_poly(x) } else { sinf_poly(x) }
-        #|  if (q & 2) != 0 {
-        #|    r = -r
-        #|  }
-        #|  r }
-      ),
-    ),
-    "tanf_poly": build(
-      (
-        #|fn tanf_poly(x : Float, odd : Bool) -> Float { let x = x.to_double()
-        #|  let coef : FixedArray[Double] = [
-        #|    0.333331395030791399758, // 0x15554d3418c99f.0p-54 */
-        #|     0.133392002712976742718, // 0x1112fd38999f72.0p-55 */
-        #|     0.0533812378445670393523, // 0x1b54c91d865afe.0p-57 */
-        #|     0.0245283181166547278873, // 0x191df3908c33ce.0p-58 */
-        #|     0.00297435743359967304927, // 0x185dadfcecf44e.0p-61 */
-        #|     0.00946564784943673166728, // 0x1362b9bf971bcd.0p-59 */
-        #|  ]
-        #|  let z = x * x
-        #|  let mut r = coef[4] + z * coef[5]
-        #|  let t = coef[2] + z * coef[3]
-        #|  let w = z * z
-        #|  let s = z * x
-        #|  let u = coef[0] + z * coef[1]
-        #|  r = x + s * u + s * w * (t + w * r)
-        #|  (if odd { -1.0 / r } else { r }).to_float() }
-      ),
-    ),
-    "sinf": build(
-      (
-        #|pub fn sinf(x : Float) -> Float { if x.is_nan() || x.is_inf() {
-        #|    return @float.not_a_number
-        #|  }
-        #|  if x == 0.0 {
-        #|    return x
-        #|  }
-        #|  let (x, q) = trig_reduce(x, SIN_SWITCHOVER)
-        #|  sin_cos_core(x, q) }
-      ),
-    ),
-    "cosf": build(
-      (
-        #|pub fn cosf(x : Float) -> Float { if x.is_nan() || x.is_inf() {
-        #|    return @float.not_a_number
-        #|  }
-        #|  if x == 0.0 {
-        #|    return 1.0
-        #|  }
-        #|  let (x, q) = trig_reduce(x, COS_SWITCHOVER)
-        #|  sin_cos_core(x, q + 1) }
-      ),
-    ),
-    "tanf": build(
-      (
-        #|pub fn tanf(x : Float) -> Float { if x.is_nan() || x.is_inf() {
-        #|    return @float.not_a_number
-        #|  }
-        #|  if x == 0.0 {
-        #|    return x
-        #|  }
-        #|  let (x, q) = trig_reduce(x, COS_SWITCHOVER)
-        #|  tanf_poly(x, (q & 1) != 0) }
-      ),
-    ),
-    "asinf": build(
-      (
-        #|pub fn asinf(x : Float) -> Float { let x1p120 = 0x3870000000000000UL.reinterpret_as_double()
-        #|  let pio2 : Double = 1.570796326794896558e+00
-        #|  // coefficients for R(x^2)
-        #|  let ps0 : Float = 1.6666586697e-01
-        #|  let ps1 : Float = -4.2743422091e-02
-        #|  let ps2 : Float = -8.6563630030e-03
-        #|  let qs2 : Float = -7.0662963390e-01
-        #|  fn r(z : Float) -> Float {
-        #|    let p = z * (ps0 + z * (ps1 + z * ps2))
-        #|    let q = z * qs2 + 1.0
-        #|    p / q
-        #|  }
-        #|  let hx = x.reinterpret_as_uint()
-        #|  let ix = hx & 0x7fffffff
-        #|  if ix >= 0x3f800000 {
-        #|    if ix == 0x3f800000 {
-        #|      return (x.to_double() * pio2 + x1p120).to_float()
-        #|    }
-        #|    return @float.not_a_number // asin(|x|>1) is NaN
-        #|  }
-        #|  if ix < 0x3f000000 {
-        #|    if ix is (0x00800000..=0x39800000) {
-        #|      return x
-        #|    }
-        #|    return x + x * r(x * x)
-        #|  }
-        #|  let z = ((1.0 : Float) - x.abs()) * 0.5
-        #|  let s = z.to_double().sqrt()
-        #|  let x = (pio2 - 2.0 * (s + s * r(z).to_double())).to_float()
-        #|  if hx >> 31 != 0 {
-        #|    -x
-        #|  } else {
-        #|    x
-        #|  } }
-      ),
-    ),
-    "acosf": build(
-      (
-        #|pub fn acosf(x : Float) -> Float { let pio2_hi : Float = 1.5707962513
-        #|  let pio2_lo : Float = 7.5497894159e-08
-        #|  let ps0 : Float = 1.6666586697e-01
-        #|  let ps1 : Float = -4.2743422091e-02
-        #|  let ps2 : Float = -8.6563630030e-03
-        #|  let qs1 : Float = -7.0662963390e-01
-        #|  let one : Float = 1.0
-        #|  let two : Float = 2.0
-        #|  fn r(z : Float) -> Float {
-        #|    let p = z * (ps0 + z * (ps1 + z * ps2))
-        #|    let q = z * qs1 + 1.0
-        #|    p / q
-        #|  }
-        #|  let hx = x.reinterpret_as_int()
-        #|  let ix = hx & 0x7fffffff
-        #|  if ix >= 0x3f800000 {
-        #|    if ix == 0x3f800000 {
-        #|      if hx >> 31 != 0 {
-        #|        return two * pio2_hi + 0x1.0p-120
-        #|      }
-        #|      return 0.0
-        #|    }
-        #|    return @float.not_a_number
-        #|  }
-        #|  if ix < 0x3f000000 {
-        #|    if ix <= 0x32800000 {
-        #|      return pio2_hi + 0x1.0p-120
-        #|    }
-        #|    return pio2_hi - (x - (pio2_lo - x * r(x * x)))
-        #|  }
-        #|  if hx >> 31 != 0 {
-        #|    let z = (x + 1.0) * 0.5
-        #|    let s = z.sqrt()
-        #|    let w = r(z) * s - pio2_lo
-        #|    return two * (pio2_hi - (s + w))
-        #|  }
-        #|  let z = (one - x) * 0.5
-        #|  let s = z.sqrt()
-        #|  let df = s
-        #|  let c = (z - df * df) / (s + df)
-        #|  let w = r(z) * s + c
-        #|  two * (df + w) }
-      ),
-    ),
-    "atanf": build(
-      (
-        #|pub fn atanf(x : Float) -> Float { let atanhi : Array[Float] = [
-        #|    4.6364760399e-01, 7.8539812565e-01, 9.8279368877e-01, 1.5707962513e+00,
-        #|  ]
-        #|  let atanlo : Array[Float] = [
-        #|    5.0121582440e-09, 3.7748947079e-08, 3.4473217170e-08, 7.5497894159e-08,
-        #|  ]
-        #|  let a_t : Array[Float] = [
-        #|    3.3333328366e-01, -1.9999158382e-01, 1.4253635705e-01, -1.0648017377e-01, 6.1687607318e-02,
-        #|  ]
-        #|  let ix = x.reinterpret_as_int()
-        #|  let sign = ix >> 31
-        #|  let ix = ix & 0x7fffffff
-        #|  let mut id = 0
-        #|  let mut x = x
-        #|  let one : Float = 1.0
-        #|  let two : Float = 2.0
-        #|  if ix >= 0x4c800000 {
-        #|    if x.is_nan() {
-        #|      return x
-        #|    }
-        #|    let z = atanhi[3] + 0x1.0p-120
-        #|    let z = if sign != 0 { -z } else { z }
-        #|    return z
-        #|  }
-        #|  if ix < 0x3ee00000 {
-        #|    if ix < 0x39800000 {
-        #|      return x
-        #|    }
-        #|    id = -1
-        #|  } else {
-        #|    x = x.abs()
-        #|    if ix < 0x3f980000 {
-        #|      if ix < 0x3f300000 {
-        #|        id = 0
-        #|        x = (two * x - one) / (two + x)
-        #|      } else {
-        #|        id = 1
-        #|        x = (x - one) / (x + one)
-        #|      }
-        #|    } else if ix < 0x401c0000 {
-        #|      id = 2
-        #|      x = (x - 1.5) / (one + x * 1.5)
-        #|    } else {
-        #|      id = 3
-        #|      x = -one / x
-        #|    }
-        #|  }
-        #|  let z = x * x
-        #|  let w = z * z
-        #|  let s1 = z * (a_t[0] + w * (a_t[2] + w * a_t[4]))
-        #|  let s2 = w * (a_t[1] + w * a_t[3])
-        #|  if id < 0 {
-        #|    return x - x * (s1 + s2)
-        #|  }
-        #|  let z = atanhi[id] - (x * (s1 + s2) - atanlo[id] - x)
-        #|  if sign != 0 {
-        #|    -z
-        #|  } else {
-        #|    z
-        #|  } }
-      ),
-    ),
-    "atan2f": build(
-      (
-        #|pub fn atan2f(y : Float, x : Float) -> Float { if x.is_nan() || y.is_nan() {
-        #|    return @float.not_a_number
-        #|  }
-        #|  let pi : Float = 3.1415927410e+00
-        #|  let pi_lo : Float = -8.7422776573e-08
-        #|  let zero : Float = 0.0
-        #|  let ix = x.reinterpret_as_uint()
-        #|  let iy = y.reinterpret_as_uint()
-        #|  if ix == 0x3f800000 {
-        #|    return atanf(y)
-        #|  }
-        #|  let m = ((iy >> 31) & 1) | ((ix >> 30) & 2)
-        #|  let ix = ix & 0x7fffffff
-        #|  let iy = iy & 0x7fffffff
-        #|  if iy == 0 {
-        #|    match m {
-        #|      0 | 1 => return y
-        #|      2 => return pi
-        #|      _ => return -pi
-        #|    }
-        #|  }
-        #|  if ix == 0 {
-        #|    let res = if (m & 1) != 0 { -pi / 2 } else { pi / 2 }
-        #|    return res
-        #|  }
-        #|  if ix == 0x7f800000 {
-        #|    if iy == 0x7f800000 {
-        #|      match m {
-        #|        0 => return pi / 4
-        #|        1 => return -pi / 4
-        #|        2 => return pi * 3.0 / 4
-        #|        _ => return -pi * 3.0 / 4
-        #|      }
-        #|    } else {
-        #|      match m {
-        #|        0 => return 0.0
-        #|        1 => return -0.0
-        #|        2 => return pi
-        #|        _ => return -pi
-        #|      }
-        #|    }
-        #|  }
-        #|  if ix + (26U << 23) < iy || iy == 0x7f800000 {
-        #|    let res = if (m & 1) != 0 { -pi / 2 } else { pi / 2 }
-        #|    return res
-        #|  }
-        #|  let z = if (m & 2) != 0 && iy + (26U << 23) < ix {
-        #|    zero
-        #|  } else {
-        #|    atanf(y / x)
-        #|  }
-        #|  match m {
-        #|    0 => z
-        #|    1 => -z
-        #|    2 => pi - (z - pi_lo)
-        #|    _ => z - pi_lo - pi
-        #|  } }
-      ),
-    ),
-    "scalbn": build(
-      (
-        #|pub fn scalbn(x : Double, exp : Int) -> Double { let mut n = exp
-        #|  let mut y : Double = x
-        #|  if n > 1023 {
-        #|    y *= 0x1.0p1023
-        #|    n -= 1023
-        #|    if n > 1023 {
-        #|      y *= 0x1.0p1023
-        #|      n -= 1023
-        #|      if n > 1023 {
-        #|        n = 1023
-        #|      }
-        #|    }
-        #|  } else if n < -1022 {
-        #|    // make sure final n < -53 to avoid double
-        #|    // rounding in the subnormal range
-        #|    y *= 0x1.0p-1022 * 0x1.0p53
-        #|    n += 1022 - 53
-        #|    if n < -1022 {
-        #|      y *= 0x1.0p-1022 * 0x1.0p53
-        #|      n += 1022 - 53
-        #|      if n < -1022 {
-        #|        n = -1022
-        #|      }
-        #|    }
-        #|  }
-        #|  let ui = (0x3ff + n).to_uint64() << 52
-        #|  return y * ui.reinterpret_as_double() }
-      ),
-    ),
-    "scalbnf": build(
-      (
-        #|pub fn scalbnf(y : Float, exp : Int) -> Float { let mut y = y
-        #|  let mut n = exp
-        #|  if n > 127 {
-        #|    y *= (0x1.0p127 : Float)
-        #|    n -= 127
-        #|    if n > 127 {
-        #|      y *= (0x1.0p127 : Float)
-        #|      n -= 127
-        #|      if n > 127 {
-        #|        n = 127
-        #|      }
-        #|    }
-        #|  } else if n < -126 {
-        #|    y *= (0x1.0p-126 : Float) * 0x1.0p24
-        #|    n += 126 - 24
-        #|    if n < -126 {
-        #|      y *= (0x1.0p-126 : Float) * 0x1.0p24
-        #|      n += 126 - 24
-        #|      if n < -126 {
-        #|        n = -126
-        #|      }
-        #|    }
-        #|  }
-        #|  let u = (0x7f + n) << 23
-        #|  return y * u.reinterpret_as_float() }
-      ),
-    ),
-    "top12": build(
-      (
-        #|fn top12(x : Float) -> UInt { x.reinterpret_as_uint() >> 20 }
-      ),
-    ),
-    "__math_xflowf": build(
-      (
-        #|fn __math_xflowf(sign : UInt, y : Float) -> Float { return (if sign != 0 { -y } else { y }) * y }
-      ),
-    ),
-    "__math_oflowf": build(
-      (
-        #|fn __math_oflowf(sign : UInt) -> Float { return __math_xflowf(sign, 0x1.0p97) }
-      ),
-    ),
-    "__math_uflowf": build(
-      (
-        #|fn __math_uflowf(sign : UInt) -> Float { return __math_xflowf(sign, 0x1.0p-95) }
-      ),
-    ),
-    "exp2f_table_bits": (None, Int(5)),
-    "expf": build(
-      (
-        #|pub fn expf(x : Float) -> Float { let xd = x.to_double()
-        #|  let abstop = top12(x) & 0x7ff
-        #|  if abstop >= top12(88.0) {
-        #|    if x.reinterpret_as_uint() == @float.neg_infinity.reinterpret_as_uint() {
-        #|      return 0.0
-        #|    }
-        #|    if abstop >= top12(@float.infinity) {
-        #|      return x + x
-        #|    }
-        #|    if x > 0x1.62e42ep6 {
-        #|      return __math_oflowf(0)
-        #|    }
-        #|    if x < -0x1.9fe368p6 {
-        #|      return __math_uflowf(0)
-        #|    }
-        #|  }
-        #|  let z = exp2f_data.invln2_scaled * xd
-        #|  let kd = z + exp2f_data.shift
-        #|  let ki = kd.reinterpret_as_uint64()
-        #|  let kd = kd - exp2f_data.shift
-        #|  let r = z - kd
-        #|  let t = exp2f_data.tab[(ki % expf_n).to_int()]
-        #|  let t = t + (ki << (52 - exp2f_table_bits))
-        #|  let s = t.reinterpret_as_double()
-        #|  let z = exp2f_data.poly_scaled[0] * r + exp2f_data.poly_scaled[1]
-        #|  let r2 = r * r
-        #|  let y = exp2f_data.poly_scaled[2] * r + 1
-        #|  let y = z * r2 + y
-        #|  let y = y * s
-        #|  y.to_float() }
-      ),
-    ),
-    "expm1f": build(
-      (
-        #|pub fn expm1f(x : Float) -> Float { let float_ln2_hi : Float = 6.9314575195e-01 // 0x3f317200
-        #|  let float_ln2_lo : Float = 1.4286067653e-06 // 0x35bfbe8e
-        #|  let inv_ln2 : Float = 1.4426950216e+00 // 0x3fb8aa3b
-        #|  let mut x = x
-        #|  let q1 : Float = -3.3333212137e-2 // -0x888868.0p-28
-        #|  let q2 : Float = 1.5807170421e-3 //  0xcf3010.0p-33
-        #|  let mut hx = x.reinterpret_as_uint()
-        #|  let sign = hx >> 31 != 0
-        #|  hx = hx & 0x7fffffff
-        #|  // filter out huge and non-finite argument
-        #|  if hx >= 0x4195b844 {
-        #|    // if |x|>=27*ln2
-        #|    if hx > 0x7f800000 {
-        #|      // NaN
-        #|      return x
-        #|    }
-        #|    if sign {
-        #|      return -1.0
-        #|    }
-        #|    if hx > 0x42b17217 {
-        #|      x *= (0x1.0p127 : Float)
-        #|      return x
-        #|    }
-        #|  }
-        #|  let mut k : Int = 0
-        #|  let mut hi : Float = 0
-        #|  let mut lo : Float = 0
-        #|  let mut c : Float = 0
-        #|  // argument reduction
-        #|  if hx > 0x3eb17218 {
-        #|    // if  |x| > 0.5 ln2
-        #|    if hx < 0x3F851592 {
-        #|      // and |x| < 1.5 ln2
-        #|      if !sign {
-        #|        hi = x - float_ln2_hi
-        #|        lo = float_ln2_lo
-        #|        k = 1
-        #|      } else {
-        #|        hi = x + float_ln2_hi
-        #|        lo = -float_ln2_lo
-        #|        k = -1
-        #|      }
-        #|    } else {
-        #|      k = (inv_ln2 * x + (if sign { -0.5 } else { 0.5 })).to_int()
-        #|      let t = k.to_float()
-        #|      hi = x - t * float_ln2_hi // t*ln2_hi is exact here
-        #|      lo = t * float_ln2_lo
-        #|    }
-        #|    x = hi - lo
-        #|    c = hi - x - lo
-        #|  } else if hx < 0x33000000 {
-        #|    // when |x|<2**-25, return x
-        #|    //if hx < 0x00800000 {
-        #|    //    force_eval(x * x);
-        #|    //}
-        #|    return x
-        #|  } else {
-        #|    k = 0
-        #|  }
-        #|  // x is now in primary range
-        #|  let hfx = (0.5 : Float) * x
-        #|  let hxs = x * hfx
-        #|  let r1 = (1.0 : Float) + hxs * (q1 + hxs * q2)
-        #|  let t = (3.0 : Float) - r1 * hfx
-        #|  let mut e = hxs * ((r1 - t) / ((6.0 : Float) - x * t))
-        #|  if k == 0 {
-        #|    // c is 0
-        #|    return x - (x * e - hxs)
-        #|  }
-        #|  e = x * (e - c) - c
-        #|  e -= hxs
-        #|  // exp(x) ~ 2^k (x_reduced - e + 1)
-        #|  if k == -1 {
-        #|    return (0.5 : Float) * (x - e) - 0.5
-        #|  }
-        #|  if k == 1 {
-        #|    if x < -0.25 {
-        #|      return -(2.0 : Float) * (e - (x + 0.5))
-        #|    }
-        #|    return (1.0 : Float) + (2.0 : Float) * (x - e)
-        #|  }
-        #|  let twopk = ((0x7f + k) << 23).reinterpret_as_float() // 2^k
-        #|  if !(k is (0..=56)) {
-        #|    // suffice to return exp(x)-1
-        #|    let mut y = x - e + 1.0
-        #|    if k == 128 {
-        #|      y = y * 2.0 * (0x1.0p127 : Float)
-        #|    } else {
-        #|      y = y * twopk
-        #|    }
-        #|    return y - 1.0
-        #|  }
-        #|  let uf = ((0x7f - k) << 23).reinterpret_as_float() // 2^-k
-        #|  if k < 23 {
-        #|    (x - e + ((1.0 : Float) - uf)) * twopk
-        #|  } else {
-        #|    (x - (e + uf) + 1.0) * twopk
-        #|  } }
-      ),
-    ),
-    "powf": build(
-      (
-        #|pub fn powf(base : Float, exponent : Float) -> Float { let huge : Float = 1.0e30
-        #|  let tiny : Float = 1.0e-30
-        #|  let cp : Float = 9.6179670095e-01 // 0x3f76384f =2/(3ln2) */
-        #|  let cp_h : Float = 9.6191406250e-01 // 0x3f764000 =12b cp */
-        #|  let cp_l : Float = -1.1736857402e-04 // 0xb8f623c6 =tail of cp_h */
-        #|  let lg2 : Float = 6.9314718246e-01 // 0x3f317218 */
-        #|  let lg2_h : Float = 6.93145752e-01 // 0x3f317200 */
-        #|  let lg2_l : Float = 1.4286067653e-06 // 0x35bfbe8c */
-        #|  let ovt : Float = 8.0085662595e-08 // -(2**-28)/(log(2)**2) */
-        #|  let ivln2 : Float = 1.4426950216e+00 // 0x3f317218 */
-        #|  let ivln2_h : Float = 1.4426879883e+00 // 0x3f317218 */
-        #|  let ivln2_l : Float = 7.0526075433e-06 // 0x35bfbe8c */
-        #|  let l1 : Float = 6.0000002384e-01 // 0x3f19999a */
-        #|  let l2 : Float = 4.2857143283e-01 // 0x3edb6db7 */
-        #|  let l3 : Float = 3.3333334327e-01 // 0x3eaaaaab */
-        #|  let l4 : Float = 2.7272811532e-01 // 0x3e8ba305 */
-        #|  let l5 : Float = 2.3066075146e-01 // 0x3e6c3255 */
-        #|  let l6 : Float = 2.0697501302e-01 // 0x3e53f142 */
-        #|  let p1 : Float = 1.6666667163e-01 // 0x3e2aaaab */
-        #|  let p2 : Float = -2.7777778450e-03 // 0xbb360b61 */
-        #|  let p3 : Float = 6.6137559770e-05 // 0x388ab355 */
-        #|  let p4 : Float = -1.6533901999e-06 // 0xb5ddea0e */
-        #|  let p5 : Float = 4.1381369442e-08 // 0x3331bb4c */
-        #|  let mut z : Float = 0
-        #|  let mut ax : Float = 0
-        #|  let mut z_h : Float = 0
-        #|  let mut z_l : Float = 0
-        #|  let mut p_h : Float = 0
-        #|  let mut p_l : Float = 0
-        #|  let mut y1 : Float = 0
-        #|  let mut t1 : Float = 0
-        #|  let mut t2 : Float = 0
-        #|  let mut r : Float = 0
-        #|  let mut s : Float = 0
-        #|  let mut sn : Float = 0
-        #|  let mut t : Float = 0
-        #|  let mut u : Float = 0
-        #|  let mut v : Float = 0
-        #|  let mut w : Float = 0
-        #|  let mut i : Int = 0
-        #|  let mut j : Int = 0
-        #|  let mut k : Int = 0
-        #|  let mut yisint : Int = 0
-        #|  let mut n : Int = 0
-        #|  let mut hx : Int = 0
-        #|  let mut hy : Int = 0
-        #|  let mut ix : Int = 0
-        #|  let mut iy : Int = 0
-        #|  let mut i_s : Int = 0
-        #|  let (x, y) = (base, exponent)
-        #|  let bp : Array[Float] = [1.0, 1.5]
-        #|  let dp_h : Array[Float] = [0.0, 5.84960938e-01] // 0x3f15c000 */
-        #|  let dp_l : Array[Float] = [0.0, 1.56322085e-06] // 0x35d1cfdc */
-        #|  let two24 : Float = 16777216.0
-        #|  hx = x.reinterpret_as_int()
-        #|  hy = y.reinterpret_as_int()
-        #|  ix = hx & 0x7fffffff
-        #|  iy = hy & 0x7fffffff
-        #|  // x**0 = 1, even if x is NaN
-        #|  if iy == 0 {
-        #|    return 1.0
-        #|  }
-        #|  // 1**y = 1, even if y is NaN
-        #|  if hx == 0x3f800000 {
-        #|    return 1.0
-        #|  }
-        #|  // NaN if either arg is NaN
-        #|  if ix > 0x7f800000 || iy > 0x7f800000 {
-        #|    return x + y
-        #|  }
-        #|  // determine if y is an odd int when x < 0
-        #|  // yisint = 0       ... y is not an integer
-        #|  // yisint = 1       ... y is an odd int
-        #|  // yisint = 2       ... y is an even int
-        #|  //
-        #|  yisint = 0
-        #|  if hx < 0 {
-        #|    if iy >= 0x4b800000 {
-        #|      yisint = 2 // even integer y
-        #|    } else if iy >= 0x3f800000 {
-        #|      k = (iy >> 23) - 0x7f // exponent
-        #|      j = iy >> (23 - k)
-        #|      if j << (23 - k) == iy {
-        #|        yisint = 2 - (j & 1)
-        #|      }
-        #|    }
-        #|  }
-        #|  // special value of y
-        #|  if iy == 0x7f800000 {
-        #|    if ix == 0x3f800000 {
-        #|      // (-1)**+-inf is 1
-        #|      return 1.0
-        #|    } else if ix > 0x3f800000 {
-        #|      // (|x|>1)**+-inf = inf,0
-        #|      return if hy >= 0 { y } else { 0.0 }
-        #|    } else {
-        #|      // (|x|<1)**+-inf = 0,inf
-        #|      return if hy >= 0 { 0.0 } else { -y }
-        #|    }
-        #|  }
-        #|  if iy == 0x3f800000 {
-        #|    // y is +-1
-        #|    return if hy >= 0 { x } else { (1.0 : Float) / x }
-        #|  }
-        #|  if hy == 0x40000000 {
-        #|    // y is 2
-        #|    return x * x
-        #|  }
-        #|  // y is  0.5
-        #|  if hy == 0x3f000000 && hx >= 0 {
-        #|    // x >= +0
-        #|    return x.sqrt()
-        #|  }
-        #|  ax = x.abs()
-        #|  // special value of x
-        #|  if ix == 0x7f800000 || ix == 0 || ix == 0x3f800000 {
-        #|    // x is +-0,+-inf,+-1
-        #|    z = ax
-        #|    if hy < 0 {
-        #|      // z = (1/|x|)
-        #|      z = (1.0 : Float) / z
-        #|    }
-        #|    if hx < 0 {
-        #|      if ((ix - 0x3f800000) | yisint) == 0 {
-        #|        z = (z - z) / (z - z) // (-1)**non-int is NaN
-        #|      } else if yisint == 1 {
-        #|        z = -z
-        #|      }
-        #|    } // (x<0)**odd = -(|x|**odd)
-        #|    return z
-        #|  }
-        #|  sn = 1.0 // sign of result
-        #|  if hx < 0 {
-        #|    if yisint == 0 {
-        #|      // (x<0)**(non-int) is NaN
-        #|      return @float.not_a_number
-        #|    }
-        #|    if yisint == 1 {
-        #|      // (x<0)**(odd int)
-        #|      sn = -1.0
-        #|    }
-        #|  }
-        #|  // |y| is huge
-        #|  if iy > 0x4d000000 {
-        #|    // if |y| > 2**27
-        #|    // over/underflow if x is not close to one
-        #|    if ix < 0x3f7ffff8 {
-        #|      return if hy < 0 { sn * huge * huge } else { sn * tiny * tiny }
-        #|    }
-        #|    if ix > 0x3f800007 {
-        #|      return if hy > 0 { sn * huge * huge } else { sn * tiny * tiny }
-        #|    }
-        #|    // now |1-x| is tiny <= 2**-20, suffice to compute
-        #|    // log(x) by x-x^2/2+x^3/3-x^4/4
-        #|    t = ax - 1.0 // t has 20 trailing zeros
-        #|    w = t * t * ((0.5 : Float) - t * ((0.333333333333 : Float) - t * 0.25))
-        #|    u = ivln2_h * t // IVLN2_H has 16 sig. bits
-        #|    v = t * ivln2_l - w * ivln2
-        #|    t1 = u + v
-        #|    i_s = t1.reinterpret_as_int()
-        #|    t1 = (i_s & 0xfffff000).reinterpret_as_float()
-        #|    t2 = v - (t1 - u)
-        #|  } else {
-        #|    let mut s2 : Float = 0
-        #|    let mut s_h : Float = 0
-        #|    let mut s_l : Float = 0
-        #|    let mut t_h : Float = 0
-        #|    let mut t_l : Float = 0
-        #|    n = 0
-        #|    // take care subnormal number
-        #|    if ix < 0x00800000 {
-        #|      ax *= two24
-        #|      n -= 24
-        #|      ix = ax.reinterpret_as_int()
-        #|    }
-        #|    n += (ix >> 23) - 0x7f
-        #|    j = ix & 0x007fffff
-        #|    // determine interval
-        #|    ix = j | 0x3f800000 // normalize ix
-        #|    if j <= 0x1cc471 {
-        #|      // |x|<sqrt(3/2)
-        #|      k = 0
-        #|    } else if j < 0x5db3d7 {
-        #|      // |x|<sqrt(3)
-        #|      k = 1
-        #|    } else {
-        #|      k = 0
-        #|      n += 1
-        #|      ix -= 0x00800000
-        #|    }
-        #|    ax = ix.reinterpret_as_float()
-        #|    // compute s = s_h+s_l = (x-1)/(x+1) or (x-1.5)/(x+1.5)
-        #|    u = ax - bp[k]
-        #|    v = (1.0 : Float) / (ax + bp[k])
-        #|    s = u * v
-        #|    s_h = s
-        #|    i_s = s_h.reinterpret_as_int()
-        #|    s_h = (i_s & 0xfffff000).reinterpret_as_float()
-        #|    // t_h=ax+bp[k] High
-        #|    i_s = (((ix.reinterpret_as_uint() >> 1) & 0xfffff000) | 0x20000000).reinterpret_as_int()
-        #|    t_h = (i_s.reinterpret_as_uint() +
-        #|    0x00400000 +
-        #|    (k.reinterpret_as_uint() << 21)).reinterpret_as_float()
-        #|    t_l = ax - (t_h - bp[k])
-        #|    s_l = v * (u - s_h * t_h - s_h * t_l)
-        #|    // compute log(ax) */
-        #|    s2 = s * s
-        #|    r = s2 * s2 * (l1 + s2 * (l2 + s2 * (l3 + s2 * (l4 + s2 * (l5 + s2 * l6)))))
-        #|    r += s_l * (s_h + s)
-        #|    s2 = s_h * s_h
-        #|    t_h = (3.0 : Float) + s2 + r
-        #|    i_s = t_h.reinterpret_as_int()
-        #|    t_h = (i_s & 0xfffff000).reinterpret_as_float()
-        #|    t_l = r - (t_h - 3.0 - s2)
-        #|    // u+v = s*(1+...)
-        #|    u = s_h * t_h
-        #|    v = s_l * t_h + t_l * s
-        #|    // 2/(3log2)*(s+...)
-        #|    p_h = u + v
-        #|    i_s = p_h.reinterpret_as_int()
-        #|    p_h = (i_s & 0xfffff000).reinterpret_as_float()
-        #|    p_l = v - (p_h - u)
-        #|    z_h = cp_h * p_h // cp_h+cp_l = 2/(3*log2)
-        #|    z_l = cp_l * p_h + p_l * cp + dp_l[k]
-        #|    // log2(ax) = (s+..)*2/(3*log2) = n + dp_h + z_h + z_l
-        #|    t = n.to_float()
-        #|    t1 = z_h + z_l + dp_h[k] + t
-        #|    i_s = t1.reinterpret_as_int()
-        #|    t1 = (i_s & 0xfffff000).reinterpret_as_float()
-        #|    t2 = z_l - (t1 - t - dp_h[k] - z_h)
-        #|  }
-        #|  // split up y into y1+y2 and compute (y1+y2)*(t1+t2)
-        #|  i_s = y.reinterpret_as_int()
-        #|  y1 = (i_s & 0xfffff000).reinterpret_as_float()
-        #|  p_l = (y - y1) * t1 + y * t2
-        #|  p_h = y1 * t1
-        #|  z = p_l + p_h
-        #|  j = z.reinterpret_as_int()
-        #|  if j > 0x43000000 {
-        #|    // if z > 128
-        #|    return sn * huge * huge // overflow
-        #|  } else if j == 0x43000000 {
-        #|    // if z == 128
-        #|    if p_l + ovt > z - p_h {
-        #|      return sn * huge * huge
-        #|    }
-        #|  } else if ( // overflow
-        #|      j & 0x7fffffff
-        #|    ) >
-        #|    0x43160000 {
-        #|    // z < -150
-        #|    return sn * tiny * tiny // underflow
-        #|    // z == -150
-        #|  } else if j.reinterpret_as_uint() == 0xc3160000 && p_l <= z - p_h {
-        #|    return sn * tiny * tiny
-        #|  } // underflow
-        #|  //
-        #|  // compute 2**(p_h+p_l)
-        #|  //
-        #|  i = j & 0x7fffffff
-        #|  k = (i >> 23) - 0x7f
-        #|  n = 0
-        #|  if i > 0x3f000000 {
-        #|    // if |z| > 0.5, set n = [z+0.5]
-        #|    n = j + (0x00800000 >> (k + 1))
-        #|    k = ((n & 0x7fffffff) >> 23) - 0x7f // new k for n
-        #|    t = (n & (0x007fffff >> k).lnot()).reinterpret_as_float()
-        #|    n = ((n & 0x007fffff) | 0x00800000) >> (23 - k)
-        #|    if j < 0 {
-        #|      n = -n
-        #|    }
-        #|    p_h -= t
-        #|  }
-        #|  t = p_l + p_h
-        #|  i_s = t.reinterpret_as_int()
-        #|  t = (i_s & 0xffff8000).reinterpret_as_float()
-        #|  u = t * lg2_h
-        #|  v = (p_l - (t - p_h)) * lg2 + t * lg2_l
-        #|  z = u + v
-        #|  w = v - (z - u)
-        #|  t = z * z
-        #|  t1 = z - t * (p1 + t * (p2 + t * (p3 + t * (p4 + t * p5))))
-        #|  r = z * t1 / (t1 - 2.0) - (w + z * w)
-        #|  z = (1.0 : Float) - (r - z)
-        #|  j = z.reinterpret_as_int()
-        #|  j += n << 23
-        #|  if j >> 23 <= 0 {
-        #|    // subnormal output
-        #|    z = scalbnf(z, n)
-        #|  } else {
-        #|    z = j.reinterpret_as_float()
-        #|  }
-        #|  sn * z }
-      ),
-    ),
-  }
-})
+let moonbitlang_core_math_module : RuntimeModule = RuntimeModule::new(
+  "moonbitlang/core/math",
+  deps={
+    "moonbitlang/core/builtin": moonbitlang_core_builtin_module,
+    "moonbitlang/core/double": moonbitlang_core_double_module,
+    "moonbitlang/core/float": moonbitlang_core_float_module,
+    "moonbitlang/core/int": moonbitlang_core_int_module,
+    "moonbitlang/core/bigint": moonbitlang_core_bigint_module,
+    "moonbitlang/core/random": moonbitlang_core_random_module,
+  },
+  fn(_env, build) {
+    {
+      "ln": build(
+        (
+          #|pub fn ln(x : Double) -> Double { let l1 = 6.666666666666735130e-01 // 3FE55555 55555593
+          #|  let l2 = 3.999999999940941908e-01 // 3FD99999 9997FA04
+          #|  let l3 = 2.857142874366239149e-01 // 3FD24924 94229359
+          #|  let l4 = 2.222219843214978396e-01 // 3FCC71C5 1D8E78AF
+          #|  let l5 = 1.818357216161805012e-01 // 3FC74664 96CB03DE
+          #|  let l6 = 1.531383769920937332e-01 // 3FC39A09 D078C69F
+          #|  let l7 = 1.479819860511658591e-01 // 3FC2F112 DF3E5244
+          #|  if x < 0.0 {
+          #|    return @double.not_a_number
+          #|  } else if x.is_nan() || x.is_inf() {
+          #|    return x
+          #|  } else if x == 0.0 {
+          #|    return @double.neg_infinity
+          #|  }
+          #|  let (f1, ki) = frexp(x)
+          #|  let (f, k) = if f1 < SQRT2 / 2.0 {
+          #|    (f1 * 2.0 - 1.0, (ki - 1).to_double())
+          #|  } else {
+          #|    (f1 - 1.0, ki.to_double())
+          #|  }
+          #|  let s = f / (2.0 + f)
+          #|  let s2 = s * s
+          #|  let s4 = s2 * s2
+          #|  let t1 = s2 * (l1 + s4 * (l3 + s4 * (l5 + s4 * l7)))
+          #|  let t2 = s4 * (l2 + s4 * (l4 + s4 * l6))
+          #|  let r = t1 + t2
+          #|  let hfsq = 0.5 * f * f
+          #|  k * LN2_HI - (hfsq - (s * (hfsq + r) + k * LN2_LO) - f) }
+        ),
+      ),
+      "log2": build(
+        (
+          #|pub fn log2(x : Double) -> Double { let (f, e) = frexp(x)
+          #|  if f == 0.5 {
+          #|    return e.to_double() - 1.0
+          #|  }
+          #|  ln(f) / LN2 + e.to_double() }
+        ),
+      ),
+      "log10": build(
+        (
+          #|pub fn log10(x : Double) -> Double { if x < 0.0 {
+          #|    return @double.not_a_number
+          #|  } else if x.is_nan() || x.is_inf() {
+          #|    return x
+          #|  } else if x == 0.0 {
+          #|    return @double.neg_infinity
+          #|  }
+          #|  let ivln10 = 4.34294481903251816668e-01
+          #|  let log10_2hi = 3.01029995663611771306e-01
+          #|  let log10_2lo = 3.69423907715893078616e-13
+          #|  let (f, e) = frexp(x)
+          #|  let (f, e) = if e >= 1 {
+          #|    (f * 2.0, (e - 1).to_double())
+          #|  } else {
+          #|    (f, e.to_double())
+          #|  }
+          #|  let z = e * log10_2lo + ivln10 * ln(f)
+          #|  z + e * log10_2hi }
+        ),
+      ),
+      "ln_1p": build(
+        (
+          #|pub fn ln_1p(x : Double) -> Double { if x < -1.0 || x.is_nan() {
+          #|    return @double.not_a_number
+          #|  }
+          #|  if x == -1.0 {
+          #|    return @double.neg_infinity
+          #|  }
+          #|  if x.is_inf() {
+          #|    return @double.infinity
+          #|  }
+          #|  let ln2_hi = 6.93147180369123816490e-01
+          #|  let ln2_lo = 1.90821492927058770002e-10
+          #|  let two54 = 1.80143985094819840000e+16
+          #|  let lp1 = 6.666666666666735130e-01
+          #|  let lp2 = 3.999999999940941908e-01
+          #|  let lp3 = 2.857142874366239149e-01
+          #|  let lp4 = 2.222219843214978396e-01
+          #|  let lp5 = 1.818357216161805012e-01
+          #|  let lp6 = 1.531383769920937332e-01
+          #|  let zero = 0.0
+          #|  let lp7 = 1.479819860511658591e-01
+          #|  let hx = get_high_word(x).reinterpret_as_int()
+          #|  let ax = hx & 0x7fffffff
+          #|  let mut f = 0.0
+          #|  let mut c = 0.0
+          #|  let mut s = 0.0
+          #|  let mut z = 0.0
+          #|  let mut r = 0.0
+          #|  let mut u = 0.0
+          #|  let mut hu = 0
+          #|  let mut k = 1
+          #|  if hx < 0x3FDA827A {
+          #|    if ax < 0x3e200000 {
+          #|      if two54 + x > zero && ax < 0x3c900000 {
+          #|        return x
+          #|      } else {
+          #|        return x - x * x * 0.5
+          #|      }
+          #|    }
+          #|    if hx > 0 || hx <= 0xbfd2bec3 {
+          #|      k = 0
+          #|      f = x
+          #|      hu = 1
+          #|    }
+          #|  }
+          #|  if k != 0 {
+          #|    if hx < 0x43400000 {
+          #|      u = 1.0 + x
+          #|      hu = get_high_word(u).reinterpret_as_int()
+          #|      k = (hu >> 20) - 1023
+          #|      c = if k > 0 { 1.0 - (u - x) } else { x - (u - 1.0) }
+          #|      c /= u
+          #|    } else {
+          #|      u = x
+          #|      hu = get_high_word(u).reinterpret_as_int()
+          #|      k = (hu >> 20) - 1023
+          #|      c = 0.0
+          #|    }
+          #|    hu = hu & 0x000fffff
+          #|    if hu < 0x6a09e {
+          #|      u = set_high_word(u, hu.reinterpret_as_uint() | 0x3ff00000)
+          #|    } else {
+          #|      k += 1
+          #|      u = set_high_word(u, hu.reinterpret_as_uint() | 0x3fe00000)
+          #|      hu = (0x00100000 - hu) >> 2
+          #|    }
+          #|    f = u - 1.0
+          #|  }
+          #|  let hfsq = 0.5 * f * f
+          #|  if hu == 0 {
+          #|    if f == zero {
+          #|      if k == 0 {
+          #|        return zero
+          #|      } else {
+          #|        c += k.to_double() * ln2_lo
+          #|        return k.to_double() * ln2_hi + c
+          #|      }
+          #|    }
+          #|    r = hfsq * (1.0 - 0.66666666666666666 * f)
+          #|    if k == 0 {
+          #|      return f - r
+          #|    } else {
+          #|      return k.to_double() * ln2_hi - (r - (k.to_double() * ln2_lo + c) - f)
+          #|    }
+          #|  }
+          #|  s = f / (2.0 + f)
+          #|  z = s * s
+          #|  r = z *
+          #|    (lp1 + z * (lp2 + z * (lp3 + z * (lp4 + z * (lp5 + z * (lp6 + z * lp7))))))
+          #|  if k == 0 {
+          #|    return f - (hfsq - s * (hfsq + r))
+          #|  } else {
+          #|    return k.to_double() * ln2_hi -
+          #|      (hfsq - (s * (hfsq + r) + (k.to_double() * ln2_lo + c)) - f)
+          #|  } }
+        ),
+      ),
+      "sin": build(
+        (
+          #|pub fn sin(x : Double) -> Double { if x.is_inf() || x.is_nan() {
+          #|    return @double.not_a_number
+          #|  }
+          #|  let y = [0.0, 0.0]
+          #|  let z = 0.0
+          #|  if x.abs() <= PI_OVER_4 {
+          #|    return __kernel_sin(x, z, 0)
+          #|  } else {
+          #|    let n = rem_pio2(x, y)
+          #|    match n & 3 {
+          #|      0 => __kernel_sin(y[0], y[1], 1)
+          #|      1 => __kernel_cos(y[0], y[1])
+          #|      2 => -__kernel_sin(y[0], y[1], 1)
+          #|      _ => -__kernel_cos(y[0], y[1])
+          #|    }
+          #|  } }
+        ),
+      ),
+      "cos": build(
+        (
+          #|pub fn cos(x : Double) -> Double { if x.is_inf() || x.is_nan() {
+          #|    return @double.not_a_number
+          #|  }
+          #|  let y = [0.0, 0.0]
+          #|  let z = 0.0
+          #|  if x.abs() <= PI_OVER_4 {
+          #|    return __kernel_cos(x, z)
+          #|  } else {
+          #|    let n = rem_pio2(x, y)
+          #|    match n & 3 {
+          #|      0 => __kernel_cos(y[0], y[1])
+          #|      1 => -__kernel_sin(y[0], y[1], 1)
+          #|      2 => -__kernel_cos(y[0], y[1])
+          #|      _ => __kernel_sin(y[0], y[1], 1)
+          #|    }
+          #|  } }
+        ),
+      ),
+      "tan": build(
+        (
+          #|pub fn tan(x : Double) -> Double { if x.is_inf() || x.is_nan() {
+          #|    return @double.not_a_number
+          #|  }
+          #|  let y = Array::make(2, 0.0)
+          #|  let z = 0.0
+          #|  if x.abs() <= PI_OVER_4 {
+          #|    __kernal_tan(x, z, 1)
+          #|  } else {
+          #|    let n = rem_pio2(x, y)
+          #|    __kernal_tan(y[0], y[1], 1 - ((n & 1) << 1))
+          #|  } }
+        ),
+      ),
+      "asin": build(
+        (
+          #|pub fn asin(x : Double) -> Double { let huge = 1.0e+300
+          #|  let pio4_hi = 7.85398163397448278999e-01
+          #|  let pio2_hi = 1.57079632679489655800
+          #|  let pio2_lo = 6.12323399573676603587e-17
+          #|  let ps0 = 1.66666666666666657415e-01
+          #|  let ps1 = -3.25565818622400915405e-01
+          #|  let ps2 = 2.01212532134862925881e-01
+          #|  let ps3 = -4.00555345006794114027e-02
+          #|  let ps4 = 7.91534994289814532176e-04
+          #|  let ps5 = 3.47933107596021167570e-05
+          #|  let qs1 = -2.40339491173441421878e+00
+          #|  let qs2 = 2.02094576023350569471e+00
+          #|  let qs3 = -6.88283971605453293030e-01
+          #|  let qs4 = 7.70381505559019352791e-02
+          #|  let ix = get_high_word(x).reinterpret_as_int() & 0x7fffffff
+          #|  let absx = x.abs()
+          #|  if absx >= 1.0 {
+          #|    if absx == 1.0 {
+          #|      return x * pio2_hi + x * pio2_lo
+          #|    } else {
+          #|      return @double.not_a_number
+          #|    }
+          #|  } else if absx < 0.5 {
+          #|    if ix < 0x3e400000 {
+          #|      if huge + x > 1.0 {
+          #|        return x
+          #|      }
+          #|    } else {
+          #|      let t = x * x
+          #|      let p = t *
+          #|        (ps0 + t * (ps1 + t * (ps2 + t * (ps3 + t * (ps4 + t * ps5)))))
+          #|      let q = 1.0 + t * (qs1 + t * (qs2 + t * (qs3 + t * qs4)))
+          #|      let w = p / q
+          #|      return x + x * w
+          #|    }
+          #|  }
+          #|  let w = 1.0 - absx
+          #|  let t = w * 0.5
+          #|  let p = t * (ps0 + t * (ps1 + t * (ps2 + t * (ps3 + t * (ps4 + t * ps5)))))
+          #|  let q = 1.0 + t * (qs1 + t * (qs2 + t * (qs3 + t * qs4)))
+          #|  let s = t.sqrt()
+          #|  if ix >= 0x3FEF3333 {
+          #|    let w = p / q
+          #|    let t = pio2_hi - (2.0 * (s + s * w) - pio2_lo)
+          #|    return if x > 0.0 { t } else { -t }
+          #|  } else {
+          #|    let mut w = s
+          #|    w = set_low_word(w, 0)
+          #|    let c = (t - w * w) / (s + w)
+          #|    let r = p / q
+          #|    let p = 2.0 * s * r - (pio2_lo - 2.0 * c)
+          #|    let q = pio4_hi - 2.0 * w
+          #|    let t = pio4_hi - (p - q)
+          #|    return if x > 0.0 { t } else { -t }
+          #|  } }
+        ),
+      ),
+      "acos": build(
+        (
+          #|pub fn acos(x : Double) -> Double { let one : Double = 1.0
+          #|  let pi : Double = 3.14159265358979311600
+          #|  let pio2_hi : Double = 1.57079632679489655800
+          #|  let pio2_lo : Double = 6.12323399573676603587e-17
+          #|  let ps0 : Double = 1.66666666666666657415e-01
+          #|  let ps1 : Double = -3.25565818622400915405e-01
+          #|  let ps2 : Double = 2.01212532134862925881e-01
+          #|  let ps3 : Double = -4.00555345006794114027e-02
+          #|  let ps4 : Double = 7.91534994289814532176e-04
+          #|  let ps5 : Double = 3.47933107596021167570e-05
+          #|  let qs1 : Double = -2.40339491173441421878e+00
+          #|  let qs2 : Double = 2.02094576023350569471e+00
+          #|  let qs3 : Double = -6.88283971605453293030e-01
+          #|  let qs4 : Double = 7.70381505559019352791e-02
+          #|  let ix = get_high_word(x).reinterpret_as_int() & 0x7fffffff
+          #|  let absx = x.abs()
+          #|  if absx >= 1.0 {
+          #|    if absx == 1.0 {
+          #|      if x > 0 {
+          #|        return 0.0
+          #|      } else {
+          #|        return pi + 2.0 * pio2_lo
+          #|      }
+          #|    }
+          #|    return @double.not_a_number
+          #|  }
+          #|  if absx < 0.5 {
+          #|    if ix <= 0x3c600000 {
+          #|      return pio2_hi + pio2_lo
+          #|    }
+          #|    let z = x * x
+          #|    let p = z * (ps0 + z * (ps1 + z * (ps2 + z * (ps3 + z * (ps4 + z * ps5)))))
+          #|    let q = one + z * (qs1 + z * (qs2 + z * (qs3 + z * qs4)))
+          #|    let r = p / q
+          #|    pio2_hi - (x - (pio2_lo - x * r))
+          #|  } else if x < 0 {
+          #|    let z = (one + x) * 0.5
+          #|    let p = z * (ps0 + z * (ps1 + z * (ps2 + z * (ps3 + z * (ps4 + z * ps5)))))
+          #|    let q = one + z * (qs1 + z * (qs2 + z * (qs3 + z * qs4)))
+          #|    let s = z.sqrt()
+          #|    let r = p / q
+          #|    let w = r * s - pio2_lo
+          #|    pi - 2.0 * (s + w)
+          #|  } else {
+          #|    let z = (one - x) * 0.5
+          #|    let s = z.sqrt()
+          #|    let df = s
+          #|    let c = (z - df * df) / (s + df)
+          #|    let p = z * (ps0 + z * (ps1 + z * (ps2 + z * (ps3 + z * (ps4 + z * ps5)))))
+          #|    let q = one + z * (qs1 + z * (qs2 + z * (qs3 + z * qs4)))
+          #|    let r = p / q
+          #|    let w = r * s + c
+          #|    2.0 * (df + w)
+          #|  } }
+        ),
+      ),
+      "atan": build(
+        (
+          #|pub fn atan(x : Double) -> Double { if x.is_nan() || x == 0.0 {
+          #|    return x
+          #|  }
+          #|  let atan_hi = [
+          #|    4.63647609000806093515e-01, 7.85398163397448278999e-01, 9.82793723247329054082e-01,
+          #|    1.57079632679489655800e+00,
+          #|  ]
+          #|  let atan_lo = [
+          #|    2.26987774529616870924e-17, 3.06161699786838301793e-17, 1.39033110312309984516e-17,
+          #|    6.12323399573676603587e-17,
+          #|  ]
+          #|  let a_t = [
+          #|    3.33333333333329318027e-01, -1.99999999998764832476e-01, 1.42857142725034663711e-01,
+          #|    -1.11111104054623557880e-01, 9.09088713343650656196e-02, -7.69187620504482999495e-02,
+          #|    6.66107313738753120669e-02, -5.83357013379057348645e-02, 4.97687799461593236017e-02,
+          #|    -3.65315727442169155270e-02, 1.62858201153657823623e-02,
+          #|  ]
+          #|  let one = 1.0
+          #|  let huge = 1.0e300
+          #|  let ix = get_high_word(x).reinterpret_as_int() & 0x7fffffff
+          #|  let mut id = 0
+          #|  let mut z = 0.0
+          #|  let mut w = 0.0
+          #|  let mut x = x
+          #|  let x_is_neg = x < 0.0
+          #|  if ix >= 0x44100000 {
+          #|    if x > 0 {
+          #|      return atan_hi[3] + atan_lo[3]
+          #|    } else {
+          #|      return -atan_hi[3] - atan_lo[3]
+          #|    }
+          #|  }
+          #|  if ix < 0x3fdc0000 {
+          #|    if ix < 0x3e200000 {
+          #|      if huge + x > one {
+          #|        return x
+          #|      }
+          #|    }
+          #|    id = -1
+          #|  } else {
+          #|    x = x.abs()
+          #|    if ix < 0x3ff30000 {
+          #|      if ix < 0x3fe60000 {
+          #|        id = 0
+          #|        x = (2.0 * x - one) / (2.0 + x)
+          #|      } else {
+          #|        id = 1
+          #|        x = (x - one) / (x + one)
+          #|      }
+          #|    } else if ix < 0x40038000 {
+          #|      id = 2
+          #|      x = (x - 1.5) / (one + 1.5 * x)
+          #|    } else {
+          #|      id = 3
+          #|      x = -1.0 / x
+          #|    }
+          #|  }
+          #|  z = x * x
+          #|  w = z * z
+          #|  let s1 = z *
+          #|    (
+          #|      a_t[0] +
+          #|      w * (a_t[2] + w * (a_t[4] + w * (a_t[6] + w * (a_t[8] + w * a_t[10]))))
+          #|    )
+          #|  let s2 = w *
+          #|    (a_t[1] + w * (a_t[3] + w * (a_t[5] + w * (a_t[7] + w * a_t[9]))))
+          #|  if id < 0 {
+          #|    x - x * (s1 + s2)
+          #|  } else {
+          #|    z = atan_hi[id] - (x * (s1 + s2) - atan_lo[id] - x)
+          #|    if x_is_neg {
+          #|      -z
+          #|    } else {
+          #|      z
+          #|    }
+          #|  } }
+        ),
+      ),
+      "atan2": build(
+        (
+          #|pub fn atan2(y : Double, x : Double) -> Double { if x.is_nan() || y.is_nan() {
+          #|    return @double.not_a_number
+          #|  }
+          #|  let tiny = 1.0e-300
+          #|  let zero = 0.0
+          #|  let pi_o_4 = 7.8539816339744827900E-01
+          #|  let pi_o_2 = 1.5707963267948965580E+00
+          #|  let pi = 3.1415926535897931160E+00
+          #|  let pi_lo = 1.2246467991473531772E-16
+          #|  let hx = get_high_word(x).reinterpret_as_int()
+          #|  let hy = get_high_word(y).reinterpret_as_int()
+          #|  let ix = hx & 0x7fffffff
+          #|  let iy = hy & 0x7fffffff
+          #|  if x == 1.0 {
+          #|    return atan(y)
+          #|  }
+          #|  let m = ((hy >> 31) & 1) | ((hx >> 30) & 2)
+          #|  if y == 0 {
+          #|    match m {
+          #|      0 | 1 => return y
+          #|      2 => return pi + tiny
+          #|      _ => return -pi - tiny
+          #|    }
+          #|  }
+          #|  if x == 0 {
+          #|    return if hy < 0 { -pi_o_2 - tiny } else { pi_o_2 + tiny }
+          #|  }
+          #|  if x.is_inf() {
+          #|    if y.is_inf() {
+          #|      match m {
+          #|        0 => return pi_o_4 + tiny
+          #|        1 => return -pi_o_4 - tiny
+          #|        2 => return 3.0 * pi_o_4 + tiny
+          #|        _ => return -3.0 * pi_o_4 - tiny
+          #|      }
+          #|    } else {
+          #|      match m {
+          #|        0 => return zero
+          #|        1 => return -zero
+          #|        2 => return pi + tiny
+          #|        _ => return -pi - tiny
+          #|      }
+          #|    }
+          #|  }
+          #|  if y.is_inf() {
+          #|    return if hy < 0 { -pi_o_2 - tiny } else { pi_o_2 + tiny }
+          #|  }
+          #|  let k = (iy - ix) >> 20
+          #|  let z = if k > 60 {
+          #|    pi_o_2 + 0.5 * pi_lo
+          #|  } else if hx < 0 && k < -60 {
+          #|    0.0
+          #|  } else {
+          #|    atan(abs(y / x))
+          #|  }
+          #|  match m {
+          #|    0 => z
+          #|    1 => -z
+          #|    2 => pi - (z - pi_lo)
+          #|    _ => z - pi_lo - pi
+          #|  } }
+        ),
+      ),
+      "rem_pio2": build(
+        (
+          #|fn rem_pio2(x : Double, y : Array[Double]) -> Int { let hx = get_high_word(x).reinterpret_as_int()
+          #|  let ix : Int = hx & 0x7fffffff
+          #|  let mut z = 0.0
+          #|  if ix <= 0x3fe921fb {
+          #|    // |x| <= pi/4, no reduction needed
+          #|    y[0] = x
+          #|    y[1] = 0.0
+          #|    return 0
+          #|  }
+          #|  if ix < 0x4002d97c {
+          #|    // |x| < 3pi/4, special case with n = +-1
+          #|    if hx > 0 {
+          #|      z = x - PIO2_1
+          #|      if ix != 0x3ff921fb {
+          #|        // 33+53 bit pi is good enough
+          #|        y[0] = z - PIO2_1T
+          #|        y[1] = z - y[0] - PIO2_1T
+          #|      } else {
+          #|        // Near pi/2, use 33+33+53 bit pi
+          #|        z = z - PIO2_2
+          #|        y[0] = z - PIO2_2T
+          #|        y[1] = z - y[0] - PIO2_2T
+          #|      }
+          #|      return 1
+          #|    } else {
+          #|      // Negative x
+          #|      z = x + PIO2_1
+          #|      if ix != 0x3ff921fb {
+          #|        // 33+53 bit pi is good enough
+          #|        y[0] = z + PIO2_1T
+          #|        y[1] = z - y[0] + PIO2_1T
+          #|      } else {
+          #|        // Near pi/2, use 33+33+53 bit pi
+          #|        let z = z + PIO2_2
+          #|        y[0] = z + PIO2_2T
+          #|        y[1] = z - y[0] + PIO2_2T
+          #|      }
+          #|      return -1
+          #|    }
+          #|  }
+          #|  if ix <= 0x413921fb {
+          #|    // |x| <= 2^19 * (pi/2), medium size
+          #|    let t = x.abs()
+          #|    let n = (t * INV_PIO2 + HALF).to_int()
+          #|    let fn_ = n.to_double()
+          #|    let mut r = t - fn_ * PIO2_1
+          #|    let mut w = fn_ * PIO2_1T
+          #|    if n < 32 && ix != npio2_hw[n - 1] {
+          #|      y[0] = r - w
+          #|    } else {
+          #|      let j = ix >> 20
+          #|      y[0] = r - w
+          #|      let i = j - ((get_high_word(y[0]) >> 20).reinterpret_as_int() & 0x7ff)
+          #|      if i > 16 {
+          #|        // 2nd iteration needed, good to 118 bits
+          #|        let t = r
+          #|        w = fn_ * PIO2_2
+          #|        r = t - w
+          #|        w = fn_ * PIO2_2T - (t - r - w)
+          #|        y[0] = r - w
+          #|        let i = j - ((get_high_word(y[0]) >> 20).reinterpret_as_int() & 0x7ff)
+          #|        if i > 49 {
+          #|          // 3rd iteration needed, 151 bits accuracy
+          #|          let t = r
+          #|          w = fn_ * PIO2_3
+          #|          r = t - w
+          #|          w = fn_ * PIO2_3T - (t - r - w)
+          #|          y[0] = r - w
+          #|        }
+          #|      }
+          #|    }
+          #|    y[1] = r - y[0] - w
+          #|    if hx > 0 {
+          #|      return n
+          #|    } else {
+          #|      y[0] = -y[0]
+          #|      y[1] = -y[1]
+          #|      return -n
+          #|    }
+          #|  }
+          #|  // All other (large) arguments
+          #|  if ix >= 0x7ff00000 {
+          #|    // x is inf or NaN
+          #|    y[0] = x - x
+          #|    y[1] = y[0]
+          #|    return 0
+          #|  }
+          #|  // Set z = scalbn(|x|, ilogb(x) - 23)
+          #|  z = set_low_word(z, get_low_word(x))
+          #|  let e0 = (ix >> 20) - 1046 // e0 = ilogb(z) - 23
+          #|  z = set_high_word(z, (ix - (e0 << 20)).reinterpret_as_uint())
+          #|  let tx = [0.0, 0.0, 0.0]
+          #|  for i in 0..<2 {
+          #|    tx[i] = z.to_int().to_double()
+          #|    z = (z - tx[i]) * TWO24
+          #|  }
+          #|  tx[2] = z
+          #|  let mut nx = 3
+          #|  while tx[nx - 1] == 0.0 {
+          #|    nx -= 1
+          #|  }
+          #|  let n = __kernel_rem_pio2(tx, y, e0, nx, 2)
+          #|  if hx > 0 {
+          #|    n
+          #|  } else {
+          #|    y[0] = -y[0]
+          #|    y[1] = -y[1]
+          #|    -n
+          #|  } }
+        ),
+      ),
+      "__kernel_sin": build(
+        (
+          #|fn __kernel_sin(x : Double, y : Double, iy : Int) -> Double { let s1 = -1.66666666666666324348e-01
+          #|  let s2 = 8.33333333332248946124e-03
+          #|  let s3 = -1.98412698298579493134e-04
+          #|  let s4 = 2.75573137070700676789e-06
+          #|  let s5 = -2.50507602534068634195e-08
+          #|  let s6 = 1.58969099521155010221e-10
+          #|  let mut z = 0.0
+          #|  let mut r = 0.0
+          #|  let mut v = 0.0
+          #|  let ix = get_high_word(x) & 0x7fffffff
+          #|  if ix < 0x3e400000 {
+          #|    if x.to_int() == 0 {
+          #|      return x
+          #|    }
+          #|  }
+          #|  z = x * x
+          #|  v = z * x
+          #|  r = s2 + z * (s3 + z * (s4 + z * (s5 + z * s6)))
+          #|  if iy == 0 {
+          #|    x + v * (s1 + z * r)
+          #|  } else {
+          #|    x - (z * (0.5 * y - v * r) - y - v * s1)
+          #|  } }
+        ),
+      ),
+      "__kernel_cos": build(
+        (
+          #|fn __kernel_cos(x : Double, y : Double) -> Double { let one = 1.00000000000000000000e+00
+          #|  let c1 = 4.16666666666666019037e-02
+          #|  let c2 = -1.38888888888741095749e-03
+          #|  let c3 = 2.48015872894767294178e-05
+          #|  let c4 = -2.75573143513906633035e-07
+          #|  let c5 = 2.08757232129817482790e-09
+          #|  let c6 = -1.13596475577881948265e-11
+          #|  let mut a = 0.0
+          #|  let mut hz = 0.0
+          #|  let mut z = 0.0
+          #|  let mut r = 0.0
+          #|  let mut qx = 0.0
+          #|  let ix = get_high_word(x) & 0x7fffffff
+          #|  if ix < 0x3e400000 {
+          #|    if x.to_int() == 0 {
+          #|      return one
+          #|    }
+          #|  }
+          #|  z = x * x
+          #|  r = z * (c1 + z * (c2 + z * (c3 + z * (c4 + z * (c5 + z * c6)))))
+          #|  if ix < 0x3fd33333 {
+          #|    return one - (0.5 * z - (z * r - x * y))
+          #|  } else {
+          #|    if ix > 0x3fe90000 {
+          #|      qx = 0.28125
+          #|    } else {
+          #|      qx = ((ix - 0x00200000).to_uint64() << 32).reinterpret_as_double()
+          #|    }
+          #|    hz = 0.5 * z - qx
+          #|    a = one - qx
+          #|    return a - (hz - (z * r - x * y))
+          #|  } }
+        ),
+      ),
+      "__kernal_tan": build(
+        (
+          #|fn __kernal_tan(x : Double, y : Double, iy : Int) -> Double { let one = 1.0
+          #|  let pio4 = 7.85398163397448278999e-01
+          #|  let pio4lo = 3.06161699786838301793e-17
+          #|  let mut x = x
+          #|  let mut y = y
+          #|  let mut z = 0.0
+          #|  let mut r = 0.0
+          #|  let mut v = 0.0
+          #|  let mut w = 0.0
+          #|  let mut s = 0.0
+          #|  let t = [
+          #|    3.33333333333334091986e-01, // 3FD55555, 55555563 */
+          #|     1.33333333333201242699e-01, // 3FC11111, 1110FE7A */
+          #|     5.39682539762260521377e-02, // 3FABA1BA, 1BB341FE */
+          #|     2.18694882948595424599e-02, // 3F9664F4, 8406D637 */
+          #|     8.86323982359930005737e-03, // 3F8226E3, E96E8493 */
+          #|     3.59207910759131235356e-03, // 3F6D6D22, C9560328 */
+          #|     1.45620945432529025516e-03, // 3F57DBC8, FEE08315 */
+          #|     5.88041240820264096874e-04, // 3F4344D8, F2F26501 */
+          #|     2.46463134818469906812e-04, // 3F3026F7, 1A8D1068 */
+          #|     7.81794442939557092300e-05, // 3F147E88, A03792A6 */
+          #|     7.14072491382608190305e-05, // 3F12B80F, 32F0A7E9 */
+          #|     -1.85586374855275456654e-05, // BEF375CB, DB605373 */
+          #|     2.59073051863633712884e-05, // 3EFB2A70, 74BF7AD4 */
+          #|     1.00000000000000000000e+00, // 3FF00000, 00000000 (one) */
+          #|     7.85398163397448278999e-01, // 3FE921FB, 54442D18 (pio4) */
+          #|     3.06161699786838301793e-17, // 3C81A626, 33145C07 (pio4lo) */
+          #|  ]
+          #|  let hx = get_high_word(x).reinterpret_as_int()
+          #|  let ix = hx & 0x7fffffff
+          #|  if ix < 0x3e300000 {
+          #|    if x.to_int() == 0 {
+          #|      if (ix | get_low_word(x).reinterpret_as_int() | (iy + 1)) == 0 {
+          #|        return one / x.abs()
+          #|      } else if iy == 1 {
+          #|        return x
+          #|      } else {
+          #|        w = x + y
+          #|        z = w
+          #|        z = set_low_word(z, 0)
+          #|        v = y - (z - x)
+          #|        let a = -one / w
+          #|        let mut t = a
+          #|        t = set_low_word(t, 0)
+          #|        s = one + t * z
+          #|        return t + a * (s + t * v)
+          #|      }
+          #|    }
+          #|  }
+          #|  if ix >= 0x3fe59428 {
+          #|    if hx < 0 {
+          #|      x = -x
+          #|      y = -y
+          #|    }
+          #|    z = pio4 - x
+          #|    w = pio4lo - y
+          #|    x = z + w
+          #|    y = 0.0
+          #|  }
+          #|  z = x * x
+          #|  w = z * z
+          #|  r = t[1] + w * (t[3] + w * (t[5] + w * (t[7] + w * (t[9] + w * t[11]))))
+          #|  v = z *
+          #|    (t[2] + w * (t[4] + w * (t[6] + w * (t[8] + w * (t[10] + w * t[12])))))
+          #|  s = z * x
+          #|  r = y + z * (s * (r + v) + y)
+          #|  r += t[0] * s
+          #|  w = x + r
+          #|  if ix >= 0x3fe59428 {
+          #|    v = iy.to_double()
+          #|    return (1 - ((hx >> 30) & 2)).to_double() *
+          #|      (v - 2.0 * (x - (w * w / (w + v) - r)))
+          #|  }
+          #|  if iy == 1 {
+          #|    w
+          #|  } else {
+          #|    z = w
+          #|    z = set_low_word(z, 0)
+          #|    v = r - (z - x)
+          #|    let a = -1.0 / w
+          #|    let mut t = a
+          #|    t = set_low_word(t, 0)
+          #|    s = 1.0 + t * z
+          #|    t + a * (s + t * v)
+          #|  } }
+        ),
+      ),
+      "probable_prime": build(
+        (
+          #|pub fn probable_prime(bits : Int, rand : @random.Rand) -> @bigint.BigInt { for {
+          #|    let b = rand.bigint(bits)
+          #|    if is_probable_prime(b, rand) {
+          #|      break b
+          #|    }
+          #|  } }
+        ),
+      ),
+      "trial_divisions": build(
+        (
+          #|fn trial_divisions(n : @bigint.BigInt) -> Bool { // calculate the number of trial divisions based on the bit length of the candidate
+          #|  let td = match n.bit_length() {
+          #|    _..=512 => 64
+          #|    512..=1024 => 128
+          #|    1024..=2048 => 384
+          #|    2048..=4096 => 1024
+          #|    _ => 2048
+          #|  }
+          #|  for i in 1..<td {
+          #|    if n % small_primes[i] == 0 {
+          #|      return n == small_primes[i]
+          #|    }
+          #|  }
+          #|  true }
+        ),
+      ),
+      "sinh": build(
+        (
+          #|pub fn sinh(x : Double) -> Double { if x.is_nan() || x.is_inf() {
+          #|    return x
+          #|  }
+          #|  let ix = get_high_word(x).reinterpret_as_int() & 0x7fffffff
+          #|  let abs_x = x.abs()
+          #|  let shuge = 1.0e307
+          #|  let h = if x < 0.0 { -0.5 } else { 0.5 }
+          #|  if ix < 0x40360000 {
+          #|    if ix < 0x3e300000 {
+          #|      if shuge + x > 1.0 {
+          #|        return x
+          #|      }
+          #|    }
+          #|    let t = expm1(abs_x)
+          #|    if ix < 0x3ff00000 {
+          #|      return h * (2.0 * t - t * t / (t + 1.0))
+          #|    }
+          #|    return h * (t + t / (t + 1.0))
+          #|  }
+          #|  if ix < 0x40862E42 {
+          #|    return h * exp(abs_x)
+          #|  }
+          #|  if abs_x.reinterpret_as_uint64() < 0x408633ce8fb9f87d {
+          #|    let w = exp(0.5 * abs_x)
+          #|    let t = h * w
+          #|    return t * w
+          #|  }
+          #|  x * shuge }
+        ),
+      ),
+      "cosh": build(
+        (
+          #|pub fn cosh(x : Double) -> Double { if x.is_nan() {
+          #|    return x
+          #|  }
+          #|  if x.is_inf() {
+          #|    return @double.infinity
+          #|  }
+          #|  let ix = get_high_word(x).reinterpret_as_int() & 0x7fffffff
+          #|  if ix < 0x3fd62e43 {
+          #|    let t = expm1(x.abs())
+          #|    let w = 1.0 + t
+          #|    if ix < 0x3c800000 {
+          #|      return w
+          #|    }
+          #|    return 1.0 + t * t / (w + w)
+          #|  }
+          #|  if ix < 0x40360000 {
+          #|    let t = exp(x.abs())
+          #|    return 0.5 * t + 0.5 / t
+          #|  }
+          #|  if ix < 0x40862E42 {
+          #|    return (0.5 * x.abs()) |> exp
+          #|  }
+          #|  let lx = get_low_word(x).reinterpret_as_int()
+          #|  if ix < 0x408633ce || (ix == 0x408633ce && lx <= 0x8fb9f87d) {
+          #|    let w = exp(0.5 * x.abs())
+          #|    let t = 0.5 * w
+          #|    return t * w
+          #|  }
+          #|  @double.infinity }
+        ),
+      ),
+      "tanh": build(
+        (
+          #|pub fn tanh(x : Double) -> Double { if x.is_nan() {
+          #|    return x
+          #|  }
+          #|  if x.is_pos_inf() {
+          #|    return 1.0
+          #|  }
+          #|  if x.is_neg_inf() {
+          #|    return -1.0
+          #|  }
+          #|  let ix = get_high_word(x).reinterpret_as_int() & 0x7fffffff
+          #|  let tiny = 1.0e-300
+          #|  let z = if ix < 0x40360000 {
+          #|    if ix < 0x3c800000 {
+          #|      x * (1.0 + x)
+          #|    } else if ix >= 0x3ff00000 {
+          #|      let t = (2.0 * x.abs()) |> expm1
+          #|      1.0 - 2.0 / (t + 2.0)
+          #|    } else {
+          #|      let t = (-2.0 * x.abs()) |> expm1
+          #|      -t / (t + 2.0)
+          #|    }
+          #|  } else {
+          #|    1.0 - tiny
+          #|  }
+          #|  if x >= 0.0 {
+          #|    z
+          #|  } else {
+          #|    -z
+          #|  } }
+        ),
+      ),
+      "asinh": build(
+        (
+          #|pub fn asinh(x : Double) -> Double { if x.is_nan() || x.is_inf() {
+          #|    return x
+          #|  }
+          #|  let one : Double = 1.0
+          #|  let ln2 : Double = 6.93147180559945286227e-01
+          #|  let huge : Double = 1.0e300
+          #|  let hx = get_high_word(x).reinterpret_as_int()
+          #|  let ix = hx & 0x7fffffff
+          #|  if ix < 0x3e300000 {
+          #|    if huge + x > one {
+          #|      return x
+          #|    }
+          #|  }
+          #|  let w : Double = if ix > 0x41b00000 {
+          #|    ln(x.abs()) + ln2
+          #|  } else if ix > 0x40000000 {
+          #|    let t = x.abs()
+          #|    (2.0 * t + one / ((x * x + one).sqrt() + t)) |> ln
+          #|  } else {
+          #|    let t = x * x
+          #|    (x.abs() + t / (one + (one + t).sqrt())) |> ln_1p
+          #|  }
+          #|  if hx > 0 {
+          #|    w
+          #|  } else {
+          #|    -w
+          #|  } }
+        ),
+      ),
+      "acosh": build(
+        (
+          #|pub fn acosh(x : Double) -> Double { let one = 1.0
+          #|  let hx = get_high_word(x).reinterpret_as_int()
+          #|  if x < 1.0 || x.is_nan() {
+          #|    return @double.not_a_number
+          #|  } else if x == 1.0 {
+          #|    return 0.0
+          #|  } else if x.is_pos_inf() {
+          #|    return @double.infinity
+          #|  } else if hx >= 0x41b00000 {
+          #|    return ln(x) + LN2
+          #|  } else if hx > 0x40000000 {
+          #|    let t = x * x
+          #|    return (2.0 * x - one / (x + (t - one).sqrt())) |> ln
+          #|  } else {
+          #|    let t = x - one
+          #|    return (t + (2.0 * t + t * t).sqrt()) |> ln_1p
+          #|  } }
+        ),
+      ),
+      "atanh": build(
+        (
+          #|pub fn atanh(x : Double) -> Double { let hx : Int = get_high_word(x).reinterpret_as_int()
+          #|  let ix = hx & 0x7fffffff
+          #|  if x.abs() > 1.0 {
+          #|    return @double.not_a_number
+          #|  }
+          #|  if x == 1.0 {
+          #|    return @double.infinity
+          #|  }
+          #|  if x == -1.0 {
+          #|    return @double.neg_infinity
+          #|  }
+          #|  if ix < 0x3e300000 && 1.0e300 + x > 0.0 {
+          #|    return x
+          #|  }
+          #|  let x = x.abs()
+          #|  let t = if x <= 0.5 {
+          #|    let t = x + x
+          #|    0.5 * ln_1p(t + t * x / (1.0 - x))
+          #|  } else {
+          #|    0.5 * ln_1p((x + x) / (1.0 - x))
+          #|  }
+          #|  if hx >= 0 {
+          #|    t
+          #|  } else {
+          #|    -t
+          #|  } }
+        ),
+      ),
+      "cbrt": build(
+        (
+          #|pub fn cbrt(x : Double) -> Double { if x.is_inf() || x.is_nan() || x == 0.0 {
+          #|    return x
+          #|  }
+          #|  let b1 : UInt = 715094163 // B1 = (682-0.03306235651)*2**20
+          #|  let b2 : UInt = 696219795 // B2 = (664-0.03306235651)*2**20
+          #|  let c = 5.42857142857142815906e-01 // 19/35     = 0x3FE15F15, 0xF15F15F1
+          #|  let d = -7.05306122448979611050e-01 // -864/1225 = 0xBFE691DE, 0x2532C834
+          #|  let e = 1.41428571428571436819e+00 // 99/70     = 0x3FF6A0EA, 0x0EA0EA0F
+          #|  let f = 1.60714285714285720630e+00 // 45/28     = 0x3FF9B6DB, 0x6DB6DB6E
+          #|  let g = 3.57142857142857150787e-01 // 5/14      = 0x3FD6DB6D, 0xB6DB6DB7
+          #|  let hx = get_high_word(x).reinterpret_as_int()
+          #|  let sign = if x < 0.0 { true } else { false }
+          #|  let x = abs(x)
+          #|  let t = if hx < 0x00100000 {
+          #|    let t : UInt64 = 0x43500000_00000000
+          #|    let t : Double = t.reinterpret_as_double()
+          #|    let t = t * x
+          #|    set_high_word(0, get_high_word(t) / 3 + b2)
+          #|  } else {
+          #|    set_high_word(0, hx.reinterpret_as_uint() / 3 + b1)
+          #|  }
+          #|  let r = t * t / x
+          #|  let s = c + r * t
+          #|  let t = t * (g + f / (s + e + d / s))
+          #|  let t = set_high_word(0, get_high_word(t) + 0x00000001)
+          #|  let s = t * t
+          #|  let r = x / s
+          #|  let w = t + t
+          #|  let r = (r - t) / (w + r)
+          #|  let t = t + t * r
+          #|  if sign {
+          #|    -t
+          #|  } else {
+          #|    t
+          #|  } }
+        ),
+      ),
+      "hypot": build(
+        (
+          #|pub fn hypot(x : Double, y : Double) -> Double { if x.is_nan() || y.is_nan() {
+          #|    return @double.not_a_number
+          #|  }
+          #|  if x.is_inf() || y.is_inf() {
+          #|    return @double.infinity
+          #|  }
+          #|  let x = x.abs()
+          #|  let y = y.abs()
+          #|  let double_epsilon : Double = 0x0.0000000000001P-1022
+          #|  let (x, y) = if y > x { (y, x) } else { (x, y) }
+          #|  if x * double_epsilon >= y {
+          #|    return x
+          #|  }
+          #|  let r = y / x
+          #|  x * (1.0 + r * r).sqrt() }
+        ),
+      ),
+      "pow": build(
+        (
+          #|pub fn pow(x : Double, y : Double) -> Double { fn set_low_word(d : Double, v : UInt) -> Double {
+          #|    let bits : UInt64 = d.reinterpret_as_uint64()
+          #|    let bits = bits & 0xFFFF_FFFF_0000_0000
+          #|    let bits = bits | v.to_uint64()
+          #|    bits.reinterpret_as_double()
+          #|  }
+          #|  fn set_high_word(d : Double, v : UInt) -> Double {
+          #|    let bits : UInt64 = d.reinterpret_as_uint64()
+          #|    let bits = bits & 0x0000_0000_FFFF_FFFF
+          #|    let bits = bits | (v.to_uint64() << 32)
+          #|    bits.reinterpret_as_double()
+          #|  }
+          #|  fn get_high_word(x : Double) -> UInt {
+          #|    (x.reinterpret_as_uint64() >> 32).to_uint()
+          #|  }
+          #|  fn get_low_word(x : Double) -> UInt {
+          #|    x.reinterpret_as_uint64().to_uint()
+          #|  }
+          #|  // double z, ax, z_h, z_l, p_h, p_l;
+          #|  let mut z : Double = 0.0
+          #|  let mut ax : Double = 0.0
+          #|  let mut z_h : Double = 0.0
+          #|  let mut z_l : Double = 0.0
+          #|  let mut p_h : Double = 0.0
+          #|  let mut p_l : Double = 0.0
+          #|  // double y1, t1, t2, r, s, t, u, v, w
+          #|  let mut y1 : Double = 0.0
+          #|  let mut t1 : Double = 0.0
+          #|  let mut t2 : Double = 0.0
+          #|  let mut r : Double = 0.0
+          #|  let mut s : Double = 0.0
+          #|  let mut t : Double = 0.0
+          #|  let mut u : Double = 0.0
+          #|  let mut v : Double = 0.0
+          #|  let mut w : Double = 0.0
+          #|  // int i, j, k, yisint, n
+          #|  let mut i : Int = 0
+          #|  let mut j : Int = 0
+          #|  let mut k : Int = 0
+          #|  let mut yisint : Int = 0
+          #|  let mut n : Int = 0
+          #|  // int hx, hy, ix, iy;
+          #|  // unsigned lx, ly;
+          #|  //
+          #|  // EXTRACT_WORDS(hx, lx, x);
+          #|  // EXTRACT_WORDS(hy, ly, y);
+          #|  // ix = hx & 0x7fffffff;
+          #|  // iy = hy & 0x7fffffff;
+          #|  let hx : Int = (x.reinterpret_as_uint64() >> 32).to_int()
+          #|  let lx : UInt = (x.reinterpret_as_uint64() & 0xFFFFFFFF).to_uint()
+          #|  let hy : Int = (y.reinterpret_as_uint64() >> 32).to_int()
+          #|  let ly : UInt = (y.reinterpret_as_uint64() & 0xFFFFFFFF).to_uint()
+          #|  let mut ix : Int = hx & 0x7FFFFFFF
+          #|  let iy : Int = hy & 0x7FFFFFFF
+          #|  // y==zero: x**0 = 1
+          #|  if (iy.reinterpret_as_uint() | ly) == 0 {
+          #|    return ONE
+          #|  }
+          #|  // +-NaN return x+y
+          #|  if ix > 0x7FF00000 ||
+          #|    (ix == 0x7FF00000 && lx != 0) ||
+          #|    iy > 0x7FF00000 ||
+          #|    (iy == 0x7FF00000 && ly != 0) {
+          #|    return x + y
+          #|  }
+          #|  // determine if y is an odd int when x < 0
+          #|  // yisint = 0 ... y is not an integer
+          #|  // yisint = 1 ... y is an odd int
+          #|  // yisint = 2 ... y is an even int
+          #|  if hx < 0 {
+          #|    if iy >= 0x43400000 {
+          #|      yisint = 2 // even integer y
+          #|    } else if iy >= 0x3ff00000 {
+          #|      k = (iy >> 20) - 0x3ff // exponent
+          #|      if k > 20 {
+          #|        j = (ly >> (52 - k)).reinterpret_as_int()
+          #|        if j << (52 - k) == ly.reinterpret_as_int() {
+          #|          yisint = 2 - (j & 1)
+          #|        }
+          #|      } else if ly == 0 {
+          #|        j = iy >> (20 - k)
+          #|        if j << (20 - k) == iy {
+          #|          yisint = 2 - (j & 1)
+          #|        }
+          #|      }
+          #|    }
+          #|  }
+          #|  // special value of y
+          #|  if ly == 0 {
+          #|    if iy == 0x7ff00000 { // y is +-inf
+          #|      if ((ix.reinterpret_as_uint() - 0x3ff00000) | lx) == 0 {
+          #|        return y - y // inf**+-1 is NaN
+          #|      } else if ix >= 0x3ff00000 { // (|x|>1)**+-inf = inf,0
+          #|        return if hy >= 0 { y } else { ZERO }
+          #|      } else { // (|x|<1)**-,+inf = inf,0
+          #|        return if hy < 0 { -y } else { ZERO }
+          #|      }
+          #|    }
+          #|    if iy == 0x3ff00000 { // y is  +-1
+          #|      if hy < 0 {
+          #|        return ONE / x
+          #|      } else {
+          #|        return x
+          #|      }
+          #|    }
+          #|    if hy == 0x40000000 { // y is 2
+          #|      return x * x
+          #|    }
+          #|    if hy == 0x3fe00000 { // y is 0.5
+          #|      if hx >= 0 { // x >= +0
+          #|        return x.sqrt()
+          #|      }
+          #|    }
+          #|  }
+          #|  ax = x.abs()
+          #|  // special value of x
+          #|  if lx == 0 {
+          #|    if ix == 0x7ff00000 || ix == 0 || ix == 0x3ff00000 {
+          #|      z = ax // x is +-0,+-inf,+-1 */
+          #|      if hy < 0 {
+          #|        z = ONE / z // z = (1/|x|)
+          #|      }
+          #|      if hx < 0 {
+          #|        if ((ix - 0x3ff00000) | yisint) == 0 {
+          #|          // (-1)**non-int is NaN
+          #|          z = @double.not_a_number
+          #|        } else if yisint == 1 {
+          #|          z = -z // (x<0)**odd = -(|x|**odd)
+          #|        }
+          #|      }
+          #|      return z
+          #|    }
+          #|  }
+          #|  n = (hx >> 31) + 1
+          #|  // (x<0)**(non-int) is NaN
+          #|  if (n | yisint) == 0 {
+          #|    return @double.not_a_number
+          #|  }
+          #|  s = ONE // s (sign of result -ve**odd) = -1 else = 1
+          #|  if (n | (yisint - 1)) == 0 {
+          #|    s = -ONE // (-ve)**(odd int)
+          #|  }
+          #|  // |y| is huge
+          #|  if iy > 0x41e00000 { // if |y| > 2**31 */
+          #|    if iy > 0x43f00000 { // if |y| > 2**64, must o/uflow */
+          #|      if ix <= 0x3fefffff {
+          #|        return if hy < 0 { POW_huge * POW_huge } else { POW_tiny * POW_tiny }
+          #|      }
+          #|      if ix >= 0x3ff00000 {
+          #|        return if hy > 0 { POW_huge * POW_huge } else { POW_tiny * POW_tiny }
+          #|      }
+          #|    }
+          #|    // over/underflow if x is not close to one */
+          #|    if ix < 0x3fefffff {
+          #|      return if hy < 0 {
+          #|        s * POW_huge * POW_huge
+          #|      } else {
+          #|        s * POW_tiny * POW_tiny
+          #|      }
+          #|    }
+          #|    if ix > 0x3ff00000 {
+          #|      return if hy > 0 {
+          #|        s * POW_huge * POW_huge
+          #|      } else {
+          #|        s * POW_tiny * POW_tiny
+          #|      }
+          #|    }
+          #|    // now |1-x| is tiny <= 2**-20, suffice to compute
+          #|    // log(x) by x-x^2/2+x^3/3-x^4/4 */
+          #|    t = ax - ONE // t has 20 trailing zeros */
+          #|    w = t * t * (0.5 - t * (0.3333333333333333333333 - t * 0.25))
+          #|    u = POW_ivln2_h * t // POW_ivln2_h has 21 sig. bits */
+          #|    v = t * POW_ivln2_l - w * POW_ivln2
+          #|    t1 = u + v
+          #|    t1 = set_low_word(t1, 0)
+          #|    t2 = v - (t1 - u)
+          #|  } else {
+          #|    n = 0
+          #|    // take care subnormal number
+          #|    if ix < 0x00100000 {
+          #|      ax *= POW_two53
+          #|      n -= 53
+          #|      ix = get_high_word(ax).reinterpret_as_int()
+          #|    }
+          #|    n += (ix >> 20) - 0x3ff
+          #|    j = ix & 0x000fffff
+          #|    // determine interval
+          #|    ix = j | 0x3ff00000 // normalize ix
+          #|    if j <= 0x3988E {
+          #|      k = 0 // |x|<sqrt(3/2)
+          #|    } else if j < 0xBB67A {
+          #|      k = 1 // |x|<sqrt(3)
+          #|    } else {
+          #|      k = 0
+          #|      n += 1
+          #|      ix -= 0x00100000
+          #|    }
+          #|    ax = set_high_word(ax, ix.reinterpret_as_uint())
+          #|    // compute ss = s_h+s_l = (x-1)/(x+1) or (x-1.5)/(x+1.5)
+          #|    u = ax - pow_bp[k] // bp[0]=1.0, bp[1]=1.5
+          #|    v = ONE / (ax + pow_bp[k])
+          #|    let ss : Double = u * v
+          #|    let mut s_h : Double = ss
+          #|    s_h = set_low_word(s_h, 0)
+          #|    // t_h=ax+bp[k] High
+          #|    let mut t_h : Double = ZERO
+          #|    t_h = set_high_word(
+          #|      t_h,
+          #|      ((ix.reinterpret_as_uint() >> 1) | 0x20000000) +
+          #|      0x00080000 +
+          #|      (k.reinterpret_as_uint() << 18),
+          #|    )
+          #|    let mut t_l : Double = ax - (t_h - pow_bp[k])
+          #|    let s_l : Double = v * (u - s_h * t_h - s_h * t_l)
+          #|    // compute log(ax)
+          #|    let mut s2 : Double = ss * ss
+          #|    r = s2 *
+          #|      s2 *
+          #|      (
+          #|        POW_L1 +
+          #|        s2 *
+          #|        (POW_L2 + s2 * (POW_L3 + s2 * (POW_L4 + s2 * (POW_L5 + s2 * POW_L6))))
+          #|      )
+          #|    r += s_l * (s_h + ss)
+          #|    s2 = s_h * s_h
+          #|    t_h = 3.0 + s2 + r
+          #|    t_h = set_low_word(t_h, 0)
+          #|    t_l = r - (t_h - 3.0 - s2)
+          #|    // u+v = ss*(1+...)
+          #|    u = s_h * t_h
+          #|    v = s_l * t_h + t_l * ss
+          #|    // 2/(3log2)*(ss+...)
+          #|    p_h = u + v
+          #|    p_h = set_low_word(p_h, 0)
+          #|    p_l = v - (p_h - u)
+          #|    z_h = POW_cp_h * p_h // cp_h+cp_l = 2/(3*log2)
+          #|    z_l = POW_cp_l * p_h + p_l * POW_cp + pow_dp_l[k]
+          #|    // log2(ax) = (ss+..)*2/(3*log2) = n + dp_h + z_h + z_l
+          #|    t = n.to_double()
+          #|    t1 = z_h + z_l + pow_dp_h[k] + t
+          #|    t1 = set_low_word(t1, 0)
+          #|    t2 = z_l - (t1 - t - pow_dp_h[k] - z_h)
+          #|  }
+          #|  // split up y into y1+y2 and compute (y1+y2)*(t1+t2)
+          #|  y1 = y
+          #|  y1 = set_low_word(y1, 0)
+          #|  p_l = (y - y1) * t1 + y * t2
+          #|  p_h = y1 * t1
+          #|  z = p_l + p_h
+          #|  j = get_high_word(z).reinterpret_as_int()
+          #|  i = get_low_word(z).reinterpret_as_int()
+          #|  if j >= 0x40900000 { // z >= 1024
+          #|    if ((j - 0x40900000) | i) != 0 { // if z > 1024
+          #|      return s * POW_huge * POW_huge // overflow
+          #|    } else if p_l + POW_ovt > z - p_h {
+          #|      return s * POW_huge * POW_huge // overflow
+          #|    }
+          #|  } else if (j & 0x7fffffff) >= 0x4090cc00 { // z <= -1075
+          #|    if ((j - 0xc090cc00) | i) != 0 { // z < -1075
+          #|      return s * POW_tiny * POW_tiny // underflow
+          #|    } else if p_l <= z - p_h {
+          #|      return s * POW_tiny * POW_tiny // underflow
+          #|    }
+          #|  }
+          #|  //
+          #|  // compute 2**(p_h+p_l)
+          #|  //
+          #|  i = j & 0x7fffffff
+          #|  k = (i >> 20) - 0x3ff
+          #|  n = 0
+          #|  if i > 0x3fe00000 { // if |z| > 0.5, set n = [z+0.5]
+          #|    n = j + (0x00100000 >> (k + 1))
+          #|    k = ((n & 0x7fffffff) >> 20) - 0x3ff // new k for n
+          #|    t = ZERO
+          #|    t = set_high_word(t, (n & (0x000fffff >> k).lnot()).reinterpret_as_uint())
+          #|    n = ((n & 0x000fffff) | 0x00100000) >> (20 - k)
+          #|    if j < 0 {
+          #|      n = -n
+          #|    }
+          #|    p_h -= t
+          #|  }
+          #|  t = p_l + p_h
+          #|  t = set_low_word(t, 0)
+          #|  u = t * POW_lg2_h
+          #|  v = (p_l - (t - p_h)) * POW_lg2 + t * POW_lg2_l
+          #|  z = u + v
+          #|  w = v - (z - u)
+          #|  t = z * z
+          #|  t1 = z -
+          #|    t * (POW_P1 + t * (POW_P2 + t * (POW_P3 + t * (POW_P4 + t * POW_P5))))
+          #|  r = z * t1 / (t1 - TWO - (w + z * w))
+          #|  z = ONE - (r - z)
+          #|  j = get_high_word(z).reinterpret_as_int()
+          #|  j += (n.reinterpret_as_uint() << 20).reinterpret_as_int()
+          #|  if j >> 20 <= 0 {
+          #|    z = scalbn(z, n)
+          #|  } else { // subnormal output */
+          #|    let tmp = get_high_word(z).reinterpret_as_int()
+          #|    z = set_high_word(
+          #|      z,
+          #|      (tmp + (n.reinterpret_as_uint() << 20).reinterpret_as_int()).reinterpret_as_uint(),
+          #|    )
+          #|  }
+          #|  return s * z }
+        ),
+      ),
+      "maximum": build(
+        (
+          #|pub fn[T : Compare] maximum(x : T, y : T) -> T { if x > y {
+          #|    x
+          #|  } else {
+          #|    y
+          #|  } }
+        ),
+      ),
+      "minimum": build(
+        (
+          #|pub fn[T : Compare] minimum(x : T, y : T) -> T { if x > y {
+          #|    y
+          #|  } else {
+          #|    x
+          #|  } }
+        ),
+      ),
+      "cbrtf": build(
+        (
+          #|pub fn cbrtf(x : Float) -> Float { let b1 : UInt = 709958130 // B1 = (127-127.0/3-0.03306235651)*2**23 */
+          #|  let b2 : UInt = 642849266 // B2 = (127-127.0/3-24/3-0.03306235651)*2**23 */
+          #|  let mut ui : UInt = x.reinterpret_as_uint()
+          #|  let mut hx : UInt = ui & 0x7fffffff
+          #|  if hx >= 0x7f800000 {
+          #|    // cbrt(NaN,INF) is itx
+          #|    return x + x
+          #|  }
+          #|  // rough cbrt to 5 bits
+          #|  if hx < 0x00800000 {
+          #|    // zero or subnormal?
+          #|    if hx == 0 {
+          #|      return x
+          #|    } // cbrt(+-0) is itx
+          #|    ui = (x * (0x1.0p24 : Float)).reinterpret_as_uint()
+          #|    hx = ui & 0x7fffffff
+          #|    hx = hx / 3 + b2
+          #|  } else {
+          #|    hx = hx / 3 + b1
+          #|  }
+          #|  ui = ui & 0x80000000
+          #|  ui = ui | hx
+          #|  //
+          #|  // First step Newton iteration (solving t*t-x/t == 0) to 16 bits.  In
+          #|  // double precision so that its terms can be arranged for efficiency
+          #|  // without causing overflow or underflow.
+          #|  //
+          #|  let dx = x.to_double()
+          #|  let t = ui.reinterpret_as_float().to_double()
+          #|  let r = t * t * t
+          #|  let t = t * (dx + dx + r) / (dx + r + r)
+          #|  //
+          #|  // Second step Newton iteration to 47 bits.  In double precision for
+          #|  // efficiency and accuracy.
+          #|  //
+          #|  let r = t * t * t
+          #|  let t = t * (dx + dx + r) / (dx + r + r)
+          #|  // rounding to 24 bits is perfect in round-to-nearest mode
+          #|  t.to_float() }
+        ),
+      ),
+      "hypotf": build(
+        (
+          #|pub fn hypotf(x : Float, y : Float) -> Float { let epsilon : Float = 1.1920928955078125e-7
+          #|  let x = x.abs()
+          #|  let y = y.abs()
+          #|  if x.is_inf() || y.is_inf() {
+          #|    return @float.infinity
+          #|  }
+          #|  let (x, y) = if y > x { (y, x) } else { (x, y) }
+          #|  if x * epsilon >= y {
+          #|    return x
+          #|  }
+          #|  let rat = y / x
+          #|  x * (rat * rat + 1.0).sqrt() }
+        ),
+      ),
+      "pi": (None, String("0x3.243F6A8885A308CA8A54")),
+      "exp": build(
+        (
+          #|pub fn exp(x : Double) -> Double { fn get_high_word(x : Double) -> UInt {
+          #|    (x.reinterpret_as_uint64() >> 32).to_uint()
+          #|  }
+          #|  fn get_low_word(x : Double) -> UInt {
+          #|    x.reinterpret_as_uint64().to_uint()
+          #|  }
+          #|  fn insert_words(ix0 : UInt64, ix1 : UInt64) -> Double {
+          #|    let mut bits : UInt64 = 0
+          #|    bits = bits | (ix0 << 32)
+          #|    bits = bits | ix1
+          #|    bits.reinterpret_as_double()
+          #|  }
+          #|  let ori_x = x
+          #|  let mut x = x
+          #|  let one = 1.0
+          #|  let halF = [0.5, -0.5]
+          #|  let o_threshold = 7.09782712893383973096e+02
+          #|  let u_threshold = -7.45133219101941108420e+02
+          #|  let ln2HI = [6.93147180369123816490e-01, -6.93147180369123816490e-01]
+          #|  let ln2LO = [1.90821492927058770002e-10, -1.90821492927058770002e-10]
+          #|  let invln2 = 1.44269504088896338700e+00
+          #|  let p1 = 1.66666666666666019037e-01
+          #|  let p2 = -2.77777777770155933842e-03
+          #|  let p3 = 6.61375632143793436117e-05
+          #|  let p4 = -1.65339022054652515390e-06
+          #|  let p5 = 4.13813679705723846039e-08
+          #|  let e = 2.718281828459045
+          #|  let mut hi = 0.0
+          #|  let mut lo = 0.0
+          #|  let huge = 1.0e+300
+          #|  let twom1000 = 9.33263618503218878990e-302
+          #|  let two1023 = 8.988465674311579539e307
+          #|  let mut k : Int = 0
+          #|  let mut hx : UInt = get_high_word(ori_x)
+          #|  let xsb : Int = ((hx >> 31) & 1).reinterpret_as_int()
+          #|  hx = hx & 0x7FFFFFFF
+          #|  if hx >= 0x40862E42 {
+          #|    if hx >= 0x7FF00000 {
+          #|      let lx : UInt = get_low_word(ori_x)
+          #|      if ((hx & 0xFFFFF) | lx) != 0 {
+          #|        return ori_x + ori_x
+          #|      } else if xsb == 0 {
+          #|        return ori_x
+          #|      } else {
+          #|        return 0.0
+          #|      }
+          #|    }
+          #|    if ori_x > o_threshold {
+          #|      return huge * huge
+          #|    }
+          #|    if ori_x < u_threshold {
+          #|      return twom1000 * twom1000
+          #|    }
+          #|  }
+          #|  if hx > 0x3FD62E42 {
+          #|    if hx < 0x3FF0A2B2 {
+          #|      if ori_x == 1.0 {
+          #|        return e
+          #|      }
+          #|      hi = ori_x - ln2HI[xsb]
+          #|      lo = ln2LO[xsb]
+          #|      k = 1 - xsb - xsb
+          #|    } else {
+          #|      k = (invln2 * ori_x + halF[xsb]).to_int()
+          #|      let t = k.to_double()
+          #|      hi = ori_x - t * ln2HI[0]
+          #|      lo = t * ln2LO[0]
+          #|    }
+          #|    x = hi - lo
+          #|  } else if hx < 0x3E300000 {
+          #|    if huge + x > one {
+          #|      return one + x
+          #|    }
+          #|  } else {
+          #|    k = 0
+          #|  }
+          #|  let t = x * x
+          #|  let twopk = if k >= -1021 {
+          #|    insert_words(
+          #|      (0x3FF00000 + (k.reinterpret_as_uint() << 20).reinterpret_as_int())
+          #|      .to_int64()
+          #|      .reinterpret_as_uint64(),
+          #|      0,
+          #|    )
+          #|  } else {
+          #|    insert_words(
+          #|      0x3FF00000UL + ((k + 1000).reinterpret_as_uint() << 20).to_uint64(),
+          #|      0,
+          #|    )
+          #|  }
+          #|  let c = x - t * (p1 + t * (p2 + t * (p3 + t * (p4 + t * p5))))
+          #|  if k == 0 {
+          #|    return one - (x * c / (c - 2.0) - x)
+          #|  }
+          #|  let y = one - (lo - x * c / (2.0 - c) - hi)
+          #|  if k >= -1021 {
+          #|    if k == 1024 {
+          #|      return y * 2.0 * two1023
+          #|    } else {
+          #|      return y * twopk
+          #|    }
+          #|  } else {
+          #|    return y * twopk * twom1000
+          #|  } }
+        ),
+      ),
+      "expm1": build(
+        (
+          #|pub fn expm1(x : Double) -> Double { if x.is_nan() {
+          #|    return @double.not_a_number
+          #|  }
+          #|  let o_threshold = 7.09782712893383973096e+02
+          #|  if x > o_threshold {
+          #|    return @double.infinity
+          #|  }
+          #|  if x.is_inf() {
+          #|    return -1.0
+          #|  }
+          #|  let huge = 1.0e+300
+          #|  let tiny = 1.0e-300
+          #|  let ln2_hi = 6.93147180369123816490e-01
+          #|  let ln2_lo = 1.90821492927058770002e-10
+          #|  let invln2 = 1.44269504088896338700e+00
+          #|  let q1 = -3.33333333333331316428e-02
+          #|  let q2 = 1.58730158725481460165e-03
+          #|  let q3 = -7.93650757867487942473e-05
+          #|  let q4 = 4.00821782732936239552e-06
+          #|  let q5 = -2.01099218183624371326e-07
+          #|  let mut x = x
+          #|  let mut hx = get_high_word(x)
+          #|  let xsb : Int = (hx & 0x80000000).reinterpret_as_int()
+          #|  let mut y : Double = if xsb == 0 { x } else { -x }
+          #|  hx = hx & 0x7fffffff
+          #|  if hx >= 0x4043687A {
+          #|    if xsb != 0 {
+          #|      if x + tiny < 0.0 {
+          #|        return tiny - 1.0
+          #|      }
+          #|    }
+          #|  }
+          #|  let mut hi = 0.0
+          #|  let mut lo = 0.0
+          #|  let mut k = 0
+          #|  let mut c = 0.0
+          #|  let mut t = 0.0
+          #|  if hx > 0x3fd62e42 {
+          #|    if hx < 0x3FF0A2B2 {
+          #|      hi = if xsb == 0 { x - ln2_hi } else { x + ln2_hi }
+          #|      lo = if xsb == 0 { ln2_lo } else { -ln2_lo }
+          #|      k = if xsb == 0 { 1 } else { -1 }
+          #|    } else {
+          #|      k = (invln2 * x + (if xsb == 0 { 0.5 } else { -0.5 })).to_int()
+          #|      t = k.to_double()
+          #|      hi = x - t * ln2_hi
+          #|      lo = t * ln2_lo
+          #|    }
+          #|    x = hi - lo
+          #|    c = hi - x - lo
+          #|  } else if hx < 0x3c900000 {
+          #|    t = huge + x
+          #|    return x - (t - (huge + x))
+          #|  } else {
+          #|    k = 0
+          #|  }
+          #|  let hfx : Double = 0.5 * x
+          #|  let hxs : Double = x * hfx
+          #|  let r1 : Double = 1.0 +
+          #|    hxs * (q1 + hxs * (q2 + hxs * (q3 + hxs * (q4 + hxs * q5))))
+          #|  let t : Double = 3.0 - r1 * hfx
+          #|  let e : Double = hxs * ((r1 - t) / (6.0 - x * t))
+          #|  if k == 0 {
+          #|    return x - (x * e - hxs)
+          #|  } else {
+          #|    let e : Double = x * (e - c) - c
+          #|    let e : Double = e - hxs
+          #|    if k == -1 {
+          #|      return 0.5 * (x - e) - 0.5
+          #|    }
+          #|    if k == 1 {
+          #|      return if x < -0.25 {
+          #|        -2.0 * (e - (x + 0.5))
+          #|      } else {
+          #|        1.0 + 2.0 * (x - e)
+          #|      }
+          #|    }
+          #|    if k <= -2 || k > 56 {
+          #|      y = 1.0 - (e - x)
+          #|      y = set_high_word(y, get_high_word(y) + (k << 20).reinterpret_as_uint())
+          #|      return y - 1.0
+          #|    }
+          #|    let mut t : Double = 1.0
+          #|    if k < 20 {
+          #|      t = set_high_word(0, (0x3ff00000 - (0x200000 >> k)).reinterpret_as_uint())
+          #|      y = t - (e - x)
+          #|      y = set_high_word(y, get_high_word(y) + (k << 20).reinterpret_as_uint())
+          #|    } else {
+          #|      t = set_high_word(0, ((0x3ff - k) << 20).reinterpret_as_uint())
+          #|      y = x - (e + t) + 1.0
+          #|      y = set_high_word(y, get_high_word(y) + (k << 20).reinterpret_as_uint())
+          #|    }
+          #|  }
+          #|  y }
+        ),
+      ),
+      "abs": build(
+        (
+          #|fn abs(x : Double) -> Double { if x < 0.0 {
+          #|    -x
+          #|  } else {
+          #|    x
+          #|  } }
+        ),
+      ),
+      "set_low_word": build(
+        (
+          #|fn set_low_word(d : Double, v : UInt) -> Double { let bits : UInt64 = d.reinterpret_as_uint64()
+          #|  let bits = bits & 0xFFFF_FFFF_0000_0000
+          #|  let bits = bits | v.to_uint64()
+          #|  bits.reinterpret_as_double() }
+        ),
+      ),
+      "set_high_word": build(
+        (
+          #|fn set_high_word(d : Double, v : UInt) -> Double { let bits : UInt64 = d.reinterpret_as_uint64()
+          #|  let bits = bits & 0x0000_0000_FFFF_FFFF
+          #|  let bits = bits | (v.to_uint64() << 32)
+          #|  bits.reinterpret_as_double() }
+        ),
+      ),
+      "get_high_word": build(
+        (
+          #|fn get_high_word(x : Double) -> UInt { (x.reinterpret_as_uint64() >> 32).to_uint() }
+        ),
+      ),
+      "get_low_word": build(
+        (
+          #|fn get_low_word(x : Double) -> UInt { x.reinterpret_as_uint64().to_uint() }
+        ),
+      ),
+      "normalize": build(
+        (
+          #|fn normalize(f : Double) -> (Double, Int) { if f.abs() < @double.min_positive {
+          #|    return (f * (1L << 52).to_double(), -52)
+          #|  }
+          #|  (f, 0) }
+        ),
+      ),
+      "frexp": build(
+        (
+          #|fn frexp(f : Double) -> (Double, Int) { if f == 0.0 || f.is_inf() || f.is_nan() {
+          #|    return (f, 0)
+          #|  }
+          #|  let (norm_f, exp) = normalize(f)
+          #|  let u = norm_f.reinterpret_as_uint64()
+          #|  let exp = exp + ((u >> 52) & 0x7FF).to_int() - 1022
+          #|  let frac = ((u & (0x7FFUL << 52).lnot()) | (1022UL << 52)).reinterpret_as_double()
+          #|  return (frac, exp) }
+        ),
+      ),
+      "logf_off": (None, UInt(0x3f330000U)),
+      "logf_table_bits": (None, Int(4)),
+      "lnf": build(
+        (
+          #|pub fn lnf(x : Float) -> Float { let mut ix : UInt = x.reinterpret_as_uint()
+          #|  if ix == 0x3f800000U {
+          #|    return 0.0
+          #|  }
+          #|  if ix - 0x00800000U >= 0x7f800000U - 0x00800000U {
+          #|    if ix * 2 == 0 {
+          #|      return @float.neg_infinity
+          #|    }
+          #|    if ix == 0x7f800000U {
+          #|      return x
+          #|    }
+          #|    if (ix & 0x80000000U) != 0 || ix * 2 >= 0xff000000U {
+          #|      return @float.not_a_number
+          #|    }
+          #|    ix = (x * 0x1.0p23).reinterpret_as_uint()
+          #|    ix -= (23 << 23).reinterpret_as_uint()
+          #|  }
+          #|  let tmp = ix - logf_off
+          #|  let i = ((tmp >> (23 - logf_table_bits)) % logf_n).reinterpret_as_int()
+          #|  let k = tmp.reinterpret_as_int() >> 23
+          #|  let iz = ix - (tmp & 0xff800000U)
+          #|  let invc = logf_data.invc[i]
+          #|  let logc = logf_data.logc[i]
+          #|  let z = iz.reinterpret_as_float().to_double()
+          #|  let r = z * invc - 1
+          #|  let y0 = logc + k.to_double() * logf_data.ln2
+          #|  let r2 = r * r
+          #|  let y = logf_data.poly[1] * r + logf_data.poly[2]
+          #|  let y = logf_data.poly[0] * r2 + y
+          #|  let y = y * r2 + (y0 + r)
+          #|  y.to_float() }
+        ),
+      ),
+      "ln_1pf": build(
+        (
+          #|pub fn ln_1pf(x : Float) -> Float { let lg1_f : Float = 0.66666662693
+          #|  let lg2_f : Float = 0.40000972152
+          #|  let lg3_f : Float = 0.28498786688
+          #|  let lg4_f : Float = 0.24279078841
+          #|  let float_ln2_hi : Float = 6.9314575195e-01 // 0x3f317200
+          #|  let float_ln2_lo : Float = 1.4286067653e-06 // 0x35bfbe8e
+          #|  let mut ui : UInt = x.reinterpret_as_uint()
+          #|  let mut f : Float = 0
+          #|  let mut c : Float = 0
+          #|  let mut iu : UInt = 0
+          #|  let one : Float = 1.0
+          #|  let mut k = 1
+          #|  if ui < 0x3ed413d0 || ui >> 31 > 0 {
+          #|    if ui >= 0xbf800000 {
+          #|      if x == -1.0 {
+          #|        return x / 0.0
+          #|      }
+          #|      return (x - x) / 0.0
+          #|    }
+          #|    if ui << 1 < 0x33800000U << 1 {
+          #|      return x
+          #|    }
+          #|    if ui <= 0xbe95f619 {
+          #|      k = 0
+          #|      c = 0.0
+          #|      f = x
+          #|    }
+          #|  } else if ui >= 0x7f800000 {
+          #|    return x
+          #|  }
+          #|  if k > 0 {
+          #|    ui = (one + x).reinterpret_as_uint()
+          #|    iu = ui
+          #|    iu += 0x3f800000U - 0x3f3504f3U
+          #|    k = (iu >> 23).reinterpret_as_int() - 0x7f
+          #|    if k < 25 {
+          #|      let fui = ui.reinterpret_as_float()
+          #|      c = if k >= 2 { one - (fui - x) } else { x - (fui - 1.0) }
+          #|      c /= ui.reinterpret_as_float()
+          #|    } else {
+          #|      c = 0.0
+          #|    }
+          #|    iu = (iu & 0x007fffff) + 0x3f3504f3
+          #|    ui = iu
+          #|    f = ui.reinterpret_as_float() - 1.0
+          #|  }
+          #|  let s = f / (f + 2.0)
+          #|  let z = s * s
+          #|  let w = z * z
+          #|  let t1 = w * (lg2_f + w * lg4_f)
+          #|  let t2 = z * (lg1_f + w * lg3_f)
+          #|  let r = t2 + t1
+          #|  let hfsq = f * f * 0.5
+          #|  let dk = k.to_float()
+          #|  s * (hfsq + r) + (dk * float_ln2_lo + c) - hfsq + f + dk * float_ln2_hi }
+        ),
+      ),
+      "k_expo2f": build(
+        (
+          #|fn k_expo2f(x : Float) -> Float { let k = 235
+          #|  let k_ln2 = (0x4322e3bc).reinterpret_as_float()
+          #|  // note that k is odd and scale*scale overflows */
+          #|  let scale = ((0x7f + k / 2) << 23).reinterpret_as_float()
+          #|  // exp(x - k ln2) * 2**(k-1) */
+          #|  expf(x - k_ln2) * scale * scale }
+        ),
+      ),
+      "sinhf": build(
+        (
+          #|pub fn sinhf(x : Float) -> Float { let mut h : Float = 0.5
+          #|  let mut ix = x.reinterpret_as_uint()
+          #|  if ix >> 31 != 0 {
+          #|    h = -h
+          #|  }
+          #|  // |x|
+          #|  ix = ix & 0x7fffffff
+          #|  let absx = ix.reinterpret_as_float()
+          #|  let w = ix
+          #|  // |x| < log(FLT_MAX)
+          #|  if w < 0x42b17217 {
+          #|    let t = expm1f(absx)
+          #|    if w < 0x3f800000 {
+          #|      if w < 0x3f800000U - (12U << 23) {
+          #|        return x
+          #|      }
+          #|      return h * ((2.0 : Float) * t - t * t / (t + 1.0))
+          #|    }
+          #|    return h * (t + t / (t + 1.0))
+          #|  }
+          #|  // |x| > logf(FLT_MAX) or nan
+          #|  h * k_expo2f(absx) * 2.0 }
+        ),
+      ),
+      "coshf": build(
+        (
+          #|pub fn coshf(x : Float) -> Float { let mut x = x
+          #|  let mut ix = x.reinterpret_as_uint()
+          #|  ix = ix & 0x7fffffff
+          #|  x = ix.reinterpret_as_float()
+          #|  let w = ix
+          #|  // |x| < log(2)
+          #|  if w < 0x3f317217 {
+          #|    if w < 0x3f800000U - (12U << 23) {
+          #|      return 1.0
+          #|    }
+          #|    let t = expm1f(x)
+          #|    return (1.0 : Float) + t * t / ((2.0 : Float) * (t + 1.0))
+          #|  }
+          #|  // |x| < log(FLT_MAX)
+          #|  if w < 0x42b17217 {
+          #|    let t = expf(x)
+          #|    return (t + (1.0 : Float) / t) * 0.5
+          #|  }
+          #|  // |x| > log(FLT_MAX) or nan
+          #|  k_expo2f(x) }
+        ),
+      ),
+      "tanhf": build(
+        (
+          #|pub fn tanhf(x : Float) -> Float { let mut ix = x.reinterpret_as_uint()
+          #|  let sign = ix >> 31 != 0
+          #|  ix = ix & 0x7fffffff
+          #|  let x = ix.reinterpret_as_float()
+          #|  let w = ix
+          #|  let tt = if w > 0x3f0c9f54 {
+          #|    // |x| > log(3)/2 ~= 0.5493 or nan
+          #|    if w > 0x41200000 {
+          #|      // |x| > 10
+          #|      (1.0 : Float) + (0.0 : Float) / x
+          #|    } else {
+          #|      let t = expm1f(x * 2.0)
+          #|      (1.0 : Float) - (2.0 : Float) / (t + 2.0)
+          #|    }
+          #|  } else if w > 0x3e82c578 {
+          #|    // |x| > log(5/3)/2 ~= 0.2554
+          #|    let t = expm1f(x * 2.0)
+          #|    t / (t + 2.0)
+          #|  } else if w >= 0x00800000 {
+          #|    // |x| >= 0x1p-126
+          #|    let t = expm1f(x * -2.0)
+          #|    -t / (t + 2.0)
+          #|  } else {
+          #|    // |x| is subnormal
+          #|    x
+          #|  }
+          #|  if sign {
+          #|    -tt
+          #|  } else {
+          #|    tt
+          #|  } }
+        ),
+      ),
+      "asinhf": build(
+        (
+          #|pub fn asinhf(x : Float) -> Float { let u = x.reinterpret_as_uint()
+          #|  let i = u & 0x7fffffff
+          #|  let sign = u >> 31 != 0
+          #|  let ln2 : Float = 0.693147180559945309417232121458176568
+          #|  let x = i.reinterpret_as_float()
+          #|  let x = if i >= 0x3f800000U + (12U << 23) {
+          #|    // |x| >= 0x1p12 or inf or nan
+          #|    lnf(x) + ln2
+          #|  } else if i >= 0x3f800000U + (1U << 23) {
+          #|    // |x| >= 2
+          #|    lnf(x * 2.0 + (1.0 : Float) / ((x * x + 1.0).sqrt() + x))
+          #|  } else if i >= 0x3f800000U - (12U << 23) {
+          #|    // |x| >= 0x1p-12, up to 1.6ulp error in [0.125,0.5]
+          #|    ln_1pf(x + x * x / ((x * x + 1.0).sqrt() + 1.0))
+          #|  } else {
+          #|    // |x| < 0x1p-12, raise inexact if x!=0
+          #|    // x + 0x1.0p120
+          #|    x
+          #|  }
+          #|  if sign {
+          #|    -x
+          #|  } else {
+          #|    x
+          #|  } }
+        ),
+      ),
+      "acoshf": build(
+        (
+          #|pub fn acoshf(x : Float) -> Float { let ln2 : Float = 693147180559945309417232121458176568
+          #|  let u = x.reinterpret_as_uint()
+          #|  let a = u & 0x7fffffffU
+          #|  if a < 0x3f800000U + (1U << 23) {
+          #|    // |x| < 2, invalid if x < 1 or nan
+          #|    // up to 2ulp error in [1,1.125]
+          #|    return ln_1pf(
+          #|      x - 1.0 + ((x - 1.0) * (x - 1.0) + (2.0 : Float) * (x - 1.0)).sqrt(),
+          #|    )
+          #|  }
+          #|  if a < 0x3f800000U + (12U << 23) {
+          #|    // |x| < 0x1p12
+          #|    return lnf(x * 2.0 - (1.0 : Float) / (x + (x * x - 1.0).sqrt()))
+          #|  }
+          #|  // x >= 0x1p12
+          #|  return lnf(x) + ln2 }
+        ),
+      ),
+      "atanhf": build(
+        (
+          #|pub fn atanhf(x : Float) -> Float { let u = x.reinterpret_as_uint()
+          #|  let sign = u >> 31 != 0
+          #|  let u = u & 0x7fffffff
+          #|  let x = u.reinterpret_as_float()
+          #|  let x = if u < 0x3f800000U - (1U << 23) {
+          #|    if u < 0x3f800000U - (32U << 23) {
+          #|      x
+          #|    } else {
+          #|      // |x| < 0.5, up to 1.7ulp error
+          #|      ln_1pf(x * 2.0 + x * 2.0 * x / ((1.0 : Float) - x)) * 0.5
+          #|    }
+          #|  } else {
+          #|    // avoid overflow
+          #|    ln_1pf(x / ((1.0 : Float) - x) * 2.0) * 0.5
+          #|  }
+          #|  if sign {
+          #|    -x
+          #|  } else {
+          #|    x
+          #|  } }
+        ),
+      ),
+      "mulh": build(
+        (
+          #|fn mulh(a : UInt, b : UInt) -> UInt { let a = a.to_uint64()
+          #|  let b = b.to_uint64()
+          #|  let res = a * b
+          #|  (res >> 32).to_uint() }
+        ),
+      ),
+      "mul": build(
+        (
+          #|fn mul(a : UInt, b : UInt) -> (UInt, UInt) { let a = a.to_uint64()
+          #|  let b = b.to_uint64()
+          #|  let res = a * b
+          #|  ((res >> 32).to_uint(), res.to_uint()) }
+        ),
+      ),
+      "trig_reduce": build(
+        (
+          #|fn trig_reduce(x : Float, switch_over : Float) -> (Float, Int) { if x.abs() <= switch_over {
+          #|    let mut j : Float = 0.0
+          #|    let mut r : Float = 0.0
+          #|    j = x * (0x3f22f983).reinterpret_as_float() +
+          #|      (0x4b40_0000).reinterpret_as_float()
+          #|    j = (j.reinterpret_as_int() - 0x4b40_0000).to_float()
+          #|    r = x - j * (0x3fc90f80).reinterpret_as_float()
+          #|    r = r - j * (0x37354440).reinterpret_as_float()
+          #|    r = r - j * (0x2c34611a).reinterpret_as_float()
+          #|    return (r, j.to_int())
+          #|  }
+          #|  let xispos = x > 0.0
+          #|  let mut exp : Int = ((x.reinterpret_as_int() >> 23) & 0xff) - 126
+          #|  let ix = ((x.reinterpret_as_uint() & 0x007fffff) << 8) | 0x80000000
+          #|  let ind = exp >> 5
+          #|  exp = exp & 0x1f
+          #|  let two_over_pi : Array[UInt] = [
+          #|    0x00000000, 0x28be60db, 0x9391054a, 0x7f09d5f4, 0x7d4d3770, 0x36d8a566, 0x4f10e410,
+          #|    0000000000,
+          #|  ]
+          #|  let mut hi = two_over_pi[ind]
+          #|  let mut mi = two_over_pi[ind + 1]
+          #|  let mut lo = two_over_pi[ind + 2]
+          #|  let tp = two_over_pi[ind + 3]
+          #|  if exp > 0 {
+          #|    hi = (hi << exp) | (mi >> (32 - exp))
+          #|    mi = (mi << exp) | (lo >> (32 - exp))
+          #|    lo = (lo << exp) | (tp >> (32 - exp))
+          #|  }
+          #|  let phi = 0U
+          #|  let (h, l) = mul(ix, lo)
+          #|  let plo = phi + l
+          #|  let phi = h + (if plo < l { 1 } else { 0 })
+          #|  let (h, l) = mul(ix, mi)
+          #|  let mut plo = phi + l
+          #|  let phi = h + (if plo < l { 1 } else { 0 })
+          #|  let l = ix * hi
+          #|  let mut phi = phi + l
+          #|  let mut q : Int = (phi >> 30).reinterpret_as_int()
+          #|  phi = phi & 0x3fffffff
+          #|  if (phi & 0x2000_0000) != 0 {
+          #|    phi = phi - 0x4000_0000
+          #|    q = q + 1
+          #|  }
+          #|  let s : UInt = phi & 0x8000_0000
+          #|  if phi >= 0x8000_0000 {
+          #|    phi = phi.lnot()
+          #|    plo = 0U - plo
+          #|    //phi += (plo == 0).to_uint()
+          #|    phi += if plo == 0 { 1 } else { 0 }
+          #|  }
+          #|  exp = 0
+          #|  while phi < 0x8000_0000 {
+          #|    phi = (phi << 1) | (plo >> 31)
+          #|    plo = plo << 1
+          #|    exp = exp - 1
+          #|  }
+          #|  phi = mulh(phi, 0xc90f_daa2)
+          #|  if phi < 0x8000_0000 {
+          #|    phi = phi << 1
+          #|    exp = exp - 1
+          #|  }
+          #|  let mut r = s +
+          #|    ((exp + 128) << 23).reinterpret_as_uint() +
+          #|    (phi >> 8) +
+          #|    (if (phi & 0xff) > 0x7e { 1 } else { 0 })
+          #|  if !xispos {
+          #|    r = r ^ 0x8000_0000
+          #|    q = -q
+          #|  }
+          #|  let r = r.reinterpret_as_float()
+          #|  return (r, q) }
+        ),
+      ),
+      "sinf_poly": build(
+        (
+          #|fn sinf_poly(x : Float) -> Float { let s = x * x
+          #|  let mut r = (0x3640_5000).reinterpret_as_float()
+          #|  r = r * s - (0x3950_3486).reinterpret_as_float()
+          #|  r = r * s + (0x3c08_88c1).reinterpret_as_float()
+          #|  r = r * s - (0x3e2a_aaab).reinterpret_as_float()
+          #|  let t = x * s
+          #|  r = r * t + x
+          #|  r }
+        ),
+      ),
+      "cosf_poly": build(
+        (
+          #|fn cosf_poly(x : Float) -> Float { let s = x * x
+          #|  let mut r = (0x37cd_4000).reinterpret_as_float()
+          #|  r = r * s - (0x3ab6_077d).reinterpret_as_float()
+          #|  r = r * s + (0x3d2a_aaa8).reinterpret_as_float()
+          #|  r = r * s - (0x3f00_0000).reinterpret_as_float()
+          #|  r = r * s + (0x3f80_0000).reinterpret_as_float()
+          #|  r }
+        ),
+      ),
+      "sin_cos_core": build(
+        (
+          #|fn sin_cos_core(x : Float, q : Int) -> Float { let mut r = if (q & 1) != 0 { cosf_poly(x) } else { sinf_poly(x) }
+          #|  if (q & 2) != 0 {
+          #|    r = -r
+          #|  }
+          #|  r }
+        ),
+      ),
+      "tanf_poly": build(
+        (
+          #|fn tanf_poly(x : Float, odd : Bool) -> Float { let x = x.to_double()
+          #|  let coef : FixedArray[Double] = [
+          #|    0.333331395030791399758, // 0x15554d3418c99f.0p-54 */
+          #|     0.133392002712976742718, // 0x1112fd38999f72.0p-55 */
+          #|     0.0533812378445670393523, // 0x1b54c91d865afe.0p-57 */
+          #|     0.0245283181166547278873, // 0x191df3908c33ce.0p-58 */
+          #|     0.00297435743359967304927, // 0x185dadfcecf44e.0p-61 */
+          #|     0.00946564784943673166728, // 0x1362b9bf971bcd.0p-59 */
+          #|  ]
+          #|  let z = x * x
+          #|  let mut r = coef[4] + z * coef[5]
+          #|  let t = coef[2] + z * coef[3]
+          #|  let w = z * z
+          #|  let s = z * x
+          #|  let u = coef[0] + z * coef[1]
+          #|  r = x + s * u + s * w * (t + w * r)
+          #|  (if odd { -1.0 / r } else { r }).to_float() }
+        ),
+      ),
+      "sinf": build(
+        (
+          #|pub fn sinf(x : Float) -> Float { if x.is_nan() || x.is_inf() {
+          #|    return @float.not_a_number
+          #|  }
+          #|  if x == 0.0 {
+          #|    return x
+          #|  }
+          #|  let (x, q) = trig_reduce(x, SIN_SWITCHOVER)
+          #|  sin_cos_core(x, q) }
+        ),
+      ),
+      "cosf": build(
+        (
+          #|pub fn cosf(x : Float) -> Float { if x.is_nan() || x.is_inf() {
+          #|    return @float.not_a_number
+          #|  }
+          #|  if x == 0.0 {
+          #|    return 1.0
+          #|  }
+          #|  let (x, q) = trig_reduce(x, COS_SWITCHOVER)
+          #|  sin_cos_core(x, q + 1) }
+        ),
+      ),
+      "tanf": build(
+        (
+          #|pub fn tanf(x : Float) -> Float { if x.is_nan() || x.is_inf() {
+          #|    return @float.not_a_number
+          #|  }
+          #|  if x == 0.0 {
+          #|    return x
+          #|  }
+          #|  let (x, q) = trig_reduce(x, COS_SWITCHOVER)
+          #|  tanf_poly(x, (q & 1) != 0) }
+        ),
+      ),
+      "asinf": build(
+        (
+          #|pub fn asinf(x : Float) -> Float { let x1p120 = 0x3870000000000000UL.reinterpret_as_double()
+          #|  let pio2 : Double = 1.570796326794896558e+00
+          #|  // coefficients for R(x^2)
+          #|  let ps0 : Float = 1.6666586697e-01
+          #|  let ps1 : Float = -4.2743422091e-02
+          #|  let ps2 : Float = -8.6563630030e-03
+          #|  let qs2 : Float = -7.0662963390e-01
+          #|  fn r(z : Float) -> Float {
+          #|    let p = z * (ps0 + z * (ps1 + z * ps2))
+          #|    let q = z * qs2 + 1.0
+          #|    p / q
+          #|  }
+          #|  let hx = x.reinterpret_as_uint()
+          #|  let ix = hx & 0x7fffffff
+          #|  if ix >= 0x3f800000 {
+          #|    if ix == 0x3f800000 {
+          #|      return (x.to_double() * pio2 + x1p120).to_float()
+          #|    }
+          #|    return @float.not_a_number // asin(|x|>1) is NaN
+          #|  }
+          #|  if ix < 0x3f000000 {
+          #|    if ix is (0x00800000..=0x39800000) {
+          #|      return x
+          #|    }
+          #|    return x + x * r(x * x)
+          #|  }
+          #|  let z = ((1.0 : Float) - x.abs()) * 0.5
+          #|  let s = z.to_double().sqrt()
+          #|  let x = (pio2 - 2.0 * (s + s * r(z).to_double())).to_float()
+          #|  if hx >> 31 != 0 {
+          #|    -x
+          #|  } else {
+          #|    x
+          #|  } }
+        ),
+      ),
+      "acosf": build(
+        (
+          #|pub fn acosf(x : Float) -> Float { let pio2_hi : Float = 1.5707962513
+          #|  let pio2_lo : Float = 7.5497894159e-08
+          #|  let ps0 : Float = 1.6666586697e-01
+          #|  let ps1 : Float = -4.2743422091e-02
+          #|  let ps2 : Float = -8.6563630030e-03
+          #|  let qs1 : Float = -7.0662963390e-01
+          #|  let one : Float = 1.0
+          #|  let two : Float = 2.0
+          #|  fn r(z : Float) -> Float {
+          #|    let p = z * (ps0 + z * (ps1 + z * ps2))
+          #|    let q = z * qs1 + 1.0
+          #|    p / q
+          #|  }
+          #|  let hx = x.reinterpret_as_int()
+          #|  let ix = hx & 0x7fffffff
+          #|  if ix >= 0x3f800000 {
+          #|    if ix == 0x3f800000 {
+          #|      if hx >> 31 != 0 {
+          #|        return two * pio2_hi + 0x1.0p-120
+          #|      }
+          #|      return 0.0
+          #|    }
+          #|    return @float.not_a_number
+          #|  }
+          #|  if ix < 0x3f000000 {
+          #|    if ix <= 0x32800000 {
+          #|      return pio2_hi + 0x1.0p-120
+          #|    }
+          #|    return pio2_hi - (x - (pio2_lo - x * r(x * x)))
+          #|  }
+          #|  if hx >> 31 != 0 {
+          #|    let z = (x + 1.0) * 0.5
+          #|    let s = z.sqrt()
+          #|    let w = r(z) * s - pio2_lo
+          #|    return two * (pio2_hi - (s + w))
+          #|  }
+          #|  let z = (one - x) * 0.5
+          #|  let s = z.sqrt()
+          #|  let df = s
+          #|  let c = (z - df * df) / (s + df)
+          #|  let w = r(z) * s + c
+          #|  two * (df + w) }
+        ),
+      ),
+      "atanf": build(
+        (
+          #|pub fn atanf(x : Float) -> Float { let atanhi : Array[Float] = [
+          #|    4.6364760399e-01, 7.8539812565e-01, 9.8279368877e-01, 1.5707962513e+00,
+          #|  ]
+          #|  let atanlo : Array[Float] = [
+          #|    5.0121582440e-09, 3.7748947079e-08, 3.4473217170e-08, 7.5497894159e-08,
+          #|  ]
+          #|  let a_t : Array[Float] = [
+          #|    3.3333328366e-01, -1.9999158382e-01, 1.4253635705e-01, -1.0648017377e-01, 6.1687607318e-02,
+          #|  ]
+          #|  let ix = x.reinterpret_as_int()
+          #|  let sign = ix >> 31
+          #|  let ix = ix & 0x7fffffff
+          #|  let mut id = 0
+          #|  let mut x = x
+          #|  let one : Float = 1.0
+          #|  let two : Float = 2.0
+          #|  if ix >= 0x4c800000 {
+          #|    if x.is_nan() {
+          #|      return x
+          #|    }
+          #|    let z = atanhi[3] + 0x1.0p-120
+          #|    let z = if sign != 0 { -z } else { z }
+          #|    return z
+          #|  }
+          #|  if ix < 0x3ee00000 {
+          #|    if ix < 0x39800000 {
+          #|      return x
+          #|    }
+          #|    id = -1
+          #|  } else {
+          #|    x = x.abs()
+          #|    if ix < 0x3f980000 {
+          #|      if ix < 0x3f300000 {
+          #|        id = 0
+          #|        x = (two * x - one) / (two + x)
+          #|      } else {
+          #|        id = 1
+          #|        x = (x - one) / (x + one)
+          #|      }
+          #|    } else if ix < 0x401c0000 {
+          #|      id = 2
+          #|      x = (x - 1.5) / (one + x * 1.5)
+          #|    } else {
+          #|      id = 3
+          #|      x = -one / x
+          #|    }
+          #|  }
+          #|  let z = x * x
+          #|  let w = z * z
+          #|  let s1 = z * (a_t[0] + w * (a_t[2] + w * a_t[4]))
+          #|  let s2 = w * (a_t[1] + w * a_t[3])
+          #|  if id < 0 {
+          #|    return x - x * (s1 + s2)
+          #|  }
+          #|  let z = atanhi[id] - (x * (s1 + s2) - atanlo[id] - x)
+          #|  if sign != 0 {
+          #|    -z
+          #|  } else {
+          #|    z
+          #|  } }
+        ),
+      ),
+      "atan2f": build(
+        (
+          #|pub fn atan2f(y : Float, x : Float) -> Float { if x.is_nan() || y.is_nan() {
+          #|    return @float.not_a_number
+          #|  }
+          #|  let pi : Float = 3.1415927410e+00
+          #|  let pi_lo : Float = -8.7422776573e-08
+          #|  let zero : Float = 0.0
+          #|  let ix = x.reinterpret_as_uint()
+          #|  let iy = y.reinterpret_as_uint()
+          #|  if ix == 0x3f800000 {
+          #|    return atanf(y)
+          #|  }
+          #|  let m = ((iy >> 31) & 1) | ((ix >> 30) & 2)
+          #|  let ix = ix & 0x7fffffff
+          #|  let iy = iy & 0x7fffffff
+          #|  if iy == 0 {
+          #|    match m {
+          #|      0 | 1 => return y
+          #|      2 => return pi
+          #|      _ => return -pi
+          #|    }
+          #|  }
+          #|  if ix == 0 {
+          #|    let res = if (m & 1) != 0 { -pi / 2 } else { pi / 2 }
+          #|    return res
+          #|  }
+          #|  if ix == 0x7f800000 {
+          #|    if iy == 0x7f800000 {
+          #|      match m {
+          #|        0 => return pi / 4
+          #|        1 => return -pi / 4
+          #|        2 => return pi * 3.0 / 4
+          #|        _ => return -pi * 3.0 / 4
+          #|      }
+          #|    } else {
+          #|      match m {
+          #|        0 => return 0.0
+          #|        1 => return -0.0
+          #|        2 => return pi
+          #|        _ => return -pi
+          #|      }
+          #|    }
+          #|  }
+          #|  if ix + (26U << 23) < iy || iy == 0x7f800000 {
+          #|    let res = if (m & 1) != 0 { -pi / 2 } else { pi / 2 }
+          #|    return res
+          #|  }
+          #|  let z = if (m & 2) != 0 && iy + (26U << 23) < ix {
+          #|    zero
+          #|  } else {
+          #|    atanf(y / x)
+          #|  }
+          #|  match m {
+          #|    0 => z
+          #|    1 => -z
+          #|    2 => pi - (z - pi_lo)
+          #|    _ => z - pi_lo - pi
+          #|  } }
+        ),
+      ),
+      "scalbn": build(
+        (
+          #|pub fn scalbn(x : Double, exp : Int) -> Double { let mut n = exp
+          #|  let mut y : Double = x
+          #|  if n > 1023 {
+          #|    y *= 0x1.0p1023
+          #|    n -= 1023
+          #|    if n > 1023 {
+          #|      y *= 0x1.0p1023
+          #|      n -= 1023
+          #|      if n > 1023 {
+          #|        n = 1023
+          #|      }
+          #|    }
+          #|  } else if n < -1022 {
+          #|    // make sure final n < -53 to avoid double
+          #|    // rounding in the subnormal range
+          #|    y *= 0x1.0p-1022 * 0x1.0p53
+          #|    n += 1022 - 53
+          #|    if n < -1022 {
+          #|      y *= 0x1.0p-1022 * 0x1.0p53
+          #|      n += 1022 - 53
+          #|      if n < -1022 {
+          #|        n = -1022
+          #|      }
+          #|    }
+          #|  }
+          #|  let ui = (0x3ff + n).to_uint64() << 52
+          #|  return y * ui.reinterpret_as_double() }
+        ),
+      ),
+      "scalbnf": build(
+        (
+          #|pub fn scalbnf(y : Float, exp : Int) -> Float { let mut y = y
+          #|  let mut n = exp
+          #|  if n > 127 {
+          #|    y *= (0x1.0p127 : Float)
+          #|    n -= 127
+          #|    if n > 127 {
+          #|      y *= (0x1.0p127 : Float)
+          #|      n -= 127
+          #|      if n > 127 {
+          #|        n = 127
+          #|      }
+          #|    }
+          #|  } else if n < -126 {
+          #|    y *= (0x1.0p-126 : Float) * 0x1.0p24
+          #|    n += 126 - 24
+          #|    if n < -126 {
+          #|      y *= (0x1.0p-126 : Float) * 0x1.0p24
+          #|      n += 126 - 24
+          #|      if n < -126 {
+          #|        n = -126
+          #|      }
+          #|    }
+          #|  }
+          #|  let u = (0x7f + n) << 23
+          #|  return y * u.reinterpret_as_float() }
+        ),
+      ),
+      "top12": build(
+        (
+          #|fn top12(x : Float) -> UInt { x.reinterpret_as_uint() >> 20 }
+        ),
+      ),
+      "__math_xflowf": build(
+        (
+          #|fn __math_xflowf(sign : UInt, y : Float) -> Float { return (if sign != 0 { -y } else { y }) * y }
+        ),
+      ),
+      "__math_oflowf": build(
+        (
+          #|fn __math_oflowf(sign : UInt) -> Float { return __math_xflowf(sign, 0x1.0p97) }
+        ),
+      ),
+      "__math_uflowf": build(
+        (
+          #|fn __math_uflowf(sign : UInt) -> Float { return __math_xflowf(sign, 0x1.0p-95) }
+        ),
+      ),
+      "exp2f_table_bits": (None, Int(5)),
+      "expf": build(
+        (
+          #|pub fn expf(x : Float) -> Float { let xd = x.to_double()
+          #|  let abstop = top12(x) & 0x7ff
+          #|  if abstop >= top12(88.0) {
+          #|    if x.reinterpret_as_uint() == @float.neg_infinity.reinterpret_as_uint() {
+          #|      return 0.0
+          #|    }
+          #|    if abstop >= top12(@float.infinity) {
+          #|      return x + x
+          #|    }
+          #|    if x > 0x1.62e42ep6 {
+          #|      return __math_oflowf(0)
+          #|    }
+          #|    if x < -0x1.9fe368p6 {
+          #|      return __math_uflowf(0)
+          #|    }
+          #|  }
+          #|  let z = exp2f_data.invln2_scaled * xd
+          #|  let kd = z + exp2f_data.shift
+          #|  let ki = kd.reinterpret_as_uint64()
+          #|  let kd = kd - exp2f_data.shift
+          #|  let r = z - kd
+          #|  let t = exp2f_data.tab[(ki % expf_n).to_int()]
+          #|  let t = t + (ki << (52 - exp2f_table_bits))
+          #|  let s = t.reinterpret_as_double()
+          #|  let z = exp2f_data.poly_scaled[0] * r + exp2f_data.poly_scaled[1]
+          #|  let r2 = r * r
+          #|  let y = exp2f_data.poly_scaled[2] * r + 1
+          #|  let y = z * r2 + y
+          #|  let y = y * s
+          #|  y.to_float() }
+        ),
+      ),
+      "expm1f": build(
+        (
+          #|pub fn expm1f(x : Float) -> Float { let float_ln2_hi : Float = 6.9314575195e-01 // 0x3f317200
+          #|  let float_ln2_lo : Float = 1.4286067653e-06 // 0x35bfbe8e
+          #|  let inv_ln2 : Float = 1.4426950216e+00 // 0x3fb8aa3b
+          #|  let mut x = x
+          #|  let q1 : Float = -3.3333212137e-2 // -0x888868.0p-28
+          #|  let q2 : Float = 1.5807170421e-3 //  0xcf3010.0p-33
+          #|  let mut hx = x.reinterpret_as_uint()
+          #|  let sign = hx >> 31 != 0
+          #|  hx = hx & 0x7fffffff
+          #|  // filter out huge and non-finite argument
+          #|  if hx >= 0x4195b844 {
+          #|    // if |x|>=27*ln2
+          #|    if hx > 0x7f800000 {
+          #|      // NaN
+          #|      return x
+          #|    }
+          #|    if sign {
+          #|      return -1.0
+          #|    }
+          #|    if hx > 0x42b17217 {
+          #|      x *= (0x1.0p127 : Float)
+          #|      return x
+          #|    }
+          #|  }
+          #|  let mut k : Int = 0
+          #|  let mut hi : Float = 0
+          #|  let mut lo : Float = 0
+          #|  let mut c : Float = 0
+          #|  // argument reduction
+          #|  if hx > 0x3eb17218 {
+          #|    // if  |x| > 0.5 ln2
+          #|    if hx < 0x3F851592 {
+          #|      // and |x| < 1.5 ln2
+          #|      if !sign {
+          #|        hi = x - float_ln2_hi
+          #|        lo = float_ln2_lo
+          #|        k = 1
+          #|      } else {
+          #|        hi = x + float_ln2_hi
+          #|        lo = -float_ln2_lo
+          #|        k = -1
+          #|      }
+          #|    } else {
+          #|      k = (inv_ln2 * x + (if sign { -0.5 } else { 0.5 })).to_int()
+          #|      let t = k.to_float()
+          #|      hi = x - t * float_ln2_hi // t*ln2_hi is exact here
+          #|      lo = t * float_ln2_lo
+          #|    }
+          #|    x = hi - lo
+          #|    c = hi - x - lo
+          #|  } else if hx < 0x33000000 {
+          #|    // when |x|<2**-25, return x
+          #|    //if hx < 0x00800000 {
+          #|    //    force_eval(x * x);
+          #|    //}
+          #|    return x
+          #|  } else {
+          #|    k = 0
+          #|  }
+          #|  // x is now in primary range
+          #|  let hfx = (0.5 : Float) * x
+          #|  let hxs = x * hfx
+          #|  let r1 = (1.0 : Float) + hxs * (q1 + hxs * q2)
+          #|  let t = (3.0 : Float) - r1 * hfx
+          #|  let mut e = hxs * ((r1 - t) / ((6.0 : Float) - x * t))
+          #|  if k == 0 {
+          #|    // c is 0
+          #|    return x - (x * e - hxs)
+          #|  }
+          #|  e = x * (e - c) - c
+          #|  e -= hxs
+          #|  // exp(x) ~ 2^k (x_reduced - e + 1)
+          #|  if k == -1 {
+          #|    return (0.5 : Float) * (x - e) - 0.5
+          #|  }
+          #|  if k == 1 {
+          #|    if x < -0.25 {
+          #|      return -(2.0 : Float) * (e - (x + 0.5))
+          #|    }
+          #|    return (1.0 : Float) + (2.0 : Float) * (x - e)
+          #|  }
+          #|  let twopk = ((0x7f + k) << 23).reinterpret_as_float() // 2^k
+          #|  if !(k is (0..=56)) {
+          #|    // suffice to return exp(x)-1
+          #|    let mut y = x - e + 1.0
+          #|    if k == 128 {
+          #|      y = y * 2.0 * (0x1.0p127 : Float)
+          #|    } else {
+          #|      y = y * twopk
+          #|    }
+          #|    return y - 1.0
+          #|  }
+          #|  let uf = ((0x7f - k) << 23).reinterpret_as_float() // 2^-k
+          #|  if k < 23 {
+          #|    (x - e + ((1.0 : Float) - uf)) * twopk
+          #|  } else {
+          #|    (x - (e + uf) + 1.0) * twopk
+          #|  } }
+        ),
+      ),
+      "powf": build(
+        (
+          #|pub fn powf(base : Float, exponent : Float) -> Float { let huge : Float = 1.0e30
+          #|  let tiny : Float = 1.0e-30
+          #|  let cp : Float = 9.6179670095e-01 // 0x3f76384f =2/(3ln2) */
+          #|  let cp_h : Float = 9.6191406250e-01 // 0x3f764000 =12b cp */
+          #|  let cp_l : Float = -1.1736857402e-04 // 0xb8f623c6 =tail of cp_h */
+          #|  let lg2 : Float = 6.9314718246e-01 // 0x3f317218 */
+          #|  let lg2_h : Float = 6.93145752e-01 // 0x3f317200 */
+          #|  let lg2_l : Float = 1.4286067653e-06 // 0x35bfbe8c */
+          #|  let ovt : Float = 8.0085662595e-08 // -(2**-28)/(log(2)**2) */
+          #|  let ivln2 : Float = 1.4426950216e+00 // 0x3f317218 */
+          #|  let ivln2_h : Float = 1.4426879883e+00 // 0x3f317218 */
+          #|  let ivln2_l : Float = 7.0526075433e-06 // 0x35bfbe8c */
+          #|  let l1 : Float = 6.0000002384e-01 // 0x3f19999a */
+          #|  let l2 : Float = 4.2857143283e-01 // 0x3edb6db7 */
+          #|  let l3 : Float = 3.3333334327e-01 // 0x3eaaaaab */
+          #|  let l4 : Float = 2.7272811532e-01 // 0x3e8ba305 */
+          #|  let l5 : Float = 2.3066075146e-01 // 0x3e6c3255 */
+          #|  let l6 : Float = 2.0697501302e-01 // 0x3e53f142 */
+          #|  let p1 : Float = 1.6666667163e-01 // 0x3e2aaaab */
+          #|  let p2 : Float = -2.7777778450e-03 // 0xbb360b61 */
+          #|  let p3 : Float = 6.6137559770e-05 // 0x388ab355 */
+          #|  let p4 : Float = -1.6533901999e-06 // 0xb5ddea0e */
+          #|  let p5 : Float = 4.1381369442e-08 // 0x3331bb4c */
+          #|  let mut z : Float = 0
+          #|  let mut ax : Float = 0
+          #|  let mut z_h : Float = 0
+          #|  let mut z_l : Float = 0
+          #|  let mut p_h : Float = 0
+          #|  let mut p_l : Float = 0
+          #|  let mut y1 : Float = 0
+          #|  let mut t1 : Float = 0
+          #|  let mut t2 : Float = 0
+          #|  let mut r : Float = 0
+          #|  let mut s : Float = 0
+          #|  let mut sn : Float = 0
+          #|  let mut t : Float = 0
+          #|  let mut u : Float = 0
+          #|  let mut v : Float = 0
+          #|  let mut w : Float = 0
+          #|  let mut i : Int = 0
+          #|  let mut j : Int = 0
+          #|  let mut k : Int = 0
+          #|  let mut yisint : Int = 0
+          #|  let mut n : Int = 0
+          #|  let mut hx : Int = 0
+          #|  let mut hy : Int = 0
+          #|  let mut ix : Int = 0
+          #|  let mut iy : Int = 0
+          #|  let mut i_s : Int = 0
+          #|  let (x, y) = (base, exponent)
+          #|  let bp : Array[Float] = [1.0, 1.5]
+          #|  let dp_h : Array[Float] = [0.0, 5.84960938e-01] // 0x3f15c000 */
+          #|  let dp_l : Array[Float] = [0.0, 1.56322085e-06] // 0x35d1cfdc */
+          #|  let two24 : Float = 16777216.0
+          #|  hx = x.reinterpret_as_int()
+          #|  hy = y.reinterpret_as_int()
+          #|  ix = hx & 0x7fffffff
+          #|  iy = hy & 0x7fffffff
+          #|  // x**0 = 1, even if x is NaN
+          #|  if iy == 0 {
+          #|    return 1.0
+          #|  }
+          #|  // 1**y = 1, even if y is NaN
+          #|  if hx == 0x3f800000 {
+          #|    return 1.0
+          #|  }
+          #|  // NaN if either arg is NaN
+          #|  if ix > 0x7f800000 || iy > 0x7f800000 {
+          #|    return x + y
+          #|  }
+          #|  // determine if y is an odd int when x < 0
+          #|  // yisint = 0       ... y is not an integer
+          #|  // yisint = 1       ... y is an odd int
+          #|  // yisint = 2       ... y is an even int
+          #|  //
+          #|  yisint = 0
+          #|  if hx < 0 {
+          #|    if iy >= 0x4b800000 {
+          #|      yisint = 2 // even integer y
+          #|    } else if iy >= 0x3f800000 {
+          #|      k = (iy >> 23) - 0x7f // exponent
+          #|      j = iy >> (23 - k)
+          #|      if j << (23 - k) == iy {
+          #|        yisint = 2 - (j & 1)
+          #|      }
+          #|    }
+          #|  }
+          #|  // special value of y
+          #|  if iy == 0x7f800000 {
+          #|    if ix == 0x3f800000 {
+          #|      // (-1)**+-inf is 1
+          #|      return 1.0
+          #|    } else if ix > 0x3f800000 {
+          #|      // (|x|>1)**+-inf = inf,0
+          #|      return if hy >= 0 { y } else { 0.0 }
+          #|    } else {
+          #|      // (|x|<1)**+-inf = 0,inf
+          #|      return if hy >= 0 { 0.0 } else { -y }
+          #|    }
+          #|  }
+          #|  if iy == 0x3f800000 {
+          #|    // y is +-1
+          #|    return if hy >= 0 { x } else { (1.0 : Float) / x }
+          #|  }
+          #|  if hy == 0x40000000 {
+          #|    // y is 2
+          #|    return x * x
+          #|  }
+          #|  // y is  0.5
+          #|  if hy == 0x3f000000 && hx >= 0 {
+          #|    // x >= +0
+          #|    return x.sqrt()
+          #|  }
+          #|  ax = x.abs()
+          #|  // special value of x
+          #|  if ix == 0x7f800000 || ix == 0 || ix == 0x3f800000 {
+          #|    // x is +-0,+-inf,+-1
+          #|    z = ax
+          #|    if hy < 0 {
+          #|      // z = (1/|x|)
+          #|      z = (1.0 : Float) / z
+          #|    }
+          #|    if hx < 0 {
+          #|      if ((ix - 0x3f800000) | yisint) == 0 {
+          #|        z = (z - z) / (z - z) // (-1)**non-int is NaN
+          #|      } else if yisint == 1 {
+          #|        z = -z
+          #|      }
+          #|    } // (x<0)**odd = -(|x|**odd)
+          #|    return z
+          #|  }
+          #|  sn = 1.0 // sign of result
+          #|  if hx < 0 {
+          #|    if yisint == 0 {
+          #|      // (x<0)**(non-int) is NaN
+          #|      return @float.not_a_number
+          #|    }
+          #|    if yisint == 1 {
+          #|      // (x<0)**(odd int)
+          #|      sn = -1.0
+          #|    }
+          #|  }
+          #|  // |y| is huge
+          #|  if iy > 0x4d000000 {
+          #|    // if |y| > 2**27
+          #|    // over/underflow if x is not close to one
+          #|    if ix < 0x3f7ffff8 {
+          #|      return if hy < 0 { sn * huge * huge } else { sn * tiny * tiny }
+          #|    }
+          #|    if ix > 0x3f800007 {
+          #|      return if hy > 0 { sn * huge * huge } else { sn * tiny * tiny }
+          #|    }
+          #|    // now |1-x| is tiny <= 2**-20, suffice to compute
+          #|    // log(x) by x-x^2/2+x^3/3-x^4/4
+          #|    t = ax - 1.0 // t has 20 trailing zeros
+          #|    w = t * t * ((0.5 : Float) - t * ((0.333333333333 : Float) - t * 0.25))
+          #|    u = ivln2_h * t // IVLN2_H has 16 sig. bits
+          #|    v = t * ivln2_l - w * ivln2
+          #|    t1 = u + v
+          #|    i_s = t1.reinterpret_as_int()
+          #|    t1 = (i_s & 0xfffff000).reinterpret_as_float()
+          #|    t2 = v - (t1 - u)
+          #|  } else {
+          #|    let mut s2 : Float = 0
+          #|    let mut s_h : Float = 0
+          #|    let mut s_l : Float = 0
+          #|    let mut t_h : Float = 0
+          #|    let mut t_l : Float = 0
+          #|    n = 0
+          #|    // take care subnormal number
+          #|    if ix < 0x00800000 {
+          #|      ax *= two24
+          #|      n -= 24
+          #|      ix = ax.reinterpret_as_int()
+          #|    }
+          #|    n += (ix >> 23) - 0x7f
+          #|    j = ix & 0x007fffff
+          #|    // determine interval
+          #|    ix = j | 0x3f800000 // normalize ix
+          #|    if j <= 0x1cc471 {
+          #|      // |x|<sqrt(3/2)
+          #|      k = 0
+          #|    } else if j < 0x5db3d7 {
+          #|      // |x|<sqrt(3)
+          #|      k = 1
+          #|    } else {
+          #|      k = 0
+          #|      n += 1
+          #|      ix -= 0x00800000
+          #|    }
+          #|    ax = ix.reinterpret_as_float()
+          #|    // compute s = s_h+s_l = (x-1)/(x+1) or (x-1.5)/(x+1.5)
+          #|    u = ax - bp[k]
+          #|    v = (1.0 : Float) / (ax + bp[k])
+          #|    s = u * v
+          #|    s_h = s
+          #|    i_s = s_h.reinterpret_as_int()
+          #|    s_h = (i_s & 0xfffff000).reinterpret_as_float()
+          #|    // t_h=ax+bp[k] High
+          #|    i_s = (((ix.reinterpret_as_uint() >> 1) & 0xfffff000) | 0x20000000).reinterpret_as_int()
+          #|    t_h = (i_s.reinterpret_as_uint() +
+          #|    0x00400000 +
+          #|    (k.reinterpret_as_uint() << 21)).reinterpret_as_float()
+          #|    t_l = ax - (t_h - bp[k])
+          #|    s_l = v * (u - s_h * t_h - s_h * t_l)
+          #|    // compute log(ax) */
+          #|    s2 = s * s
+          #|    r = s2 * s2 * (l1 + s2 * (l2 + s2 * (l3 + s2 * (l4 + s2 * (l5 + s2 * l6)))))
+          #|    r += s_l * (s_h + s)
+          #|    s2 = s_h * s_h
+          #|    t_h = (3.0 : Float) + s2 + r
+          #|    i_s = t_h.reinterpret_as_int()
+          #|    t_h = (i_s & 0xfffff000).reinterpret_as_float()
+          #|    t_l = r - (t_h - 3.0 - s2)
+          #|    // u+v = s*(1+...)
+          #|    u = s_h * t_h
+          #|    v = s_l * t_h + t_l * s
+          #|    // 2/(3log2)*(s+...)
+          #|    p_h = u + v
+          #|    i_s = p_h.reinterpret_as_int()
+          #|    p_h = (i_s & 0xfffff000).reinterpret_as_float()
+          #|    p_l = v - (p_h - u)
+          #|    z_h = cp_h * p_h // cp_h+cp_l = 2/(3*log2)
+          #|    z_l = cp_l * p_h + p_l * cp + dp_l[k]
+          #|    // log2(ax) = (s+..)*2/(3*log2) = n + dp_h + z_h + z_l
+          #|    t = n.to_float()
+          #|    t1 = z_h + z_l + dp_h[k] + t
+          #|    i_s = t1.reinterpret_as_int()
+          #|    t1 = (i_s & 0xfffff000).reinterpret_as_float()
+          #|    t2 = z_l - (t1 - t - dp_h[k] - z_h)
+          #|  }
+          #|  // split up y into y1+y2 and compute (y1+y2)*(t1+t2)
+          #|  i_s = y.reinterpret_as_int()
+          #|  y1 = (i_s & 0xfffff000).reinterpret_as_float()
+          #|  p_l = (y - y1) * t1 + y * t2
+          #|  p_h = y1 * t1
+          #|  z = p_l + p_h
+          #|  j = z.reinterpret_as_int()
+          #|  if j > 0x43000000 {
+          #|    // if z > 128
+          #|    return sn * huge * huge // overflow
+          #|  } else if j == 0x43000000 {
+          #|    // if z == 128
+          #|    if p_l + ovt > z - p_h {
+          #|      return sn * huge * huge
+          #|    }
+          #|  } else if ( // overflow
+          #|      j & 0x7fffffff
+          #|    ) >
+          #|    0x43160000 {
+          #|    // z < -150
+          #|    return sn * tiny * tiny // underflow
+          #|    // z == -150
+          #|  } else if j.reinterpret_as_uint() == 0xc3160000 && p_l <= z - p_h {
+          #|    return sn * tiny * tiny
+          #|  } // underflow
+          #|  //
+          #|  // compute 2**(p_h+p_l)
+          #|  //
+          #|  i = j & 0x7fffffff
+          #|  k = (i >> 23) - 0x7f
+          #|  n = 0
+          #|  if i > 0x3f000000 {
+          #|    // if |z| > 0.5, set n = [z+0.5]
+          #|    n = j + (0x00800000 >> (k + 1))
+          #|    k = ((n & 0x7fffffff) >> 23) - 0x7f // new k for n
+          #|    t = (n & (0x007fffff >> k).lnot()).reinterpret_as_float()
+          #|    n = ((n & 0x007fffff) | 0x00800000) >> (23 - k)
+          #|    if j < 0 {
+          #|      n = -n
+          #|    }
+          #|    p_h -= t
+          #|  }
+          #|  t = p_l + p_h
+          #|  i_s = t.reinterpret_as_int()
+          #|  t = (i_s & 0xffff8000).reinterpret_as_float()
+          #|  u = t * lg2_h
+          #|  v = (p_l - (t - p_h)) * lg2 + t * lg2_l
+          #|  z = u + v
+          #|  w = v - (z - u)
+          #|  t = z * z
+          #|  t1 = z - t * (p1 + t * (p2 + t * (p3 + t * (p4 + t * p5))))
+          #|  r = z * t1 / (t1 - 2.0) - (w + z * w)
+          #|  z = (1.0 : Float) - (r - z)
+          #|  j = z.reinterpret_as_int()
+          #|  j += n << 23
+          #|  if j >> 23 <= 0 {
+          #|    // subnormal output
+          #|    z = scalbnf(z, n)
+          #|  } else {
+          #|    z = j.reinterpret_as_float()
+          #|  }
+          #|  sn * z }
+        ),
+      ),
+    }
+  },
+)
 
 ///|
-let option_module : RuntimeModule = RuntimeModule::new(
+let moonbitlang_core_option_module : RuntimeModule = RuntimeModule::new(
   "moonbitlang/core/option",
+  deps={
+    "moonbitlang/core/builtin": moonbitlang_core_builtin_module,
+    "moonbitlang/core/quickcheck": moonbitlang_core_quickcheck_module,
+    "moonbitlang/core/quickcheck/splitmix": moonbitlang_core_quickcheck_splitmix_module,
+  },
   fn(_env, build) {
     {
       "map": build(
@@ -14248,8 +18193,14 @@ let option_module : RuntimeModule = RuntimeModule::new(
 )
 
 ///|
-let prelude_module : RuntimeModule = RuntimeModule::new(
+let moonbitlang_core_prelude_module : RuntimeModule = RuntimeModule::new(
   "moonbitlang/core/prelude",
+  deps={
+    "moonbitlang/core/builtin": moonbitlang_core_builtin_module,
+    "moonbitlang/core/bigint": moonbitlang_core_bigint_module,
+    "moonbitlang/core/set": moonbitlang_core_set_module,
+    "moonbitlang/core/array": moonbitlang_core_array_module,
+  },
   fn(_env, build) {
     {
       "tap": build(
@@ -14268,8 +18219,15 @@ let prelude_module : RuntimeModule = RuntimeModule::new(
 )
 
 ///|
-let priority_queue_module : RuntimeModule = RuntimeModule::new(
+let moonbitlang_core_priority_queue_module : RuntimeModule = RuntimeModule::new(
   "moonbitlang/core/priority_queue",
+  deps={
+    "moonbitlang/core/builtin": moonbitlang_core_builtin_module,
+    "moonbitlang/core/array": moonbitlang_core_array_module,
+    "moonbitlang/core/quickcheck": moonbitlang_core_quickcheck_module,
+    "moonbitlang/core/quickcheck/splitmix": moonbitlang_core_quickcheck_splitmix_module,
+    "moonbitlang/core/json": moonbitlang_core_json_module,
+  },
   fn(_env, build) {
     {
       "new": build(
@@ -14449,8 +18407,12 @@ let priority_queue_module : RuntimeModule = RuntimeModule::new(
 )
 
 ///|
-let queue_module : RuntimeModule = RuntimeModule::new(
+let moonbitlang_core_queue_module : RuntimeModule = RuntimeModule::new(
   "moonbitlang/core/queue",
+  deps={
+    "moonbitlang/core/builtin": moonbitlang_core_builtin_module,
+    "moonbitlang/core/quickcheck": moonbitlang_core_quickcheck_module,
+  },
   fn(_env, build) {
     {
       "new": build(
@@ -14666,8 +18628,13 @@ let queue_module : RuntimeModule = RuntimeModule::new(
 )
 
 ///|
-let quickcheck_module : RuntimeModule = RuntimeModule::new(
+let moonbitlang_core_quickcheck_module : RuntimeModule = RuntimeModule::new(
   "moonbitlang/core/quickcheck",
+  deps={
+    "moonbitlang/core/quickcheck/splitmix": moonbitlang_core_quickcheck_splitmix_module,
+    "moonbitlang/core/builtin": moonbitlang_core_builtin_module,
+    "moonbitlang/core/char": moonbitlang_core_char_module,
+  },
   fn(_env, build) {
     {
       "gen": build(
@@ -14698,8 +18665,137 @@ let quickcheck_module : RuntimeModule = RuntimeModule::new(
 )
 
 ///|
-let random_module : RuntimeModule = RuntimeModule::new(
+let moonbitlang_core_quickcheck_splitmix_module : RuntimeModule = RuntimeModule::new(
+  "moonbitlang/core/quickcheck/splitmix",
+  deps={ "moonbitlang/core/builtin": moonbitlang_core_builtin_module },
+  fn(_env, build) {
+    {
+      "new": build(
+        (
+          #|pub fn RandomState::new(seed~ : UInt64 = 37) -> RandomState { new(seed~) }
+        ),
+      ),
+      "new": build(
+        (
+          #|pub fn new(seed~ : UInt64 = 37) -> RandomState { { seed: mix64(seed), gamma: mix_gamma(seed + golden_gamma) } }
+        ),
+      ),
+      "clone": build(
+        (
+          #|pub fn clone(self : RandomState) -> RandomState { { ..self } }
+        ),
+      ),
+      "next": build(
+        (
+          #|pub fn next(self : RandomState) -> Unit { self.next_uint64() |> ignore }
+        ),
+      ),
+      "next_uint64": build(
+        (
+          #|pub fn next_uint64(self : RandomState) -> UInt64 { let { seed, gamma } = self
+          #|  self.seed = seed + gamma
+          #|  mix64(self.seed) }
+        ),
+      ),
+      "next_uint": build(
+        (
+          #|pub fn next_uint(self : RandomState) -> UInt { self.next_uint64().to_uint() }
+        ),
+      ),
+      "next_int64": build(
+        (
+          #|pub fn next_int64(self : RandomState) -> Int64 { self.next_uint64().reinterpret_as_int64() }
+        ),
+      ),
+      "next_two_uint": build(
+        (
+          #|pub fn next_two_uint(self : RandomState) -> (UInt, UInt) { let g = self.next_uint64()
+          #|  ((g >> 32).to_uint(), g.to_uint()) }
+        ),
+      ),
+      "next_int": build(
+        (
+          #|pub fn next_int(self : RandomState) -> Int { self.next_uint().reinterpret_as_int() }
+        ),
+      ),
+      "next_positive_int": build(
+        (
+          #|pub fn next_positive_int(self : RandomState) -> Int { let r = self.next_int()
+          #|  match r {
+          #|    -2147483648 => 2147483647
+          #|    0 => 1
+          #|    r if r < 0 => -r
+          #|    r => r
+          #|  } }
+        ),
+      ),
+      "next_float": build(
+        (
+          #|pub fn next_float(self : RandomState) -> Float { let u = self.next_uint64()
+          #|  (u >> 11).to_float() * float_ulp }
+        ),
+      ),
+      "next_double": build(
+        (
+          #|pub fn next_double(self : RandomState) -> Double { let u = self.next_uint64()
+          #|  (u >> 11).to_double() * double_ulp }
+        ),
+      ),
+      "split": build(
+        (
+          #|pub fn split(self : RandomState) -> RandomState { let seed1 = self.seed + self.gamma
+          #|  self.seed = seed1 + self.gamma
+          #|  { seed: mix64(seed1), gamma: mix_gamma(self.seed) } }
+        ),
+      ),
+      "shift_xor": build(
+        (
+          #|fn shift_xor(n : Int, w : UInt64) -> UInt64 { w ^ (w >> n) }
+        ),
+      ),
+      "shift_xor_mul": build(
+        (
+          #|fn shift_xor_mul(n : Int, k : UInt64, w : UInt64) -> UInt64 { shift_xor(n, w) * k }
+        ),
+      ),
+      "mix64": build(
+        (
+          #|fn mix64(z0 : UInt64) -> UInt64 { let z1 = shift_xor_mul(30, 0xff51afd7ed558ccd, z0)
+          #|  let z2 = shift_xor_mul(33, 0xc4ceb9fe1a85ec53, z1)
+          #|  shift_xor(33, z2) }
+        ),
+      ),
+      "mix64variant13": build(
+        (
+          #|fn mix64variant13(z0 : UInt64) -> UInt64 { let z1 = shift_xor_mul(30, 0xbf58476d1ce4e5b9, z0)
+          #|  let z2 = shift_xor_mul(27, 0x94d049bb133111eb, z1)
+          #|  shift_xor(31, z2) }
+        ),
+      ),
+      "mix_gamma": build(
+        (
+          #|fn mix_gamma(z0 : UInt64) -> UInt64 { let z1 = mix64variant13(z0 | 1)
+          #|  let n = (z1 | (z1 >> 1)).popcnt()
+          #|  if n >= 24 {
+          #|    z1
+          #|  } else {
+          #|    z1 ^ 0xaaaaaaaaaaaaaaaa
+          #|  } }
+        ),
+      ),
+    }
+  },
+)
+
+///|
+let moonbitlang_core_random_module : RuntimeModule = RuntimeModule::new(
   "moonbitlang/core/random",
+  deps={
+    "moonbitlang/core/builtin": moonbitlang_core_builtin_module,
+    "moonbitlang/core/double": moonbitlang_core_double_module,
+    "moonbitlang/core/random/internal/random_source": moonbitlang_core_random_internal_random_source_module,
+    "moonbitlang/core/bigint": moonbitlang_core_bigint_module,
+  },
   fn(_env, build) {
     {
       "new": build(
@@ -14832,8 +18928,71 @@ let random_module : RuntimeModule = RuntimeModule::new(
 )
 
 ///|
-let rational_module : RuntimeModule = RuntimeModule::new(
+let moonbitlang_core_random_internal_random_source_module : RuntimeModule = RuntimeModule::new(
+  "moonbitlang/core/random/internal/random_source",
+  deps={
+    "moonbitlang/core/builtin": moonbitlang_core_builtin_module,
+    "moonbitlang/core/array": moonbitlang_core_array_module,
+    "moonbitlang/core/bytes": moonbitlang_core_bytes_module,
+  },
+  fn(_env, build) {
+    {
+      "new": build(
+        (
+          #|pub fn ChaCha8::new(seed : Bytes) -> ChaCha8 { let seed = FixedArray::makei(SEED_CHUNK_NUM * 2, i => seed[i * 4:i * 4 + 4].to_uint_le())
+          #|  let buffer = FixedArray::make(BUFFER_CHUNK_NUM * 2, 0U)
+          #|  chacha_block(seed, buffer, 0)
+          #|  { seed, buffer, counter: 0, i: 0, n: BUFFER_CHUNK_NUM.reinterpret_as_uint() } }
+        ),
+      ),
+      "next": build(
+        (
+          #|pub fn ChaCha8::next(self : ChaCha8) -> UInt64? { let i = self.i
+          #|  if i >= self.n {
+          #|    return None
+          #|  }
+          #|  self.i = i + 1
+          #|  let index = i.reinterpret_as_int() & (BUFFER_CHUNK_NUM - 1)
+          #|  let lo = self.buffer[index * 2].to_uint64()
+          #|  let hi = self.buffer[index * 2 + 1].to_uint64()
+          #|  Some((hi << 32) | lo) }
+        ),
+      ),
+      "refill": build(
+        (
+          #|pub fn ChaCha8::refill(self : ChaCha8) -> Unit { self.counter += COUNTER_INC
+          #|  if self.counter == COUNTER_MAX {
+          #|    // reseed
+          #|    // 1 chunk = 64 bits = number of bits in UInt * 2
+          #|    self.buffer.blit_to(
+          #|      self.seed,
+          #|      len=SEED_CHUNK_NUM * 2,
+          #|      src_offset=(BUFFER_CHUNK_NUM - SEED_CHUNK_NUM) * 2,
+          #|    )
+          #|    self.counter = 0
+          #|  }
+          #|  chacha_block(self.seed, self.buffer, self.counter)
+          #|  self.i = 0
+          #|  self.n = if self.counter == COUNTER_MAX - COUNTER_INC {
+          #|    (BUFFER_CHUNK_NUM - SEED_CHUNK_NUM).reinterpret_as_uint()
+          #|  } else {
+          #|    BUFFER_CHUNK_NUM.reinterpret_as_uint()
+          #|  } }
+        ),
+      ),
+    }
+  },
+)
+
+///|
+let moonbitlang_core_rational_module : RuntimeModule = RuntimeModule::new(
   "moonbitlang/core/rational",
+  deps={
+    "moonbitlang/core/builtin": moonbitlang_core_builtin_module,
+    "moonbitlang/core/double": moonbitlang_core_double_module,
+    "moonbitlang/core/int64": moonbitlang_core_int64_module,
+    "moonbitlang/core/quickcheck": moonbitlang_core_quickcheck_module,
+  },
   fn(_env, build) {
     {
       "gcd": build(
@@ -15023,61 +19182,69 @@ let rational_module : RuntimeModule = RuntimeModule::new(
 )
 
 ///|
-let ref_module : RuntimeModule = RuntimeModule::new("moonbitlang/core/ref", fn(
-  _env,
-  build,
-) {
-  {
-    "new": build(
-      (
-        #|pub fn[T] Ref::new(x : T) -> Ref[T] { { val: x } }
+let moonbitlang_core_ref_module : RuntimeModule = RuntimeModule::new(
+  "moonbitlang/core/ref",
+  deps={
+    "moonbitlang/core/builtin": moonbitlang_core_builtin_module,
+    "moonbitlang/core/quickcheck": moonbitlang_core_quickcheck_module,
+  },
+  fn(_env, build) {
+    {
+      "new": build(
+        (
+          #|pub fn[T] Ref::new(x : T) -> Ref[T] { { val: x } }
+        ),
       ),
-    ),
-    "new": build(
-      (
-        #|pub fn[T] new(x : T) -> Ref[T] { { val: x } }
+      "new": build(
+        (
+          #|pub fn[T] new(x : T) -> Ref[T] { { val: x } }
+        ),
       ),
-    ),
-    "map": build(
-      (
-        #|pub fn[T, R] map(self : Ref[T], f : (T) -> R raise?) -> Ref[R] raise? { { val: f(self.val) } }
+      "map": build(
+        (
+          #|pub fn[T, R] map(self : Ref[T], f : (T) -> R raise?) -> Ref[R] raise? { { val: f(self.val) } }
+        ),
       ),
-    ),
-    "protect": build(
-      (
-        #|pub fn[T, R] protect(self : Ref[T], a : T, f : () -> R raise?) -> R raise? { let old = self.val
-        #|  self.val = a
-        #|  try f() catch {
-        #|    err => {
-        #|      self.val = old
-        #|      raise err
-        #|    }
-        #|  } noraise {
-        #|    r => {
-        #|      self.val = old
-        #|      r
-        #|    }
-        #|  } }
+      "protect": build(
+        (
+          #|pub fn[T, R] protect(self : Ref[T], a : T, f : () -> R raise?) -> R raise? { let old = self.val
+          #|  self.val = a
+          #|  try f() catch {
+          #|    err => {
+          #|      self.val = old
+          #|      raise err
+          #|    }
+          #|  } noraise {
+          #|    r => {
+          #|      self.val = old
+          #|      r
+          #|    }
+          #|  } }
+        ),
       ),
-    ),
-    "swap": build(
-      (
-        #|pub fn[T] Ref::swap(self : Ref[T], that : Ref[T]) -> Unit { let tmp = self.val
-        #|  self.val = that.val
-        #|  that.val = tmp }
+      "swap": build(
+        (
+          #|pub fn[T] Ref::swap(self : Ref[T], that : Ref[T]) -> Unit { let tmp = self.val
+          #|  self.val = that.val
+          #|  that.val = tmp }
+        ),
       ),
-    ),
-    "update": build(
-      (
-        #|pub fn[T] update(self : Ref[T], f : (T) -> T raise?) -> Unit raise? { self.val = f(self.val) }
+      "update": build(
+        (
+          #|pub fn[T] update(self : Ref[T], f : (T) -> T raise?) -> Unit raise? { self.val = f(self.val) }
+        ),
       ),
-    ),
-  }
-})
+    }
+  },
+)
 
 ///|
-let result_module : RuntimeModule = RuntimeModule::new(
+let moonbitlang_core_result_module : RuntimeModule = RuntimeModule::new(
   "moonbitlang/core/result",
+  deps={
+    "moonbitlang/core/builtin": moonbitlang_core_builtin_module,
+    "moonbitlang/core/quickcheck": moonbitlang_core_quickcheck_module,
+  },
   fn(_env, build) {
     {
       "map": build(
@@ -15199,386 +19366,396 @@ let result_module : RuntimeModule = RuntimeModule::new(
 )
 
 ///|
-let set_module : RuntimeModule = RuntimeModule::new("moonbitlang/core/set", fn(
-  _env,
-  build,
-) {
-  {
-    "calc_grow_threshold": build(
-      (
-        #|fn calc_grow_threshold(capacity : Int) -> Int { capacity * 13 / 16 }
+let moonbitlang_core_set_module : RuntimeModule = RuntimeModule::new(
+  "moonbitlang/core/set",
+  deps={
+    "moonbitlang/core/builtin": moonbitlang_core_builtin_module,
+    "moonbitlang/core/int": moonbitlang_core_int_module,
+  },
+  fn(_env, build) {
+    {
+      "calc_grow_threshold": build(
+        (
+          #|fn calc_grow_threshold(capacity : Int) -> Int { capacity * 13 / 16 }
+        ),
       ),
-    ),
-    "new": build(
-      (
-        #|pub fn[K] Set::new(capacity~ : Int = 8) -> Set[K] { let capacity = capacity.next_power_of_two()
-        #|  {
-        #|    size: 0,
-        #|    capacity,
-        #|    capacity_mask: capacity - 1,
-        #|    grow_at: calc_grow_threshold(capacity),
-        #|    entries: FixedArray::make(capacity, None),
-        #|    list: FixedArray::make(capacity, { prev: None, next: None }),
-        #|    head: None,
-        #|    tail: None,
-        #|  } }
+      "new": build(
+        (
+          #|pub fn[K] Set::new(capacity~ : Int = 8) -> Set[K] { let capacity = capacity.next_power_of_two()
+          #|  {
+          #|    size: 0,
+          #|    capacity,
+          #|    capacity_mask: capacity - 1,
+          #|    grow_at: calc_grow_threshold(capacity),
+          #|    entries: FixedArray::make(capacity, None),
+          #|    list: FixedArray::make(capacity, { prev: None, next: None }),
+          #|    head: None,
+          #|    tail: None,
+          #|  } }
+        ),
       ),
-    ),
-    "from_array": build(
-      (
-        #|pub fn[K : Hash + Eq] Set::from_array(arr : Array[K]) -> Set[K] { let m = Set::new(capacity=arr.length())
-        #|  arr.each(e => m.add(e))
-        #|  m }
+      "from_array": build(
+        (
+          #|pub fn[K : Hash + Eq] Set::from_array(arr : Array[K]) -> Set[K] { let m = Set::new(capacity=arr.length())
+          #|  arr.each(e => m.add(e))
+          #|  m }
+        ),
       ),
-    ),
-    "add_and_check": build(
-      (
-        #|pub fn[K : Hash + Eq] add_and_check(self : Set[K], key : K) -> Bool { if self.size >= self.grow_at {
-        #|    self.grow()
-        #|  }
-        #|  let hash = key.hash()
-        #|  let insert_entry = { idx: -1, psl: 0, hash, key }
-        #|  let list_node : SListNode[K] = { prev: None, next: None }
-        #|  for i = 0, idx = hash & self.capacity_mask, entry = insert_entry, node = list_node {
-        #|    match self.entries[idx] {
-        #|      None => {
-        #|        self.entries[idx] = Some(entry)
-        #|        self.list[idx] = node
-        #|        entry.idx = idx
-        #|        self.add_entry_to_tail(insert_entry)
-        #|        self.size += 1
-        #|        break true
-        #|      }
-        #|      Some(curr_entry) => {
-        #|        let curr_node = self.list[curr_entry.idx]
-        #|        if curr_entry.hash == entry.hash && curr_entry.key == entry.key {
-        #|          break false
-        #|        }
-        #|        if entry.psl > curr_entry.psl {
-        #|          self.entries[idx] = Some(entry)
-        #|          self.list[idx] = node
-        #|          entry.idx = idx
-        #|          curr_entry.psl += 1
-        #|          continue i + 1, (idx + 1) & self.capacity_mask, curr_entry, curr_node
-        #|        } else {
-        #|          entry.psl += 1
-        #|          continue i + 1, (idx + 1) & self.capacity_mask, entry, node
-        #|        }
-        #|      }
-        #|    }
-        #|  } }
+      "add_and_check": build(
+        (
+          #|pub fn[K : Hash + Eq] add_and_check(self : Set[K], key : K) -> Bool { if self.size >= self.grow_at {
+          #|    self.grow()
+          #|  }
+          #|  let hash = key.hash()
+          #|  let insert_entry = { idx: -1, psl: 0, hash, key }
+          #|  let list_node : SListNode[K] = { prev: None, next: None }
+          #|  for i = 0, idx = hash & self.capacity_mask, entry = insert_entry, node = list_node {
+          #|    match self.entries[idx] {
+          #|      None => {
+          #|        self.entries[idx] = Some(entry)
+          #|        self.list[idx] = node
+          #|        entry.idx = idx
+          #|        self.add_entry_to_tail(insert_entry)
+          #|        self.size += 1
+          #|        break true
+          #|      }
+          #|      Some(curr_entry) => {
+          #|        let curr_node = self.list[curr_entry.idx]
+          #|        if curr_entry.hash == entry.hash && curr_entry.key == entry.key {
+          #|          break false
+          #|        }
+          #|        if entry.psl > curr_entry.psl {
+          #|          self.entries[idx] = Some(entry)
+          #|          self.list[idx] = node
+          #|          entry.idx = idx
+          #|          curr_entry.psl += 1
+          #|          continue i + 1, (idx + 1) & self.capacity_mask, curr_entry, curr_node
+          #|        } else {
+          #|          entry.psl += 1
+          #|          continue i + 1, (idx + 1) & self.capacity_mask, entry, node
+          #|        }
+          #|      }
+          #|    }
+          #|  } }
+        ),
       ),
-    ),
-    "add": build(
-      (
-        #|pub fn[K : Hash + Eq] add(self : Set[K], key : K) -> Unit { if self.size >= self.grow_at {
-        #|    self.grow()
-        #|  }
-        #|  let hash = key.hash()
-        #|  let insert_entry = { idx: -1, psl: 0, hash, key }
-        #|  let list_node : SListNode[K] = { prev: None, next: None }
-        #|  for i = 0, idx = hash & self.capacity_mask, entry = insert_entry, node = list_node {
-        #|    match self.entries[idx] {
-        #|      None => {
-        #|        self.entries[idx] = Some(entry)
-        #|        self.list[idx] = node
-        #|        entry.idx = idx
-        #|        self.add_entry_to_tail(insert_entry)
-        #|        self.size += 1
-        #|        break
-        #|      }
-        #|      Some(curr_entry) => {
-        #|        let curr_node = self.list[curr_entry.idx]
-        #|        if curr_entry.hash == entry.hash && curr_entry.key == entry.key {
-        #|          break
-        #|        }
-        #|        if entry.psl > curr_entry.psl {
-        #|          self.entries[idx] = Some(entry)
-        #|          self.list[idx] = node
-        #|          entry.idx = idx
-        #|          curr_entry.psl += 1
-        #|          continue i + 1, (idx + 1) & self.capacity_mask, curr_entry, curr_node
-        #|        } else {
-        #|          entry.psl += 1
-        #|          continue i + 1, (idx + 1) & self.capacity_mask, entry, node
-        #|        }
-        #|      }
-        #|    }
-        #|  } }
+      "add": build(
+        (
+          #|pub fn[K : Hash + Eq] add(self : Set[K], key : K) -> Unit { if self.size >= self.grow_at {
+          #|    self.grow()
+          #|  }
+          #|  let hash = key.hash()
+          #|  let insert_entry = { idx: -1, psl: 0, hash, key }
+          #|  let list_node : SListNode[K] = { prev: None, next: None }
+          #|  for i = 0, idx = hash & self.capacity_mask, entry = insert_entry, node = list_node {
+          #|    match self.entries[idx] {
+          #|      None => {
+          #|        self.entries[idx] = Some(entry)
+          #|        self.list[idx] = node
+          #|        entry.idx = idx
+          #|        self.add_entry_to_tail(insert_entry)
+          #|        self.size += 1
+          #|        break
+          #|      }
+          #|      Some(curr_entry) => {
+          #|        let curr_node = self.list[curr_entry.idx]
+          #|        if curr_entry.hash == entry.hash && curr_entry.key == entry.key {
+          #|          break
+          #|        }
+          #|        if entry.psl > curr_entry.psl {
+          #|          self.entries[idx] = Some(entry)
+          #|          self.list[idx] = node
+          #|          entry.idx = idx
+          #|          curr_entry.psl += 1
+          #|          continue i + 1, (idx + 1) & self.capacity_mask, curr_entry, curr_node
+          #|        } else {
+          #|          entry.psl += 1
+          #|          continue i + 1, (idx + 1) & self.capacity_mask, entry, node
+          #|        }
+          #|      }
+          #|    }
+          #|  } }
+        ),
       ),
-    ),
-    "contains": build(
-      (
-        #|pub fn[K : Hash + Eq] contains(self : Set[K], key : K) -> Bool { let hash = key.hash()
-        #|  for i = 0, idx = hash & self.capacity_mask {
-        #|    match self.entries[idx] {
-        #|      Some(entry) => {
-        #|        if entry.hash == hash && entry.key == key {
-        #|          break true
-        #|        }
-        #|        if i > entry.psl {
-        #|          break false
-        #|        }
-        #|        continue i + 1, (idx + 1) & self.capacity_mask
-        #|      }
-        #|      None => break false
-        #|    }
-        #|  } }
+      "contains": build(
+        (
+          #|pub fn[K : Hash + Eq] contains(self : Set[K], key : K) -> Bool { let hash = key.hash()
+          #|  for i = 0, idx = hash & self.capacity_mask {
+          #|    match self.entries[idx] {
+          #|      Some(entry) => {
+          #|        if entry.hash == hash && entry.key == key {
+          #|          break true
+          #|        }
+          #|        if i > entry.psl {
+          #|          break false
+          #|        }
+          #|        continue i + 1, (idx + 1) & self.capacity_mask
+          #|      }
+          #|      None => break false
+          #|    }
+          #|  } }
+        ),
       ),
-    ),
-    "remove": build(
-      (
-        #|pub fn[K : Hash + Eq] remove(self : Set[K], key : K) -> Unit { let hash = key.hash()
-        #|  for i = 0, idx = hash & self.capacity_mask {
-        #|    match self.entries[idx] {
-        #|      Some(entry) => {
-        #|        if entry.hash == hash && entry.key == key {
-        #|          self.entries[idx] = None
-        #|          self.remove_entry(entry)
-        #|          self.shift_back(idx)
-        #|          self.size -= 1
-        #|          break
-        #|        }
-        #|        if i > entry.psl {
-        #|          break
-        #|        }
-        #|        continue i + 1, (idx + 1) & self.capacity_mask
-        #|      }
-        #|      None => break
-        #|    }
-        #|  } }
+      "remove": build(
+        (
+          #|pub fn[K : Hash + Eq] remove(self : Set[K], key : K) -> Unit { let hash = key.hash()
+          #|  for i = 0, idx = hash & self.capacity_mask {
+          #|    match self.entries[idx] {
+          #|      Some(entry) => {
+          #|        if entry.hash == hash && entry.key == key {
+          #|          self.entries[idx] = None
+          #|          self.remove_entry(entry)
+          #|          self.shift_back(idx)
+          #|          self.size -= 1
+          #|          break
+          #|        }
+          #|        if i > entry.psl {
+          #|          break
+          #|        }
+          #|        continue i + 1, (idx + 1) & self.capacity_mask
+          #|      }
+          #|      None => break
+          #|    }
+          #|  } }
+        ),
       ),
-    ),
-    "remove_and_check": build(
-      (
-        #|pub fn[K : Hash + Eq] remove_and_check(self : Set[K], key : K) -> Bool { let hash = key.hash()
-        #|  for i = 0, idx = hash & self.capacity_mask {
-        #|    match self.entries[idx] {
-        #|      Some(entry) => {
-        #|        if entry.hash == hash && entry.key == key {
-        #|          self.entries[idx] = None
-        #|          self.remove_entry(entry)
-        #|          self.shift_back(idx)
-        #|          self.size -= 1
-        #|          break true
-        #|        }
-        #|        if i > entry.psl {
-        #|          break false
-        #|        }
-        #|        continue i + 1, (idx + 1) & self.capacity_mask
-        #|      }
-        #|      None => break false
-        #|    }
-        #|  } }
+      "remove_and_check": build(
+        (
+          #|pub fn[K : Hash + Eq] remove_and_check(self : Set[K], key : K) -> Bool { let hash = key.hash()
+          #|  for i = 0, idx = hash & self.capacity_mask {
+          #|    match self.entries[idx] {
+          #|      Some(entry) => {
+          #|        if entry.hash == hash && entry.key == key {
+          #|          self.entries[idx] = None
+          #|          self.remove_entry(entry)
+          #|          self.shift_back(idx)
+          #|          self.size -= 1
+          #|          break true
+          #|        }
+          #|        if i > entry.psl {
+          #|          break false
+          #|        }
+          #|        continue i + 1, (idx + 1) & self.capacity_mask
+          #|      }
+          #|      None => break false
+          #|    }
+          #|  } }
+        ),
       ),
-    ),
-    "add_entry_to_tail": build(
-      (
-        #|fn[K] add_entry_to_tail(self : Set[K], entry : SEntry[K]) -> Unit { match self.tail {
-        #|    None => {
-        #|      self.head = Some(entry)
-        #|      self.tail = Some(entry)
-        #|    }
-        #|    Some(tail) => {
-        #|      self.list[tail.idx].next = Some(entry)
-        #|      self.list[entry.idx].prev = Some(tail)
-        #|      self.tail = Some(entry)
-        #|    }
-        #|  } }
+      "add_entry_to_tail": build(
+        (
+          #|fn[K] add_entry_to_tail(self : Set[K], entry : SEntry[K]) -> Unit { match self.tail {
+          #|    None => {
+          #|      self.head = Some(entry)
+          #|      self.tail = Some(entry)
+          #|    }
+          #|    Some(tail) => {
+          #|      self.list[tail.idx].next = Some(entry)
+          #|      self.list[entry.idx].prev = Some(tail)
+          #|      self.tail = Some(entry)
+          #|    }
+          #|  } }
+        ),
       ),
-    ),
-    "remove_entry": build(
-      (
-        #|fn[K : Eq] remove_entry(self : Set[K], entry : SEntry[K]) -> Unit { let node = self.list[entry.idx]
-        #|  if self.is_empty() {
-        #|    self.head = None
-        #|    self.tail = None
-        #|  } else {
-        #|    if self.head.unwrap() == entry {
-        #|      self.head = node.next
-        #|    }
-        #|    if self.tail.unwrap() == entry {
-        #|      self.tail = node.prev
-        #|    }
-        #|    if node.prev is Some(prev) {
-        #|      self.list[prev.idx].next = node.next
-        #|    }
-        #|    if node.next is Some(next) {
-        #|      self.list[next.idx].prev = node.prev
-        #|    }
-        #|  }
-        #|  node.prev = None
-        #|  node.next = None }
+      "remove_entry": build(
+        (
+          #|fn[K : Eq] remove_entry(self : Set[K], entry : SEntry[K]) -> Unit { let node = self.list[entry.idx]
+          #|  if self.is_empty() {
+          #|    self.head = None
+          #|    self.tail = None
+          #|  } else {
+          #|    if self.head.unwrap() == entry {
+          #|      self.head = node.next
+          #|    }
+          #|    if self.tail.unwrap() == entry {
+          #|      self.tail = node.prev
+          #|    }
+          #|    if node.prev is Some(prev) {
+          #|      self.list[prev.idx].next = node.next
+          #|    }
+          #|    if node.next is Some(next) {
+          #|      self.list[next.idx].prev = node.prev
+          #|    }
+          #|  }
+          #|  node.prev = None
+          #|  node.next = None }
+        ),
       ),
-    ),
-    "shift_back": build(
-      (
-        #|fn[K] shift_back(self : Set[K], start_index : Int) -> Unit { for prev = start_index, curr = (start_index + 1) & self.capacity_mask {
-        #|    match (self.entries[curr], self.list[curr]) {
-        #|      (Some(entry), currNode) => {
-        #|        if entry.psl == 0 {
-        #|          break
-        #|        }
-        #|        entry.psl -= 1
-        #|        entry.idx = prev
-        #|        self.entries[prev] = Some(entry)
-        #|        self.entries[curr] = None
-        #|        self.list[prev].prev = currNode.prev
-        #|        self.list[prev].next = currNode.next
-        #|        currNode.prev = None
-        #|        currNode.next = None
-        #|        continue curr, (curr + 1) & self.capacity_mask
-        #|      }
-        #|      (None, _) => break
-        #|    }
-        #|  } }
+      "shift_back": build(
+        (
+          #|fn[K] shift_back(self : Set[K], start_index : Int) -> Unit { for prev = start_index, curr = (start_index + 1) & self.capacity_mask {
+          #|    match (self.entries[curr], self.list[curr]) {
+          #|      (Some(entry), currNode) => {
+          #|        if entry.psl == 0 {
+          #|          break
+          #|        }
+          #|        entry.psl -= 1
+          #|        entry.idx = prev
+          #|        self.entries[prev] = Some(entry)
+          #|        self.entries[curr] = None
+          #|        self.list[prev].prev = currNode.prev
+          #|        self.list[prev].next = currNode.next
+          #|        currNode.prev = None
+          #|        currNode.next = None
+          #|        continue curr, (curr + 1) & self.capacity_mask
+          #|      }
+          #|      (None, _) => break
+          #|    }
+          #|  } }
+        ),
       ),
-    ),
-    "grow": build(
-      (
-        #|fn[K : Hash + Eq] grow(self : Set[K]) -> Unit { let old_head = self.head
-        #|  let old_list = self.list
-        #|  let new_capacity = self.capacity << 1
-        #|  self.entries = FixedArray::make(new_capacity, None)
-        #|  self.list = FixedArray::make(new_capacity, { prev: None, next: None })
-        #|  self.capacity = new_capacity
-        #|  self.capacity_mask = new_capacity - 1
-        #|  self.grow_at = calc_grow_threshold(self.capacity)
-        #|  self.size = 0
-        #|  self.head = None
-        #|  self.tail = None
-        #|  loop old_head {
-        #|    Some({ idx, key, .. }) => {
-        #|      self.add(key)
-        #|      continue old_list[idx].next
-        #|    }
-        #|    None => break
-        #|  } }
+      "grow": build(
+        (
+          #|fn[K : Hash + Eq] grow(self : Set[K]) -> Unit { let old_head = self.head
+          #|  let old_list = self.list
+          #|  let new_capacity = self.capacity << 1
+          #|  self.entries = FixedArray::make(new_capacity, None)
+          #|  self.list = FixedArray::make(new_capacity, { prev: None, next: None })
+          #|  self.capacity = new_capacity
+          #|  self.capacity_mask = new_capacity - 1
+          #|  self.grow_at = calc_grow_threshold(self.capacity)
+          #|  self.size = 0
+          #|  self.head = None
+          #|  self.tail = None
+          #|  loop old_head {
+          #|    Some({ idx, key, .. }) => {
+          #|      self.add(key)
+          #|      continue old_list[idx].next
+          #|    }
+          #|    None => break
+          #|  } }
+        ),
       ),
-    ),
-    "size": build(
-      (
-        #|pub fn[K] size(self : Set[K]) -> Int { self.size }
+      "size": build(
+        (
+          #|pub fn[K] size(self : Set[K]) -> Int { self.size }
+        ),
       ),
-    ),
-    "capacity": build(
-      (
-        #|pub fn[K] capacity(self : Set[K]) -> Int { self.capacity }
+      "capacity": build(
+        (
+          #|pub fn[K] capacity(self : Set[K]) -> Int { self.capacity }
+        ),
       ),
-    ),
-    "is_empty": build(
-      (
-        #|pub fn[K] is_empty(self : Set[K]) -> Bool { self.size == 0 }
+      "is_empty": build(
+        (
+          #|pub fn[K] is_empty(self : Set[K]) -> Bool { self.size == 0 }
+        ),
       ),
-    ),
-    "each": build(
-      (
-        #|pub fn[K] each(self : Set[K], f : (K) -> Unit raise?) -> Unit raise? { loop self.head {
-        #|    Some({ key, idx, .. }) => {
-        #|      f(key)
-        #|      continue self.list[idx].next
-        #|    }
-        #|    None => break
-        #|  } }
+      "each": build(
+        (
+          #|pub fn[K] each(self : Set[K], f : (K) -> Unit raise?) -> Unit raise? { loop self.head {
+          #|    Some({ key, idx, .. }) => {
+          #|      f(key)
+          #|      continue self.list[idx].next
+          #|    }
+          #|    None => break
+          #|  } }
+        ),
       ),
-    ),
-    "eachi": build(
-      (
-        #|pub fn[K] eachi(self : Set[K], f : (Int, K) -> Unit raise?) -> Unit raise? { loop (0, self.head) {
-        #|    (i, Some({ key, idx, .. })) => {
-        #|      f(i, key)
-        #|      continue (i + 1, self.list[idx].next)
-        #|    }
-        #|    (_, None) => break
-        #|  } }
+      "eachi": build(
+        (
+          #|pub fn[K] eachi(self : Set[K], f : (Int, K) -> Unit raise?) -> Unit raise? { loop (0, self.head) {
+          #|    (i, Some({ key, idx, .. })) => {
+          #|      f(i, key)
+          #|      continue (i + 1, self.list[idx].next)
+          #|    }
+          #|    (_, None) => break
+          #|  } }
+        ),
       ),
-    ),
-    "clear": build(
-      (
-        #|pub fn[K] clear(self : Set[K]) -> Unit { self.entries.fill(None)
-        #|  self.size = 0
-        #|  self.head = None
-        #|  self.tail = None }
+      "clear": build(
+        (
+          #|pub fn[K] clear(self : Set[K]) -> Unit { self.entries.fill(None)
+          #|  self.size = 0
+          #|  self.head = None
+          #|  self.tail = None }
+        ),
       ),
-    ),
-    "iter": build(
-      (
-        #|pub fn[K] iter(self : Set[K]) -> Iter[K] { Iter::new(yield_ => loop self.head {
-        #|    Some({ key, idx, .. }) => {
-        #|      if yield_(key) == IterEnd {
-        #|        break IterEnd
-        #|      }
-        #|      continue self.list[idx].next
-        #|    }
-        #|    None => break IterContinue
-        #|  }) }
+      "iter": build(
+        (
+          #|pub fn[K] iter(self : Set[K]) -> Iter[K] { Iter::new(yield_ => loop self.head {
+          #|    Some({ key, idx, .. }) => {
+          #|      if yield_(key) == IterEnd {
+          #|        break IterEnd
+          #|      }
+          #|      continue self.list[idx].next
+          #|    }
+          #|    None => break IterContinue
+          #|  }) }
+        ),
       ),
-    ),
-    "to_array": build(
-      (
-        #|pub fn[K] to_array(self : Set[K]) -> Array[K] { let res = Array::new(capacity=self.size)
-        #|  loop self.head {
-        #|    Some({ key, idx, .. }) => {
-        #|      res.push(key)
-        #|      continue self.list[idx].next
-        #|    }
-        #|    None => break
-        #|  }
-        #|  res }
+      "to_array": build(
+        (
+          #|pub fn[K] to_array(self : Set[K]) -> Array[K] { let res = Array::new(capacity=self.size)
+          #|  loop self.head {
+          #|    Some({ key, idx, .. }) => {
+          #|      res.push(key)
+          #|      continue self.list[idx].next
+          #|    }
+          #|    None => break
+          #|  }
+          #|  res }
+        ),
       ),
-    ),
-    "of": build(
-      (
-        #|pub fn[K : Hash + Eq] Set::of(arr : FixedArray[K]) -> Set[K] { let length = arr.length()
-        #|  let m = Set::new(capacity=length)
-        #|  // arr.iter((e) => { m.set(e.0, e.1) })
-        #|  for i in 0..<length {
-        #|    let e = arr[i]
-        #|    m.add(e)
-        #|  }
-        #|  m }
+      "of": build(
+        (
+          #|pub fn[K : Hash + Eq] Set::of(arr : FixedArray[K]) -> Set[K] { let length = arr.length()
+          #|  let m = Set::new(capacity=length)
+          #|  // arr.iter((e) => { m.set(e.0, e.1) })
+          #|  for i in 0..<length {
+          #|    let e = arr[i]
+          #|    m.add(e)
+          #|  }
+          #|  m }
+        ),
       ),
-    ),
-    "from_iter": build(
-      (
-        #|pub fn[K : Hash + Eq] Set::from_iter(iter : Iter[K]) -> Set[K] { let m = Set::new()
-        #|  iter.each(e => m.add(e))
-        #|  m }
+      "from_iter": build(
+        (
+          #|pub fn[K : Hash + Eq] Set::from_iter(iter : Iter[K]) -> Set[K] { let m = Set::new()
+          #|  iter.each(e => m.add(e))
+          #|  m }
+        ),
       ),
-    ),
-    "difference": build(
-      (
-        #|pub fn[K : Hash + Eq] difference(self : Set[K], other : Set[K]) -> Set[K] { let m = Set::new()
-        #|  self.each(k => if !other.contains(k) { m.add(k) })
-        #|  m }
+      "difference": build(
+        (
+          #|pub fn[K : Hash + Eq] difference(self : Set[K], other : Set[K]) -> Set[K] { let m = Set::new()
+          #|  self.each(k => if !other.contains(k) { m.add(k) })
+          #|  m }
+        ),
       ),
-    ),
-    "union": build(
-      (
-        #|pub fn[K : Hash + Eq] union(self : Set[K], other : Set[K]) -> Set[K] { let m = Set::new()
-        #|  self.each(k => m.add(k))
-        #|  other.each(k => m.add(k))
-        #|  m }
+      "union": build(
+        (
+          #|pub fn[K : Hash + Eq] union(self : Set[K], other : Set[K]) -> Set[K] { let m = Set::new()
+          #|  self.each(k => m.add(k))
+          #|  other.each(k => m.add(k))
+          #|  m }
+        ),
       ),
-    ),
-    "intersection": build(
-      (
-        #|pub fn[K : Hash + Eq] intersection(self : Set[K], other : Set[K]) -> Set[K] { let m = Set::new()
-        #|  self.each(k => if other.contains(k) { m.add(k) })
-        #|  m }
+      "intersection": build(
+        (
+          #|pub fn[K : Hash + Eq] intersection(self : Set[K], other : Set[K]) -> Set[K] { let m = Set::new()
+          #|  self.each(k => if other.contains(k) { m.add(k) })
+          #|  m }
+        ),
       ),
-    ),
-    "insert": build(
-      (
-        #|pub fn[K : Hash + Eq] insert(self : Set[K], key : K) -> Unit { self.add(key) }
+      "insert": build(
+        (
+          #|pub fn[K : Hash + Eq] insert(self : Set[K], key : K) -> Unit { self.add(key) }
+        ),
       ),
-    ),
-  }
-})
+    }
+  },
+)
 
 ///|
-let sorted_map_module : RuntimeModule = RuntimeModule::new(
+let moonbitlang_core_sorted_map_module : RuntimeModule = RuntimeModule::new(
   "moonbitlang/core/sorted_map",
+  deps={
+    "moonbitlang/core/builtin": moonbitlang_core_builtin_module,
+    "moonbitlang/core/option": moonbitlang_core_option_module,
+    "moonbitlang/core/tuple": moonbitlang_core_tuple_module,
+    "moonbitlang/core/quickcheck": moonbitlang_core_quickcheck_module,
+  },
   fn(_env, build) {
     {
       "op_set": build(
@@ -15908,8 +20085,13 @@ let sorted_map_module : RuntimeModule = RuntimeModule::new(
 )
 
 ///|
-let sorted_set_module : RuntimeModule = RuntimeModule::new(
+let moonbitlang_core_sorted_set_module : RuntimeModule = RuntimeModule::new(
   "moonbitlang/core/sorted_set",
+  deps={
+    "moonbitlang/core/builtin": moonbitlang_core_builtin_module,
+    "moonbitlang/core/option": moonbitlang_core_option_module,
+    "moonbitlang/core/quickcheck": moonbitlang_core_quickcheck_module,
+  },
   fn(_env, build) {
     {
       "from_iter": build(
@@ -16461,8 +20643,15 @@ let sorted_set_module : RuntimeModule = RuntimeModule::new(
 )
 
 ///|
-let strconv_module : RuntimeModule = RuntimeModule::new(
+let moonbitlang_core_strconv_module : RuntimeModule = RuntimeModule::new(
   "moonbitlang/core/strconv",
+  deps={
+    "moonbitlang/core/builtin": moonbitlang_core_builtin_module,
+    "moonbitlang/core/double": moonbitlang_core_double_module,
+    "moonbitlang/core/uint64": moonbitlang_core_uint64_module,
+    "moonbitlang/core/string": moonbitlang_core_string_module,
+    "moonbitlang/core/char": moonbitlang_core_char_module,
+  },
   fn(_env, build) {
     {
       "parse": build(
@@ -17280,8 +21469,12 @@ let strconv_module : RuntimeModule = RuntimeModule::new(
 )
 
 ///|
-let string_module : RuntimeModule = RuntimeModule::new(
+let moonbitlang_core_string_module : RuntimeModule = RuntimeModule::new(
   "moonbitlang/core/string",
+  deps={
+    "moonbitlang/core/builtin": moonbitlang_core_builtin_module,
+    "moonbitlang/core/char": moonbitlang_core_char_module,
+  },
   fn(_env, build) {
     {
       "concat": build(
@@ -18340,97 +22533,107 @@ let string_module : RuntimeModule = RuntimeModule::new(
 )
 
 ///|
-let test_module : RuntimeModule = RuntimeModule::new("moonbitlang/core/test", fn(
-  _env,
-  build,
-) {
-  {
-    "eq": build(
-      (
-        #|pub fn[T : Show + Eq] eq(a : T, b : T, loc~ : SourceLoc) -> Unit raise { if a != b {
-        #|    let a = debug_string(a)
-        #|    let b = debug_string(b)
-        #|    fail(\"`\\{a} == \\{b}`\", loc~)
-        #|  } }
+let moonbitlang_core_test_module : RuntimeModule = RuntimeModule::new(
+  "moonbitlang/core/test",
+  deps={
+    "moonbitlang/core/builtin": moonbitlang_core_builtin_module,
+    "moonbitlang/core/bench": moonbitlang_core_bench_module,
+    "moonbitlang/core/json": moonbitlang_core_json_module,
+  },
+  fn(_env, build) {
+    {
+      "eq": build(
+        (
+          #|pub fn[T : Show + Eq] eq(a : T, b : T, loc~ : SourceLoc) -> Unit raise { if a != b {
+          #|    let a = debug_string(a)
+          #|    let b = debug_string(b)
+          #|    fail(\"`\\{a} == \\{b}`\", loc~)
+          #|  } }
+        ),
       ),
-    ),
-    "ne": build(
-      (
-        #|pub fn[T : Show + Eq] ne(a : T, b : T, loc~ : SourceLoc) -> Unit raise { if !(a != b) {
-        #|    let a = debug_string(a)
-        #|    let b = debug_string(b)
-        #|    fail(\"`\\{a} != \\{b}`\", loc~)
-        #|  } }
+      "ne": build(
+        (
+          #|pub fn[T : Show + Eq] ne(a : T, b : T, loc~ : SourceLoc) -> Unit raise { if !(a != b) {
+          #|    let a = debug_string(a)
+          #|    let b = debug_string(b)
+          #|    fail(\"`\\{a} != \\{b}`\", loc~)
+          #|  } }
+        ),
       ),
-    ),
-    "is_true": build(
-      (
-        #|pub fn is_true(x : Bool, loc~ : SourceLoc) -> Unit raise { if !x {
-        #|    let x = debug_string(x)
-        #|    fail(\"`\\{x}` is not true\", loc~)
-        #|  } }
+      "is_true": build(
+        (
+          #|pub fn is_true(x : Bool, loc~ : SourceLoc) -> Unit raise { if !x {
+          #|    let x = debug_string(x)
+          #|    fail(\"`\\{x}` is not true\", loc~)
+          #|  } }
+        ),
       ),
-    ),
-    "is_false": build(
-      (
-        #|pub fn is_false(x : Bool, loc~ : SourceLoc) -> Unit raise { if x {
-        #|    let x = debug_string(x)
-        #|    fail(\"`\\{x}` is not false\", loc~)
-        #|  } }
+      "is_false": build(
+        (
+          #|pub fn is_false(x : Bool, loc~ : SourceLoc) -> Unit raise { if x {
+          #|    let x = debug_string(x)
+          #|    fail(\"`\\{x}` is not false\", loc~)
+          #|  } }
+        ),
       ),
-    ),
-    "new": build(
-      (
-        #|pub fn new(name : String) -> T { { name, buffer: StringBuilder::new() } }
+      "new": build(
+        (
+          #|pub fn new(name : String) -> T { { name, buffer: StringBuilder::new() } }
+        ),
       ),
-    ),
-    "debug_string": build(
-      (
-        #|fn[T : Show] debug_string(t : T) -> String { let buf = StringBuilder::new(size_hint=50)
-        #|  t.output(buf)
-        #|  buf.to_string() }
+      "debug_string": build(
+        (
+          #|fn[T : Show] debug_string(t : T) -> String { let buf = StringBuilder::new(size_hint=50)
+          #|  t.output(buf)
+          #|  buf.to_string() }
+        ),
       ),
-    ),
-    "same_object": build(
-      (
-        #|pub fn[T : Show] same_object(a : T, b : T, loc~ : SourceLoc) -> Unit raise { if !physical_equal(a, b) {
-        #|    let a = debug_string(a)
-        #|    let b = debug_string(b)
-        #|    fail(\"`\\{a} is \\{b}`\", loc~)
-        #|  } }
+      "same_object": build(
+        (
+          #|pub fn[T : Show] same_object(a : T, b : T, loc~ : SourceLoc) -> Unit raise { if !physical_equal(a, b) {
+          #|    let a = debug_string(a)
+          #|    let b = debug_string(b)
+          #|    fail(\"`\\{a} is \\{b}`\", loc~)
+          #|  } }
+        ),
       ),
-    ),
-    "is_not": build(
-      (
-        #|pub fn[T : Show] is_not(a : T, b : T, loc~ : SourceLoc) -> Unit raise { if physical_equal(a, b) {
-        #|    let a = debug_string(a)
-        #|    let b = debug_string(b)
-        #|    fail(\"`!(\\{a} is \\{b})`\", loc~)
-        #|  } }
+      "is_not": build(
+        (
+          #|pub fn[T : Show] is_not(a : T, b : T, loc~ : SourceLoc) -> Unit raise { if physical_equal(a, b) {
+          #|    let a = debug_string(a)
+          #|    let b = debug_string(b)
+          #|    fail(\"`!(\\{a} is \\{b})`\", loc~)
+          #|  } }
+        ),
       ),
-    ),
-    "fail": build(
-      (
-        #|pub fn[T] fail(msg : String, loc~ : SourceLoc) -> T raise { @builtin.fail(msg, loc~) }
+      "fail": build(
+        (
+          #|pub fn[T] fail(msg : String, loc~ : SourceLoc) -> T raise { @builtin.fail(msg, loc~) }
+        ),
       ),
-    ),
-    "write": build(
-      (
-        #|pub fn write(self : T, obj : &Show) -> Unit { self.buffer.write_string(obj.to_string()) }
+      "write": build(
+        (
+          #|pub fn write(self : T, obj : &Show) -> Unit { self.buffer.write_string(obj.to_string()) }
+        ),
       ),
-    ),
-    "writeln": build(
-      (
-        #|pub fn writeln(self : T, obj : &Show) -> Unit { self.write(obj)
-        #|  self.buffer.write_char('\\n') }
+      "writeln": build(
+        (
+          #|pub fn writeln(self : T, obj : &Show) -> Unit { self.write(obj)
+          #|  self.buffer.write_char('\\n') }
+        ),
       ),
-    ),
-  }
-})
+    }
+  },
+)
 
 ///|
-let tuple_module : RuntimeModule = RuntimeModule::new(
+let moonbitlang_core_tuple_module : RuntimeModule = RuntimeModule::new(
   "moonbitlang/core/tuple",
+  deps={
+    "moonbitlang/core/builtin": moonbitlang_core_builtin_module,
+    "moonbitlang/core/quickcheck": moonbitlang_core_quickcheck_module,
+    "moonbitlang/core/quickcheck/splitmix": moonbitlang_core_quickcheck_splitmix_module,
+  },
   fn(_env, build) {
     {
       "pair": build(
@@ -18478,47 +22681,52 @@ let tuple_module : RuntimeModule = RuntimeModule::new(
 )
 
 ///|
-let uint_module : RuntimeModule = RuntimeModule::new("moonbitlang/core/uint", fn(
-  _env,
-  build,
-) {
-  {
-    "to_int64": build(
-      (
-        #|pub fn to_int64(self : UInt) -> Int64 { self.to_uint64().reinterpret_as_int64() }
+let moonbitlang_core_uint_module : RuntimeModule = RuntimeModule::new(
+  "moonbitlang/core/uint",
+  deps={ "moonbitlang/core/builtin": moonbitlang_core_builtin_module },
+  fn(_env, build) {
+    {
+      "to_int64": build(
+        (
+          #|pub fn to_int64(self : UInt) -> Int64 { self.to_uint64().reinterpret_as_int64() }
+        ),
       ),
-    ),
-    "default": build(
-      (
-        #|pub fn default() -> UInt { 0 }
+      "default": build(
+        (
+          #|pub fn default() -> UInt { 0 }
+        ),
       ),
-    ),
-    "to_be_bytes": build(
-      (
-        #|pub fn to_be_bytes(self : UInt) -> Bytes { [
-        #|    (self >> 24).to_byte(),
-        #|    (self >> 16).to_byte(),
-        #|    (self >> 8).to_byte(),
-        #|    self.to_byte(),
-        #|  ] }
+      "to_be_bytes": build(
+        (
+          #|pub fn to_be_bytes(self : UInt) -> Bytes { [
+          #|    (self >> 24).to_byte(),
+          #|    (self >> 16).to_byte(),
+          #|    (self >> 8).to_byte(),
+          #|    self.to_byte(),
+          #|  ] }
+        ),
       ),
-    ),
-    "to_le_bytes": build(
-      (
-        #|pub fn to_le_bytes(self : UInt) -> Bytes { [
-        #|    self.to_byte(),
-        #|    (self >> 8).to_byte(),
-        #|    (self >> 16).to_byte(),
-        #|    (self >> 24).to_byte(),
-        #|  ] }
+      "to_le_bytes": build(
+        (
+          #|pub fn to_le_bytes(self : UInt) -> Bytes { [
+          #|    self.to_byte(),
+          #|    (self >> 8).to_byte(),
+          #|    (self >> 16).to_byte(),
+          #|    (self >> 24).to_byte(),
+          #|  ] }
+        ),
       ),
-    ),
-  }
-})
+    }
+  },
+)
 
 ///|
-let uint16_module : RuntimeModule = RuntimeModule::new(
+let moonbitlang_core_uint16_module : RuntimeModule = RuntimeModule::new(
   "moonbitlang/core/uint16",
+  deps={
+    "moonbitlang/core/builtin": moonbitlang_core_builtin_module,
+    "moonbitlang/core/json": moonbitlang_core_json_module,
+  },
   fn(_env, build) {
     {
       "to_uint": build(
@@ -18536,8 +22744,9 @@ let uint16_module : RuntimeModule = RuntimeModule::new(
 )
 
 ///|
-let uint64_module : RuntimeModule = RuntimeModule::new(
+let moonbitlang_core_uint64_module : RuntimeModule = RuntimeModule::new(
   "moonbitlang/core/uint64",
+  deps={ "moonbitlang/core/builtin": moonbitlang_core_builtin_module },
   fn(_env, build) {
     {
       "to_be_bytes": build(
@@ -18573,21 +22782,22 @@ let uint64_module : RuntimeModule = RuntimeModule::new(
 )
 
 ///|
-let unit_module : RuntimeModule = RuntimeModule::new("moonbitlang/core/unit", fn(
-  _env,
-  build,
-) {
-  {
-    "to_string": build(
-      (
-        #|pub fn to_string(self : Unit) -> String { let _ = self
-        #|  \"()\" }
+let moonbitlang_core_unit_module : RuntimeModule = RuntimeModule::new(
+  "moonbitlang/core/unit",
+  deps={ "moonbitlang/core/builtin": moonbitlang_core_builtin_module },
+  fn(_env, build) {
+    {
+      "to_string": build(
+        (
+          #|pub fn to_string(self : Unit) -> String { let _ = self
+          #|  \"()\" }
+        ),
       ),
-    ),
-    "default": build(
-      (
-        #|pub fn default() -> Unit { () }
+      "default": build(
+        (
+          #|pub fn default() -> Unit { () }
+        ),
       ),
-    ),
-  }
-})
+    }
+  },
+)
