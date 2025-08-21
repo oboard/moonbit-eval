@@ -222,7 +222,7 @@ pub fn MoonBitVM::eval(
   code : String,
   log? : Bool,
   top~ : Bool = false,
-) -> EvalResult raise Failure {
+) -> EvalResult raise @interpreter.ControlFlow {
   if top {
     let buf = @buffer.new()
     @encoding.encode_to(code, buf, encoding=UTF8)

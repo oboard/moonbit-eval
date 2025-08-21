@@ -22,8 +22,8 @@ pub fn RuntimeEnvironment::find(
 pub fn[T] RuntimeModule::with_ident(
   self : RuntimeModule,
   long_ident : @syntax.LongIdent,
-  func : (RuntimeEnvironment, String) -> T,
-) -> T {
+  func : (RuntimeEnvironment, String) -> T raise ControlFlow,
+) -> T raise ControlFlow {
   match long_ident {
     Ident(name~) => func(self.env, name)
     Dot(pkg~, id~) =>

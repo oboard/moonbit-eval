@@ -253,12 +253,12 @@ let array_fold_fn : RuntimeFunction = ctx => match ctx.arguments {
 ///| 数组index_of操作
 let array_search_by_fn : RuntimeFunction = ctx => match ctx.arguments {
   [{ value: Array(arr), .. }, { value: Closure(f, _), .. }, ..] => {
-    let index = arr.search_by(fn(val) {
+    let index = arr.search_by(val => {
       let arg = @syntax.Argument::{
         value: val.to_expr(),
         kind: @syntax.ArgumentKind::Positional,
       }
-      ctx.context.call(f, @list.of([arg])) is Bool(true)
+      (try? ctx.context.call(f, @list.of([arg]))) is Ok(Bool(true))
     })
     ctx.env.from_option(index.map(Int(_)))
   }

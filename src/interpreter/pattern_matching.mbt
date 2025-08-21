@@ -5,7 +5,7 @@ pub fn ClosureInterpreter::execute_match(
   self : ClosureInterpreter,
   value : @syntax.Expr,
   cases : @list.List[@syntax.Case],
-) -> @syntax.Expr {
+) -> @syntax.Expr raise ControlFlow {
   for case in cases {
     // 为每个case创建新的作用域
     self.push_scope()
@@ -24,7 +24,7 @@ pub fn ClosureInterpreter::execute_match_runtime(
   self : ClosureInterpreter,
   value : RuntimeValue,
   cases : @list.List[@syntax.Case],
-) -> RuntimeValue {
+) -> RuntimeValue raise ControlFlow {
   for case in cases {
     // 为每个case创建新的作用域
     self.push_scope()
@@ -43,7 +43,7 @@ pub fn ClosureInterpreter::pattern_matches(
   self : ClosureInterpreter,
   value : @syntax.Expr,
   pattern : @syntax.Pattern,
-) -> Bool {
+) -> Bool raise ControlFlow {
   match (value, pattern) {
     // 常量模式匹配
     (Constant(c=value_const, ..), Constant(c=pattern_const, ..)) =>

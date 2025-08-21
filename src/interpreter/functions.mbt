@@ -6,7 +6,7 @@ pub fn ClosureInterpreter::call_closure(
   function : @syntax.Func,
   env : RuntimeEnvironment,
   args : @list.List[@syntax.Argument],
-) -> RuntimeValue {
+) -> RuntimeValue raise ControlFlow {
   match function {
     @syntax.Func::Lambda(parameters~, body~, ..) => {
       // 在旧环境中解释参数值
@@ -24,12 +24,7 @@ pub fn ClosureInterpreter::call_closure(
 
       // 恢复原环境
       self.main.env = old_env
-
-      // 处理Return值：如果函数返回Return包装器，提取其内部值
-      match result {
-        RuntimeValue::Return(value) => value
-        _ => result
-      }
+      result
     }
     _ => RuntimeValue::Unit
   }
@@ -46,7 +41,7 @@ pub fn ClosureInterpreter::bind_function_parameters(
   self : ClosureInterpreter,
   params : @list.List[@syntax.Parameter],
   args : @list.List[@syntax.Argument],
-) -> Unit {
+) -> Unit raise ControlFlow {
   match (params, args) {
     (@list.More(param, tail=rest_params), @list.More(arg, tail=rest_args)) => {
       let runtime_value = self.visit(arg.value)
@@ -94,7 +89,7 @@ pub fn ClosureInterpreter::bind_function_parameters_runtime(
   self : ClosureInterpreter,
   params : @list.List[@syntax.Parameter],
   args : @list.List[@syntax.Argument],
-) -> Unit {
+) -> Unit raise ControlFlow {
   match (params, args) {
     (@list.More(param, tail=rest_params), @list.More(arg, tail=rest_args)) => {
       let arg_value = self.visit(arg.value)
@@ -138,34 +133,11 @@ pub fn ClosureInterpreter::bind_function_parameters_runtime(
 }
 
 ///| 执行函数调用
-
-///| 处理用户定义函数的调用，包括作用域管理和参数绑定
-pub fn ClosureInterpreter::execute_function_call(
-  self : ClosureInterpreter,
-  function : @syntax.Func,
-  args : @list.List[@syntax.Argument],
-) -> @syntax.Expr {
-  match function {
-    @syntax.Func::Lambda(parameters~, body~, ..) =>
-      self.with_scope(() => {
-        // 绑定参数
-        self.bind_function_parameters(parameters, args)
-
-        // 执行函数体
-        self.visit(body).to_expr()
-      })
-    _ =>
-      // 返回Unit表达式作为默认值
-      unit()
-  }
-}
-
-///|
 pub fn ClosureInterpreter::call(
   self : ClosureInterpreter,
   function : @syntax.Func,
   args : @list.List[@syntax.Argument],
-) -> RuntimeValue {
+) -> RuntimeValue raise ControlFlow {
   match function {
     @syntax.Func::Lambda(parameters~, body~, ..) => {
       // 创建新的作用域
@@ -174,16 +146,14 @@ pub fn ClosureInterpreter::call(
       // 绑定参数
       self.bind_function_parameters_runtime(parameters, args)
       // 执行函数体
-      let result = self.visit(body)
+      let result = self.visit(body) catch {
+        Return(v) => v
+        e => raise e
+      }
 
       // 恢复作用域
       self.pop_scope()
-
-      // 处理Return值：如果函数返回Return包装器，提取其内部值
-      match result {
-        RuntimeValue::Return(value) => value
-        _ => result
-      }
+      result
     }
     _ =>
       // 返回Unit作为默认值
@@ -341,7 +311,7 @@ fn ClosureInterpreter::drop_parameters(
 fn ClosureInterpreter::evaluate_arguments(
   self : ClosureInterpreter,
   args : @list.List[@syntax.Argument],
-) -> @list.List[RuntimeValue] {
+) -> @list.List[RuntimeValue] raise ControlFlow {
   match args {
     @list.More(arg, tail=rest) => {
       let value = self.visit(arg.value)
@@ -356,7 +326,7 @@ fn ClosureInterpreter::bind_evaluated_parameters(
   self : ClosureInterpreter,
   params : @list.List[@syntax.Parameter],
   values : @list.List[RuntimeValue],
-) -> Unit {
+) -> Unit raise ControlFlow {
   match (params, values) {
     (@list.More(param, tail=rest_params), @list.More(value, tail=rest_values)) => {
       match param {

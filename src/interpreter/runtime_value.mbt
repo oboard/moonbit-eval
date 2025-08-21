@@ -1,5 +1,3 @@
-///| 运行时值系统 - 简化的语义值表示
-
 ///| 运行时值 - 解释器实际操作的数据类型
 pub(all) enum RuntimeValue {
   // 基本值类型
@@ -30,18 +28,19 @@ pub(all) enum RuntimeValue {
   // 构造函数调用
   Constructor(WithEnv[(String, Array[RuntimeValue])]) // 构造函数名称和参数
 
-  // 控制流异常 - 用于实现break和continue语句
-  Break(RuntimeValue?) // break可以带返回值
-  Continue(Array[RuntimeValue]) // continue可以带参数列表
-
-  // 函数返回值 - 用于实现return语句
-  Return(RuntimeValue) // return带返回值
-
   // 异常处理 - 用于实现raise和try语句
   Exception(String) // 异常信息
 
   // Trait 对象 - 用于实现 trait casting
   TraitObject(RuntimeValue, String) // 原始值和 trait 名称
+}
+
+///|
+pub suberror ControlFlow {
+  Raise(RuntimeValue)
+  Continue(Array[RuntimeValue])
+  Break(RuntimeValue?)
+  Return(RuntimeValue)
 }
 
 ///|
@@ -122,9 +121,6 @@ pub impl ToJson for RuntimeValue with to_json(self : RuntimeValue) -> Json {
     Struct(s) => s.val.to_json()
     Closure(f, _) => f.to_json()
     Constructor({ val: (name, args), .. }) => [name, args.to_json()]
-    Break(v) => ["break", v.to_json()]
-    Continue(v) => ["continue", v.to_json()]
-    Return(v) => ["return", v.to_json()]
     Exception(msg) => ["exception", msg.to_json()]
     TraitObject(value, _) => value.to_json() // 返回原始值的 JSON 表示
   }
@@ -152,8 +148,7 @@ pub impl Eq for RuntimeValue with op_equal(
     (String(a), String(b)) => a == b
 
     // 复合值类型比较
-    (Tuple(a), Tuple(b)) | (Array(a), Array(b)) | (Continue(a), Continue(b)) =>
-      a == b
+    (Tuple(a), Tuple(b)) | (Array(a), Array(b)) => a == b
 
     // 结构类型比较
     (Struct({ val: a, .. }), Struct({ val: b, .. })) => a == b
@@ -167,9 +162,6 @@ pub impl Eq for RuntimeValue with op_equal(
       Constructor({ val: (name_a, args_a), .. }),
       Constructor({ val: (name_b, args_b), .. }),
     ) => name_a == name_b && args_a == args_b
-
-    // 控制流异常比较
-    (Break(a), Break(b)) => a == b
 
     // 不同类型之间不相等
     _ => false
@@ -477,16 +469,6 @@ pub impl Show for RuntimeValue with to_string(self) -> String {
         }
         _ => "<function>"
       }
-    Break(value) =>
-      match value {
-        Some(v) => "break " + v.to_string()
-        None => "break"
-      }
-    Continue(args) => {
-      let arg_strs = args.map(fn(v) { v.to_string() })
-      "continue " + arg_strs.join(", ")
-    }
-    Return(value) => "return " + value.to_string()
     Exception(msg) => "exception: " + msg
     TraitObject(value, _) => value.to_string() // 返回原始值的字符串表示
   }
@@ -562,13 +544,6 @@ pub fn RuntimeValue::to_expr(self : RuntimeValue) -> @syntax.Expr {
     Struct(_) => Unit(loc=_dummy_loc, faked=true)
     Closure(func, _env) => Function(func~, loc=_dummy_loc)
     Constructor(_) => Unit(loc=_dummy_loc, faked=true)
-    Break(value) =>
-      Break(arg=value.map(fn(v) { v.to_expr() }), label=None, loc=_dummy_loc)
-    Continue(args) => {
-      let expr_args = args.map(fn(v) { v.to_expr() })
-      Continue(args=@list.from_array(expr_args), label=None, loc=_dummy_loc)
-    }
-    Return(value) => Return(return_value=Some(value.to_expr()), loc=_dummy_loc)
     Exception(_) => Unit(loc=_dummy_loc, faked=true)
     TraitObject(value, _) => value.to_expr() // 返回原始值的表达式表示
   }

@@ -135,7 +135,7 @@ pub fn ClosureInterpreter::top_visit(
 
     // 处理顶层常量定义（如 const Zero = 0）
     TopLetDef(binder~, expr~, ..) => {
-      let value = self.visit(expr)
+      let value = self.visit(expr) catch { _ => Unit }
       self.main.env.set(binder.name, value)
       value
     }
@@ -231,7 +231,7 @@ pub fn ClosureInterpreter::top_visit(
       Unit
     }
     // 处理顶层表达式（如单独的变量引用、函数调用等）
-    TopExpr(expr~, ..) => self.visit(expr) // : Binder
+    TopExpr(expr~, ..) => self.visit(expr) catch { _ => Unit } // : Binder
     // : @list.List[TypeVarConstraint]
     // : @list.List[TraitMethodDecl]
     // : Visibility
@@ -252,7 +252,7 @@ pub fn ClosureInterpreter::top_visit(
 pub fn ClosureInterpreter::visit(
   self : ClosureInterpreter,
   node : @syntax.Expr,
-) -> RuntimeValue {
+) -> RuntimeValue raise ControlFlow {
   if self.state is InterpreterState::Stopped {
     return Unit
   }
@@ -417,8 +417,10 @@ pub fn ClosureInterpreter::visit(
       let array_value = self.visit(array)
       match array_value {
         Array(arr) => {
-          let start = start_index.map(expr => self.visit(expr))
-          let end = end_index.map(expr => self.visit(expr))
+          let start = start_index.map(expr => self.visit(expr) catch {
+            _ => Unit
+          })
+          let end = end_index.map(expr => self.visit(expr) catch { _ => Unit })
           Array(
             (match (start, end) {
               (Some(Int(start)), Some(Int(end))) => arr[start:end]
@@ -589,70 +591,58 @@ pub fn ClosureInterpreter::visit(
 
     // 处理函数调用
     Apply(func~, args~, ..) =>
-      match func {
-        Ident(id={ name, .. }, ..) => self.execute_function_by_name(name, args)
-        // 处理构造函数调用，如 Some(5)
-        Constr(constr~, ..) => {
-          let arg_values = args
-            .map(fn(arg) { self.visit(arg.value) })
-            .to_array()
+      try {
+        match func {
+          Ident(id={ name, .. }, ..) =>
+            self.execute_function_by_name(name, args)
+          // 处理构造函数调用，如 Some(5)
+          Constr(constr~, ..) => {
+            let arg_values = args
+              .map(fn(arg) { self.visit(arg.value) })
+              .to_array()
 
-          // TODO: 对于泛型类型的构造函数，需要根据参数类型推导类型参数
-          // 例如：Cons(1, Nil) 应该推导出 List[Int]
-          let constr_name = constr.name.name
-          Constructor({ val: (constr_name, arg_values), env: self.main.env })
-        }
-        // 处理静态方法调用，如 Bool::default()
-        Method(type_name~, method_name~, ..) => {
-          let type_str = match type_name.name {
-            Ident(name~) => name
-            _ => "Unknown"
+            // TODO: 对于泛型类型的构造函数，需要根据参数类型推导类型参数
+            // 例如：Cons(1, Nil) 应该推导出 List[Int]
+            let constr_name = constr.name.name
+            Constructor({ val: (constr_name, arg_values), env: self.main.env })
           }
-          // self.execute_function_by_name(type_name.name, @list.new())
-          // self.main.with_ident(type_name.name, fn(env, name) {
-          //   env.find(name)
-          // })
-          // let type_str = match type_name.name {
-          //   Ident(name~) => name
-          //   _ => "Unknown"
-          // }
-          self.execute_static_method_call(type_str, method_name.name, args)
-          // 处理其他表达式作为函数的情况，如 a[1](10)
-        }
-        _ => {
-          let func_value = self.visit(func)
-          match func_value {
-            Closure(function, captured_env) =>
-              self.call_closure(function, captured_env, args)
-            _ => Unit
+          // 处理静态方法调用，如 Bool::default()
+          Method(type_name~, method_name~, ..) => {
+            let type_str = match type_name.name {
+              Ident(name~) => name
+              _ => "Unknown"
+            }
+            // self.execute_function_by_name(type_name.name, @list.new())
+            // self.main.with_ident(type_name.name, fn(env, name) {
+            //   env.find(name)
+            // })
+            // let type_str = match type_name.name {
+            //   Ident(name~) => name
+            //   _ => "Unknown"
+            // }
+            self.execute_static_method_call(type_str, method_name.name, args)
+            // 处理其他表达式作为函数的情况，如 a[1](10)
+          }
+          _ => {
+            let func_value = self.visit(func)
+            match func_value {
+              Closure(function, captured_env) =>
+                self.call_closure(function, captured_env, args)
+              _ => Unit
+            }
           }
         }
+      } catch {
+        Return(v) => v
+        e => raise e
       }
 
     // 处理 if 表达式
     If(cond~, ifso~, ifnot~, ..) => {
       let cond_val = self.visit(cond)
-      match cond_val {
-        Bool(true) => {
-          let result = self.visit(ifso)
-          // 如果if分支返回Return值，直接传播
-          match result {
-            Return(_) => result
-            _ => result
-          }
-        }
-        Bool(false) =>
-          match ifnot {
-            Some(else_expr) => {
-              let result = self.visit(else_expr)
-              // 如果else分支返回Return值，直接传播
-              match result {
-                Return(_) => result
-                _ => result
-              }
-            }
-            None => Unit
-          }
+      match (cond_val, ifnot) {
+        (Bool(true), _) => self.visit(ifso)
+        (Bool(false), Some(else_expr)) => self.visit(else_expr)
         _ => Unit
       }
     }
@@ -727,7 +717,10 @@ pub fn ClosureInterpreter::visit(
         Apply(func~, args~, ..) =>
           match func {
             Method(type_name~, method_name~, ..) =>
-              self.main.with_ident(type_name.name, fn(_env, type_name) {
+              self.main.with_ident(type_name.name, fn(
+                _env,
+                type_name,
+              ) raise ControlFlow {
                 // 将左侧值添加到参数列表前面
                 let left_expr = left_val.to_expr()
                 let pipe_args = @list.construct(
@@ -760,7 +753,7 @@ pub fn ClosureInterpreter::visit(
       for expr in exprs {
         let result = self.visit(expr)
         match result {
-          Break(_) | Continue(_) | Return(_) | Exception(_) => return result
+          Exception(_) => return result
           _ => () // 继续执行下一个表达式
         }
       }
@@ -770,7 +763,8 @@ pub fn ClosureInterpreter::visit(
       let cond_val = self.visit(cond)
       match cond_val {
         Bool(true) => self.visit(body)
-        Bool(false) => otherwise.map_or(Unit, expr => self.visit(expr))
+        Bool(false) =>
+          otherwise.map_or(Unit, expr => self.visit(expr) catch { _ => Unit })
         _ => Unit
       }
     }
@@ -801,7 +795,7 @@ pub fn ClosureInterpreter::visit(
         let execute_continue_block = () => for update_tuple in continue_block {
           match update_tuple {
             (binder, update_expr) => {
-              let new_value = self.visit(update_expr)
+              let new_value = self.visit(update_expr) catch { _ => Unit }
               self.main.env.update(binder.name, new_value)
             }
           }
@@ -812,7 +806,7 @@ pub fn ClosureInterpreter::visit(
           // 检查循环条件
           let should_continue = match condition {
             Some(cond) => {
-              let condition_result = self.visit(cond)
+              let condition_result = self.visit(cond) catch { _ => Unit }
               match condition_result {
                 Bool(value) => value
                 _ => false
@@ -825,8 +819,7 @@ pub fn ClosureInterpreter::visit(
           }
 
           // 执行循环体，处理break和continue
-          let body_result = self.visit(body)
-          match body_result {
+          (self.visit(body) catch {
             Break(value) => return value.unwrap_or(Unit)
             Continue(arr) => {
               if !arr.is_empty() {
@@ -838,11 +831,15 @@ pub fn ClosureInterpreter::visit(
               }
               continue
             }
-            _ => execute_continue_block()
-          }
+            _ => Unit
+          })
+          |> ignore
+          execute_continue_block()
         }
         if for_else is Some(expr) {
-          self.visit(expr)
+          self.visit(expr) catch {
+            _ => Unit
+          }
         } else {
           Unit
         }
@@ -860,8 +857,7 @@ pub fn ClosureInterpreter::visit(
         }
 
         // 执行循环体，处理break和continue
-        let body_result = self.visit(loop_body)
-        match body_result {
+        (self.visit(loop_body) catch {
           Break(value) => {
             result = match value {
               Some(v) => v
@@ -870,11 +866,10 @@ pub fn ClosureInterpreter::visit(
             broke = true
             break
           }
-          Continue(_) =>
-            // 跳过剩余循环体，继续下一次迭代
-            continue
-          _ => () // 正常执行，继续
-        }
+          Continue(_) => continue
+          _ => Unit
+        })
+        |> ignore
       }
       // 如果没有break，执行else分支
       if not(broke) {
@@ -958,7 +953,7 @@ pub fn ClosureInterpreter::visit(
     // 处理 Continue 表达式
     Continue(args~, ..) => {
       let continue_args = args.map(fn(arg) { self.visit(arg) }).to_array()
-      Continue(continue_args)
+      raise Continue(continue_args)
     }
 
     // 处理单独的构造函数表达式，如 None
@@ -976,26 +971,20 @@ pub fn ClosureInterpreter::visit(
       match arg {
         Some(expr) => {
           let break_value = self.visit(expr)
-          Break(Some(break_value))
+          raise Break(Some(break_value))
         }
-        None => Break(None)
+        None => raise Break(None)
       }
 
     // 处理 Return 表达式
     Return(return_value~, ..) =>
-      match return_value {
+      raise match return_value {
         Some(expr) => Return(self.visit(expr))
         None => Return(Unit)
       }
 
     // 处理 Raise 表达式
-    Raise(err_value~, ..) => {
-      let error_msg = match self.visit(err_value) {
-        String(s) => s
-        other => other.to_string()
-      }
-      Exception(error_msg)
-    }
+    Raise(err_value~, ..) => raise Raise(self.visit(err_value))
 
     // 处理 Loop 表达式
     Loop(body~, ..) => {
@@ -1004,38 +993,28 @@ pub fn ClosureInterpreter::visit(
       let mut should_break = false
       while !should_break {
         for case in body {
-          let result = self.visit(case.body)
-          match result {
+          (self.visit(case.body) catch {
             Break(value) => {
               loop_result = value.unwrap_or(Unit)
               should_break = true
               break
             }
             Continue(_) => continue
-            Return(_) => return result
-            Exception(_) => return result
-            _ => loop_result = result
-          }
+            Return(value) => return value
+            _ => Unit
+          })
+          |> ignore
         }
       }
       loop_result
     }
 
     // 处理 Try 表达式
-    Try(body~, catch_~, ..) => {
-      let result = self.visit(body)
-      match result {
-        Exception(_msg) => {
-          // 查找匹配的 catch 分支
-          for case in catch_ {
-            // 简化实现：执行第一个 catch 分支
-            return self.visit(case.body)
-          }
-          result
-        }
-        _ => result
+    Try(body~, catch_~, ..) =>
+      self.visit(body) catch {
+        Raise(value) => self.execute_match_runtime(value, catch_)
+        e => raise e
       }
-    }
 
     // 处理 TryOperator 表达式 (try? 和 try!)
     TryOperator(body~, kind~, ..) => {
@@ -1131,7 +1110,7 @@ pub fn ClosureInterpreter::visit(
 fn ClosureInterpreter::interp_string(
   self : ClosureInterpreter,
   elems : @list.List[@syntax.InterpElem],
-) -> String {
+) -> String raise ControlFlow {
   let buffer = @buffer.new()
   for elem in elems {
     match elem {
@@ -1458,7 +1437,7 @@ priv enum MethodType {
 fn ClosureInterpreter::find_method(
   self : ClosureInterpreter,
   long_ident : @syntax.LongIdent,
-) -> MethodType {
+) -> MethodType raise ControlFlow {
   self.main.with_ident(long_ident, fn(env, name) {
     let name = env.find_fn_alias(name)
 
@@ -1492,8 +1471,8 @@ fn ClosureInterpreter::execute_function_by_name(
   self : ClosureInterpreter,
   long_ident : @syntax.LongIdent,
   args : @list.List[@syntax.Argument],
-) -> RuntimeValue {
-  fn get_evaluated_args() -> Array[RuntimeArgument] {
+) -> RuntimeValue raise ControlFlow {
+  fn get_evaluated_args() -> Array[RuntimeArgument] raise ControlFlow {
     args
     .map(arg => RuntimeArgument::{
       value: self.visit(arg.value),
@@ -1538,7 +1517,7 @@ fn ClosureInterpreter::execute_method_call_runtime(
   self_value : RuntimeValue,
   method_name : String,
   args : @list.List[@syntax.Argument],
-) -> RuntimeValue {
+) -> RuntimeValue raise ControlFlow {
   // 处理 TraitObject，提取原始值和类型
   let (actual_self_value, self_type) = match self_value {
     TraitObject(original_value, _trait_name) => {
@@ -1570,7 +1549,7 @@ fn ClosureInterpreter::execute_method_call_runtime(
   match cur_env.find_method(self_type, method_name) {
     Some(func) =>
       // 普通函数，正常调用
-      self.with_scope(fn() {
+      self.with_scope(fn() raise ControlFlow {
         // 手动绑定self参数和其他参数
         match func {
           Closure(@syntax.Func::Lambda(parameters~, body~, ..), _env) => {
@@ -1676,7 +1655,7 @@ fn ClosureInterpreter::execute_static_method_call(
   type_name : String,
   method_name : String,
   args : @list.List[@syntax.Argument],
-) -> RuntimeValue {
+) -> RuntimeValue raise ControlFlow {
   // 首先查找用户定义的struct方法
   match self.main.env.find_method(type_name, method_name) {
     Some(func) =>
@@ -1690,12 +1669,7 @@ fn ClosureInterpreter::execute_static_method_call(
             // 绑定参数（静态方法没有self参数）
             self.bind_function_parameters_runtime(parameters, args)
             // 执行函数体
-            let result = self.visit(body)
-            // 处理Return值：如果函数返回Return包装器，提取其内部值
-            match result {
-              Return(value) => value
-              _ => result
-            }
+            self.visit(body)
           }
           _ => Unit
         }
@@ -1712,7 +1686,7 @@ fn ClosureInterpreter::execute_embedded_static_method(
   type_name : String,
   method_name : String,
   args : @list.List[@syntax.Argument],
-) -> RuntimeValue {
+) -> RuntimeValue raise ControlFlow {
   match self.embedded_methods.get(type_name) {
     Some(methods) =>
       match methods.get(method_name) {
@@ -1802,9 +1776,6 @@ fn ClosureInterpreter::find_variable_type(
       self.infer_struct_type_from_fields(current_fields)
     }
     Closure(_) => "Closure"
-    Break(_) => "Break"
-    Continue(_) => "Continue"
-    Return(_) => "Return"
     Exception(_) => "Exception"
     Constructor({ val: (name, _), env: env_ }) =>
       // 将Option构造函数映射到Option类型
@@ -1837,8 +1808,8 @@ fn safe_index_access(values : Array[RuntimeValue], index : Int) -> RuntimeValue 
 ///| 作用域管理辅助函数，确保作用域正确清理
 fn[T] ClosureInterpreter::with_scope(
   self : ClosureInterpreter,
-  f : () -> T,
-) -> T {
+  f : () -> T raise ControlFlow,
+) -> T raise ControlFlow {
   self.push_scope()
   let result = f()
   self.pop_scope()

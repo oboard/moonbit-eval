@@ -7,11 +7,11 @@ import(
 )
 
 // Values
-fn add_embedded_fn(MoonBitVM, String, (@interpreter.RuntimeFunctionContext) -> @interpreter.RuntimeValue) -> Unit
+fn add_embedded_fn(MoonBitVM, String, (@interpreter.RuntimeFunctionContext) -> @interpreter.RuntimeValue raise @interpreter.ControlFlow) -> Unit
 
-fn add_embedded_method(MoonBitVM, String, String, (@interpreter.RuntimeFunctionContext) -> @interpreter.RuntimeValue) -> Unit
+fn add_embedded_method(MoonBitVM, String, String, (@interpreter.RuntimeFunctionContext) -> @interpreter.RuntimeValue raise @interpreter.ControlFlow) -> Unit
 
-fn add_extern_fn(MoonBitVM, String, (@interpreter.RuntimeFunctionContext) -> @interpreter.RuntimeValue) -> Unit
+fn add_extern_fn(MoonBitVM, String, (@interpreter.RuntimeFunctionContext) -> @interpreter.RuntimeValue raise @interpreter.ControlFlow) -> Unit
 
 fn eval_result_to_string(EvalResult) -> String
 
@@ -37,7 +37,7 @@ pub(all) struct MoonBitVM {
   log : Bool
 }
 fn MoonBitVM::create(log? : Bool, core? : Bool) -> Self
-fn MoonBitVM::eval(Self, String, log? : Bool, top? : Bool) -> EvalResult raise Failure
+fn MoonBitVM::eval(Self, String, log? : Bool, top? : Bool) -> EvalResult raise @interpreter.ControlFlow
 fn MoonBitVM::new(log? : Bool, core? : Bool) -> Self
 
 // Type aliases
