@@ -680,8 +680,19 @@ pub fn ClosureInterpreter::visit(
     }
 
     // 处理方法调用 (DotApply)
-    DotApply(self=self_expr, method_name~, args~, ..) =>
-      self.execute_method_call_runtime(self_expr, method_name.name, args)
+    DotApply(self=self_expr, method_name~, args~, return_self~, ..) => {
+      let self_value = self.visit(self_expr)
+      let res = self.execute_method_call_runtime(
+        self_value,
+        method_name.name,
+        args,
+      )
+      if return_self {
+        self_value
+      } else {
+        res
+      }
+    }
 
     // 索引访问 (ArrayGet)
     ArrayGet(array~, index~, ..) => {
@@ -1515,13 +1526,10 @@ fn ClosureInterpreter::execute_function_by_name(
 ///| 执行结构体方法调用（返回 RuntimeValue）
 fn ClosureInterpreter::execute_method_call_runtime(
   self : ClosureInterpreter,
-  self_expr : @syntax.Expr,
+  self_value : RuntimeValue,
   method_name : String,
   args : @list.List[@syntax.Argument],
 ) -> RuntimeValue {
-  // 先获取self的运行时值
-  let self_value = self.visit(self_expr)
-
   // 处理 TraitObject，提取原始值和类型
   let (actual_self_value, self_type) = match self_value {
     TraitObject(original_value, _trait_name) => {
