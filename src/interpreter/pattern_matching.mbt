@@ -62,7 +62,7 @@ pub fn ClosureInterpreter::pattern_matches(
       })
 
     // 变量模式匹配（总是匹配，并绑定变量）
-    (_, @syntax.Pattern::Var({ name, .. })) => {
+    (_, Var({ name, .. })) => {
       // 计算表达式的值
       let runtime_value = self.visit(value)
 
@@ -72,10 +72,10 @@ pub fn ClosureInterpreter::pattern_matches(
     }
 
     // 通配符模式（总是匹配）
-    (_, @syntax.Pattern::Any(..)) => true
+    (_, Any(..)) => true
 
     // Tuple模式匹配
-    (@syntax.Expr::Tuple(exprs~, ..), @syntax.Pattern::Tuple(pats~, ..)) => {
+    (@syntax.Expr::Tuple(exprs~, ..), Tuple(pats~, ..)) => {
       if exprs.length() != pats.length() {
         return false
       }
@@ -99,7 +99,7 @@ pub fn ClosureInterpreter::pattern_matches(
     }
 
     // Array模式匹配
-    (@syntax.Expr::Array(exprs~, ..), @syntax.Pattern::Array(pats~, ..)) =>
+    (@syntax.Expr::Array(exprs~, ..), Array(pats~, ..)) =>
       match pats {
         @syntax.ArrayPatterns::Closed(patterns) => {
           if exprs.length() != patterns.length() {
@@ -151,14 +151,14 @@ pub fn ClosureInterpreter::pattern_matches(
       }
 
     // Or模式匹配（任一模式匹配即可）
-    (_, @syntax.Pattern::Or(pat1~, pat2~, ..)) => {
+    (_, Or(pat1~, pat2~, ..)) => {
       let value_runtime = RuntimeValue::from_expr(value)
       self.pattern_matches_runtime(value_runtime, pat1) ||
       self.pattern_matches_runtime(value_runtime, pat2)
     }
 
     // Record模式匹配
-    (value, @syntax.Pattern::Record(fields=pat_fields, ..)) => {
+    (value, Record(fields=pat_fields, ..)) => {
       // 处理记录模式匹配
       let record_fields = match value {
         // 处理普通记录
@@ -196,11 +196,11 @@ pub fn ClosureInterpreter::pattern_matches(
     }
 
     // Range模式匹配
-    (value, @syntax.Pattern::Range(lhs~, rhs~, inclusive~, ..)) =>
+    (value, Range(lhs~, rhs~, inclusive~, ..)) =>
       self.value_in_range(value, lhs, rhs, inclusive)
 
     // Constructor模式匹配
-    (value, @syntax.Pattern::Constr(constr~, args~, ..)) => {
+    (value, Constr(constr~, args~, ..)) => {
       // 查找构造函数对应的值
       let name1 = constr.name.name
       let value_runtime = self.visit(value)
