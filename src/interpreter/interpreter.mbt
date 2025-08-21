@@ -683,12 +683,13 @@ pub fn ClosureInterpreter::visit(
     DotApply(self=self_expr, method_name~, args~, ..) =>
       self.execute_method_call_runtime(self_expr, method_name.name, args)
 
-    // 处理数组索引访问 (ArrayGet)
+    // 索引访问 (ArrayGet)
     ArrayGet(array~, index~, ..) => {
       let array_val = self.visit(array)
       let index_val = self.visit(index)
       match (array_val, index_val) {
         (Array(values), Int(index_num)) => safe_index_access(values, index_num)
+        (String(values), Int(index_num)) => Int(values[index_num])
         (Map(values), index) =>
           values.get(index).unwrap_or_else(fn() { error("MapGet: not found") })
         _ => error("ArrayGet: not implemented")
@@ -1066,22 +1067,18 @@ pub fn ClosureInterpreter::visit(
         _ => error("RecordUpdate: expected struct")
       }
     }
-    Method(type_name~, method_name~, ..) => {
-      let type_str = match type_name.name {
-        Ident(name~) => name
-        _ => error("Method: expected struct")
-      }
-
-      // 查找用户定义的静态方法
-      match self.env.struct_methods.get(type_str) {
-        Some(methods) =>
-          match methods.get(method_name.name) {
-            Some(func) => Closure(func, self.env)
-            None => error("Method: not found")
-          }
-        None => error("Method: not found")
-      }
-    }
+    Method(type_name~, method_name~, ..) =>
+      self.env.with_ident(type_name.name, fn(env, ty_name) {
+        // 查找用户定义的静态方法
+        match env.struct_methods.get(ty_name) {
+          Some(methods) =>
+            match methods.get(method_name.name) {
+              Some(func) => Closure(func, self.env)
+              None => error("Method:\{ty_name}:\{method_name.name} not found")
+            }
+          None => error("Method:\{ty_name} not found")
+        }
+      })
     Map(elems~, ..) => {
       let map = elems
         .map(elem => (
