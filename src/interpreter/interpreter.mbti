@@ -16,6 +16,9 @@ fn[T : Compare] compare(T, T, String) -> @syntax.Constant
 
 fn constant_infix(String, @syntax.Constant, @syntax.Constant) -> @syntax.Constant
 
+#callsite(autofill(loc))
+fn[A] error(String, loc~ : SourceLoc) -> A
+
 fn eval_double_op(Double, Double, String) -> @syntax.Constant
 
 fn eval_float_op(Double, Double, String) -> @syntax.Constant
@@ -115,10 +118,11 @@ pub(all) struct RuntimeArgument {
 }
 
 pub(all) struct RuntimeEnvironment {
+  traits : Map[String, @syntax.TraitDecl]
   fn_aliases : Map[String, String]
   type_definitions : Map[String, @syntax.TypeDecl]
   struct_methods : Map[String, Map[String, @syntax.Func]]
-  type_environments : Array[TypeEnvironment]
+  type_environment : TypeEnvironment
   values : Map[String, RuntimeValue]
   mutable_vars : Map[String, Bool]
   parent : RuntimeEnvironment?
@@ -131,10 +135,10 @@ fn RuntimeEnvironment::define_struct_method(Self, String, String, @syntax.Func) 
 fn RuntimeEnvironment::find(Self, String) -> RuntimeValue
 fn RuntimeEnvironment::find_fn_alias(Self, String) -> String
 fn RuntimeEnvironment::new(parent? : Self, values? : Map[String, RuntimeValue]) -> Self
+fn RuntimeEnvironment::set(Self, String, RuntimeValue) -> Unit
 fn RuntimeEnvironment::set_mutable_variable(Self, String, RuntimeValue) -> Unit
-fn RuntimeEnvironment::set_variable(Self, String, RuntimeValue) -> Unit
 fn RuntimeEnvironment::top_func_def_to_closure(Self, @syntax.Impl) -> RuntimeValue
-fn RuntimeEnvironment::update_variable(Self, String, RuntimeValue) -> Unit
+fn RuntimeEnvironment::update(Self, String, RuntimeValue) -> Unit
 fn[T] RuntimeEnvironment::with_ident(Self, @syntax.LongIdent, (Self, String) -> T) -> T
 impl ToJson for RuntimeEnvironment
 
@@ -163,9 +167,9 @@ pub(all) enum RuntimeValue {
   Char(Char)
   Byte(Byte)
   String(String)
-  Error(Failure)
   Tuple(Array[RuntimeValue])
   Array(Array[RuntimeValue])
+  Map(Map[RuntimeValue, RuntimeValue])
   Struct(Ref[Map[String, RuntimeValue]])
   Closure(@syntax.Func, RuntimeEnvironment)
   Constructor(String, Array[RuntimeValue])
@@ -180,7 +184,9 @@ fn RuntimeValue::from_option(Self?) -> Self
 fn RuntimeValue::is_mutable(Self) -> Bool
 fn RuntimeValue::is_reference(Self) -> Bool
 fn RuntimeValue::to_expr(Self) -> @syntax.Expr
+impl Add for RuntimeValue
 impl Eq for RuntimeValue
+impl Hash for RuntimeValue
 impl Show for RuntimeValue
 impl ToJson for RuntimeValue
 

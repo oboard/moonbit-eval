@@ -1,14 +1,14 @@
 ///|
 pub(all) struct RuntimeEnvironment {
-  traits: Map[String, @syntax.TraitDecl]
+  traits : Map[String, @syntax.TraitDecl]
   // 函数别名存储 - 存储函数名到其实际实现的映射
   fn_aliases : Map[String, String]
   // 类型定义
   type_definitions : Map[String, @syntax.TypeDecl]
   // 结构体方法定义 - 按类型名组织方法
   struct_methods : Map[String, Map[String, @syntax.Func]]
-  // 泛型类型环境栈
-  type_environments : Array[TypeEnvironment]
+  // 泛型类型环境
+  type_environment : TypeEnvironment
   values : Map[String, RuntimeValue]
   // 跟踪哪些变量是可变的
   mutable_vars : Map[String, Bool]
@@ -34,7 +34,7 @@ pub fn RuntimeEnvironment::new(
       fn_aliases: Map::new(),
       type_definitions: Map::new(),
       struct_methods: Map::new(),
-      type_environments: [TypeEnvironment::new()],
+      type_environment: TypeEnvironment::new(),
       values: values.unwrap_or({}),
       mutable_vars: Map::new(),
       parent: None,

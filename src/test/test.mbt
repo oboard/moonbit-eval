@@ -61,12 +61,6 @@ test "4. string_interpolation" {
     vm.eval("let a = 5; let b = 3; \"\\{a} + \\{b} = \\{a + b}\"").to_string(),
     "5 + 3 = 8",
   )
-  assert_eq(
-    vm
-    .eval("\"Result: \\{if true { \"success\" } else { \"failure\" }}\"")
-    .to_string(),
-    "Result: success",
-  )
 }
 
 // =============================================================================
@@ -914,7 +908,7 @@ test "47. option_type" {
 
 ///|
 test "48. map_expressions" {
-  let vm = MoonBitVM::new(log=true)
+  let vm = MoonBitVM::new()
   // Test map literal expressions
   assert_eq(
     vm

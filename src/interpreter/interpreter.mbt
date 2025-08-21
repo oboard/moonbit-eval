@@ -47,7 +47,7 @@ pub fn ClosureInterpreter::new(core~ : Bool = true) -> ClosureInterpreter {
       },
       struct_methods: {},
       type_definitions: {},
-      type_environments: [],
+      type_environment: TypeEnvironment::new(),
       mutable_vars: {},
       values: {},
       parent: None,
@@ -1093,22 +1093,44 @@ pub fn ClosureInterpreter::visit(
       Map(map)
     }
     // 模板字符串中断
-    Interp(elems~, ..) =>
-      elems.fold(init=String(""), fn(acc, elem) {
-        acc +
-        (match elem {
-          Expr(expr~, ..) => String(self.visit(expr).to_string())
-          Literal(repr~, ..) => String(repr)
-          Source({ source, .. }) =>
-            match parse_code_to_expr(source) {
-              Ok(expr) => String(self.visit(expr).to_string())
-              Err(msg) => error(msg)
-            }
-        })
+    Interp(elems~, ..) => String(self.interp_string(elems))
+    MultilineString(elems~, ..) => {
+      let buf = @buffer.new()
+      elems.eachi(fn(i, elem) {
+        match elem {
+          String(str) => buf.write_string(str)
+          Interp(elems) => buf.write_string(self.interp_string(elems))
+        }
+        if i < elems.length() - 1 {
+          buf.write_string("\n")
+        }
       })
+      String(buf.to_string())
+    }
+    Constraint(expr~, ..) => self.visit(expr)
     Unit(_) => Unit
     _ => error("visit: unimplemented " + node.to_json().stringify())
   }
+}
+
+///|
+fn ClosureInterpreter::interp_string(
+  self : ClosureInterpreter,
+  elems : @list.List[@syntax.InterpElem],
+) -> String {
+  let buffer = @buffer.new()
+  for elem in elems {
+    match elem {
+      Expr(expr~, ..) => buffer.write_string(self.visit(expr).to_string())
+      Literal(repr~, ..) => buffer.write_string(repr)
+      Source({ source, .. }) =>
+        match parse_code_to_expr(source) {
+          Ok(expr) => buffer.write_string(self.visit(expr).to_string())
+          Err(msg) => error(msg)
+        }
+    }
+  }
+  buffer.to_string()
 }
 
 ///| 模式匹配的 RuntimeValue 版本
