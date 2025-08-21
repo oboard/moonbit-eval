@@ -166,10 +166,7 @@ pub fn ClosureInterpreter::top_visit(
             Variant(constructors) =>
               for constr in constructors {
                 let constr_name = constr.name.name
-                self.env.set(
-                  constr_name,
-                  Constructor({ val: (constr_name, []), env: self.env }),
-                )
+                self.env.type_definitions.set(constr_name, def)
               } else {
                 ()
               }
@@ -972,9 +969,14 @@ pub fn ClosureInterpreter::visit(
 
     // 处理单独的构造函数表达式，如 None
     Constr(constr~, ..) =>
-      // 单独的构造函数没有参数
-      Constructor({ val: (constr.name.name, []), env: self.env })
-
+      match constr.extra_info {
+        TypeName(ty_name) =>
+          self.env.with_ident(ty_name.name, fn(env, _name) {
+            env.cons(constr.name.name, [])
+          })
+        Package(_pkg) => self.env.cons(constr.name.name, [])
+        _ => self.env.cons(constr.name.name, [])
+      }
     // 处理 Break 表达式
     Break(arg~, ..) =>
       match arg {
@@ -1571,38 +1573,34 @@ fn ClosureInterpreter::execute_method_call_runtime(
   } else {
     self.env
   }
-  match cur_env.struct_methods.get(self_type) {
-    Some(methods) =>
-      match methods.get(method_name) {
-        Some(func) =>
-          // 普通函数，正常调用
-          self.with_scope(fn() {
-            // 手动绑定self参数和其他参数
-            match func {
-              Closure(@syntax.Func::Lambda(parameters~, body~, ..), _env) => {
-                // 绑定self参数（第一个参数）
-                match parameters {
-                  @list.More(first_param, tail=rest_params) => {
-                    match first_param {
-                      @syntax.Parameter::Positional(binder={ name, .. }, ..)
-                      | @syntax.Parameter::Labelled(binder={ name, .. }, ..) =>
-                        self.env.current_scope().set(name, actual_self_value)
-                      _ => ()
-                    }
-                    // 绑定其他参数
-                    self.bind_function_parameters_runtime(rest_params, args)
-                  }
-                  @list.Empty => ()
+  match cur_env.find_method(self_type, method_name) {
+    Some(func) =>
+      // 普通函数，正常调用
+      self.with_scope(fn() {
+        // 手动绑定self参数和其他参数
+        match func {
+          Closure(@syntax.Func::Lambda(parameters~, body~, ..), _env) => {
+            // 绑定self参数（第一个参数）
+            match parameters {
+              @list.More(first_param, tail=rest_params) => {
+                match first_param {
+                  @syntax.Parameter::Positional(binder={ name, .. }, ..)
+                  | @syntax.Parameter::Labelled(binder={ name, .. }, ..) =>
+                    self.env.current_scope().set(name, actual_self_value)
+                  _ => ()
                 }
-
-                // 执行函数体
-                self.visit(body)
+                // 绑定其他参数
+                self.bind_function_parameters_runtime(rest_params, args)
               }
-              _ => Unit
+              @list.Empty => ()
             }
-          })
-        None => Unit
-      }
+
+            // 执行函数体
+            self.visit(body)
+          }
+          _ => Unit
+        }
+      })
     None =>
       match self.embedded_methods.get(self_type) {
         Some(type_methods) =>
@@ -1814,11 +1812,20 @@ fn ClosureInterpreter::find_variable_type(
     Continue(_) => "Continue"
     Return(_) => "Return"
     Exception(_) => "Exception"
-    Constructor({ val: (name, _), .. }) =>
+    Constructor({ val: (name, _), env: env_ }) =>
       // 将Option构造函数映射到Option类型
       match name {
         "Some" | "None" => "Option"
-        _ => name
+        _ => {
+          let mut current_env = Some(env_)
+          while current_env is Some(env) {
+            if env.type_definitions.get(name) is Some(a) {
+              return a.tycon
+            }
+            current_env = env.parent
+          }
+          "Any"
+        }
       }
     TraitObject(value, _) => self.find_variable_type(value) // 返回原始值的类型
   }

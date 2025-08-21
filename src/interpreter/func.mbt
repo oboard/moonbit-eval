@@ -6,12 +6,12 @@ pub(all) struct RuntimeFunctionContext {
 }
 
 ///| 构造 Constructor
-pub fn RuntimeFunctionContext::cons(
-  self : RuntimeFunctionContext,
+pub fn RuntimeEnvironment::cons(
+  self : RuntimeEnvironment,
   name : String,
   args : Array[RuntimeValue],
 ) -> RuntimeValue {
-  Constructor({ val: (name, args), env: self.env })
+  Constructor({ val: (name, args), env: self })
 }
 
 ///| 新的函数类型定义 - 统一的上下文访问

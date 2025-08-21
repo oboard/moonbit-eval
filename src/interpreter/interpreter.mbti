@@ -128,6 +128,7 @@ pub(all) struct RuntimeEnvironment {
   parent : RuntimeEnvironment?
   deps : Map[String, RuntimeModule]
 }
+fn RuntimeEnvironment::cons(Self, String, Array[RuntimeValue]) -> RuntimeValue
 fn RuntimeEnvironment::copy(Self) -> Self
 fn RuntimeEnvironment::create_closure_env(Self) -> Self
 fn RuntimeEnvironment::current_scope(Self) -> Map[String, RuntimeValue]
@@ -148,7 +149,6 @@ pub(all) struct RuntimeFunctionContext {
   env : RuntimeEnvironment
   arguments : Array[RuntimeArgument]
 }
-fn RuntimeFunctionContext::cons(Self, String, Array[RuntimeValue]) -> RuntimeValue
 
 pub(all) struct RuntimeModule {
   meta : ModuleMeta

@@ -36,11 +36,11 @@ let option_map_fn : RuntimeFunction = ctx => match ctx.arguments {
       captured_env,
       @list.of([{ value: inner_value.to_expr(), kind: Positional }]),
     )
-    ctx.cons("Some", [result])
+    ctx.env.cons("Some", [result])
   }
   [{ value: Constructor({ val: ("None", []), .. }), .. }, _, ..] =>
-    ctx.cons("None", [])
-  _ => ctx.cons("None", [])
+    ctx.env.cons("None", [])
+  _ => ctx.env.cons("None", [])
 }
 
 ///| Option map_or 方法
@@ -105,8 +105,8 @@ let option_bind_fn : RuntimeFunction = ctx => match ctx.arguments {
       @list.of([{ value: inner_value.to_expr(), kind: Positional }]),
     )
   [{ value: Constructor({ val: ("None", []), .. }), .. }, _, ..] =>
-    ctx.cons("None", [])
-  _ => ctx.cons("None", [])
+    ctx.env.cons("None", [])
+  _ => ctx.env.cons("None", [])
 }
 
 ///| Option flatten 方法
@@ -122,7 +122,7 @@ let option_flatten_fn : RuntimeFunction = ctx => match ctx.arguments {
       ..,
     },
     ..,
-  ] => ctx.cons("Some", [inner_value])
+  ] => ctx.env.cons("Some", [inner_value])
   [
     {
       value: Constructor(
@@ -131,10 +131,10 @@ let option_flatten_fn : RuntimeFunction = ctx => match ctx.arguments {
       ..,
     },
     ..,
-  ] => ctx.cons("None", [])
+  ] => ctx.env.cons("None", [])
   [{ value: Constructor({ val: ("None", []), .. }), .. }, ..] =>
-    ctx.cons("None", [])
-  _ => ctx.cons("None", [])
+    ctx.env.cons("None", [])
+  _ => ctx.env.cons("None", [])
 }
 
 ///| Option is_empty 方法
@@ -159,13 +159,13 @@ let option_filter_fn : RuntimeFunction = ctx => match ctx.arguments {
     )
     // 根据谓词结果决定是否保留值
     match result {
-      Bool(true) => ctx.cons("Some", [inner_value])
-      _ => ctx.cons("None", [])
+      Bool(true) => ctx.env.cons("Some", [inner_value])
+      _ => ctx.env.cons("None", [])
     }
   }
   [{ value: Constructor({ val: ("None", []), .. }), .. }, _, ..] =>
-    ctx.cons("None", [])
-  _ => ctx.cons("None", [])
+    ctx.env.cons("None", [])
+  _ => ctx.env.cons("None", [])
 }
 
 ///| Option unwrap_or 方法
