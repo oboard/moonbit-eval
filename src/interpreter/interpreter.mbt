@@ -1119,13 +1119,13 @@ fn ClosureInterpreter::pattern_matches_runtime(
 ) -> Bool {
   match pattern {
     // 变量模式匹配（总是匹配，并绑定变量）
-    @syntax.Pattern::Var({ name, .. }) => {
+    Var({ name, .. }) => {
       self.env.set(name, value)
       true
     }
 
     // 常量模式匹配
-    @syntax.Pattern::Constant(c=pattern_const, ..) =>
+    Constant(c=pattern_const, ..) =>
       match (value, pattern_const) {
         (Int(v), Int(s)) => {
           let pattern_int = @strconv.parse_int(s) catch { _ => 0 }
@@ -1145,10 +1145,10 @@ fn ClosureInterpreter::pattern_matches_runtime(
       }
 
     // 通配符模式（总是匹配）
-    @syntax.Pattern::Any(..) => true
+    Any(..) => true
 
     // Tuple模式匹配
-    @syntax.Pattern::Tuple(pats~, ..) =>
+    Tuple(pats~, ..) =>
       match value {
         Tuple(values) => {
           if values.length() != pats.length() {
@@ -1174,7 +1174,7 @@ fn ClosureInterpreter::pattern_matches_runtime(
       }
 
     // Array模式匹配
-    @syntax.Pattern::Array(pats~, ..) =>
+    Array(pats~, ..) =>
       match value {
         Array(values) =>
           match pats {
@@ -1208,12 +1208,12 @@ fn ClosureInterpreter::pattern_matches_runtime(
       }
 
     // Or模式匹配（任一模式匹配即可）
-    @syntax.Pattern::Or(pat1~, pat2~, ..) =>
+    Or(pat1~, pat2~, ..) =>
       self.pattern_matches_runtime(value, pat1) ||
       self.pattern_matches_runtime(value, pat2)
 
     // Record模式匹配
-    @syntax.Pattern::Record(fields=pat_fields, ..) =>
+    Record(fields=pat_fields, ..) =>
       match value {
         Struct({ val: record_fields }) => {
           for pat_field in pat_fields {
@@ -1233,11 +1233,11 @@ fn ClosureInterpreter::pattern_matches_runtime(
       }
 
     // Range模式匹配
-    @syntax.Pattern::Range(lhs~, rhs~, inclusive~, ..) =>
+    Range(lhs~, rhs~, inclusive~, ..) =>
       self.runtime_value_in_range(value, lhs, rhs, inclusive)
 
     // Constructor模式匹配
-    @syntax.Pattern::Constr(constr~, args=pattern_args, ..) =>
+    Constr(constr~, args=pattern_args, ..) =>
       match value {
         Constructor(name, runtime_args) =>
           if name == constr.name.name {
@@ -1377,10 +1377,10 @@ fn ClosureInterpreter::pattern_to_runtime_value(
         Float(_) => None
         BigInt(_) => None
       }
-    @syntax.Pattern::Constr(constr~, ..) =>
+    Constr(constr~, ..) =>
       // 查找构造函数的值
       Some(self.env.find(constr.name.name))
-    @syntax.Pattern::Any(..) => None // 通配符表示开放边界
+    Any(..) => None // 通配符表示开放边界
     _ => None
   }
 }
