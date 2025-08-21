@@ -1508,7 +1508,7 @@ fn ClosureInterpreter::execute_function_by_name(
         context: self,
         arguments: get_evaluated_args(),
       })
-    NotFound => error("Method: not found")
+    NotFound => error("Method:\{long_ident.to_json().stringify()} not found")
   }
 }
 
@@ -1558,14 +1558,9 @@ fn ClosureInterpreter::execute_method_call_runtime(
                 match parameters {
                   @list.More(first_param, tail=rest_params) => {
                     match first_param {
-                      @syntax.Parameter::Positional(binder={ name, .. }, ..) =>
-                        ignore(
-                          self.env.current_scope().set(name, actual_self_value),
-                        )
-                      @syntax.Parameter::Labelled(binder={ name, .. }, ..) =>
-                        ignore(
-                          self.env.current_scope().set(name, actual_self_value),
-                        )
+                      @syntax.Parameter::Positional(binder={ name, .. }, ..)
+                      | @syntax.Parameter::Labelled(binder={ name, .. }, ..) =>
+                        self.env.current_scope().set(name, actual_self_value)
                       _ => ()
                     }
                     // 绑定其他参数
@@ -1601,9 +1596,9 @@ fn ClosureInterpreter::execute_method_call_runtime(
                 .to_array(),
               })
             }
-            None => error("Method: not found")
+            None => error("Method:\{method_name}:\{self_type} not found")
           }
-        None => error("Method: not found")
+        None => error("Method:\{method_name}:\{self_type} not found")
       }
   }
 }
@@ -1699,9 +1694,9 @@ fn ClosureInterpreter::execute_embedded_static_method(
             arguments: evaluated_args,
           })
         }
-        None => error("Embedded Method: not found")
+        None => error("Embedded Method:\{type_name} not found")
       }
-    None => error("Embedded Method: not found")
+    None => error("Embedded Method:\{type_name} not found")
   }
 }
 

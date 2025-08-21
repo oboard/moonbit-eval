@@ -13,6 +13,7 @@ pub let int_methods : Map[String, RuntimeFunction] = {
   "clz": int_clz_fn,
   "popcnt": int_popcnt_fn,
   "to_string": int_to_string_fn,
+  "unsafe_to_char": char_from_int_fn,
 }
 
 ///|

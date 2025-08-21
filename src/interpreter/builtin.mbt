@@ -54,6 +54,7 @@ let builtin_embedded_code : Map[String, RuntimeFunction] = {
   "%char_eq": char_eq_fn,
   "%char_compare": char_compare_fn,
   "%char_to_int": char_to_int_fn,
+  "%char_from_int": char_from_int_fn,
   // Byte 类型函数
   "%byte_eq": byte_eq_fn,
   "%byte_compare": byte_compare_fn,
@@ -114,7 +115,11 @@ let core_embedded_methods : Map[String, Map[String, RuntimeFunction]] = {
     "to_i64_saturate": double_to_int64_fn,
     "to_int64": double_to_int64_fn,
   },
-  "Char": { "compare": char_compare_fn, "to_int": char_to_int_fn },
+  "Char": {
+    "compare": char_compare_fn,
+    "to_int": char_to_int_fn,
+    "to_string": char_to_string_fn,
+  },
   "Byte": {
     "compare": byte_compare_fn,
     "to_int": byte_to_int_fn,
@@ -466,6 +471,18 @@ let char_compare_fn : RuntimeFunction = ctx => match ctx.arguments {
 ///| Char 转 Int
 let char_to_int_fn : RuntimeFunction = ctx => match ctx.arguments {
   [{ value: Char(c), .. }, ..] => Int(c.to_int())
+  _ => Unit
+}
+
+///| Char 转 String
+let char_to_string_fn : RuntimeFunction = ctx => match ctx.arguments {
+  [{ value: Char(c), .. }, ..] => String(c.to_string())
+  _ => Unit
+}
+
+///| Char 从 Int 构造
+let char_from_int_fn : RuntimeFunction = ctx => match ctx.arguments {
+  [{ value: Int(i), .. }, ..] => Char(i.unsafe_to_char())
   _ => Unit
 }
 
