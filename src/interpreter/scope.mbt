@@ -40,7 +40,7 @@ pub fn[T] RuntimeEnvironment::with_ident(
 }
 
 ///| 设置不可变变量
-pub fn RuntimeEnvironment::set_variable(
+pub fn RuntimeEnvironment::set(
   self : RuntimeEnvironment,
   name : String,
   value : RuntimeValue,
@@ -62,7 +62,7 @@ pub fn RuntimeEnvironment::set_mutable_variable(
 ///| 更新可变变量的值
 
 ///| 在可变变量数组中查找并更新指定变量
-pub fn RuntimeEnvironment::update_variable(
+pub fn RuntimeEnvironment::update(
   self : RuntimeEnvironment,
   name : String,
   new_value : RuntimeValue,

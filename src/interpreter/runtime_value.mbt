@@ -15,11 +15,11 @@ pub(all) enum RuntimeValue {
   Char(Char)
   Byte(Byte)
   String(String)
-  Error(Failure)
 
   // 复合值类型
   Tuple(Array[RuntimeValue])
   Array(Array[RuntimeValue])
+  Map(Map[RuntimeValue, RuntimeValue])
 
   // 结构类型 - 直接存储字段映射
   Struct(Ref[Map[String, RuntimeValue]])
@@ -44,9 +44,61 @@ pub(all) enum RuntimeValue {
   TraitObject(RuntimeValue, String) // 原始值和 trait 名称
 }
 
+///|
+pub impl Hash for RuntimeValue with hash_combine(
+  self : RuntimeValue,
+  hasher : Hasher,
+) -> Unit {
+  hasher.combine(self)
+}
+
+///|
+pub impl Add for RuntimeValue with op_add(
+  self : RuntimeValue,
+  other : RuntimeValue,
+) -> RuntimeValue {
+  match (self, other) {
+    (Int(a), Int(b)) => Int(a + b)
+    (UInt(a), UInt(b)) => UInt(a + b)
+    (Int64(a), Int64(b)) => Int64(a + b)
+    (UInt64(a), UInt64(b)) => UInt64(a + b)
+    (Float(a), Float(b)) => Float(a + b)
+    (Double(a), Double(b)) => Double(a + b)
+    (BigInt(a), BigInt(b)) => BigInt(a + b)
+    (String(a), String(b)) => String(a + b)
+    (Char(a), Char(b)) => String(a.to_string() + b.to_string())
+    (Byte(a), Byte(b)) => Byte(a + b)
+    (Tuple(a), Tuple(b)) => Tuple(a + b)
+    (Array(a), Array(b)) => Array(a + b)
+    _ => error("unable to add")
+  }
+}
+
+///|
+pub impl Hash for RuntimeValue with hash(self : RuntimeValue) -> Int {
+  match self {
+    Unit => 0
+    Bool(b) => b.hash()
+    Int(i) => i.hash()
+    UInt(u) => u.hash()
+    Int64(i) => i.hash()
+    UInt64(u) => u.hash()
+    Float(f) => f.hash()
+    Double(d) => d.hash()
+    BigInt(b) => b.hash()
+    Char(c) => c.hash()
+    Byte(b) => b.hash()
+    String(s) => s.hash()
+    Tuple(t) => t.hash()
+    Array(a) => a.hash()
+    _ => error("unable to hash")
+  }
+}
+
 ///| 为 RuntimeValue 实现自定义的 ToJson trait
 pub impl ToJson for RuntimeValue with to_json(self : RuntimeValue) -> Json {
   match self {
+    Map(m) => m.to_json()
     Unit => Json::null()
     Bool(b) => b.to_json()
     Int(i) => i.to_json()
@@ -68,7 +120,6 @@ pub impl ToJson for RuntimeValue with to_json(self : RuntimeValue) -> Json {
     Continue(v) => ["continue", v.to_json()]
     Return(v) => ["return", v.to_json()]
     Exception(msg) => ["exception", msg.to_json()]
-    Error(e) => e.to_json()
     TraitObject(value, _) => value.to_json() // 返回原始值的 JSON 表示
   }
 }
@@ -192,6 +243,26 @@ fn compare_parameter_signatures(
   }
 }
 
+///|
+fn RuntimeValue::from_constant(c : @syntax.Constant) -> RuntimeValue {
+  match c {
+    Bool(b) => Bool(b)
+    Int(s) => Int(@strconv.parse_int(s) catch { _ => 0 })
+    UInt(s) => UInt(@strconv.parse_uint(s) catch { _ => 0U })
+    Int64(s) => Int64(@strconv.parse_int64(s) catch { _ => 0L })
+    UInt64(s) => UInt64(@strconv.parse_uint64(s) catch { _ => 0UL })
+    Float(s) => Float((@strconv.parse_double(s) catch { _ => 0.0 }).to_float())
+    Double(s) => Double(@strconv.parse_double(s) catch { _ => 0.0 })
+    Byte(s) => {
+      let int_val = @strconv.parse_int(s) catch { _ => 0 }
+      Byte(int_val.to_byte())
+    }
+    Char(s) => Char(s.get_char(0).unwrap_or(' '))
+    String(s) => String(s)
+    _ => error("Constant: not implemented")
+  }
+}
+
 ///| 比较两个可选类型是否相等
 fn compare_optional_types(ty_a : @syntax.Type?, ty_b : @syntax.Type?) -> Bool {
   match (ty_a, ty_b) {
@@ -305,6 +376,7 @@ pub impl Show for RuntimeValue with output(self, logger : &Logger) -> Unit {
 ///| 将RuntimeValue转换为字符串表示
 pub impl Show for RuntimeValue with to_string(self) -> String {
   match self {
+    Map(m) => m.to_string()
     Unit => "()"
     Bool(b) => b.to_string()
     Int(i) => i.to_string()
@@ -408,7 +480,6 @@ pub impl Show for RuntimeValue with to_string(self) -> String {
     }
     Return(value) => "return " + value.to_string()
     Exception(msg) => "exception: " + msg
-    Error(e) => e.to_string()
     TraitObject(value, _) => value.to_string() // 返回原始值的字符串表示
   }
 }
@@ -458,6 +529,7 @@ pub fn RuntimeValue::to_expr(self : RuntimeValue) -> @syntax.Expr {
     end: { fname: "", lnum: 0, bol: 0, cnum: 0 },
   }
   match self {
+    Map(_) => Unit(loc=_dummy_loc, faked=true)
     Unit => Unit(loc=_dummy_loc, faked=true)
     Bool(b) => Constant(c=Bool(b), loc=_dummy_loc)
     Int(i) => Constant(c=Int(i.to_string()), loc=_dummy_loc)
@@ -490,7 +562,6 @@ pub fn RuntimeValue::to_expr(self : RuntimeValue) -> @syntax.Expr {
     }
     Return(value) => Return(return_value=Some(value.to_expr()), loc=_dummy_loc)
     Exception(_) => Unit(loc=_dummy_loc, faked=true)
-    Error(_) => Unit(loc=_dummy_loc, faked=true)
     TraitObject(value, _) => value.to_expr() // 返回原始值的表达式表示
   }
 }

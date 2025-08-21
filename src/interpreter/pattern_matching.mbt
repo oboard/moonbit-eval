@@ -50,18 +50,16 @@ pub fn ClosureInterpreter::pattern_matches(
       self.constants_equal(value_const, pattern_const)
 
     // 标识符与常量模式匹配
-    (
-      Ident(id={ name: @syntax.LongIdent::Ident(name~), .. }, ..),
-      Constant(c=pattern_const, ..),
-    ) => {
-      let runtime_value = self.env.find(name)
-      let value_expr = runtime_value.to_expr()
-      match value_expr {
-        @syntax.Expr::Constant(c=value_const, ..) =>
-          self.constants_equal(value_const, pattern_const)
-        _ => false
-      }
-    }
+    (Ident(id={ name, .. }, ..), Constant(c=pattern_const, ..)) =>
+      self.env.with_ident(name, (env, name) => {
+        let runtime_value = env.find(name)
+        let value_expr = runtime_value.to_expr()
+        match value_expr {
+          @syntax.Expr::Constant(c=value_const, ..) =>
+            self.constants_equal(value_const, pattern_const)
+          _ => false
+        }
+      })
 
     // 变量模式匹配（总是匹配，并绑定变量）
     (_, @syntax.Pattern::Var({ name, .. })) => {
@@ -202,19 +200,23 @@ pub fn ClosureInterpreter::pattern_matches(
       self.value_in_range(value, lhs, rhs, inclusive)
 
     // Constructor模式匹配
-    (value, @syntax.Pattern::Constr(constr~, ..)) => {
+    (value, @syntax.Pattern::Constr(constr~, args~, ..)) => {
       // 查找构造函数对应的值
-      let constr_runtime_value = self.env.find(constr.name.name)
-      let value_runtime = RuntimeValue::from_expr(value)
-      match (value_runtime, constr_runtime_value) {
-        // 如果构造函数是常量值，直接比较
-        (RuntimeValue::Int(v1), RuntimeValue::Int(v2)) => v1 == v2
-        (RuntimeValue::Bool(v1), RuntimeValue::Bool(v2)) => v1 == v2
-        (RuntimeValue::String(v1), RuntimeValue::String(v2)) => v1 == v2
-        (RuntimeValue::Double(v1), RuntimeValue::Double(v2)) => v1 == v2
-        (RuntimeValue::Char(v1), RuntimeValue::Char(v2)) => v1 == v2
-        _ => false
+      let name1 = constr.name.name
+      let value_runtime = self.visit(value)
+      if value_runtime is Constructor(name2, arr) {
+        if name1 != name2 {
+          return false
+        }
+        if args is Some(args) {
+          return args.foldi(init=true, fn(i, acc, arg) {
+            acc && self.pattern_matches_runtime(arr[i], arg.pat)
+          })
+        } else {
+          return true
+        }
       }
+      false
     }
     _ => false // 其他模式暂不支持
   }

@@ -83,7 +83,7 @@ pub fn RuntimeModule::new(
               RuntimeEnvironment::new(),
             )
         }
-      Err(error) => RuntimeValue::Error(Failure(error))
+      Err(_) => Unit
     }
   }
 

@@ -8,3 +8,10 @@ pub fn unit(loc? : @basic.Location) -> @syntax.Expr {
     faked=true,
   )
 }
+
+///|
+#callsite(autofill(loc))
+pub fn[A] error(msg : String, loc~ : SourceLoc) -> A {
+  println("\{msg} \{loc}")
+  panic()
+}

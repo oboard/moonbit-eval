@@ -1,5 +1,6 @@
 ///|
 pub(all) struct RuntimeEnvironment {
+  traits: Map[String, @syntax.TraitDecl]
   // 函数别名存储 - 存储函数名到其实际实现的映射
   fn_aliases : Map[String, String]
   // 类型定义
@@ -29,6 +30,7 @@ pub fn RuntimeEnvironment::new(
     }
   } else {
     {
+      traits: Map::new(),
       fn_aliases: Map::new(),
       type_definitions: Map::new(),
       struct_methods: Map::new(),

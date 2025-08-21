@@ -101,16 +101,16 @@ pub fn ClosureInterpreter::bind_function_parameters_runtime(
       match param {
         // 位置参数：直接绑定参数值
         @syntax.Parameter::Positional(binder={ name, .. }, ..) =>
-          self.env.set_variable(name, arg_value)
+          self.env.set(name, arg_value)
         // 标签参数：绑定带标签的参数值
         @syntax.Parameter::Labelled(binder={ name, .. }, ..) =>
-          self.env.set_variable(name, arg_value)
+          self.env.set(name, arg_value)
         // 可选参数：当有参数提供时绑定参数值，否则使用默认值
         @syntax.Parameter::Optional(binder={ name, .. }, ..) =>
-          self.env.set_variable(name, arg_value)
+          self.env.set(name, arg_value)
         // 问号可选参数：绑定参数值
         @syntax.Parameter::QuestionOptional(binder={ name, .. }, ..) =>
-          self.env.set_variable(name, arg_value)
+          self.env.set(name, arg_value)
         // 丢弃位置参数：不绑定到任何变量，直接跳过
         @syntax.Parameter::DiscardPositional(..) =>
           // 丢弃参数不需要绑定，但仍需要求值以保持副作用
@@ -124,7 +124,7 @@ pub fn ClosureInterpreter::bind_function_parameters_runtime(
         // 可选参数没有对应实参时，使用默认值
         @syntax.Parameter::Optional(binder={ name, .. }, default~, ..) => {
           let default_value = self.visit(default)
-          self.env.set_variable(name, default_value)
+          self.env.set(name, default_value)
           self.bind_function_parameters_runtime(rest_params, @list.new())
         }
         // 问号可选参数没有对应实参时，不绑定任何值
@@ -214,19 +214,19 @@ fn ClosureInterpreter::collect_free_variables(
   free_vars : Map[String, Unit],
 ) -> Unit {
   match expr {
-    @syntax.Expr::Ident(id={ name: @syntax.LongIdent::Ident(name~), .. }, ..) =>
+    Ident(id={ name: Ident(name~), .. }, ..) =>
       // 如果变量未绑定且不在当前环境中，则为自由变量
       if not(bound_vars.contains(name)) &&
         not(self.env.current_scope().contains(name)) {
         free_vars.set(name, ())
       }
-    @syntax.Expr::Apply(func~, args~, ..) => {
+    Apply(func~, args~, ..) => {
       self.collect_free_variables(func, bound_vars, free_vars)
       for arg in args {
         self.collect_free_variables(arg.value, bound_vars, free_vars)
       }
     }
-    @syntax.Expr::Let(pattern~, expr~, body~, ..) => {
+    Let(pattern~, expr~, body~, ..) => {
       // 先处理绑定表达式
       self.collect_free_variables(expr, bound_vars, free_vars)
       // 提取模式中绑定的变量
@@ -235,7 +235,7 @@ fn ClosureInterpreter::collect_free_variables(
       // 处理let体
       self.collect_free_variables(body, new_bound_vars, free_vars)
     }
-    @syntax.Expr::Function(func~, ..) =>
+    Function(func~, ..) =>
       // Function表达式包含Lambda
       match func {
         @syntax.Func::Lambda(parameters~, body~, ..) => {
@@ -255,7 +255,7 @@ fn ClosureInterpreter::collect_free_variables(
         }
         _ => ()
       }
-    @syntax.Expr::If(cond~, ifso~, ifnot~, ..) => {
+    If(cond~, ifso~, ifnot~, ..) => {
       self.collect_free_variables(cond, bound_vars, free_vars)
       self.collect_free_variables(ifso, bound_vars, free_vars)
       match ifnot {
@@ -359,16 +359,16 @@ fn ClosureInterpreter::bind_evaluated_parameters(
       match param {
         // 位置参数：直接绑定参数值
         @syntax.Parameter::Positional(binder={ name, .. }, ..) =>
-          self.env.set_variable(name, value)
+          self.env.set(name, value)
         // 标签参数：绑定带标签的参数值
         @syntax.Parameter::Labelled(binder={ name, .. }, ..) =>
-          self.env.set_variable(name, value)
+          self.env.set(name, value)
         // 可选参数：当有参数提供时绑定参数值
         @syntax.Parameter::Optional(binder={ name, .. }, ..) =>
-          self.env.set_variable(name, value)
+          self.env.set(name, value)
         // 问号可选参数：绑定参数值
         @syntax.Parameter::QuestionOptional(binder={ name, .. }, ..) =>
-          self.env.set_variable(name, value)
+          self.env.set(name, value)
         // 丢弃位置参数：不绑定到任何变量
         @syntax.Parameter::DiscardPositional(..) => ()
       }
@@ -380,7 +380,7 @@ fn ClosureInterpreter::bind_evaluated_parameters(
         // 可选参数没有对应实参时，使用默认值
         @syntax.Parameter::Optional(binder={ name, .. }, default~, ..) => {
           let default_value = self.visit(default)
-          self.env.set_variable(name, default_value)
+          self.env.set(name, default_value)
           self.bind_evaluated_parameters(rest_params, @list.new())
         }
         // 问号可选参数没有对应实参时，不绑定任何值
