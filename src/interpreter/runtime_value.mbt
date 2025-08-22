@@ -653,6 +653,26 @@ pub fn runtime_value_infix(
         "!=" => Bool(left != right)
         _ => Unit
       }
+    // Char 运算
+    (Char(left), Char(right)) =>
+      match op {
+        "+" => String(left.to_string() + right.to_string())
+        "==" => Bool(left == right)
+        "!=" => Bool(left != right)
+        _ => Unit
+      }
+    (Array(left), Array(right)) =>
+      match op {
+        "==" => Bool(left == right)
+        "!=" => Bool(left != right)
+        _ => Unit
+      }
+    (Map(left), Map(right)) =>
+      match op {
+        "==" => Bool(left == right)
+        "!=" => Bool(left != right)
+        _ => Unit
+      }
     _ => Unit
   }
 }
