@@ -26,6 +26,14 @@ pub let array_methods : Map[String, RuntimeFunction] = {
   "map": array_map_fn,
   "filter": array_filter_fn,
   "fold": array_fold_fn,
+  "make": array_make_fn,
+}
+
+///| 数组make操作
+let array_make_fn : RuntimeFunction = ctx => match ctx.arguments {
+  [{ value: Int(len), .. }, { value: val, .. }, ..] =>
+    Array(Array::make(len, val))
+  _ => Unit
 }
 
 ///| 数组长度

@@ -14,9 +14,17 @@ pub let string_methods : Map[String, RuntimeFunction] = {
   "get": string_get_fn,
   "unsafe_get": string_unsafe_get_fn,
   "to_string": string_to_string_fn,
+  "make": string_make_fn,
 }
 
 // ===== 字符串操作 =====
+
+///| 字符串make操作
+let string_make_fn : RuntimeFunction = ctx => match ctx.arguments {
+  [{ value: Int(len), .. }, { value: Char(ch), .. }, ..] =>
+    String(String::make(len, ch))
+  _ => Unit
+}
 
 ///|
 let string_length : RuntimeFunction = ctx => if ctx.arguments
