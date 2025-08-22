@@ -262,7 +262,7 @@ pub fn ClosureInterpreter::visit(
 
     // 处理变量标识符
     Ident(id={ name, .. }, ..) =>
-      self.main.with_ident(name, fn(env, name) { env.find(name) })
+      self.main.with_ident(name, (env, _pkg, name) => env.find(name))
 
     // 处理中缀表达式（如 1+1）
     Infix(op~, lhs~, rhs~, ..) =>
@@ -321,6 +321,7 @@ pub fn ClosureInterpreter::visit(
                   }
                   let current_val = self.main.with_ident(var_name, fn(
                     env,
+                    _pkg,
                     name,
                   ) {
                     env.find(name)
@@ -386,13 +387,30 @@ pub fn ClosureInterpreter::visit(
       }
 
     // 处理记录创建
-    Record(fields~, ..) => {
+    Record(type_name~, fields~, ..) => {
       let evaluated_fields = Map::new()
       for field in fields {
         let field_value = self.visit(field.expr)
-        ignore(evaluated_fields.set(field.label.name, field_value))
+        evaluated_fields.set(field.label.name, field_value)
       }
-      Struct({ val: evaluated_fields, env: self.main.env })
+      fn alloc(
+        env : RuntimeEnvironment,
+        pkg : String,
+        name : String,
+      ) -> RuntimeValue {
+        Struct({ val: evaluated_fields, type_info: { pkg, name, env } })
+      }
+
+      if type_name is Some(type_name) {
+        self.main.with_ident(type_name.name, (env, pkg, name) => alloc(
+          env, pkg, name,
+        ))
+      } else {
+        let type_name = self.main.env.infer_struct_type_from_fields(
+          evaluated_fields.keys().to_array(),
+        )
+        alloc(self.main.env, "main", type_name)
+      }
     }
     ArraySpread(elems~, ..) => {
       let result_values = []
@@ -571,7 +589,7 @@ pub fn ClosureInterpreter::visit(
 
     // 处理赋值操作
     Assign(var_={ name, .. }, expr~, augmented_by~, ..) =>
-      self.main.with_ident(name, fn(env, name) {
+      self.main.with_ident(name, fn(env, _pkg, name) {
         let new_value = match augmented_by {
           Some(op) => {
             let current_value = env.find(name)
@@ -604,7 +622,10 @@ pub fn ClosureInterpreter::visit(
             // TODO: 对于泛型类型的构造函数，需要根据参数类型推导类型参数
             // 例如：Cons(1, Nil) 应该推导出 List[Int]
             let constr_name = constr.name.name
-            Constructor({ val: (constr_name, arg_values), env: self.main.env })
+            Constructor({
+              val: (constr_name, arg_values),
+              type_info: { pkg: "", name: constr_name, env: self.main.env },
+            })
           }
           // 处理静态方法调用，如 Bool::default()
           Method(type_name~, method_name~, ..) => {
@@ -719,6 +740,7 @@ pub fn ClosureInterpreter::visit(
             Method(type_name~, method_name~, ..) =>
               self.main.with_ident(type_name.name, fn(
                 _env,
+                _pkg,
                 type_name,
               ) raise ControlFlow {
                 // 将左侧值添加到参数列表前面
@@ -960,7 +982,7 @@ pub fn ClosureInterpreter::visit(
     Constr(constr~, ..) =>
       match constr.extra_info {
         TypeName(ty_name) =>
-          self.main.with_ident(ty_name.name, fn(env, _name) {
+          self.main.with_ident(ty_name.name, fn(env, _pkg, _name) {
             env.cons(constr.name.name, [])
           })
         Package(_pkg) => self.main.env.cons(constr.name.name, [])
@@ -1060,13 +1082,13 @@ pub fn ClosureInterpreter::visit(
           }
 
           // 返回新的结构体
-          Struct({ val: new_fields, env: original_ref.env })
+          Struct({ val: new_fields, type_info: original_ref.type_info })
         }
         _ => error("RecordUpdate: expected struct")
       }
     }
     Method(type_name~, method_name~, ..) =>
-      self.main.with_ident(type_name.name, fn(env, ty_name) {
+      self.main.with_ident(type_name.name, fn(env, _pkg, ty_name) {
         // 查找用户定义的静态方法
         match env.struct_methods.get(ty_name) {
           Some(methods) =>
@@ -1440,7 +1462,7 @@ fn ClosureInterpreter::find_method(
   self : ClosureInterpreter,
   long_ident : @syntax.LongIdent,
 ) -> MethodType raise ControlFlow {
-  self.main.with_ident(long_ident, fn(env, name) {
+  self.main.with_ident(long_ident, fn(env, _pkg, name) {
     let name = env.find_fn_alias(name)
 
     // 按优先级查找：用户函数 -> Lambda变量 -> 外部函数 -> embedded函数
@@ -1526,24 +1548,20 @@ fn ClosureInterpreter::execute_method_call_runtime(
       // 对于 TraitObject，使用原始值的类型来查找方法
       let original_type = match original_value {
         Struct({ val: struct_data, .. }) => {
-          let current_fields = []
-          struct_data.each(fn(field_name, _) { current_fields.push(field_name) })
-          self.infer_struct_type_from_fields(current_fields)
+          let current_fields = struct_data.keys().to_array()
+          self.main.env.infer_struct_type_from_fields(current_fields)
         }
         _ => self.find_variable_type(original_value)
       }
       (original_value, original_type)
     }
-    Struct({ val: struct_data, .. }) => {
-      // 收集字段名
-      let current_fields = []
-      struct_data.each(fn(field_name, _) { current_fields.push(field_name) })
+    Struct({ type_info, .. }) =>
       // 使用公共方法推导类型
-      (self_value, self.infer_struct_type_from_fields(current_fields))
-    }
+      (self_value, type_info.name)
     _ => (self_value, self.find_variable_type(self_value))
   }
-  let cur_env = if self_value is RuntimeValue::Struct({ env, .. }) {
+  let cur_env = if self_value
+    is RuntimeValue::Struct({ type_info: { env, .. }, .. }) {
     env
   } else {
     self.main.env
@@ -1620,7 +1638,7 @@ fn ClosureInterpreter::find_type(
       for field in fields {
         current_fields.push(field.label.name)
       }
-      self.infer_struct_type_from_fields(current_fields)
+      self.main.env.infer_struct_type_from_fields(current_fields)
     }
     Ident(id={ name, .. }, ..) =>
       match name {
@@ -1713,12 +1731,12 @@ fn ClosureInterpreter::execute_embedded_static_method(
 
 ///| 根据 RuntimeValue 推断类型
 // 提取的公共方法：根据字段名推导结构体类型
-fn ClosureInterpreter::infer_struct_type_from_fields(
-  self : ClosureInterpreter,
+fn RuntimeEnvironment::infer_struct_type_from_fields(
+  self : RuntimeEnvironment,
   current_fields : Array[String],
 ) -> String {
   let mut result = "Struct"
-  self.main.env.type_definitions
+  self.type_definitions
   .iter()
   .each(fn(entry) {
     let (type_name, type_def) = entry
@@ -1770,16 +1788,10 @@ fn ClosureInterpreter::find_variable_type(
     Tuple(_) => "Tuple"
     Array(_) => "Array"
     Map(_) => "Map"
-    Struct(struct_data) => {
-      // 收集字段名
-      let current_fields = []
-      struct_data.val.each(fn(field_name, _) { current_fields.push(field_name) })
-      // 使用公共方法推导类型
-      self.infer_struct_type_from_fields(current_fields)
-    }
+    Struct(data) => data.type_info.get_full_name()
     Closure(_) => "Closure"
     Exception(_) => "Exception"
-    Constructor({ val: (name, _), env: env_ }) =>
+    Constructor({ val: (name, _), type_info: { env: env_, .. } }) =>
       // 将Option构造函数映射到Option类型
       match name {
         "Some" | "None" => "Option"

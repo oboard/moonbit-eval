@@ -51,7 +51,7 @@ pub fn ClosureInterpreter::pattern_matches(
 
     // 标识符与常量模式匹配
     (Ident(id={ name, .. }, ..), Constant(c=pattern_const, ..)) =>
-      self.main.with_ident(name, (env, name) => {
+      self.main.with_ident(name, (env, _pkg, name) => {
         let runtime_value = env.find(name)
         let value_expr = runtime_value.to_expr()
         match value_expr {

@@ -20,13 +20,13 @@ pub(all) enum RuntimeValue {
   Map(Map[RuntimeValue, RuntimeValue])
 
   // 结构类型 - 直接存储字段映射
-  Struct(WithEnv[Map[String, RuntimeValue]])
+  Struct(WithType[Map[String, RuntimeValue]])
 
   // 闭包 - 包含函数定义和捕获的环境（所有函数都是闭包）
   Closure(@syntax.Func, RuntimeEnvironment)
 
   // 构造函数调用
-  Constructor(WithEnv[(String, Array[RuntimeValue])]) // 构造函数名称和参数
+  Constructor(WithType[(String, Array[RuntimeValue])]) // 构造函数名称和参数
 
   // 异常处理 - 用于实现raise和try语句
   Exception(String) // 异常信息
@@ -41,12 +41,6 @@ pub suberror ControlFlow {
   Continue(Array[RuntimeValue])
   Break(RuntimeValue?)
   Return(RuntimeValue)
-}
-
-///|
-pub struct WithEnv[T] {
-  val : T
-  env : RuntimeEnvironment
 }
 
 ///|
@@ -581,7 +575,10 @@ pub fn RuntimeValue::from_expr(expr : @syntax.Expr) -> RuntimeValue {
         let field_value = RuntimeValue::from_expr(field.expr)
         struct_data.set(field_name, field_value)
       }
-      Struct({ val: struct_data, env: RuntimeEnvironment::new() })
+      Struct({
+        val: struct_data,
+        type_info: { pkg: "", name: "Struct", env: RuntimeEnvironment::new() },
+      })
     }
     Ident(..) => Unit // Ident表达式需要通过环境查找，这里返回Unit作为占位符
     Sequence(last_expr~, ..) =>
@@ -659,7 +656,15 @@ pub fn RuntimeEnvironment::from_option(
   val : RuntimeValue?,
 ) -> RuntimeValue {
   match val {
-    Some(x) => Constructor({ val: ("Some", [x]), env: self })
-    None => Constructor({ val: ("None", []), env: self })
+    Some(x) =>
+      Constructor({
+        val: ("Some", [x]),
+        type_info: { pkg: "", name: "Option", env: self },
+      })
+    None =>
+      Constructor({
+        val: ("None", []),
+        type_info: { pkg: "", name: "Option", env: self },
+      })
   }
 }

@@ -158,8 +158,15 @@ pub(all) struct RuntimeModule {
   deps : Map[String, RuntimeModule]
 }
 fn RuntimeModule::new(String, deps~ : Map[String, Self], (RuntimeEnvironment, (String) -> (String?, RuntimeValue)) -> Map[String, (String?, RuntimeValue)]) -> Self
-fn[T] RuntimeModule::with_ident(Self, @syntax.LongIdent, (RuntimeEnvironment, String) -> T raise ControlFlow) -> T raise ControlFlow
+fn[T] RuntimeModule::with_ident(Self, @syntax.LongIdent, (RuntimeEnvironment, String, String) -> T raise ControlFlow) -> T raise ControlFlow
 impl ToJson for RuntimeModule
+
+pub struct RuntimeType {
+  pkg : String
+  name : String
+  env : RuntimeEnvironment
+}
+fn RuntimeType::get_full_name(Self) -> String
 
 pub(all) enum RuntimeValue {
   Unit
@@ -177,9 +184,9 @@ pub(all) enum RuntimeValue {
   Tuple(Array[RuntimeValue])
   Array(Array[RuntimeValue])
   Map(Map[RuntimeValue, RuntimeValue])
-  Struct(WithEnv[Map[String, RuntimeValue]])
+  Struct(WithType[Map[String, RuntimeValue]])
   Closure(@syntax.Func, RuntimeEnvironment)
-  Constructor(WithEnv[(String, Array[RuntimeValue])])
+  Constructor(WithType[(String, Array[RuntimeValue])])
   Exception(String)
   TraitObject(RuntimeValue, String)
 }
@@ -199,9 +206,9 @@ pub struct TypeEnvironment {
 }
 impl ToJson for TypeEnvironment
 
-pub struct WithEnv[T] {
+pub struct WithType[T] {
   val : T
-  env : RuntimeEnvironment
+  type_info : RuntimeType
 }
 
 // Type aliases

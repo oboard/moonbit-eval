@@ -1,3 +1,21 @@
+///| 运行时类型信息 - 包含包名、类型名和环境
+pub struct RuntimeType {
+  pkg : String
+  name : String
+  env : RuntimeEnvironment
+}
+
+///|
+pub fn RuntimeType::get_full_name(self : RuntimeType) -> String {
+  "@" + self.pkg + "." + self.name
+}
+
+///| 带类型信息的值包装器
+pub struct WithType[T] {
+  val : T
+  type_info : RuntimeType
+}
+
 ///| 泛型类型环境 - 跟踪类型变量绑定
 pub struct TypeEnvironment {
   // 类型变量到具体类型的映射

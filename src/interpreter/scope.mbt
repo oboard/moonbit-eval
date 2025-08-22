@@ -22,15 +22,15 @@ pub fn RuntimeEnvironment::find(
 pub fn[T] RuntimeModule::with_ident(
   self : RuntimeModule,
   long_ident : @syntax.LongIdent,
-  func : (RuntimeEnvironment, String) -> T raise ControlFlow,
+  func : (RuntimeEnvironment, String, String) -> T raise ControlFlow,
 ) -> T raise ControlFlow {
   match long_ident {
-    Ident(name~) => func(self.env, name)
+    Ident(name~) => func(self.env, self.meta.name, name)
     Dot(pkg~, id~) =>
-      if self.deps.get(pkg) is Some(pkg) {
-        func(pkg.env, id)
+      if self.deps.get(pkg) is Some(mod) {
+        func(mod.env, pkg, id)
       } else {
-        func(self.env, id)
+        func(self.env, pkg, id)
       }
   }
 }

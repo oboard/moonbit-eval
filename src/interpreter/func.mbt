@@ -11,7 +11,10 @@ pub fn RuntimeEnvironment::cons(
   name : String,
   args : Array[RuntimeValue],
 ) -> RuntimeValue {
-  Constructor({ val: (name, args), env: self })
+  Constructor({
+    val: (name, args),
+    type_info: { pkg: "", name: "Constructor", env: self },
+  })
 }
 
 ///| 新的函数类型定义 - 统一的上下文访问
