@@ -808,6 +808,7 @@ test "44. loop_expressions" {
   assert_eq(vm.eval("let list = @list.from_array([1, 2, 3])").to_string(), "()")
   assert_eq(vm.eval("list").to_string(), "More(1, More(2, More(3, Empty)))")
   assert_eq(vm.eval("sum(list)").to_string(), "6")
+  assert_eq(vm.eval("@list.to_array(list)").to_string(), "[1, 2, 3]")
 }
 
 ///|
@@ -1058,6 +1059,25 @@ test "constructor_patterns" {
   inspect(vm.eval("test_constr(5)"), content="other")
 }
 
+// ///|
+// test "constructor_named_patterns" {
+//   let vm = MoonBitVM::new()
+//   inspect(
+//     vm.eval(
+//       (
+//         #|fn t(x : @list.List) -> Int {
+//         #|  match x {
+//         #|    More(x, tail=xs) => (x, xs)
+//         #|    Empty => 0
+//         #|  }
+//         #|}
+//       ),
+//       top=true,
+//     ),
+//     content="()",
+//   )
+//   inspect(vm.eval("t(@list.of([1, 2]))"), content="1")
+// }
 // =============================================================================
 // 8. OPTION TYPE
 // =============================================================================

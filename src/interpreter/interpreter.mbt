@@ -994,11 +994,14 @@ pub fn ClosureInterpreter::visit(
         body: case.body,
         guard_: None,
       })
-      while true {
+      let mut is_continue = true
+      while is_continue {
+        is_continue = false
         (self.execute_match_runtime(arg, cases) catch {
           Break(value) => return value.unwrap_or(Unit)
           Continue(arr) => {
             arg = Tuple(arr)
+            is_continue = true
             Unit
           }
           e => raise e
