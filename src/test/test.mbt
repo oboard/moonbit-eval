@@ -1528,7 +1528,7 @@ test "45. map_operations" {
   // inspect(vm.eval("map1 == map2"), content="true")
 
   // Test map update
-  inspect(vm.eval("map1[\"key1\"] = 10", log=true), content="()")
+  inspect(vm.eval("map1[\"key1\"] = 10"), content="()")
   inspect(vm.eval("map1"), content="{\"key1\": 10, \"key2\": 2, \"key3\": 3}")
 }
 
