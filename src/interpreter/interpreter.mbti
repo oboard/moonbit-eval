@@ -31,8 +31,6 @@ fn eval_uint64_op(UInt64, UInt64, String) -> @syntax.Constant
 
 fn eval_uint_op(UInt, UInt, String) -> @syntax.Constant
 
-fn infer_type_from_constant(@syntax.Constant) -> String
-
 let int_embedded_code : Map[String, (RuntimeFunctionContext) -> RuntimeValue raise ControlFlow]
 
 let int_methods : Map[String, (RuntimeFunctionContext) -> RuntimeValue raise ControlFlow]
@@ -158,7 +156,7 @@ pub(all) struct RuntimeModule {
   deps : Map[String, RuntimeModule]
 }
 fn RuntimeModule::new(String, deps~ : Map[String, Self], (RuntimeEnvironment, (String) -> (String?, RuntimeValue)) -> Map[String, (String?, RuntimeValue)]) -> Self
-fn[T] RuntimeModule::with_ident(Self, @syntax.LongIdent, (RuntimeEnvironment, String, String) -> T raise ControlFlow) -> T raise ControlFlow
+fn[T] RuntimeModule::with_ident(Self, @syntax.LongIdent, (RuntimeEnvironment, String, String) -> T raise?) -> T raise?
 impl ToJson for RuntimeModule
 
 pub struct RuntimeType {
@@ -166,6 +164,8 @@ pub struct RuntimeType {
   name : String
   env : RuntimeEnvironment
 }
+fn RuntimeType::any() -> Self
+fn RuntimeType::bool() -> Self
 fn RuntimeType::get_full_name(Self) -> String
 
 pub(all) enum RuntimeValue {
@@ -188,7 +188,6 @@ pub(all) enum RuntimeValue {
   Closure(@syntax.Func, RuntimeEnvironment)
   Constructor(WithType[(String, Array[RuntimeValue])])
   Exception(String)
-  TraitObject(RuntimeValue, String)
 }
 fn RuntimeValue::from_expr(@syntax.Expr) -> Self
 fn RuntimeValue::is_mutable(Self) -> Bool

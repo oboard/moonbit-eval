@@ -4,6 +4,7 @@
 pub fn ClosureInterpreter::call_closure(
   self : ClosureInterpreter,
   function : @syntax.Func,
+  mod : RuntimeModule,
   env : RuntimeEnvironment,
   args : @list.List[@syntax.Argument],
 ) -> RuntimeValue raise ControlFlow {
@@ -14,7 +15,9 @@ pub fn ClosureInterpreter::call_closure(
 
       // 切换到闭包捕获的环境
       let old_env = self.main.env
+      let old_mod = self.current_module
       self.main.env = env
+      self.current_module = mod
       let result = self.with_scope(() => {
         // 在新环境中绑定已解释的参数值
         self.bind_evaluated_parameters(parameters, arg_values)
@@ -24,6 +27,7 @@ pub fn ClosureInterpreter::call_closure(
 
       // 恢复原环境
       self.main.env = old_env
+      self.current_module = old_mod
       result
     }
     _ => RuntimeValue::Unit

@@ -1490,3 +1490,12 @@ test "cmp" {
   assert_eq(vm.eval("@cmp.maximum(1, 2)").to_string(), "2")
   assert_eq(vm.eval("@cmp.minimum(1, 2)").to_string(), "1")
 }
+
+///|
+test "cross_package_method_calling" {
+  let vm = MoonBitVM::new()
+  let r = vm.eval("@list.new()")
+  @json.inspect(r.value, content=(["Empty",[]]))
+  assert_eq(vm.eval("@list.new()").to_string(), "Empty")
+  assert_eq(vm.eval("@list.new().to_array()").to_string(), "[]")
+}

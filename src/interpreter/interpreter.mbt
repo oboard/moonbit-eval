@@ -6,6 +6,7 @@ pub(all) struct ClosureInterpreter {
   // embedded方法存储 - 按类型组织的embedded方法定义
   embedded_methods : Map[String, Map[String, RuntimeFunction]]
   main : RuntimeModule
+  mut current_module : RuntimeModule
   // 解释器状态
   mut state : InterpreterState
 }
@@ -18,6 +19,28 @@ pub(all) enum InterpreterState {
 
 ///|
 pub fn ClosureInterpreter::new(core~ : Bool = true) -> ClosureInterpreter {
+  let main = {
+    meta: ModuleMeta::new("main"),
+    env: {
+      traits: {},
+      fn_aliases: if core {
+        core_fn_aliases
+      } else {
+        {}
+      },
+      struct_methods: {},
+      type_definitions: {},
+      type_environment: TypeEnvironment::new(),
+      mutable_vars: {},
+      values: {},
+      parent: None,
+    },
+    deps: if core {
+      core_modules
+    } else {
+      {}
+    },
+  }
   {
     extern_fns: {},
     embedded_fns: if core {
@@ -30,28 +53,8 @@ pub fn ClosureInterpreter::new(core~ : Bool = true) -> ClosureInterpreter {
     } else {
       {}
     },
-    main: {
-      meta: ModuleMeta::new("main"),
-      env: {
-        traits: {},
-        fn_aliases: if core {
-          core_fn_aliases
-        } else {
-          {}
-        },
-        struct_methods: {},
-        type_definitions: {},
-        type_environment: TypeEnvironment::new(),
-        mutable_vars: {},
-        values: {},
-        parent: None,
-      },
-      deps: if core {
-        core_modules
-      } else {
-        {}
-      },
-    },
+    main,
+    current_module: main,
     state: InterpreterState::Stopped,
   }
 }
@@ -136,14 +139,14 @@ pub fn ClosureInterpreter::top_visit(
     // 处理顶层常量定义（如 const Zero = 0）
     TopLetDef(binder~, expr~, ..) => {
       let value = self.visit(expr) catch { _ => Unit }
-      self.main.env.set(binder.name, value)
+      self.current_module.env.set(binder.name, value)
       value
     }
     TopTypeDef(def) => {
       match def {
         { tycon, params, components, .. } => {
-          self.main.env.type_definitions.set(tycon, def)
-          self.main.env.struct_methods.set(tycon, Map::new())
+          self.current_module.env.type_definitions.set(tycon, def)
+          self.current_module.env.struct_methods.set(tycon, Map::new())
 
           // 处理泛型类型参数
           let type_params = []
@@ -262,7 +265,9 @@ pub fn ClosureInterpreter::visit(
 
     // 处理变量标识符
     Ident(id={ name, .. }, ..) =>
-      self.main.with_ident(name, (env, _pkg, name) => env.find(name))
+      self.main.with_ident(name, (mod, _pkg, name) => mod.env
+        .find(name)
+        .unwrap_or(Unit))
 
     // 处理中缀表达式（如 1+1）
     Infix(op~, lhs~, rhs~, ..) =>
@@ -317,14 +322,14 @@ pub fn ClosureInterpreter::visit(
                 Ident(id={ name: var_name, .. }, ..) => {
                   let var_name_str = match var_name {
                     Ident(name~) => name
-                    _ => "unknown"
+                    _ => "Any"
                   }
                   let current_val = self.main.with_ident(var_name, fn(
-                    env,
+                    mod,
                     _pkg,
                     name,
                   ) {
-                    env.find(name)
+                    mod.env.find(name).unwrap_or(Unit)
                   })
                   let right_val = self.visit(rhs)
                   // 执行相应的运算
@@ -402,8 +407,10 @@ pub fn ClosureInterpreter::visit(
       }
 
       if type_name is Some(type_name) {
-        self.main.with_ident(type_name.name, (env, pkg, name) => alloc(
-          env, pkg, name,
+        self.main.with_ident(type_name.name, (mod, pkg, name) => alloc(
+          mod.env,
+          pkg,
+          name,
         ))
       } else {
         let type_name = self.main.env.infer_struct_type_from_fields(
@@ -582,17 +589,18 @@ pub fn ClosureInterpreter::visit(
       // Add all closures to current environment
       for binding in bindings {
         let name = binding.0.name
-        self.main.env.set(name, shared_env.find(name))
+        self.main.env.set(name, shared_env.find(name).unwrap_or(Unit))
       }
       self.visit(body)
     }
 
     // 处理赋值操作
     Assign(var_={ name, .. }, expr~, augmented_by~, ..) =>
-      self.main.with_ident(name, fn(env, _pkg, name) {
+      self.main.with_ident(name, fn(mod, _pkg, name) {
+        let env = mod.env
         let new_value = match augmented_by {
           Some(op) => {
-            let current_value = env.find(name)
+            let current_value = env.find(name).unwrap_or(Unit)
             match op.name {
               Ident(name=op_name) => {
                 let rhs_value = self.visit(expr)
@@ -624,31 +632,31 @@ pub fn ClosureInterpreter::visit(
             let constr_name = constr.name.name
             Constructor({
               val: (constr_name, arg_values),
-              type_info: { pkg: "", name: constr_name, env: self.main.env },
+              type_info: {
+                pkg: self.current_module.meta.name,
+                name: constr_name,
+                env: self.current_module.env,
+              },
             })
           }
           // 处理静态方法调用，如 Bool::default()
-          Method(type_name~, method_name~, ..) => {
-            let type_str = match type_name.name {
-              Ident(name~) => name
-              _ => "Unknown"
-            }
-            // self.execute_function_by_name(type_name.name, @list.new())
-            // self.main.with_ident(type_name.name, fn(env, name) {
-            //   env.find(name)
-            // })
-            // let type_str = match type_name.name {
-            //   Ident(name~) => name
-            //   _ => "Unknown"
-            // }
-            self.execute_static_method_call(type_str, method_name.name, args)
-            // 处理其他表达式作为函数的情况，如 a[1](10)
-          }
+          Method(type_name~, method_name~, ..) =>
+            self.current_module.with_ident(type_name.name, (mod, _pkg, name) => self.execute_static_method_call(
+              mod.find_static_type(name),
+              method_name.name,
+              args,
+            ))
+          // 处理其他表达式作为函数的情况，如 a[1](10)
           _ => {
             let func_value = self.visit(func)
             match func_value {
               Closure(function, captured_env) =>
-                self.call_closure(function, captured_env, args)
+                self.call_closure(
+                  function,
+                  self.current_module,
+                  captured_env,
+                  args,
+                )
               _ => Unit
             }
           }
@@ -694,11 +702,7 @@ pub fn ClosureInterpreter::visit(
     // 处理方法调用 (DotApply)
     DotApply(self=self_expr, method_name~, args~, return_self~, ..) => {
       let self_value = self.visit(self_expr)
-      let res = self.execute_method_call_runtime(
-        self_value,
-        method_name.name,
-        args,
-      )
+      let res = self.execute_method_call(self_value, method_name.name, args)
       if return_self {
         self_value
       } else {
@@ -738,8 +742,8 @@ pub fn ClosureInterpreter::visit(
         Apply(func~, args~, ..) =>
           match func {
             Method(type_name~, method_name~, ..) =>
-              self.main.with_ident(type_name.name, fn(
-                _env,
+              self.current_module.with_ident(type_name.name, fn(
+                mod,
                 _pkg,
                 type_name,
               ) raise ControlFlow {
@@ -750,7 +754,7 @@ pub fn ClosureInterpreter::visit(
                   args,
                 )
                 self.execute_static_method_call(
-                  type_name,
+                  mod.find_static_type(type_name),
                   method_name.name,
                   pipe_args,
                 )
@@ -982,11 +986,11 @@ pub fn ClosureInterpreter::visit(
     Constr(constr~, ..) =>
       match constr.extra_info {
         TypeName(ty_name) =>
-          self.main.with_ident(ty_name.name, fn(env, _pkg, _name) {
-            env.cons(constr.name.name, [])
+          self.current_module.with_ident(ty_name.name, fn(_env, _pkg, _name) {
+            self.current_module.cons(constr.name.name, [])
           })
-        Package(_pkg) => self.main.env.cons(constr.name.name, [])
-        _ => self.main.env.cons(constr.name.name, [])
+        Package(_pkg) => self.current_module.cons(constr.name.name, [])
+        _ => self.current_module.cons(constr.name.name, [])
       }
     // 处理 Break 表达式
     Break(arg~, ..) =>
@@ -1051,17 +1055,16 @@ pub fn ClosureInterpreter::visit(
     }
 
     // 处理 As 表达式 (trait casting)
-    As(expr~, trait_~, ..) => {
-      // 评估表达式
-      let value = self.visit(expr)
-      // 提取 trait 名称
-      let trait_name = match trait_ {
-        { name: Ident(name=trait_name), .. } => trait_name
-        _ => "Unknown"
-      }
-      // 创建 TraitObject 来保存原始值和 trait 信息
-      TraitObject(value, trait_name)
-    }
+    As(expr~, ..) =>
+      // TODO: 评估表达式
+      self.visit(expr)
+    // // 提取 trait 名称
+    // let trait_name = match trait_ {
+    //   { name: Ident(name=trait_name), .. } => trait_name
+    //   _ => "Any"
+    // }
+    // // 创建 TraitObject 来保存原始值和 trait 信息
+    // TraitObject(value, trait_name)
 
     // 处理单独的 Method 表达式（如 Calculator::add）
     // 处理记录更新表达式 (RecordUpdate)
@@ -1088,7 +1091,8 @@ pub fn ClosureInterpreter::visit(
       }
     }
     Method(type_name~, method_name~, ..) =>
-      self.main.with_ident(type_name.name, fn(env, _pkg, ty_name) {
+      self.main.with_ident(type_name.name, fn(mod, _pkg, ty_name) {
+        let env = mod.env
         // 查找用户定义的静态方法
         match env.struct_methods.get(ty_name) {
           Some(methods) =>
@@ -1319,7 +1323,9 @@ fn ClosureInterpreter::pattern_matches_runtime(
           }
         _ => {
           // 查找构造函数对应的值
-          let constr_runtime_value = self.main.env.find(constr.name.name)
+          let constr_runtime_value = self.main.env
+            .find(constr.name.name)
+            .unwrap_or(Unit)
           match (value, constr_runtime_value) {
             // 如果构造函数是常量值，直接比较
             (Int(v1), Int(v2)) => v1 == v2
@@ -1418,7 +1424,7 @@ fn ClosureInterpreter::pattern_to_runtime_value(
       }
     Constr(constr~, ..) =>
       // 查找构造函数的值
-      Some(self.main.env.find(constr.name.name))
+      Some(self.main.env.find(constr.name.name).unwrap_or(Unit))
     Any(..) => None // 通配符表示开放边界
     _ => None
   }
@@ -1442,7 +1448,7 @@ pub fn ClosureInterpreter::is_known_function(
   }
 
   // 检查用户定义函数
-  if self.main.env.find(actual_name) is Closure(_) {
+  if self.main.env.find(actual_name).unwrap_or(Unit) is Closure(_) {
     return true
   }
   false
@@ -1457,16 +1463,28 @@ priv enum MethodType {
   NotFound
 }
 
-///| 按名称查找方法
-fn ClosureInterpreter::find_method(
+///| 按名称执行函数调用
+fn ClosureInterpreter::execute_function_by_name(
   self : ClosureInterpreter,
   long_ident : @syntax.LongIdent,
-) -> MethodType raise ControlFlow {
-  self.main.with_ident(long_ident, fn(env, _pkg, name) {
+  args : @list.List[@syntax.Argument],
+) -> RuntimeValue raise ControlFlow {
+  fn get_evaluated_args() -> Array[RuntimeArgument] raise ControlFlow {
+    args
+    .map(arg => RuntimeArgument::{
+      value: self.visit(arg.value),
+      kind: arg.kind,
+    })
+    .to_array()
+  }
+
+  self.main.with_ident(long_ident, fn(mod, _pkg, name) {
+    let env = mod.env
     let name = env.find_fn_alias(name)
 
     // 按优先级查找：用户函数 -> Lambda变量 -> 外部函数 -> embedded函数
-    match env.find(name) {
+    let func = match
+      env.find(name).unwrap_or(self.main.env.find(name).unwrap_or(Unit)) {
       Closure(func, env) =>
         // 检查是否是embedded函数的标记函数
         match func {
@@ -1487,99 +1505,59 @@ fn ClosureInterpreter::find_method(
             }
         }
     }
+    match func {
+      EmbeddedFunction(embedded_name) =>
+        match self.embedded_fns.get(embedded_name) {
+          Some(embedded_func) =>
+            embedded_func(RuntimeFunctionContext::{
+              mod: self.current_module,
+              context: self,
+              arguments: get_evaluated_args(),
+            })
+          None => Unit
+        }
+      RuntimeClosure(lambda_func, captured_env) =>
+        // 调用闭包：使用专门的闭包调用方法
+        self.call_closure(lambda_func, mod, captured_env, args)
+      ExternFunction(extern_func) =>
+        extern_func(RuntimeFunctionContext::{
+          mod: self.current_module,
+          context: self,
+          arguments: get_evaluated_args(),
+        })
+      GlobalEmbedded(embedded_func) =>
+        embedded_func(RuntimeFunctionContext::{
+          mod: self.current_module,
+          context: self,
+          arguments: get_evaluated_args(),
+        })
+      NotFound => error("Method:\{long_ident.to_json().stringify()} not found")
+    }
   })
 }
 
-///| 按名称执行函数调用
-fn ClosureInterpreter::execute_function_by_name(
-  self : ClosureInterpreter,
-  long_ident : @syntax.LongIdent,
-  args : @list.List[@syntax.Argument],
-) -> RuntimeValue raise ControlFlow {
-  fn get_evaluated_args() -> Array[RuntimeArgument] raise ControlFlow {
-    args
-    .map(arg => RuntimeArgument::{
-      value: self.visit(arg.value),
-      kind: arg.kind,
-    })
-    .to_array()
-  }
-
-  match self.find_method(long_ident) {
-    EmbeddedFunction(embedded_name) =>
-      match self.embedded_fns.get(embedded_name) {
-        Some(embedded_func) =>
-          embedded_func(RuntimeFunctionContext::{
-            env: self.main.env,
-            context: self,
-            arguments: get_evaluated_args(),
-          })
-        None => Unit
-      }
-    RuntimeClosure(lambda_func, captured_env) =>
-      // 调用闭包：使用专门的闭包调用方法
-      self.call_closure(lambda_func, captured_env, args)
-    ExternFunction(extern_func) =>
-      extern_func(RuntimeFunctionContext::{
-        env: self.main.env,
-        context: self,
-        arguments: get_evaluated_args(),
-      })
-    GlobalEmbedded(embedded_func) =>
-      embedded_func(RuntimeFunctionContext::{
-        env: self.main.env,
-        context: self,
-        arguments: get_evaluated_args(),
-      })
-    NotFound => error("Method:\{long_ident.to_json().stringify()} not found")
-  }
-}
-
 ///| 执行结构体方法调用（返回 RuntimeValue）
-fn ClosureInterpreter::execute_method_call_runtime(
+fn ClosureInterpreter::execute_method_call(
   self : ClosureInterpreter,
   self_value : RuntimeValue,
   method_name : String,
   args : @list.List[@syntax.Argument],
 ) -> RuntimeValue raise ControlFlow {
-  // 处理 TraitObject，提取原始值和类型
-  let (actual_self_value, self_type) = match self_value {
-    TraitObject(original_value, _trait_name) => {
-      // 对于 TraitObject，使用原始值的类型来查找方法
-      let original_type = match original_value {
-        Struct({ val: struct_data, .. }) => {
-          let current_fields = struct_data.keys().to_array()
-          self.main.env.infer_struct_type_from_fields(current_fields)
-        }
-        _ => self.find_variable_type(original_value)
-      }
-      (original_value, original_type)
-    }
-    Struct({ type_info, .. }) =>
-      // 使用公共方法推导类型
-      (self_value, type_info.name)
-    _ => (self_value, self.find_variable_type(self_value))
-  }
-  let cur_env = if self_value
-    is RuntimeValue::Struct({ type_info: { env, .. }, .. }) {
-    env
-  } else {
-    self.main.env
-  }
-  match cur_env.find_method(self_type, method_name) {
+  let self_type = self.current_module.env.find_variable_type(self_value)
+  match self_type.find_method(method_name) {
     Some(func) =>
       // 普通函数，正常调用
       self.with_scope(fn() raise ControlFlow {
         // 手动绑定self参数和其他参数
         match func {
-          Closure(@syntax.Func::Lambda(parameters~, body~, ..), _env) => {
+          Closure(Lambda(parameters~, body~, ..), _env) => {
             // 绑定self参数（第一个参数）
             match parameters {
               @list.More(first_param, tail=rest_params) => {
                 match first_param {
                   @syntax.Parameter::Positional(binder={ name, .. }, ..)
                   | @syntax.Parameter::Labelled(binder={ name, .. }, ..) =>
-                    self.main.env.current_scope().set(name, actual_self_value)
+                    self.main.env.current_scope().set(name, self_value)
                   _ => ()
                 }
                 // 绑定其他参数
@@ -1595,18 +1573,18 @@ fn ClosureInterpreter::execute_method_call_runtime(
         }
       })
     None =>
-      match self.embedded_methods.get(self_type) {
+      match self.embedded_methods.get(self_type.name) {
         Some(type_methods) =>
           match type_methods.get(method_name) {
             Some(embedded_method) => {
               // 准备参数：actual_self_value + 其他参数的求值结果
               let evaluated_args = @list.construct(
-                actual_self_value,
+                self_value,
                 args.map(fn(arg) { self.visit(arg.value) }),
               )
               embedded_method(RuntimeFunctionContext::{
                 context: self,
-                env: self.main.env,
+                mod: self.current_module,
                 arguments: evaluated_args
                 .map(fn(arg) {
                   RuntimeArgument::{ value: arg, kind: Positional }
@@ -1614,52 +1592,25 @@ fn ClosureInterpreter::execute_method_call_runtime(
                 .to_array(),
               })
             }
-            None => error("exec: \{self_type}::\{method_name} not found")
+            None =>
+              error(
+                "exec: \{self_type.get_full_name()}::\{method_name} not found",
+              )
           }
-        None => error("exec: \{self_type}::\{method_name} not found")
+        None =>
+          error("exec: \{self_type.get_full_name()}::\{method_name} not found")
       }
-  }
-}
-
-///| 从表达式中提取类型名称
-fn ClosureInterpreter::find_type(
-  self : ClosureInterpreter,
-  expr : @syntax.Expr,
-) -> String {
-  match expr {
-    Constant(c~, ..) => infer_type_from_constant(c)
-    Record(type_name=Some(type_name), ..) =>
-      match type_name {
-        { name: Ident(name=type_name), .. } => type_name
-        _ => "Unknown"
-      }
-    Record(type_name=None, fields~, ..) => {
-      let current_fields = []
-      for field in fields {
-        current_fields.push(field.label.name)
-      }
-      self.main.env.infer_struct_type_from_fields(current_fields)
-    }
-    Ident(id={ name, .. }, ..) =>
-      match name {
-        Ident(name~) => self.find_variable_type(self.main.env.find(name))
-        _ => "Unknown"
-      }
-    Array(..) => "Array"
-    Group(expr~, ..) => self.find_type(expr)
-    _ => "Unknown"
   }
 }
 
 ///|
-fn RuntimeEnvironment::find_method(
-  self : RuntimeEnvironment,
-  type_name : String,
+fn RuntimeType::find_method(
+  self : RuntimeType,
   method_name : String,
 ) -> RuntimeValue? {
-  let mut current_env = Some(self)
+  let mut current_env = Some(self.env)
   while current_env is Some(env) {
-    if env.struct_methods.get(type_name) is Some(methods) {
+    if env.struct_methods.get(self.name) is Some(methods) {
       if methods.get(method_name) is Some(func) {
         return Some(func)
       }
@@ -1672,20 +1623,17 @@ fn RuntimeEnvironment::find_method(
 ///| 执行静态方法调用（如 Bool::default()）
 fn ClosureInterpreter::execute_static_method_call(
   self : ClosureInterpreter,
-  type_name : String,
+  type_info : RuntimeType,
   method_name : String,
   args : @list.List[@syntax.Argument],
 ) -> RuntimeValue raise ControlFlow {
   // 首先查找用户定义的struct方法
-  match self.main.env.find_method(type_name, method_name) {
+  match type_info.find_method(method_name) {
     Some(func) =>
       // 执行用户定义的静态方法
       return self.with_scope(fn() {
         match func {
-          RuntimeValue::Closure(
-            @syntax.Func::Lambda(parameters~, body~, ..),
-            _env
-          ) => {
+          Closure(Lambda(parameters~, body~, ..), _env) => {
             // 绑定参数（静态方法没有self参数）
             self.bind_function_parameters_runtime(parameters, args)
             // 执行函数体
@@ -1696,7 +1644,7 @@ fn ClosureInterpreter::execute_static_method_call(
       })
     None =>
       // 如果用户方法中没有找到，继续查找嵌入式方法
-      self.execute_embedded_static_method(type_name, method_name, args)
+      self.execute_embedded_static_method(type_info.name, method_name, args)
   }
 }
 
@@ -1718,14 +1666,14 @@ fn ClosureInterpreter::execute_embedded_static_method(
             })
             .to_array()
           embedded_func(RuntimeFunctionContext::{
-            env: self.main.env,
+            mod: self.current_module,
             context: self,
             arguments: evaluated_args,
           })
         }
-        None => error("Embedded Method:\{type_name} not found")
+        None => error("Embedded Method:\{type_name}::\{method_name} not found")
       }
-    None => error("Embedded Method:\{type_name} not found")
+    None => error("Embedded Method:\{type_name}::\{method_name} not found")
   }
 }
 
@@ -1768,45 +1716,208 @@ fn RuntimeEnvironment::infer_struct_type_from_fields(
 }
 
 ///|
-fn ClosureInterpreter::find_variable_type(
-  self : ClosureInterpreter,
+fn RuntimeModule::find_static_type(
+  self : RuntimeModule,
+  name : String,
+) -> RuntimeType {
+  match name {
+    "Bool" => RuntimeType::bool()
+    "Int" =>
+      {
+        pkg: moonbitlang_core_int_module.meta.name,
+        name: "Int",
+        env: moonbitlang_core_int_module.env,
+      }
+    "UInt" =>
+      {
+        pkg: moonbitlang_core_uint_module.meta.name,
+        name: "UInt",
+        env: moonbitlang_core_uint_module.env,
+      }
+    "Int64" =>
+      {
+        pkg: moonbitlang_core_int64_module.meta.name,
+        name: "Int64",
+        env: moonbitlang_core_int64_module.env,
+      }
+    "UInt64" =>
+      {
+        pkg: moonbitlang_core_uint64_module.meta.name,
+        name: "UInt64",
+        env: moonbitlang_core_uint64_module.env,
+      }
+    "Float" =>
+      {
+        pkg: moonbitlang_core_float_module.meta.name,
+        name: "Float",
+        env: moonbitlang_core_float_module.env,
+      }
+    "Double" =>
+      {
+        pkg: moonbitlang_core_double_module.meta.name,
+        name: "Double",
+        env: moonbitlang_core_double_module.env,
+      }
+    "BigInt" =>
+      {
+        pkg: moonbitlang_core_bigint_module.meta.name,
+        name: "BigInt",
+        env: moonbitlang_core_bigint_module.env,
+      }
+    "Char" =>
+      {
+        pkg: moonbitlang_core_char_module.meta.name,
+        name: "Char",
+        env: moonbitlang_core_char_module.env,
+      }
+    "Byte" =>
+      {
+        pkg: moonbitlang_core_byte_module.meta.name,
+        name: "Byte",
+        env: moonbitlang_core_byte_module.env,
+      }
+    "String" =>
+      {
+        pkg: moonbitlang_core_string_module.meta.name,
+        name: "String",
+        env: moonbitlang_core_string_module.env,
+      }
+    "Tuple" =>
+      {
+        pkg: moonbitlang_core_tuple_module.meta.name,
+        name: "Tuple",
+        env: moonbitlang_core_tuple_module.env,
+      }
+    "Array" =>
+      {
+        pkg: moonbitlang_core_array_module.meta.name,
+        name: "Array",
+        env: moonbitlang_core_array_module.env,
+      }
+    "Map" =>
+      {
+        pkg: moonbitlang_core_hashmap_module.meta.name,
+        name: "Map",
+        env: moonbitlang_core_hashmap_module.env,
+      }
+    _ =>
+      {
+        pkg: self.meta.name,
+        name: if self.env.type_definitions.contains(name) {
+          name
+        } else {
+          "Any"
+        },
+        env: self.env,
+      }
+  }
+}
+
+///|
+fn RuntimeEnvironment::find_variable_type(
+  self : RuntimeEnvironment,
   runtime_value : RuntimeValue,
-) -> String {
+) -> RuntimeType {
   match runtime_value {
-    Unit => "Unit"
-    Bool(_) => "Bool"
-    Int(_) => "Int"
-    UInt(_) => "UInt"
-    Int64(_) => "Int64"
-    UInt64(_) => "UInt64"
-    Float(_) => "Float"
-    Double(_) => "Double"
-    BigInt(_) => "BigInt"
-    Char(_) => "Char"
-    Byte(_) => "Byte"
-    String(_) => "String"
-    Tuple(_) => "Tuple"
-    Array(_) => "Array"
-    Map(_) => "Map"
-    Struct(data) => data.type_info.get_full_name()
-    Closure(_) => "Closure"
-    Exception(_) => "Exception"
-    Constructor({ val: (name, _), type_info: { env: env_, .. } }) =>
+    Unit => { pkg: "std", name: "Unit", env: self }
+    Bool(_) =>
+      {
+        pkg: moonbitlang_core_bool_module.meta.name,
+        name: "Bool",
+        env: moonbitlang_core_bool_module.env,
+      }
+    Int(_) =>
+      {
+        pkg: moonbitlang_core_int_module.meta.name,
+        name: "Int",
+        env: moonbitlang_core_int_module.env,
+      }
+    UInt(_) =>
+      {
+        pkg: moonbitlang_core_uint_module.meta.name,
+        name: "UInt",
+        env: moonbitlang_core_uint_module.env,
+      }
+    Int64(_) =>
+      {
+        pkg: moonbitlang_core_int64_module.meta.name,
+        name: "Int64",
+        env: moonbitlang_core_int64_module.env,
+      }
+    UInt64(_) =>
+      {
+        pkg: moonbitlang_core_uint64_module.meta.name,
+        name: "UInt64",
+        env: moonbitlang_core_uint64_module.env,
+      }
+    Float(_) =>
+      {
+        pkg: moonbitlang_core_float_module.meta.name,
+        name: "Float",
+        env: moonbitlang_core_float_module.env,
+      }
+    Double(_) =>
+      {
+        pkg: moonbitlang_core_double_module.meta.name,
+        name: "Double",
+        env: moonbitlang_core_double_module.env,
+      }
+    BigInt(_) =>
+      {
+        pkg: moonbitlang_core_bigint_module.meta.name,
+        name: "BigInt",
+        env: moonbitlang_core_bigint_module.env,
+      }
+    Char(_) =>
+      {
+        pkg: moonbitlang_core_char_module.meta.name,
+        name: "Char",
+        env: moonbitlang_core_char_module.env,
+      }
+    Byte(_) =>
+      {
+        pkg: moonbitlang_core_byte_module.meta.name,
+        name: "Byte",
+        env: moonbitlang_core_byte_module.env,
+      }
+    String(_) =>
+      {
+        pkg: moonbitlang_core_string_module.meta.name,
+        name: "String",
+        env: moonbitlang_core_string_module.env,
+      }
+    Tuple(_) =>
+      {
+        pkg: moonbitlang_core_tuple_module.meta.name,
+        name: "Tuple",
+        env: moonbitlang_core_tuple_module.env,
+      }
+    Array(_) =>
+      {
+        pkg: moonbitlang_core_array_module.meta.name,
+        name: "Array",
+        env: moonbitlang_core_array_module.env,
+      }
+    Map(_) =>
+      {
+        pkg: moonbitlang_core_hashmap_module.meta.name,
+        name: "Map",
+        env: moonbitlang_core_hashmap_module.env,
+      }
+    Struct(data) => data.type_info
+    Closure(_) => { pkg: "std", name: "Closure", env: self }
+    Exception(_) => { pkg: "std", name: "Exception", env: self }
+    Constructor({ val: (name, _), type_info }) =>
       // 将Option构造函数映射到Option类型
       match name {
-        "Some" | "None" => "Option"
-        _ => {
-          let mut current_env = Some(env_)
-          while current_env is Some(env) {
-            if env.type_definitions.get(name) is Some(a) {
-              return a.tycon
-            }
-            current_env = env.parent
+        "Some" | "None" =>
+          {
+            pkg: moonbitlang_core_option_module.meta.name,
+            name: "Option",
+            env: moonbitlang_core_option_module.env,
           }
-          "Any"
-        }
+        _ => type_info
       }
-    TraitObject(value, _) => self.find_variable_type(value) // 返回原始值的类型
   }
 }
 
@@ -1834,29 +1945,27 @@ fn[T] ClosureInterpreter::with_scope(
 fn ClosureInterpreter::infer_return_type_from_expr(
   self : ClosureInterpreter,
   body : @syntax.Expr,
-) -> String {
+) -> RuntimeType {
   match body {
-    Constant(c~, ..) => infer_type_from_constant(c)
-    Unit(..) => "Unit"
-    Array(..) => "Array"
-    Tuple(..) => "Tuple"
-    Record(..) => "Record"
     // 处理函数调用表达式
     Apply(func~, ..) =>
       match func {
-        @syntax.Expr::Ident(id={ name: Ident(name~), .. }, ..) =>
-          self.find_variable_type(self.main.env.find(name))
-        _ => "Any"
+        @syntax.Expr::Ident(id={ name: ident, .. }, ..) =>
+          self.main.with_ident(ident, (mod, _pkg, name) => self.current_module.env.find_variable_type(
+            mod.env.find(name).unwrap_or(Unit),
+          ))
+        _ => RuntimeType::any()
       }
     // 处理 match 表达式
-    Match(..) => "Any"
+    Match(..) => RuntimeType::any()
     Sequence(last_expr~, ..) => self.infer_return_type_from_expr(last_expr)
     Infix(op={ name: Ident(name=op_name), .. }, lhs~, ..) =>
       match op_name {
-        "==" | "!=" | "<" | ">" | "<=" | ">=" | "&&" | "||" => "Bool"
+        "==" | "!=" | "<" | ">" | "<=" | ">=" | "&&" | "||" =>
+          RuntimeType::bool()
         _ => self.infer_return_type_from_expr(lhs)
       }
-    _ => "Any"
+    _ => RuntimeType::any()
   }
 }
 
@@ -1869,7 +1978,7 @@ pub fn ClosureInterpreter::get_function_type_string(
     Closure(func, _env) =>
       // 从函数中提取参数和返回类型信息
       match func {
-        @syntax.Func::Lambda(parameters~, return_type~, body~, ..) => {
+        Lambda(parameters~, return_type~, body~, ..) => {
           let param_strs = []
           for param in parameters {
             let param_str = match param {
@@ -1907,7 +2016,9 @@ pub fn ClosureInterpreter::get_function_type_string(
             Some(t) => "(" + param_strs.join(", ") + ") -> " + type_to_string(t)
             None => {
               // 推断返回类型，对于柯里化函数需要特殊处理
-              let inferred_type = self.infer_return_type_from_expr(body)
+              let inferred_type = self
+                .infer_return_type_from_expr(body)
+                .get_full_name()
               "(" + param_strs.join(", ") + ") -> " + inferred_type
             }
           }

@@ -7,7 +7,21 @@ pub struct RuntimeType {
 
 ///|
 pub fn RuntimeType::get_full_name(self : RuntimeType) -> String {
-  "@" + self.pkg + "." + self.name
+  (if self.pkg == "main" { "" } else { "@" + self.pkg + "." }) + self.name
+}
+
+///|
+pub fn RuntimeType::bool() -> RuntimeType {
+  {
+    pkg: moonbitlang_core_bool_module.meta.name,
+    name: "Bool",
+    env: moonbitlang_core_bool_module.env,
+  }
+}
+
+///|
+pub fn RuntimeType::any() -> RuntimeType {
+  { pkg: "main", name: "Any", env: RuntimeEnvironment::new() }
 }
 
 ///| 带类型信息的值包装器

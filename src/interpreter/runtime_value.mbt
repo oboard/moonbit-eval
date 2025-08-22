@@ -30,9 +30,6 @@ pub(all) enum RuntimeValue {
 
   // 异常处理 - 用于实现raise和try语句
   Exception(String) // 异常信息
-
-  // Trait 对象 - 用于实现 trait casting
-  TraitObject(RuntimeValue, String) // 原始值和 trait 名称
 }
 
 ///|
@@ -116,7 +113,6 @@ pub impl ToJson for RuntimeValue with to_json(self : RuntimeValue) -> Json {
     Closure(f, _) => f.to_json()
     Constructor({ val: (name, args), .. }) => [name, args.to_json()]
     Exception(msg) => ["exception", msg.to_json()]
-    TraitObject(value, _) => value.to_json() // 返回原始值的 JSON 表示
   }
 }
 
@@ -328,28 +324,11 @@ pub(all) struct RuntimeArgument {
   kind : @syntax.ArgumentKind
 }
 
-///| 从常量推导类型
-pub fn infer_type_from_constant(c : @syntax.Constant) -> String {
-  match c {
-    Int(_) => "Int"
-    UInt(_) => "UInt"
-    Int64(_) => "Int64"
-    UInt64(_) => "UInt64"
-    Float(_) => "Float"
-    Double(_) => "Double"
-    Byte(_) => "Byte"
-    Char(_) => "Char"
-    String(_) => "String"
-    Bool(_) => "Bool"
-    Bytes(_) => "Bytes"
-    _ => "Unit"
-  }
-}
-
 ///| 检查值是否为引用类型
 pub fn RuntimeValue::is_reference(self : RuntimeValue) -> Bool {
   match self {
     Struct(_) => true
+    Constructor(_) => true
     _ => false
   }
 }
@@ -406,65 +385,84 @@ pub impl Show for RuntimeValue with to_string(self) -> String {
         let arg_strs = args.map(fn(v) { v.to_string() })
         name + "(" + arg_strs.join(", ") + ")"
       }
-    Closure(func, _env) =>
-      // 从函数中提取参数和返回类型信息
-      match func {
-        @syntax.Func::Lambda(parameters~, return_type~, body~, ..) => {
-          let param_strs = []
-          for param in parameters {
-            let param_str = match param {
-              @syntax.Parameter::Positional(binder~, ty~) =>
-                match ty {
-                  Some(t) => binder.name + ": " + type_to_string(t) // 简化类型显示
-                  None => binder.name
+    // 从函数中提取参数和返回类型信息
+    Closure(func, _env) => {
+      fn infer_func_type(func : @syntax.Func) -> String {
+        match func {
+          @syntax.Func::Lambda(parameters~, return_type~, body~, ..) => {
+            let param_strs = []
+            for param in parameters {
+              let param_str = match param {
+                @syntax.Parameter::Positional(binder~, ty~) =>
+                  match ty {
+                    Some(t) => binder.name + ": " + type_to_string(t) // 简化类型显示
+                    None => binder.name
+                  }
+                @syntax.Parameter::Labelled(binder~, ty~) =>
+                  match ty {
+                    Some(t) => binder.name + "~: " + type_to_string(t)
+                    None => binder.name + "~"
+                  }
+                @syntax.Parameter::Optional(binder~, ty~, default~) => {
+                  let type_str = match ty {
+                    Some(t) => binder.name + "~: " + type_to_string(t)
+                    None => binder.name + "~"
+                  }
+                  // 添加默认值显示
+                  match default {
+                    Constant(c=Int(val), ..) => type_str + " = " + val
+                    _ => type_str
+                  }
                 }
-              @syntax.Parameter::Labelled(binder~, ty~) =>
-                match ty {
-                  Some(t) => binder.name + "~: " + type_to_string(t)
-                  None => binder.name + "~"
-                }
-              @syntax.Parameter::Optional(binder~, ty~, default~) => {
-                let type_str = match ty {
-                  Some(t) => binder.name + "~: " + type_to_string(t)
-                  None => binder.name + "~"
-                }
-                // 添加默认值显示
-                match default {
-                  Constant(c=Int(val), ..) => type_str + " = " + val
-                  _ => type_str
-                }
+                @syntax.Parameter::QuestionOptional(binder~, ty~) =>
+                  match ty {
+                    Some(t) => binder.name + "?: " + type_to_string(t)
+                    None => binder.name + "?"
+                  }
+                @syntax.Parameter::DiscardPositional(..) => "_"
               }
-              @syntax.Parameter::QuestionOptional(binder~, ty~) =>
-                match ty {
-                  Some(t) => binder.name + "?: " + type_to_string(t)
-                  None => binder.name + "?"
+              param_strs.push(param_str)
+            }
+            match return_type {
+              Some(t) =>
+                "(" + param_strs.join(", ") + ") -> " + type_to_string(t)
+              None => {
+                // 对于没有显式返回类型的函数，无法在这里进行复杂的类型推导
+                // 因为这里没有解释器上下文，所以只能进行简单的推导
+                let inferred_type = match body {
+                  Constant(c~, ..) =>
+                    match c {
+                      Int(_) => "Int"
+                      UInt(_) => "UInt"
+                      Int64(_) => "Int64"
+                      UInt64(_) => "UInt64"
+                      Float(_) => "Float"
+                      Double(_) => "Double"
+                      BigInt(_) => "BigInt"
+                      Char(_) => "Char"
+                      Byte(_) => "Byte"
+                      String(_) => "String"
+                      Bool(_) => "Bool"
+                      Bytes(_) => "Bytes"
+                    }
+                  Unit(..) => "Unit"
+                  Array(..) => "Array"
+                  Tuple(..) => "Tuple"
+                  Record(..) => "Record"
+                  Apply(func=Function(func~, ..), ..) => infer_func_type(func)
+                  _ => "Any"
                 }
-              @syntax.Parameter::DiscardPositional(..) => "_"
-            }
-            param_strs.push(param_str)
-          }
-          match return_type {
-            Some(t) => "(" + param_strs.join(", ") + ") -> " + type_to_string(t)
-            None => {
-              // 对于没有显式返回类型的函数，无法在这里进行复杂的类型推导
-              // 因为这里没有解释器上下文，所以只能进行简单的推导
-              let inferred_type = match body {
-                Constant(c~, ..) => infer_type_from_constant(c)
-                Unit(..) => "Unit"
-                Array(..) => "Array"
-                Tuple(..) => "Tuple"
-                Record(..) => "Record"
-                Apply(..) => "Unknown" // 无法在没有解释器上下文的情况下推导
-                _ => "Unit"
+                "(" + param_strs.join(", ") + ") -> " + inferred_type
               }
-              "(" + param_strs.join(", ") + ") -> " + inferred_type
             }
           }
+          _ => "<function>"
         }
-        _ => "<function>"
       }
+
+      infer_func_type(func)
+    }
     Exception(msg) => "exception: " + msg
-    TraitObject(value, _) => value.to_string() // 返回原始值的字符串表示
   }
 }
 
@@ -539,7 +537,6 @@ pub fn RuntimeValue::to_expr(self : RuntimeValue) -> @syntax.Expr {
     Closure(func, _env) => Function(func~, loc=_dummy_loc)
     Constructor(_) => Unit(loc=_dummy_loc, faked=true)
     Exception(_) => Unit(loc=_dummy_loc, faked=true)
-    TraitObject(value, _) => value.to_expr() // 返回原始值的表达式表示
   }
 }
 

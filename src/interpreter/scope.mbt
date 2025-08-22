@@ -6,31 +6,31 @@
 pub fn RuntimeEnvironment::find(
   self : RuntimeEnvironment,
   name : String,
-) -> RuntimeValue {
+) -> RuntimeValue? {
   let mut cur = Some(self)
   // traverse parent environments
   while cur is Some(env) {
     if env.values.get(name) is Some(v) {
-      return v
+      return Some(v)
     }
     cur = env.parent
   }
-  RuntimeValue::Unit
+  None
 }
 
 ///|
 pub fn[T] RuntimeModule::with_ident(
   self : RuntimeModule,
   long_ident : @syntax.LongIdent,
-  func : (RuntimeEnvironment, String, String) -> T raise ControlFlow,
-) -> T raise ControlFlow {
+  func : (RuntimeModule, String, String) -> T raise?,
+) -> T raise? {
   match long_ident {
-    Ident(name~) => func(self.env, self.meta.name, name)
+    Ident(name~) => func(self, self.meta.name, name)
     Dot(pkg~, id~) =>
       if self.deps.get(pkg) is Some(mod) {
-        func(mod.env, pkg, id)
+        func(mod, pkg, id)
       } else {
-        func(self.env, pkg, id)
+        func(self, pkg, id)
       }
   }
 }

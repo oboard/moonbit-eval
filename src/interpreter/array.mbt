@@ -89,7 +89,7 @@ let array_swap_fn : RuntimeFunction = ctx => match ctx.arguments {
 ///| 数组get操作
 let array_get_fn : RuntimeFunction = ctx => match ctx.arguments {
   [{ value: Array(arr), .. }, { value: Int(i), .. }, ..] =>
-    ctx.env.from_option(arr.get(i))
+    ctx.mod.env.from_option(arr.get(i))
   _ => Unit
 }
 
@@ -113,7 +113,7 @@ let array_set_fn : RuntimeFunction = ctx => match ctx.arguments {
 
 ///| 数组pop操作
 let array_pop_fn : RuntimeFunction = ctx => match ctx.arguments {
-  [{ value: Array(arr), .. }, ..] => ctx.env.from_option(arr.pop())
+  [{ value: Array(arr), .. }, ..] => ctx.mod.env.from_option(arr.pop())
   _ => Unit
 }
 
@@ -141,7 +141,7 @@ let array_contains_fn : RuntimeFunction = ctx => match ctx.arguments {
 ///| 数组search操作
 let array_search_fn : RuntimeFunction = ctx => match ctx.arguments {
   [{ value: Array(arr), .. }, { value: val, .. }, ..] =>
-    ctx.env.from_option(arr.search(val).map(fn(i) { RuntimeValue::Int(i) }))
+    ctx.mod.env.from_option(arr.search(val).map(fn(i) { RuntimeValue::Int(i) }))
   _ => Unit
 }
 
@@ -260,7 +260,7 @@ let array_search_by_fn : RuntimeFunction = ctx => match ctx.arguments {
       }
       (try? ctx.context.call(f, @list.of([arg]))) is Ok(Bool(true))
     })
-    ctx.env.from_option(index.map(Int(_)))
+    ctx.mod.env.from_option(index.map(Int(_)))
   }
   _ => Unit
 }

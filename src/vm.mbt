@@ -17,11 +17,7 @@ pub impl Show for EvalResult with output(self : EvalResult, logger : &Logger) ->
 
 ///|
 pub impl Show for EvalResult with to_string(self : EvalResult) -> String {
-  match self.value {
-    RuntimeValue::Closure(_) =>
-      self.interpreter.get_function_type_string(self.value)
-    _ => self.value.to_string()
-  }
+  self.value.to_string()
 }
 
 ///|
@@ -63,9 +59,9 @@ pub fn expr_to_string(expr : @syntax.Expr) -> String {
           @syntax.Type::Name(constr_id~, ..) =>
             match constr_id.id {
               @syntax.LongIdent::Ident(name~) => name
-              _ => "Unknown"
+              _ => "Any"
             }
-          _ => "Unknown"
+          _ => "Any"
         }
       }
 
