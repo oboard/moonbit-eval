@@ -38,11 +38,21 @@ inspect(vm.eval("match (1, 2) { (a, b) => a + b }"), content="3")
 | Expressions (arithmetic, logical, comparison) | ✅ | Complete expression evaluation |
 | Variables (let, let mut) | ✅ | Immutable and mutable variables |
 | Assignment | ✅ | Variable reassignment and shadowing |
+| Multiline strings | ✅ | #\|syntax for multiline string literals |
+| String interpolation | ✅ | \{variable} syntax in string literals |
+| Type constraints | ✅ | (value : Type) syntax for explicit typing |
 | **Control Flow** | | |
 | If-else | ✅ | Conditional expressions |
 | For loops | ✅ | C-style for loops with continue/break |
 | While loops | ✅ | While loop constructs with else clause |
 | Loop control | ✅ | Continue and break statements |
+| Guard expressions | ✅ | guard condition else { action } syntax |
+| Is expressions | ✅ | Pattern matching with 'is' operator |
+| Defer expressions | ✅ | defer statement for cleanup code |
+| Return expressions | ✅ | Early return from functions |
+| Raise expressions | ✅ | Exception throwing with raise |
+| Try-catch expressions | ✅ | Exception handling with try-catch |
+| Loop expressions | ✅ | loop pattern matching with break/continue |
 | **Functions** | | |
 | Function definitions | ✅ | Named functions with parameters |
 | Named parameters | ✅ | Named and optional parameters |
@@ -56,10 +66,15 @@ inspect(vm.eval("match (1, 2) { (a, b) => a + b }"), content="3")
 | Arrays | ✅ | Array creation, indexing, assignment |
 | Array methods | ✅ | length, get, push, pop, contains, slice, concat, join |
 | Array boolean methods | ✅ | any, all operations |
+| Array spread syntax | ✅ | [..array1, ..array2] syntax |
+| Array slice operations | ✅ | arr[start:end], arr[start:], arr[:end] syntax |
+| Array augmented assignment | ✅ | arr[i] += value, arr[i] *= value syntax |
 | Tuples | ✅ | Tuple creation, access, destructuring |
 | Structs | ✅ | Custom data types with methods |
 | Mutable struct fields | ✅ | Field mutation support |
 | Nested struct references | ✅ | Reference semantics for nested structures |
+| Record update syntax | ✅ | { ..record, field: new_value } syntax |
+| Map literals | ✅ | { "key": value } syntax for map creation |
 | **Pattern Matching** | | |
 | Basic patterns | ✅ | Constants, variables, wildcards |
 | Tuple patterns | ✅ | Destructuring tuples |
@@ -88,11 +103,14 @@ inspect(vm.eval("match (1, 2) { (a, b) => a + b }"), content="3")
 | **Advanced Features** | | |
 | Type system | ✅ | Basic type checking and inference |
 | Static method calls | ✅ | Class::method() syntax |
-| Pipe operator | ✅ | |> operator for function chaining |
+| Pipe operator | ✅ | \|> operator for function chaining |
 | Function aliases | ✅ | Alias support (e.g., not for %bool_not) |
 | Traits | ✅ | Interface definitions |
-| Packages | ✅ | Module system |
+| Trait as expressions | ✅ | (value as Trait) syntax for trait casting |
+| Packages | 🟡 | Module system with @package.function syntax (no trait, trait derive, operator overloading) |
+| Cross-package method calls | ✅ | Method calls across different packages |
 | Error handling | ✅ | Result type error handling |
+| Group expressions | ✅ | Parenthesized expressions for precedence |
 | **Not Yet Supported** | | |
 | For-in loops | ❌ | Iterator-based loops (commented out in tests) |
 | Async/await | ❌ | Asynchronous programming |
