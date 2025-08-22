@@ -987,26 +987,25 @@ pub fn ClosureInterpreter::visit(
     Raise(err_value~, ..) => raise Raise(self.visit(err_value))
 
     // 处理 Loop 表达式
-    Loop(body~, ..) => {
-      // 简化实现：执行循环体直到遇到 break
-      let mut loop_result = Unit
-      let mut should_break = false
-      while !should_break {
-        for case in body {
-          (self.visit(case.body) catch {
-            Break(value) => {
-              loop_result = value.unwrap_or(Unit)
-              should_break = true
-              break
-            }
-            Continue(_) => continue
-            Return(value) => return value
-            _ => Unit
-          })
-          |> ignore
-        }
+    Loop(args~, body~, ..) => {
+      let mut arg = Tuple(args.map(arg => self.visit(arg)).to_array())
+      let cases = body.map(case => @syntax.Case::{
+        pattern: @syntax.Pattern::Tuple(pats=case.patterns, loc=dummy_loc()),
+        body: case.body,
+        guard_: None,
+      })
+      while true {
+        (self.execute_match_runtime(arg, cases) catch {
+          Break(value) => return value.unwrap_or(Unit)
+          Continue(arr) => {
+            arg = Tuple(arr)
+            Unit
+          }
+          e => raise e
+        })
+        |> ignore
       }
-      loop_result
+      Unit
     }
 
     // 处理 Try 表达式

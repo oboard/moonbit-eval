@@ -805,8 +805,9 @@ test "44. loop_expressions" {
     .to_string(),
     "(xs: @list.List[Int]) -> Int",
   )
-  // assert_eq(vm.eval("@list.from_array([1, 2, 3])").to_string(), "()")
-  // assert_eq(vm.eval("sum(@list.from_array([1, 2, 3]))").to_string(), "6")
+  assert_eq(vm.eval("let list = @list.from_array([1, 2, 3])").to_string(), "()")
+  assert_eq(vm.eval("list").to_string(), "More(1, More(2, More(3, Empty)))")
+  assert_eq(vm.eval("sum(list)").to_string(), "6")
 }
 
 ///|
