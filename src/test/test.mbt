@@ -1496,4 +1496,6 @@ test "cross_package_method_calling" {
     "More(1, More(2, More(3, Empty)))",
   )
   assert_eq(vm.eval("list.to_array()").to_string(), "[1, 2, 3]")
+  assert_eq(vm.eval("let arr1 : Array[Int] = [1, 2, 3, 4, 5]").to_string(), "()")
+  assert_eq(vm.eval("arr1.length()").to_string(), "5")
 }
