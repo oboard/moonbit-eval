@@ -218,9 +218,9 @@ test "18. defer_expressions" {
     vm
     .eval(
       (
-        #|defer println("第一处 defer")
-        #|defer println("第二处 defer")
-        #|println("做些事情")
+        #|defer println("First defer")
+        #|defer println("Second defer") 
+        #|println("Do something")
       ),
     )
     .to_string(),
@@ -1496,6 +1496,56 @@ test "cross_package_method_calling" {
     "More(1, More(2, More(3, Empty)))",
   )
   assert_eq(vm.eval("list.to_array()").to_string(), "[1, 2, 3]")
-  assert_eq(vm.eval("let arr1 : Array[Int] = [1, 2, 3, 4, 5]").to_string(), "()")
+  assert_eq(
+    vm.eval("let arr1 : Array[Int] = [1, 2, 3, 4, 5]").to_string(),
+    "()",
+  )
   assert_eq(vm.eval("arr1.length()").to_string(), "5")
+}
+
+///|
+test "45. map_operations" {
+  let vm = MoonBitVM::new()
+  // Test simple Map::of creation first
+  inspect(vm.eval("Map::of([])"), content="{}")
+
+  // Test map literal creation
+  inspect(
+    vm.eval("let map1 = { \"key1\": 1, \"key2\": 2, \"key3\": 3 }"),
+    content="()",
+  )
+  inspect(vm.eval("map1"), content="{\"key1\": 1, \"key2\": 2, \"key3\": 3}")
+  // Test map length
+
+  // Test map access
+  inspect(vm.eval("map1[\"key1\"]"), content="1")
+
+  // Test Map::of creation
+  inspect(
+    vm.eval("let map2 = Map::of([(\"key1\", 1), (\"key2\", 2), (\"key3\", 3)])"),
+    content="()",
+  )
+  // inspect(vm.eval("map1 == map2"), content="true")
+
+  // Test map update
+  inspect(vm.eval("map1[\"key1\"] = 10", log=true), content="()")
+  inspect(vm.eval("map1"), content="{\"key1\": 10, \"key2\": 2, \"key3\": 3}")
+}
+
+///|
+test "46. foreach_loop" {
+  let vm = MoonBitVM::new()
+  // Test simple for-in loop with array
+  inspect(
+    vm.eval(
+      "let arr = [1, 2, 3]; let sum = 0; for x in arr { sum = sum + x }; sum",
+    ),
+    content="6",
+  )
+
+  // Test for-in loop with range
+  inspect(
+    vm.eval("let sum = 0; for i in 0..<3 { sum = sum + i }; sum"),
+    content="3",
+  )
 }

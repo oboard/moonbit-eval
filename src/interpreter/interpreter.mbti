@@ -37,6 +37,8 @@ let int_methods : Map[String, (RuntimeFunctionContext) -> RuntimeValue raise Con
 
 fn is_comparison_op(String) -> Bool
 
+let map_methods : Map[String, (RuntimeFunctionContext) -> RuntimeValue raise ControlFlow]
+
 let option_methods : Map[String, (RuntimeFunctionContext) -> RuntimeValue raise ControlFlow]
 
 fn parse_code_to_expr(String) -> Result[@syntax.Expr, String]
@@ -79,6 +81,8 @@ fn ClosureInterpreter::call(Self, @syntax.Func, @list.List[@syntax.Argument]) ->
 fn ClosureInterpreter::call_closure(Self, @syntax.Func, RuntimeModule, RuntimeEnvironment, @list.List[@syntax.Argument]) -> RuntimeValue raise ControlFlow
 fn ClosureInterpreter::constants_equal(Self, @syntax.Constant, @syntax.Constant) -> Bool
 fn ClosureInterpreter::constants_equal_expr(Self, @syntax.Expr, @syntax.Expr) -> Bool
+#callsite(autofill(loc))
+fn[A] ClosureInterpreter::error(Self, String, loc~ : SourceLoc) -> A
 fn ClosureInterpreter::execute_match(Self, @syntax.Expr, @list.List[@syntax.Case]) -> @syntax.Expr raise ControlFlow
 fn ClosureInterpreter::execute_match_runtime(Self, RuntimeValue, @list.List[@syntax.Case]) -> RuntimeValue raise ControlFlow
 fn ClosureInterpreter::get_function_type_string(Self, RuntimeValue) -> String

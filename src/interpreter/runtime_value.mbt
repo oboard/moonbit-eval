@@ -349,7 +349,17 @@ pub impl Show for RuntimeValue with output(self, logger : &Logger) -> Unit {
 ///| 将RuntimeValue转换为字符串表示
 pub impl Show for RuntimeValue with to_string(self) -> String {
   match self {
-    Map(m) => m.to_string()
+    Map(m) => {
+      let parts = []
+      m.each(fn(key, val) {
+        let key_str = match key {
+          String(s) => "\"" + s + "\""
+          _ => key.to_string()
+        }
+        parts.push(key_str + ": " + val.to_string())
+      })
+      "{" + parts.join(", ") + "}"
+    }
     Unit => "()"
     Bool(b) => b.to_string()
     Int(i) => i.to_string()

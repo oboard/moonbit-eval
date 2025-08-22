@@ -137,6 +137,7 @@ let core_embedded_methods : Map[String, Map[String, RuntimeFunction]] = {
   },
   "Array": array_methods,
   "Option": option_methods,
+  "Map": map_methods,
 }
 
 ///|

@@ -237,7 +237,7 @@ pub fn ClosureInterpreter::top_visit(
       self.main.env.traits.set(decl.name.name, decl)
       Unit
     }
-    _ => error("TopExpr: unimplemented:" + node.to_json().stringify())
+    _ => self.error("TopExpr: unimplemented:" + node.to_json().stringify())
   }
   // TopTest(_) => ...
   // TopImplRelation(_) => ...
@@ -434,10 +434,14 @@ pub fn ClosureInterpreter::visit(
       let array_value = self.visit(array)
       match array_value {
         Array(arr) => {
-          let start = start_index.map(expr => self.visit(expr) catch {
-            _ => Unit
-          })
-          let end = end_index.map(expr => self.visit(expr) catch { _ => Unit })
+          let start = match start_index {
+            Some(expr) => Some(self.visit(expr))
+            _ => None
+          }
+          let end = match end_index {
+            Some(expr) => Some(self.visit(expr))
+            _ => None
+          }
           Array(
             (match (start, end) {
               (Some(Int(start)), Some(Int(end))) => arr[start:end]
@@ -462,6 +466,11 @@ pub fn ClosureInterpreter::visit(
             }
             _ => ()
           }
+        }
+        Map(map) => {
+          let index = self.visit(index)
+          let value = self.visit(value)
+          map.set(index, value)
         }
         _ => ()
       }
@@ -677,13 +686,13 @@ pub fn ClosureInterpreter::visit(
         (Struct({ val: fields, .. }), Label(label)) =>
           match fields.get(label.name) {
             Some(field_value) => field_value
-            None => error("Field: not found")
+            None => self.error("Field: not found")
           }
         (Tuple(values), Index(tuple_index~, ..)) =>
           safe_index_access(values, tuple_index)
         (Array(values), Index(tuple_index~, ..)) =>
           safe_index_access(values, tuple_index)
-        _ => error("Field: not implemented")
+        _ => self.error("Field: not implemented")
       }
     }
 
@@ -706,8 +715,10 @@ pub fn ClosureInterpreter::visit(
         (Array(values), Int(index_num)) => safe_index_access(values, index_num)
         (String(values), Int(index_num)) => Int(values[index_num])
         (Map(values), index) =>
-          values.get(index).unwrap_or_else(fn() { error("MapGet: not found") })
-        _ => error("ArrayGet: not implemented")
+          values
+          .get(index)
+          .unwrap_or_else(fn() { self.error("MapGet: not found") })
+        _ => self.error("ArrayGet: not implemented")
       }
     }
 
@@ -1075,7 +1086,7 @@ pub fn ClosureInterpreter::visit(
           // 返回新的结构体
           Struct({ val: new_fields, type_info: original_ref.type_info })
         }
-        _ => error("RecordUpdate: expected struct")
+        _ => self.error("RecordUpdate: expected struct")
       }
     }
     Method(type_name~, method_name~, ..) =>
@@ -1086,9 +1097,10 @@ pub fn ClosureInterpreter::visit(
           Some(methods) =>
             match methods.get(method_name.name) {
               Some(func) => func
-              None => error("Method:\{ty_name}:\{method_name.name} not found")
+              None =>
+                self.error("Method:\{ty_name}:\{method_name.name} not found")
             }
-          None => error("Method:\{ty_name} not found")
+          None => self.error("Method:\{ty_name} not found")
         }
       })
     Map(elems~, ..) => {
@@ -1118,7 +1130,108 @@ pub fn ClosureInterpreter::visit(
     }
     Constraint(expr~, ..) => self.visit(expr)
     Unit(_) => Unit
-    _ => error("visit: unimplemented " + node.to_json().stringify())
+
+    // 处理 ForEach 表达式 (for i in expr)
+    ForEach(binders~, expr~, body~, ..) =>
+      self.with_scope(fn() {
+        let iterable_value = self.visit(expr)
+        match iterable_value {
+          Array(arr) =>
+            for i = 0; i < arr.length(); i = i + 1 {
+              // 绑定循环变量 - 处理多个binder的情况
+              match binders {
+                @list.List::More(Some(binder), tail=@list.List::Empty) =>
+                  // 单个变量绑定
+                  self.main.env.set(binder.name, arr[i])
+                _ =>
+                  // 多个变量绑定或其他情况，暂时只绑定第一个
+                  match binders {
+                    @list.List::More(Some(binder), tail=_) =>
+                      self.main.env.set(binder.name, arr[i])
+                    _ => ()
+                  }
+              }
+              // 执行循环体
+              (self.visit(body) catch {
+                Break(value) => return value.unwrap_or(Unit)
+                Continue(_) => continue
+                e => raise e
+              })
+              |> ignore
+            }
+          _ =>
+            // 处理范围表达式，如 0..<length
+            match expr {
+              Infix(op~, lhs~, rhs~, ..) =>
+                match op.name {
+                  Ident(name="..<") => {
+                    let start_val = self.visit(lhs)
+                    let end_val = self.visit(rhs)
+                    match (start_val, end_val) {
+                      (Int(start), Int(end)) =>
+                        for i = start; i < end; i = i + 1 {
+                          // 绑定循环变量
+                          match binders {
+                            @list.List::More(
+                              Some(binder),
+                              tail=@list.List::Empty
+                            ) => self.main.env.set(binder.name, Int(i))
+                            _ =>
+                              match binders {
+                                @list.List::More(Some(binder), tail=_) =>
+                                  self.main.env.set(binder.name, Int(i))
+                                _ => ()
+                              }
+                          }
+                          // 执行循环体
+                          (self.visit(body) catch {
+                            Break(value) => return value.unwrap_or(Unit)
+                            Continue(_) => continue
+                            e => raise e
+                          })
+                          |> ignore
+                        }
+                      _ => ()
+                    }
+                  }
+                  Ident(name="..=") => {
+                    let start_val = self.visit(lhs)
+                    let end_val = self.visit(rhs)
+                    match (start_val, end_val) {
+                      (Int(start), Int(end)) =>
+                        for i = start; i <= end; i = i + 1 {
+                          // 绑定循环变量
+                          match binders {
+                            @list.List::More(
+                              Some(binder),
+                              tail=@list.List::Empty
+                            ) => self.main.env.set(binder.name, Int(i))
+                            _ =>
+                              match binders {
+                                @list.List::More(Some(binder), tail=_) =>
+                                  self.main.env.set(binder.name, Int(i))
+                                _ => ()
+                              }
+                          }
+                          // 执行循环体
+                          (self.visit(body) catch {
+                            Break(value) => return value.unwrap_or(Unit)
+                            Continue(_) => continue
+                            e => raise e
+                          })
+                          |> ignore
+                        }
+                      _ => ()
+                    }
+                  }
+                  _ => ()
+                }
+              _ => ()
+            }
+        }
+        Unit
+      })
+    _ => self.error("visit: unimplemented " + node.to_json().stringify())
   }
 }
 
@@ -1135,7 +1248,7 @@ fn ClosureInterpreter::interp_string(
       Source({ source, .. }) =>
         match parse_code_to_expr(source) {
           Ok(expr) => buffer.write_string(self.visit(expr).to_string())
-          Err(msg) => error(msg)
+          Err(msg) => self.error(msg)
         }
     }
   }
@@ -1610,7 +1723,8 @@ fn ClosureInterpreter::execute_function_by_name(
           context: self,
           arguments: get_evaluated_args(),
         })
-      NotFound => error("Method:\{long_ident.to_json().stringify()} not found")
+      NotFound =>
+        self.error("Method:\{long_ident.to_json().stringify()} not found")
     }
   })
 }
@@ -1672,12 +1786,14 @@ fn ClosureInterpreter::execute_method_call(
               })
             }
             None =>
-              error(
+              self.error(
                 "exec: \{self_type.get_full_name()}::\{method_name} not found",
               )
           }
         None =>
-          error("exec: \{self_type.get_full_name()}::\{method_name} not found")
+          self.error(
+            "exec: \{self_type.get_full_name()}::\{method_name} not found",
+          )
       }
   }
 }
@@ -1750,9 +1866,10 @@ fn ClosureInterpreter::execute_embedded_static_method(
             arguments: evaluated_args,
           })
         }
-        None => error("Embedded Method:\{type_name}::\{method_name} not found")
+        None =>
+          self.error("Embedded Method:\{type_name}::\{method_name} not found")
       }
-    None => error("Embedded Method:\{type_name}::\{method_name} not found")
+    None => self.error("Embedded Method:\{type_name}::\{method_name} not found")
   }
 }
 
@@ -1875,9 +1992,9 @@ fn RuntimeModule::find_static_type(
       }
     "Map" =>
       {
-        pkg: moonbitlang_core_hashmap_module.meta.name,
+        pkg: moonbitlang_core_builtin_module.meta.name,
         name: "Map",
-        env: moonbitlang_core_hashmap_module.env,
+        env: moonbitlang_core_builtin_module.env,
       }
     "Option" =>
       {
