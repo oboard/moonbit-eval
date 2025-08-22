@@ -20,26 +20,18 @@ pub(all) enum InterpreterState {
 ///|
 pub fn ClosureInterpreter::new(core~ : Bool = true) -> ClosureInterpreter {
   let main = {
+    ..moonbitlang_core_builtin_module,
     meta: ModuleMeta::new("main"),
-    env: {
-      traits: {},
-      fn_aliases: if core {
-        core_fn_aliases
-      } else {
-        {}
-      },
-      struct_methods: {},
-      type_definitions: {},
-      type_environment: TypeEnvironment::new(),
-      mutable_vars: {},
-      values: {},
-      parent: None,
-    },
     deps: if core {
       core_modules
     } else {
       {}
     },
+  }
+  if core {
+    for name, a in core_fn_aliases {
+      main.env.fn_aliases.set(name, a)
+    }
   }
   {
     extern_fns: {},
@@ -1799,6 +1791,12 @@ fn RuntimeModule::find_static_type(
         pkg: moonbitlang_core_hashmap_module.meta.name,
         name: "Map",
         env: moonbitlang_core_hashmap_module.env,
+      }
+    "Option" =>
+      {
+        pkg: moonbitlang_core_option_module.meta.name,
+        name: "Option",
+        env: moonbitlang_core_option_module.env,
       }
     _ =>
       {

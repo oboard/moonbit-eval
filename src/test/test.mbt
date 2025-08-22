@@ -1085,7 +1085,7 @@ test "constructor_patterns" {
 ///|
 test "option_basics" {
   let vm = MoonBitVM::new()
-  assert_eq(vm.eval("Some(5)").to_string(), "Some(5)")
+  assert_eq(vm.eval("@option.Some(5)").to_string(), "Some(5)")
   assert_eq(vm.eval("Some(5)").to_string(), "Some(5)")
   assert_eq(vm.eval("None").to_string(), "None")
   assert_eq(vm.eval("Some(5).unwrap()").to_string(), "5")
@@ -1095,7 +1095,7 @@ test "option_basics" {
 test "option_pattern_matching" {
   let vm = MoonBitVM::new()
   inspect(
-    vm.eval("match Option::Some(5) { Some(x) => x, Option::None => 0 }"),
+    vm.eval("match Some(5) { Some(x) => x, None => 0 }"),
     content="5",
   )
   inspect(
@@ -1495,7 +1495,7 @@ test "cmp" {
 test "cross_package_method_calling" {
   let vm = MoonBitVM::new()
   let r = vm.eval("@list.new()")
-  @json.inspect(r.value, content=(["Empty",[]]))
+  @json.inspect(r.value, content=["Empty", []])
   assert_eq(vm.eval("@list.new()").to_string(), "Empty")
   assert_eq(vm.eval("@list.new().to_array()").to_string(), "[]")
 }
