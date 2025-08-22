@@ -18,11 +18,12 @@ OUTPUT_FILE = "src/interpreter/core_modules.mbt"
 
 def extract_all_items(mbt_content: str) -> List[Tuple[str, str, str, str]]:
     """
-    Extract all items (functions and constants) from .mbt file content.
+    Extract all items (functions, constants, and enums) from .mbt file content.
     Returns list of (item_name, item_type, item_signature, item_body) tuples.
-    item_type can be 'function' or 'constant'
+    item_type can be 'function', 'constant', or 'enum'
     For functions: item_signature contains the full function signature, item_body contains the body
     For constants: item_signature is empty, item_body contains the value
+    For enums: item_signature is empty, item_body contains the complete enum definition
     """
     items = []
     
@@ -43,6 +44,47 @@ def extract_all_items(mbt_content: str) -> List[Tuple[str, str, str, str]]:
                 const_name = const_match.group(1)
                 const_value = const_match.group(2)
                 items.append((const_name, 'constant', '', const_value))
+        
+        # Look for enum declarations at top level (must be at column 0 and brace_depth == 0)
+        elif not original_line.startswith(' ') and not original_line.startswith('\t') and brace_depth == 0 and (line.startswith('enum') or line.startswith('pub enum')):
+            # Extract enum name - handle generic enums
+            enum_match = re.match(r'(?:pub\s+)?enum\s+(\w+)(?:\[.*?\])?', line)
+            if not enum_match:
+                i += 1
+                continue
+                
+            enum_name = enum_match.group(1)
+            
+            # Find the complete enum definition - preserve original formatting
+            current_enum_lines = [line]
+            enum_brace_count = line.count('{') - line.count('}')
+            
+            # If no opening brace on this line, continue reading until we find it
+            if '{' not in line:
+                i += 1
+                while i < len(lines) and '{' not in lines[i]:
+                    current_enum_lines.append(lines[i])
+                    i += 1
+                if i < len(lines):
+                    current_enum_lines.append(lines[i])
+                    enum_brace_count = lines[i].count('{') - lines[i].count('}')
+            
+            # Continue reading until braces are balanced
+            i += 1
+            while i < len(lines) and enum_brace_count > 0:
+                current_line = lines[i]
+                current_enum_lines.append(current_line)
+                enum_brace_count += current_line.count('{') - current_line.count('}')
+                # Also update the main brace_depth
+                brace_depth += current_line.count('{') - current_line.count('}')
+                i += 1
+            
+            # Store the complete enum definition
+            complete_enum = '\n'.join(current_enum_lines)
+            items.append((enum_name, 'enum', '', complete_enum))
+            
+            # i is already incremented in the while loop, so continue
+            continue
         
         # Look for function declarations at top level (must be at column 0 and brace_depth == 0)
         elif not original_line.startswith(' ') and not original_line.startswith('\t') and (line.startswith('fn') or line.startswith('pub fn')) and '{' in line:
@@ -132,10 +174,10 @@ def read_module_info(module_dir: Path) -> Dict:
             with open(mbt_file, 'r', encoding='utf-8') as f:
                 content = f.read()
                 items = extract_all_items(content)
-                # Keep the 4-tuple structure for functions, 3-tuple for constants
+                # Keep the 4-tuple structure for functions and enums, 3-tuple for constants
                 for item_name, item_type, item_signature, item_body in items:
-                    if item_type == 'function':
-                        # For functions, keep signature and body separate
+                    if item_type == 'function' or item_type == 'enum':
+                        # For functions and enums, keep signature and body separate
                         all_items.append((item_name, item_type, item_signature, item_body))
                     else:
                         # For constants, use item_body directly (3-tuple)
@@ -219,25 +261,43 @@ def generate_module_code(module_info: Dict) -> str:
                 else:
                     escaped_body = item_body.replace('\\', '\\\\').replace('"', '\\"')
                     values_entries.append(f'      "{item_name}": ({prefix}, String("{escaped_body}"))')
-        elif len(item) == 4:  # Functions: (name, type, signature, body)
+        elif len(item) == 4:  # Functions or Enums: (name, type, signature, body)
             item_name, item_type, item_signature, item_body = item
-            # Check if function has non-self parameters
-            # For functions with parameters, use the complete function definition
-            # Combine signature and body
-            complete_func = f"{item_signature} {{ {item_body} }}"
-            # Split into lines and add #| prefix to each line
-            lines = complete_func.split('\n')
-            formatted_lines = []
-            for line in lines:
-                # Keep original indentation but escape quotes and backslashes
-                if line.strip():  # Only process non-empty lines
-                    escaped_line = line.replace('\\', '\\\\')
-                    escaped_line = escaped_line.replace('"', '\\"')
-                    formatted_lines.append(f'        #|{escaped_line}')
             
-            if formatted_lines:
-                multiline_body = '\n'.join(formatted_lines)
-                values_entries.append(f'      "{item_name}": build(\n        (\n{multiline_body}\n        ),\n      )')
+            if item_type == 'enum':
+                # For enums, item_body contains the complete enum definition
+                complete_enum = item_body
+                # Split into lines and add #| prefix to each line
+                lines = complete_enum.split('\n')
+                formatted_lines = []
+                for line in lines:
+                    # Keep original indentation but escape quotes and backslashes
+                    if line.strip():  # Only process non-empty lines
+                        escaped_line = line.replace('\\', '\\\\')
+                        escaped_line = escaped_line.replace('"', '\\"')
+                        formatted_lines.append(f'        #|{escaped_line}')
+                
+                if formatted_lines:
+                    multiline_body = '\n'.join(formatted_lines)
+                    values_entries.append(f'      "{item_name}": build(\n        (\n{multiline_body}\n        ),\n      )')
+            
+            elif item_type == 'function':
+                # For functions with parameters, use the complete function definition
+                # Combine signature and body
+                complete_func = f"{item_signature} {{ {item_body} }}"
+                # Split into lines and add #| prefix to each line
+                lines = complete_func.split('\n')
+                formatted_lines = []
+                for line in lines:
+                    # Keep original indentation but escape quotes and backslashes
+                    if line.strip():  # Only process non-empty lines
+                        escaped_line = line.replace('\\', '\\\\')
+                        escaped_line = escaped_line.replace('"', '\\"')
+                        formatted_lines.append(f'        #|{escaped_line}')
+                
+                if formatted_lines:
+                    multiline_body = '\n'.join(formatted_lines)
+                    values_entries.append(f'      "{item_name}": build(\n        (\n{multiline_body}\n        ),\n      )')
             
     values_map = ",\n".join(values_entries)
     print(dependencies)
@@ -310,7 +370,8 @@ def main():
                 generated_modules.append(module_info)
                 functions_count = len([item for item in module_info['items'] if item[1] == 'function'])
                 constants_count = len([item for item in module_info['items'] if item[1] == 'constant'])
-                print(f"  Generated {functions_count} functions, {constants_count} constants")
+                enums_count = len([item for item in module_info['items'] if item[1] == 'enum'])
+                print(f"  Generated {functions_count} functions, {constants_count} constants, {enums_count} enums")
         else:
             print(f"  No public items found")
     

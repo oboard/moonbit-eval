@@ -624,11 +624,7 @@ pub fn ClosureInterpreter::visit(
             let constr_name = constr.name.name
             Constructor({
               val: (constr_name, arg_values),
-              type_info: {
-                pkg: self.current_module.meta.name,
-                name: constr_name,
-                env: self.current_module.env,
-              },
+              type_info: self.current_module.find_static_type(constr_name),
             })
           }
           // 处理静态方法调用，如 Bool::default()
@@ -1801,8 +1797,8 @@ fn RuntimeModule::find_static_type(
     _ =>
       {
         pkg: self.meta.name,
-        name: if self.env.type_definitions.contains(name) {
-          name
+        name: if self.env.type_definitions.get(name) is Some(decl) {
+          decl.tycon
         } else {
           "Any"
         },

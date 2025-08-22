@@ -3668,6 +3668,19 @@ let moonbitlang_core_builtin_module : RuntimeModule = RuntimeModule::new(
           #|pub fn Byte::to_double(self : Byte) -> Double { self.to_int().to_double() }
         ),
       ),
+      "Json": build(
+        (
+          #|pub enum Json {
+          #|  Null
+          #|  True
+          #|  False
+          #|  Number(Double, repr~ : String?) // 1.0000000000000000000e100 
+          #|  String(String)
+          #|  Array(Array[Json])
+          #|  Object(Map[String, Json])
+          #|}
+        ),
+      ),
       "null": build(
         (
           #|pub fn Json::null() -> Json { return Null }
@@ -13391,6 +13404,14 @@ let moonbitlang_core_immut_sorted_map_module : RuntimeModule = RuntimeModule::ne
           #|pub fn[K : Show, V : ToJson] to_json(self : T[K, V]) -> Json { ToJson::to_json(self) }
         ),
       ),
+      "T": build(
+        (
+          #|enum T[K, V] {
+          #|  Empty
+          #|  Tree(K, value~ : V, size~ : Int, T[K, V], T[K, V])
+          #|}
+        ),
+      ),
       "new": build(
         (
           #|fn[K, V] InorderIterator::new(root : T[K, V]) -> InorderIterator[K, V] { let it = InorderIterator([])
@@ -13440,6 +13461,14 @@ let moonbitlang_core_immut_sorted_set_module : RuntimeModule = RuntimeModule::ne
       "of": build(
         (
           #|pub fn[A : Compare] T::of(array : FixedArray[A]) -> T[A] { of(array) }
+        ),
+      ),
+      "T": build(
+        (
+          #|enum T[A] {
+          #|  Empty
+          #|  Node(left~ : T[A], right~ : T[A], size~ : Int, value~ : A)
+          #|}
         ),
       ),
       "iter": build(
@@ -14277,6 +14306,15 @@ let moonbitlang_core_json_module : RuntimeModule = RuntimeModule::new(
           #|    }
           #|  }
           #|  buf.to_string() }
+        ),
+      ),
+      "JsonPath": build(
+        (
+          #|enum JsonPath {
+          #|  Root
+          #|  Key(JsonPath, mut key~ : String)
+          #|  Index(JsonPath, mut index~ : Int)
+          #|} derive(Eq)
         ),
       ),
       "add_index": build(
@@ -15236,6 +15274,14 @@ let moonbitlang_core_list_module : RuntimeModule = RuntimeModule::new(
           #|    Empty => Empty
           #|    More(_, tail~) => tail
           #|  } }
+        ),
+      ),
+      "List": build(
+        (
+          #|pub enum List[A] {
+          #|  Empty
+          #|  More(A, mut tail~ : List[A])
+          #|} derive(Eq)
         ),
       ),
     }

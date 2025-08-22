@@ -57,10 +57,45 @@ pub fn RuntimeModule::new(
   let env = RuntimeEnvironment::new(values~, struct_methods~)
   ///|
   fn build(code : String) -> (String?, RuntimeValue) {
-    if code.has_prefix("pub") || code.has_prefix("fn") {
+    if code.has_prefix("pub") ||
+      code.has_prefix("fn") ||
+      code.has_prefix("enum") {
       let impl_ = parse_code_to_impl(code)
       if impl_ is Ok(impl_) {
-        return env.top_func_def_to_closure(impl_)
+        if impl_ is TopFuncDef(_) {
+          return env.top_func_def_to_closure(impl_)
+        }
+        if impl_ is TopTypeDef(def) {
+          match def {
+            { tycon, params, components, .. } => {
+              env.type_definitions.set(tycon, def)
+              env.struct_methods.set(tycon, Map::new())
+
+              // 处理泛型类型参数
+              let type_params = []
+              for param in params {
+                match param {
+                  { name, .. } => type_params.push(name)
+                }
+              } else {
+                ()
+              }
+
+              // 注册枚举构造函数到运行时环境
+              match components {
+                Variant(constructors) =>
+                  for constr in constructors {
+                    let constr_name = constr.name.name
+                    env.type_definitions.set(constr_name, def)
+                  } else {
+                    ()
+                  }
+                _ => () // Record类型不需要注册构造函数
+              }
+            }
+          }
+          return (None, Unit)
+        }
       }
     }
     let expr = parse_code_to_expr(code)

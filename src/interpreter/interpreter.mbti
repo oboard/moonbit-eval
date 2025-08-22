@@ -67,6 +67,7 @@ pub(all) struct ClosureInterpreter {
   embedded_fns : Map[String, (RuntimeFunctionContext) -> RuntimeValue raise ControlFlow]
   embedded_methods : Map[String, Map[String, (RuntimeFunctionContext) -> RuntimeValue raise ControlFlow]]
   main : RuntimeModule
+  mut current_module : RuntimeModule
   mut state : InterpreterState
 }
 fn ClosureInterpreter::add_embedded_fn(Self, String, (RuntimeFunctionContext) -> RuntimeValue raise ControlFlow) -> Unit
@@ -75,7 +76,7 @@ fn ClosureInterpreter::add_extern_fn(Self, String, (RuntimeFunctionContext) -> R
 fn ClosureInterpreter::bind_function_parameters(Self, @list.List[@syntax.Parameter], @list.List[@syntax.Argument]) -> Unit raise ControlFlow
 fn ClosureInterpreter::bind_function_parameters_runtime(Self, @list.List[@syntax.Parameter], @list.List[@syntax.Argument]) -> Unit raise ControlFlow
 fn ClosureInterpreter::call(Self, @syntax.Func, @list.List[@syntax.Argument]) -> RuntimeValue raise ControlFlow
-fn ClosureInterpreter::call_closure(Self, @syntax.Func, RuntimeEnvironment, @list.List[@syntax.Argument]) -> RuntimeValue raise ControlFlow
+fn ClosureInterpreter::call_closure(Self, @syntax.Func, RuntimeModule, RuntimeEnvironment, @list.List[@syntax.Argument]) -> RuntimeValue raise ControlFlow
 fn ClosureInterpreter::constants_equal(Self, @syntax.Constant, @syntax.Constant) -> Bool
 fn ClosureInterpreter::constants_equal_expr(Self, @syntax.Expr, @syntax.Expr) -> Bool
 fn ClosureInterpreter::execute_match(Self, @syntax.Expr, @list.List[@syntax.Case]) -> @syntax.Expr raise ControlFlow
@@ -129,12 +130,11 @@ pub(all) struct RuntimeEnvironment {
   mutable_vars : Map[String, Bool]
   parent : RuntimeEnvironment?
 }
-fn RuntimeEnvironment::cons(Self, String, Array[RuntimeValue]) -> RuntimeValue
 fn RuntimeEnvironment::copy(Self) -> Self
 fn RuntimeEnvironment::create_closure_env(Self) -> Self
 fn RuntimeEnvironment::current_scope(Self) -> Map[String, RuntimeValue]
 fn RuntimeEnvironment::define_struct_method(Self, String, String, @syntax.Func) -> Unit
-fn RuntimeEnvironment::find(Self, String) -> RuntimeValue
+fn RuntimeEnvironment::find(Self, String) -> RuntimeValue?
 fn RuntimeEnvironment::find_fn_alias(Self, String) -> String
 fn RuntimeEnvironment::from_option(Self, RuntimeValue?) -> RuntimeValue
 fn RuntimeEnvironment::new(parent? : Self, values? : Map[String, RuntimeValue], struct_methods? : Map[String, Map[String, RuntimeValue]]) -> Self
@@ -146,7 +146,7 @@ impl ToJson for RuntimeEnvironment
 
 pub(all) struct RuntimeFunctionContext {
   context : ClosureInterpreter
-  env : RuntimeEnvironment
+  mod : RuntimeModule
   arguments : Array[RuntimeArgument]
 }
 
@@ -155,8 +155,9 @@ pub(all) struct RuntimeModule {
   mut env : RuntimeEnvironment
   deps : Map[String, RuntimeModule]
 }
+fn RuntimeModule::cons(Self, String, Array[RuntimeValue]) -> RuntimeValue
 fn RuntimeModule::new(String, deps~ : Map[String, Self], (RuntimeEnvironment, (String) -> (String?, RuntimeValue)) -> Map[String, (String?, RuntimeValue)]) -> Self
-fn[T] RuntimeModule::with_ident(Self, @syntax.LongIdent, (RuntimeEnvironment, String, String) -> T raise?) -> T raise?
+fn[T] RuntimeModule::with_ident(Self, @syntax.LongIdent, (Self, String, String) -> T raise?) -> T raise?
 impl ToJson for RuntimeModule
 
 pub struct RuntimeType {

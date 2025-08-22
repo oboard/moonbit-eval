@@ -111,13 +111,28 @@ pub fn RuntimeEnvironment::top_func_def_to_closure(
         is_async=fun_decl.is_async,
         loc~,
       )
-      return (
-        fun_decl.type_name.map(ty => match ty {
-          { name: Ident(name~), .. } => name
-          { name: Dot(id~, ..), .. } => id
-        }),
-        RuntimeValue::Closure(func, self.create_closure_env()),
-      )
+      let type_name = match fun_decl.type_name {
+        Some({ name: Ident(name~), .. }) => Some(name)
+        Some({ name: Dot(id~, ..), .. }) => Some(id)
+        None =>
+          // Try to get type name from self parameter
+          if fun_decl.decl_params is Some(params) {
+            if params.head()
+              is Some(
+                Positional(
+                  binder={ name: "self", .. },
+                  ty=Some(Name(constr_id={ id: Ident(name~), .. }, ..))
+                )
+              ) {
+              Some(name)
+            } else {
+              None
+            }
+          } else {
+            None
+          }
+      }
+      return (type_name, RuntimeValue::Closure(func, self.create_closure_env()))
     }
   }
   (None, Unit)
