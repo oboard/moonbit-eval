@@ -38,6 +38,7 @@ pub suberror ControlFlow {
   Continue(Array[RuntimeValue])
   Break(RuntimeValue?)
   Return(RuntimeValue)
+  Error(String)
 }
 
 ///|
@@ -66,7 +67,7 @@ pub impl Add for RuntimeValue with op_add(
     (Byte(a), Byte(b)) => Byte(a + b)
     (Tuple(a), Tuple(b)) => Tuple(a + b)
     (Array(a), Array(b)) => Array(a + b)
-    _ => error("unable to add")
+    _ => abort("unable to add")
   }
 }
 
@@ -87,7 +88,7 @@ pub impl Hash for RuntimeValue with hash(self : RuntimeValue) -> Int {
     String(s) => s.hash()
     Tuple(t) => t.hash()
     Array(a) => a.hash()
-    _ => error("unable to hash")
+    _ => abort("unable to hash")
   }
 }
 
@@ -249,7 +250,7 @@ fn RuntimeValue::from_constant(c : @syntax.Constant) -> RuntimeValue {
     }
     Char(s) => Char(s.get_char(0).unwrap_or(' '))
     String(s) => String(s)
-    _ => error("Constant: not implemented")
+    _ => abort("Constant: not implemented")
   }
 }
 

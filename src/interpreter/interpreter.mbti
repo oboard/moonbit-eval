@@ -17,7 +17,7 @@ fn[T : Compare] compare(T, T, String) -> @syntax.Constant
 fn constant_infix(String, @syntax.Constant, @syntax.Constant) -> @syntax.Constant
 
 #callsite(autofill(loc))
-fn[A] error(String, loc~ : SourceLoc) -> A
+fn[A] error(String, loc~ : SourceLoc) -> A raise ControlFlow
 
 fn eval_double_op(Double, Double, String) -> @syntax.Constant
 
@@ -61,6 +61,7 @@ pub suberror ControlFlow {
   Continue(Array[RuntimeValue])
   Break(RuntimeValue?)
   Return(RuntimeValue)
+  Error(String)
 }
 
 // Types and methods
@@ -81,8 +82,6 @@ fn ClosureInterpreter::call(Self, @syntax.Func, @list.List[@syntax.Argument]) ->
 fn ClosureInterpreter::call_closure(Self, @syntax.Func, RuntimeModule, RuntimeEnvironment, @list.List[@syntax.Argument]) -> RuntimeValue raise ControlFlow
 fn ClosureInterpreter::constants_equal(Self, @syntax.Constant, @syntax.Constant) -> Bool
 fn ClosureInterpreter::constants_equal_expr(Self, @syntax.Expr, @syntax.Expr) -> Bool
-#callsite(autofill(loc))
-fn[A] ClosureInterpreter::error(Self, String, loc~ : SourceLoc) -> A
 fn ClosureInterpreter::execute_match(Self, @syntax.Expr, @list.List[@syntax.Case]) -> @syntax.Expr raise ControlFlow
 fn ClosureInterpreter::execute_match_runtime(Self, RuntimeValue, @list.List[@syntax.Case]) -> RuntimeValue raise ControlFlow
 fn ClosureInterpreter::get_function_type_string(Self, RuntimeValue) -> String
@@ -94,7 +93,7 @@ fn ClosureInterpreter::pop_scope(Self) -> Unit
 fn ClosureInterpreter::push_scope(Self) -> Unit
 fn ClosureInterpreter::start(Self) -> Unit
 fn ClosureInterpreter::stop(Self) -> Unit
-fn ClosureInterpreter::top_visit(Self, @syntax.Impl) -> RuntimeValue
+fn ClosureInterpreter::top_visit(Self, @syntax.Impl) -> RuntimeValue raise ControlFlow
 fn ClosureInterpreter::value_in_range(Self, @syntax.Expr, @syntax.Pattern, @syntax.Pattern, Bool) -> Bool
 fn ClosureInterpreter::visit(Self, @syntax.Expr) -> RuntimeValue raise ControlFlow
 

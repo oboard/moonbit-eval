@@ -119,7 +119,7 @@ pub fn ClosureInterpreter::stop(self : ClosureInterpreter) -> Unit {
 pub fn ClosureInterpreter::top_visit(
   self : ClosureInterpreter,
   node : @syntax.Impl,
-) -> RuntimeValue {
+) -> RuntimeValue raise ControlFlow {
   match node {
     // TopView(_) => ...
     // TopImpl(_) => ...
@@ -237,7 +237,7 @@ pub fn ClosureInterpreter::top_visit(
       self.main.env.traits.set(decl.name.name, decl)
       Unit
     }
-    _ => self.error("TopExpr: unimplemented:" + node.to_json().stringify())
+    _ => error("TopExpr: unimplemented:" + node.to_json().stringify())
   }
   // TopTest(_) => ...
   // TopImplRelation(_) => ...
@@ -686,13 +686,13 @@ pub fn ClosureInterpreter::visit(
         (Struct({ val: fields, .. }), Label(label)) =>
           match fields.get(label.name) {
             Some(field_value) => field_value
-            None => self.error("Field: not found")
+            None => error("Field: not found")
           }
         (Tuple(values), Index(tuple_index~, ..)) =>
           safe_index_access(values, tuple_index)
         (Array(values), Index(tuple_index~, ..)) =>
           safe_index_access(values, tuple_index)
-        _ => self.error("Field: not implemented")
+        _ => error("Field: not implemented")
       }
     }
 
@@ -715,10 +715,11 @@ pub fn ClosureInterpreter::visit(
         (Array(values), Int(index_num)) => safe_index_access(values, index_num)
         (String(values), Int(index_num)) => Int(values[index_num])
         (Map(values), index) =>
-          values
-          .get(index)
-          .unwrap_or_else(fn() { self.error("MapGet: not found") })
-        _ => self.error("ArrayGet: not implemented")
+          match values.get(index) {
+            Some(value) => value
+            None => error("MapGet: not found")
+          }
+        _ => error("ArrayGet: not implemented")
       }
     }
 
@@ -1086,7 +1087,7 @@ pub fn ClosureInterpreter::visit(
           // 返回新的结构体
           Struct({ val: new_fields, type_info: original_ref.type_info })
         }
-        _ => self.error("RecordUpdate: expected struct")
+        _ => error("RecordUpdate: expected struct")
       }
     }
     Method(type_name~, method_name~, ..) =>
@@ -1097,10 +1098,9 @@ pub fn ClosureInterpreter::visit(
           Some(methods) =>
             match methods.get(method_name.name) {
               Some(func) => func
-              None =>
-                self.error("Method:\{ty_name}:\{method_name.name} not found")
+              None => error("Method:\{ty_name}:\{method_name.name} not found")
             }
-          None => self.error("Method:\{ty_name} not found")
+          None => error("Method:\{ty_name} not found")
         }
       })
     Map(elems~, ..) => {
@@ -1231,7 +1231,7 @@ pub fn ClosureInterpreter::visit(
         }
         Unit
       })
-    _ => self.error("visit: unimplemented " + node.to_json().stringify())
+    _ => error("visit: unimplemented " + node.to_json().stringify())
   }
 }
 
@@ -1248,7 +1248,7 @@ fn ClosureInterpreter::interp_string(
       Source({ source, .. }) =>
         match parse_code_to_expr(source) {
           Ok(expr) => buffer.write_string(self.visit(expr).to_string())
-          Err(msg) => self.error(msg)
+          Err(msg) => error(msg)
         }
     }
   }
@@ -1723,8 +1723,7 @@ fn ClosureInterpreter::execute_function_by_name(
           context: self,
           arguments: get_evaluated_args(),
         })
-      NotFound =>
-        self.error("Method:\{long_ident.to_json().stringify()} not found")
+      NotFound => error("Method:\{long_ident.to_json().stringify()} not found")
     }
   })
 }
@@ -1786,14 +1785,12 @@ fn ClosureInterpreter::execute_method_call(
               })
             }
             None =>
-              self.error(
+              error(
                 "exec: \{self_type.get_full_name()}::\{method_name} not found",
               )
           }
         None =>
-          self.error(
-            "exec: \{self_type.get_full_name()}::\{method_name} not found",
-          )
+          error("exec: \{self_type.get_full_name()}::\{method_name} not found")
       }
   }
 }
@@ -1866,10 +1863,9 @@ fn ClosureInterpreter::execute_embedded_static_method(
             arguments: evaluated_args,
           })
         }
-        None =>
-          self.error("Embedded Method:\{type_name}::\{method_name} not found")
+        None => error("Embedded Method:\{type_name}::\{method_name} not found")
       }
-    None => self.error("Embedded Method:\{type_name}::\{method_name} not found")
+    None => error("Embedded Method:\{type_name}::\{method_name} not found")
   }
 }
 

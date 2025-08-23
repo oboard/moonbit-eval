@@ -5,9 +5,9 @@ pub(all) struct MoonBitVM {
 }
 
 ///|
-pub struct EvalResult {
-  value : RuntimeValue
-  interpreter : ClosureInterpreter
+pub enum EvalResult {
+  Success(RuntimeValue, ClosureInterpreter)
+  Error(String, ClosureInterpreter)
 }
 
 ///|
@@ -17,7 +17,10 @@ pub impl Show for EvalResult with output(self : EvalResult, logger : &Logger) ->
 
 ///|
 pub impl Show for EvalResult with to_string(self : EvalResult) -> String {
-  self.value.to_string()
+  match self {
+    Success(value, _) => value.to_string()
+    Error(msg, _) => "Error: " + msg
+  }
 }
 
 ///|
@@ -219,37 +222,40 @@ pub fn MoonBitVM::eval(
   log? : Bool,
   top~ : Bool = false,
 ) -> EvalResult raise @interpreter.ControlFlow {
-  if top {
-    let buf = @buffer.new()
-    @encoding.encode_to(code, buf, encoding=UTF8)
-    let (impls, _diagnostics) = @moonbitlang/parser.parse_bytes(
-      buf.to_bytes(),
-      parser=Handrolled,
-    )
-    let mut last_result = RuntimeValue::Unit
-    impls.each(node => {
-      if log.unwrap_or(self.log) {
-        println(node.to_json().stringify())
-      }
-      self.interpreter.start()
-      let result = self.interpreter.top_visit(node)
-      last_result = result
-      self.interpreter.stop()
-    })
-    return { value: last_result, interpreter: self.interpreter }
-  }
-  match @interpreter.parse_code_to_expr(code) {
-    Ok(expr) => {
-      self.interpreter.start()
-      let result_value = self.interpreter.visit(expr)
-      self.interpreter.stop()
-      if log.unwrap_or(self.log) {
-        println(expr.to_json().stringify())
-      }
-      { value: result_value, interpreter: self.interpreter }
+  try {
+    if top {
+      let buf = @buffer.new()
+      @encoding.encode_to(code, buf, encoding=UTF8)
+      let (impls, _diagnostics) = @moonbitlang/parser.parse_bytes(
+        buf.to_bytes(),
+        parser=Handrolled,
+      )
+      let mut last_result = RuntimeValue::Unit
+      impls.each(node => {
+        if log.unwrap_or(self.log) {
+          println(node.to_json().stringify())
+        }
+        self.interpreter.start()
+        let result = self.interpreter.top_visit(node)
+        last_result = result
+        self.interpreter.stop()
+      })
+      return Success(last_result, self.interpreter)
     }
-    Err(_) =>
-      // try top eval
-      return self.eval(code, log?, top=true)
+    match @interpreter.parse_code_to_expr(code) {
+      Ok(expr) => {
+        self.interpreter.start()
+        let result_value = self.interpreter.visit(expr)
+        self.interpreter.stop()
+        if log.unwrap_or(self.log) {
+          println(expr.to_json().stringify())
+        }
+        Success(result_value, self.interpreter)
+      }
+      Err(_) => self.eval(code, log?, top=true)
+    }
+  } catch {
+    @interpreter.ControlFlow::Error(msg) => Error(msg, self.interpreter)
+    other => raise other
   }
 }

@@ -26,9 +26,9 @@ fn value_to_string(@interpreter.RuntimeValue) -> String
 // Errors
 
 // Types and methods
-pub struct EvalResult {
-  value : @interpreter.RuntimeValue
-  interpreter : @interpreter.ClosureInterpreter
+pub enum EvalResult {
+  Success(@interpreter.RuntimeValue, @interpreter.ClosureInterpreter)
+  Error(String, @interpreter.ClosureInterpreter)
 }
 impl Show for EvalResult
 
