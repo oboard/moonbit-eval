@@ -27,6 +27,7 @@ pub let array_methods : Map[String, RuntimeFunction] = {
   "filter": array_filter_fn,
   "fold": array_fold_fn,
   "make": array_make_fn,
+  "iter": array_iter_fn,
 }
 
 ///| 数组make操作
@@ -269,6 +270,25 @@ let array_search_by_fn : RuntimeFunction = ctx => match ctx.arguments {
       (try? ctx.context.call(f, @list.of([arg]))) is Ok(Bool(true))
     })
     ctx.mod.env.from_option(index.map(Int(_)))
+  }
+  _ => Unit
+}
+
+///| 数组iter操作
+let array_iter_fn : RuntimeFunction = ctx => match ctx.arguments {
+  [{ value: Array(arr), .. }, ..] => {
+    let iterator = RuntimeIterator::{
+      iterate_fn: fn(visit_fn) {
+        for value in arr {
+          match visit_fn(value) {
+            IterEnd => return IterEnd
+            IterContinue => continue
+          }
+        }
+        IterContinue
+      }
+    }
+    Iter(iterator)
   }
   _ => Unit
 }

@@ -18,33 +18,19 @@ pub(all) enum InterpreterState {
 }
 
 ///|
-pub fn ClosureInterpreter::new(core~ : Bool = true) -> ClosureInterpreter {
+pub fn ClosureInterpreter::new() -> ClosureInterpreter {
   let main = {
     ..moonbitlang_core_builtin_module,
     meta: ModuleMeta::new("main"),
-    deps: if core {
-      core_modules
-    } else {
-      {}
-    },
+    deps: core_modules,
   }
-  if core {
-    for name, a in core_fn_aliases {
-      main.env.fn_aliases.set(name, a)
-    }
+  for name, a in core_fn_aliases {
+    main.env.fn_aliases.set(name, a)
   }
   {
     extern_fns: {},
-    embedded_fns: if core {
-      core_embedded_code
-    } else {
-      {}
-    },
-    embedded_methods: if core {
-      core_embedded_methods
-    } else {
-      {}
-    },
+    embedded_fns: core_embedded_code,
+    embedded_methods: core_embedded_methods,
     main,
     current_module: main,
     state: InterpreterState::Stopped,
@@ -155,7 +141,7 @@ pub fn ClosureInterpreter::top_visit(
             Variant(constructors) =>
               for constr in constructors {
                 let constr_name = constr.name.name
-                self.main.env.type_definitions.set(constr_name, def)
+                self.current_module.env.type_definitions.set(constr_name, def)
               } else {
                 ()
               }
@@ -206,9 +192,14 @@ pub fn ClosureInterpreter::top_visit(
             loc~,
           )
           if type_name is Some(type_name) {
-            self.main.env.define_struct_method(type_name, func_name, func)
+            self.current_module.env.define_struct_method(
+              type_name, func_name, func,
+            )
           } else {
-            self.main.env.set(func_name, Closure(func, self.main.env))
+            self.current_module.env.set(
+              func_name,
+              Closure(func, self.current_module.env),
+            )
           }
         }
         // 处理embedded函数声明
@@ -234,7 +225,7 @@ pub fn ClosureInterpreter::top_visit(
     // : @list.List[Attribute]
     // : DocString
     TopTrait(decl) => {
-      self.main.env.traits.set(decl.name.name, decl)
+      self.current_module.env.traits.set(decl.name.name, decl)
       Unit
     }
     _ => error("TopExpr: unimplemented:" + node.to_json().stringify())
@@ -257,9 +248,9 @@ pub fn ClosureInterpreter::visit(
 
     // 处理变量标识符
     Ident(id={ name, .. }, ..) =>
-      self.main.with_ident(name, (mod, _pkg, name) => mod.env
+      self.current_module.with_ident(name, (mod, _pkg, name) => mod.env
         .find(name)
-        .unwrap_or(Unit))
+        .or_error(error("variable \{name} not found")))
 
     // 处理中缀表达式（如 1+1）
     Infix(op~, lhs~, rhs~, ..) =>
@@ -316,7 +307,7 @@ pub fn ClosureInterpreter::visit(
                     Ident(name~) => name
                     _ => "Any"
                   }
-                  let current_val = self.main.with_ident(var_name, fn(
+                  let current_val = self.current_module.with_ident(var_name, fn(
                     mod,
                     _pkg,
                     name,
@@ -337,7 +328,7 @@ pub fn ClosureInterpreter::visit(
                     base_op, current_val, right_val,
                   )
                   // 更新变量
-                  self.main.env.update(var_name_str, new_val)
+                  self.current_module.env.update(var_name_str, new_val)
                   Unit
                 }
                 _ => Unit // 其他情况暂不支持
@@ -399,16 +390,16 @@ pub fn ClosureInterpreter::visit(
       }
 
       if type_name is Some(type_name) {
-        self.main.with_ident(type_name.name, (mod, pkg, name) => alloc(
+        self.current_module.with_ident(type_name.name, (mod, pkg, name) => alloc(
           mod.env,
           pkg,
           name,
         ))
       } else {
-        let type_name = self.main.env.infer_struct_type_from_fields(
+        let type_name = self.current_module.env.infer_struct_type_from_fields(
           evaluated_fields.keys().to_array(),
         )
-        alloc(self.main.env, "main", type_name)
+        alloc(self.current_module.env, "main", type_name)
       }
     }
     ArraySpread(elems~, ..) => {
@@ -533,7 +524,8 @@ pub fn ClosureInterpreter::visit(
     }
 
     // 处理函数 - 闭包应该捕获对环境的引用以支持可变变量
-    Function(func~, ..) => Closure(func, self.main.env.create_closure_env())
+    Function(func~, ..) =>
+      Closure(func, self.current_module.env.create_closure_env())
 
     // 处理 Let 绑定
     Let(pattern~, expr~, body~, ..) => {
@@ -545,16 +537,16 @@ pub fn ClosureInterpreter::visit(
     // 处理可变变量声明
     LetMut(binder={ name, .. }, expr~, body~, ..) => {
       let runtime_value = self.visit(expr)
-      self.main.env.set_mutable_variable(name, runtime_value)
+      self.current_module.env.set_mutable_variable(name, runtime_value)
       // 执行body部分，这是关键！
       self.visit(body)
     }
 
     // 处理函数定义
     LetFn(name={ name, .. }, func~, body~, ..) => {
-      self.main.env.set(name, Closure(func, self.main.env))
+      self.current_module.env.set(name, Closure(func, self.current_module.env))
       match body {
-        Unit(..) => Closure(func, self.main.env)
+        Unit(..) => Closure(func, self.current_module.env)
         _ => self.visit(body)
       }
     }
@@ -562,16 +554,16 @@ pub fn ClosureInterpreter::visit(
     // 处理递归函数定义
     LetRec(bindings~, body~, ..) => {
       for binding in bindings {
-        let env = self.main.env.create_closure_env()
+        let env = self.current_module.env.create_closure_env()
         let name = binding.0.name
         let func = binding.1
-        self.main.env.set(name, Closure(func, env))
+        self.current_module.env.set(name, Closure(func, env))
       }
       self.visit(body)
     }
     LetAnd(bindings~, body~, ..) => {
       // Create a shared environment for all mutually recursive functions
-      let shared_env = self.main.env.create_closure_env()
+      let shared_env = self.current_module.env.create_closure_env()
 
       // First pass: Create placeholder closures in the shared environment
       for binding in bindings {
@@ -590,14 +582,14 @@ pub fn ClosureInterpreter::visit(
       // Add all closures to current environment
       for binding in bindings {
         let name = binding.0.name
-        self.main.env.set(name, shared_env.find(name).unwrap_or(Unit))
+        self.current_module.env.set(name, shared_env.find(name).unwrap_or(Unit))
       }
       self.visit(body)
     }
 
     // 处理赋值操作
     Assign(var_={ name, .. }, expr~, augmented_by~, ..) =>
-      self.main.with_ident(name, fn(mod, _pkg, name) {
+      self.current_module.with_ident(name, fn(mod, _pkg, name) {
         let env = mod.env
         let new_value = match augmented_by {
           Some(op) => {
@@ -612,7 +604,7 @@ pub fn ClosureInterpreter::visit(
           }
           None => self.visit(expr)
         }
-        self.main.env.update(name, new_value)
+        mod.env.update(name, new_value)
         Unit
       })
 
@@ -812,7 +804,7 @@ pub fn ClosureInterpreter::visit(
           match binder_init {
             (binder, init_expr) => {
               let init_value = self.visit(init_expr)
-              self.main.env.set(binder.name, init_value)
+              self.current_module.env.set(binder.name, init_value)
             }
           }
         }
@@ -822,7 +814,7 @@ pub fn ClosureInterpreter::visit(
           match update_tuple {
             (binder, update_expr) => {
               let new_value = self.visit(update_expr) catch { _ => Unit }
-              self.main.env.update(binder.name, new_value)
+              self.current_module.env.update(binder.name, new_value)
             }
           }
         }
@@ -850,7 +842,7 @@ pub fn ClosureInterpreter::visit(
             Continue(arr) => {
               if !arr.is_empty() {
                 binders.eachi(fn(i, binder) {
-                  self.main.env.update(binder.0.name, arr[i])
+                  self.current_module.env.update(binder.0.name, arr[i])
                 })
               } else {
                 execute_continue_block()
@@ -1091,7 +1083,7 @@ pub fn ClosureInterpreter::visit(
       }
     }
     Method(type_name~, method_name~, ..) =>
-      self.main.with_ident(type_name.name, fn(mod, _pkg, ty_name) {
+      self.current_module.with_ident(type_name.name, fn(mod, _pkg, ty_name) {
         let env = mod.env
         // 查找用户定义的静态方法
         match env.struct_methods.get(ty_name) {
@@ -1132,105 +1124,90 @@ pub fn ClosureInterpreter::visit(
     Unit(_) => Unit
 
     // 处理 ForEach 表达式 (for i in expr)
-    ForEach(binders~, expr~, body~, ..) =>
-      self.with_scope(fn() {
-        let iterable_value = self.visit(expr)
-        match iterable_value {
-          Array(arr) =>
-            for i = 0; i < arr.length(); i = i + 1 {
-              // 绑定循环变量 - 处理多个binder的情况
-              match binders {
-                @list.List::More(Some(binder), tail=@list.List::Empty) =>
-                  // 单个变量绑定
-                  self.main.env.set(binder.name, arr[i])
-                _ =>
-                  // 多个变量绑定或其他情况，暂时只绑定第一个
-                  match binders {
-                    @list.List::More(Some(binder), tail=_) =>
-                      self.main.env.set(binder.name, arr[i])
-                    _ => ()
+    ForEach(binders~, expr~, body~, ..) => {
+      let iterable_value = self.visit(expr)
+
+      // 首先检查是否为范围表达式
+      let iterator = match expr {
+        Infix(op~, lhs~, rhs~, ..) =>
+          match op.name {
+            Ident(name="..<") => {
+              let start_val = self.visit(lhs)
+              let end_val = self.visit(rhs)
+              match (start_val, end_val) {
+                (Int(start), Int(end)) => {
+                  let range_iterator = RuntimeIterator::{
+                    iterate_fn: fn(visit_fn) {
+                      for i = start; i < end; i = i + 1 {
+                        match visit_fn(Int(i)) {
+                          IterEnd => return IterEnd
+                          IterContinue => continue
+                        }
+                      }
+                      IterContinue
+                    },
                   }
+                  Iter(range_iterator)
+                }
+                _ => iterable_value.iter()
               }
-              // 执行循环体
-              (self.visit(body) catch {
-                Break(value) => return value.unwrap_or(Unit)
-                Continue(_) => continue
-                e => raise e
-              })
-              |> ignore
             }
-          _ =>
-            // 处理范围表达式，如 0..<length
-            match expr {
-              Infix(op~, lhs~, rhs~, ..) =>
-                match op.name {
-                  Ident(name="..<") => {
-                    let start_val = self.visit(lhs)
-                    let end_val = self.visit(rhs)
-                    match (start_val, end_val) {
-                      (Int(start), Int(end)) =>
-                        for i = start; i < end; i = i + 1 {
-                          // 绑定循环变量
-                          match binders {
-                            @list.List::More(
-                              Some(binder),
-                              tail=@list.List::Empty
-                            ) => self.main.env.set(binder.name, Int(i))
-                            _ =>
-                              match binders {
-                                @list.List::More(Some(binder), tail=_) =>
-                                  self.main.env.set(binder.name, Int(i))
-                                _ => ()
-                              }
-                          }
-                          // 执行循环体
-                          (self.visit(body) catch {
-                            Break(value) => return value.unwrap_or(Unit)
-                            Continue(_) => continue
-                            e => raise e
-                          })
-                          |> ignore
+            Ident(name="..=") => {
+              let start_val = self.visit(lhs)
+              let end_val = self.visit(rhs)
+              match (start_val, end_val) {
+                (Int(start), Int(end)) => {
+                  let range_iterator = RuntimeIterator::{
+                    iterate_fn: fn(visit_fn) {
+                      for i = start; i <= end; i = i + 1 {
+                        match visit_fn(Int(i)) {
+                          IterEnd => return IterEnd
+                          IterContinue => continue
                         }
-                      _ => ()
-                    }
+                      }
+                      IterContinue
+                    },
                   }
-                  Ident(name="..=") => {
-                    let start_val = self.visit(lhs)
-                    let end_val = self.visit(rhs)
-                    match (start_val, end_val) {
-                      (Int(start), Int(end)) =>
-                        for i = start; i <= end; i = i + 1 {
-                          // 绑定循环变量
-                          match binders {
-                            @list.List::More(
-                              Some(binder),
-                              tail=@list.List::Empty
-                            ) => self.main.env.set(binder.name, Int(i))
-                            _ =>
-                              match binders {
-                                @list.List::More(Some(binder), tail=_) =>
-                                  self.main.env.set(binder.name, Int(i))
-                                _ => ()
-                              }
-                          }
-                          // 执行循环体
-                          (self.visit(body) catch {
-                            Break(value) => return value.unwrap_or(Unit)
-                            Continue(_) => continue
-                            e => raise e
-                          })
-                          |> ignore
-                        }
-                      _ => ()
-                    }
-                  }
+                  Iter(range_iterator)
+                }
+                _ => iterable_value.iter()
+              }
+            }
+            _ => iterable_value.iter()
+          }
+        _ => iterable_value.iter()
+      }
+
+      // 使用迭代器进行迭代
+      match iterator {
+        Iter(iter_impl) =>
+          (iter_impl.iterate_fn)(fn(value) {
+            // 绑定循环变量
+            match binders {
+              @list.List::More(Some(binder), tail=@list.List::Empty) =>
+                self.current_module.env.set(binder.name, value)
+              _ =>
+                match binders {
+                  @list.List::More(Some(binder), tail=_) =>
+                    self.current_module.env.set(binder.name, value)
                   _ => ()
                 }
-              _ => ()
             }
-        }
-        Unit
-      })
+            // 执行循环体
+            try {
+              self.visit(body) |> ignore
+              IterContinue
+            } catch {
+              Break(_) => IterEnd
+              Continue(_) => IterContinue
+              _ => IterEnd // 其他错误也结束迭代
+            }
+          })
+          |> ignore
+        _ => () // 如果不是迭代器，什么都不做
+      }
+      Unit
+    }
     _ => error("visit: unimplemented " + node.to_json().stringify())
   }
 }
@@ -1432,7 +1409,7 @@ fn ClosureInterpreter::pattern_matches_runtime(
           }
         _ => {
           // 查找构造函数对应的值
-          let constr_runtime_value = self.main.env
+          let constr_runtime_value = self.current_module.env
             .find(constr.name.name)
             .unwrap_or(Unit)
           match (value, constr_runtime_value) {
@@ -1616,7 +1593,7 @@ fn ClosureInterpreter::pattern_to_runtime_value(
       }
     Constr(constr~, ..) =>
       // 查找构造函数的值
-      Some(self.main.env.find(constr.name.name).unwrap_or(Unit))
+      Some(self.current_module.env.find(constr.name.name).unwrap_or(Unit))
     Any(..) => None // 通配符表示开放边界
     _ => None
   }
@@ -1627,7 +1604,7 @@ pub fn ClosureInterpreter::is_known_function(
   self : ClosureInterpreter,
   name : String,
 ) -> Bool {
-  let actual_name = self.main.env.find_fn_alias(name)
+  let actual_name = self.current_module.env.find_fn_alias(name)
 
   // 检查外部函数
   if self.extern_fns.contains(actual_name) {
@@ -1640,7 +1617,7 @@ pub fn ClosureInterpreter::is_known_function(
   }
 
   // 检查用户定义函数
-  if self.main.env.find(actual_name).unwrap_or(Unit) is Closure(_) {
+  if self.current_module.env.find(actual_name).unwrap_or(Unit) is Closure(_) {
     return true
   }
   false
@@ -1661,22 +1638,21 @@ fn ClosureInterpreter::execute_function_by_name(
   long_ident : @syntax.LongIdent,
   args : @list.List[@syntax.Argument],
 ) -> RuntimeValue raise ControlFlow {
-  fn get_evaluated_args() -> Array[RuntimeArgument] raise ControlFlow {
-    args
+  let evaluated_args = args
     .map(arg => RuntimeArgument::{
       value: self.visit(arg.value),
       kind: arg.kind,
     })
     .to_array()
-  }
-
-  self.main.with_ident(long_ident, fn(mod, _pkg, name) {
+  self.current_module.with_ident(long_ident, fn(mod, _pkg, name) {
     let env = mod.env
     let name = env.find_fn_alias(name)
 
     // 按优先级查找：用户函数 -> Lambda变量 -> 外部函数 -> embedded函数
     let func = match
-      env.find(name).unwrap_or(self.main.env.find(name).unwrap_or(Unit)) {
+      env
+      .find(name)
+      .unwrap_or(self.current_module.env.find(name).unwrap_or(Unit)) {
       Closure(func, env) =>
         // 检查是否是embedded函数的标记函数
         match func {
@@ -1704,9 +1680,9 @@ fn ClosureInterpreter::execute_function_by_name(
             embedded_func(RuntimeFunctionContext::{
               mod: self.current_module,
               context: self,
-              arguments: get_evaluated_args(),
+              arguments: evaluated_args,
             })
-          None => Unit
+          None => error("Embedded function:\{embedded_name} not found")
         }
       RuntimeClosure(lambda_func, captured_env) =>
         // 调用闭包：使用专门的闭包调用方法
@@ -1715,13 +1691,13 @@ fn ClosureInterpreter::execute_function_by_name(
         extern_func(RuntimeFunctionContext::{
           mod: self.current_module,
           context: self,
-          arguments: get_evaluated_args(),
+          arguments: evaluated_args,
         })
       GlobalEmbedded(embedded_func) =>
         embedded_func(RuntimeFunctionContext::{
           mod: self.current_module,
           context: self,
-          arguments: get_evaluated_args(),
+          arguments: evaluated_args,
         })
       NotFound => error("Method:\{long_ident.to_json().stringify()} not found")
     }
@@ -1749,7 +1725,9 @@ fn ClosureInterpreter::execute_method_call(
                 match first_param {
                   @syntax.Parameter::Positional(binder={ name, .. }, ..)
                   | @syntax.Parameter::Labelled(binder={ name, .. }, ..) =>
-                    self.main.env.current_scope().set(name, self_value)
+                    self.current_module.env
+                    .current_scope()
+                    .set(name, self_value)
                   _ => ()
                 }
                 // 绑定其他参数
@@ -1823,17 +1801,11 @@ fn ClosureInterpreter::execute_static_method_call(
   match type_info.find_method(method_name) {
     Some(func) =>
       // 执行用户定义的静态方法
-      return self.with_scope(fn() {
-        match func {
-          Closure(Lambda(parameters~, body~, ..), _env) => {
-            // 绑定参数（静态方法没有self参数）
-            self.bind_function_parameters_runtime(parameters, args)
-            // 执行函数体
-            self.visit(body)
-          }
-          _ => Unit
-        }
-      })
+      return match func {
+        Closure(func, env) =>
+          self.call_closure(func, self.current_module, env, args)
+        _ => Unit
+      }
     None =>
       // 如果用户方法中没有找到，继续查找嵌入式方法
       self.execute_embedded_static_method(type_info.name, method_name, args)
@@ -2116,6 +2088,12 @@ fn RuntimeEnvironment::find_variable_type(
           }
         _ => type_info
       }
+    Iter(_) =>
+      {
+        pkg: moonbitlang_core_builtin_module.meta.name,
+        name: "Iter",
+        env: moonbitlang_core_builtin_module.env,
+      }
   }
 }
 
@@ -2149,7 +2127,7 @@ fn ClosureInterpreter::infer_return_type_from_expr(
     Apply(func~, ..) =>
       match func {
         @syntax.Expr::Ident(id={ name: ident, .. }, ..) =>
-          self.main.with_ident(ident, (mod, _pkg, name) => self.current_module.env.find_variable_type(
+          self.current_module.with_ident(ident, (mod, _pkg, name) => mod.env.find_variable_type(
             mod.env.find(name).unwrap_or(Unit),
           ))
         _ => RuntimeType::any()

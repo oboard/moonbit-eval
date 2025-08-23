@@ -15,6 +15,7 @@ pub let string_methods : Map[String, RuntimeFunction] = {
   "unsafe_get": string_unsafe_get_fn,
   "to_string": string_to_string_fn,
   "make": string_make_fn,
+  "iter": string_iter_fn,
 }
 
 // ===== 字符串操作 =====
@@ -50,6 +51,26 @@ let string_get_fn : RuntimeFunction = ctx => match ctx.arguments {
 let string_unsafe_get_fn : RuntimeFunction = ctx => match ctx.arguments {
   [{ value: String(s), .. }, { value: Int(idx), .. }, ..] =>
     Int(s.unsafe_charcode_at(idx))
+  _ => Unit
+}
+
+///| 字符串迭代器
+let string_iter_fn : RuntimeFunction = ctx => match ctx.arguments {
+  [{ value: String(str), .. }, ..] => {
+    let iterator = RuntimeIterator::{
+      iterate_fn: fn(visit_fn) {
+        for i = 0; i < str.length(); i = i + 1 {
+          let char_value = Char(str.get_char(i).unwrap_or(' '))
+          match visit_fn(char_value) {
+            IterEnd => return IterEnd
+            IterContinue => continue
+          }
+        }
+        IterContinue
+      }
+    }
+    Iter(iterator)
+  }
   _ => Unit
 }
 

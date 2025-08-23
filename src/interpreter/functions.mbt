@@ -14,10 +14,10 @@ pub fn ClosureInterpreter::call_closure(
       let arg_values = self.evaluate_arguments(args)
 
       // 切换到闭包捕获的环境
-      let old_env = self.main.env
       let old_mod = self.current_module
-      self.main.env = env
+      let old_env = mod.env
       self.current_module = mod
+      self.current_module.env = env
       let result = self.with_scope(() => {
         // 在新环境中绑定已解释的参数值
         self.bind_evaluated_parameters(parameters, arg_values)
@@ -26,7 +26,7 @@ pub fn ClosureInterpreter::call_closure(
       })
 
       // 恢复原环境
-      self.main.env = old_env
+      self.current_module.env = old_env
       self.current_module = old_mod
       result
     }
@@ -51,19 +51,19 @@ pub fn ClosureInterpreter::bind_function_parameters(
       let runtime_value = self.visit(arg.value)
       match param {
         // 位置参数：直接绑定参数值
-        @syntax.Parameter::Positional(binder={ name, .. }, ..) =>
+        Positional(binder={ name, .. }, ..) =>
           ignore(self.main.env.current_scope().set(name, runtime_value))
         // 标签参数：绑定带标签的参数值
-        @syntax.Parameter::Labelled(binder={ name, .. }, ..) =>
+        Labelled(binder={ name, .. }, ..) =>
           ignore(self.main.env.current_scope().set(name, runtime_value))
         // 可选参数：当有参数提供时绑定参数值，否则使用默认值
-        @syntax.Parameter::Optional(binder={ name, .. }, ..) =>
+        Optional(binder={ name, .. }, ..) =>
           ignore(self.main.env.current_scope().set(name, runtime_value))
         // 问号可选参数：绑定参数值
-        @syntax.Parameter::QuestionOptional(binder={ name, .. }, ..) =>
+        QuestionOptional(binder={ name, .. }, ..) =>
           ignore(self.main.env.current_scope().set(name, runtime_value))
         // 丢弃位置参数：不绑定到任何变量，直接跳过
-        @syntax.Parameter::DiscardPositional(..) =>
+        DiscardPositional(..) =>
           // 丢弃参数不需要绑定，但仍需要求值以保持副作用
           self.visit(arg.value) |> ignore
       }
@@ -73,13 +73,13 @@ pub fn ClosureInterpreter::bind_function_parameters(
     (@list.More(param, tail=rest_params), @list.Empty) =>
       match param {
         // 可选参数没有对应实参时，使用默认值
-        @syntax.Parameter::Optional(binder={ name, .. }, default~, ..) => {
+        Optional(binder={ name, .. }, default~, ..) => {
           let runtime_value = self.visit(default)
           self.main.env.current_scope().set(name, runtime_value)
           self.bind_function_parameters(rest_params, @list.new())
         }
         // 问号可选参数没有对应实参时，不绑定任何值
-        @syntax.Parameter::QuestionOptional(..) =>
+        QuestionOptional(..) =>
           self.bind_function_parameters(rest_params, @list.new())
         _ => ()
       }
@@ -99,19 +99,17 @@ pub fn ClosureInterpreter::bind_function_parameters_runtime(
       let arg_value = self.visit(arg.value)
       match param {
         // 位置参数：直接绑定参数值
-        @syntax.Parameter::Positional(binder={ name, .. }, ..) =>
+        Positional(binder={ name, .. }, ..) =>
           self.main.env.set(name, arg_value)
         // 标签参数：绑定带标签的参数值
-        @syntax.Parameter::Labelled(binder={ name, .. }, ..) =>
-          self.main.env.set(name, arg_value)
+        Labelled(binder={ name, .. }, ..) => self.main.env.set(name, arg_value)
         // 可选参数：当有参数提供时绑定参数值，否则使用默认值
-        @syntax.Parameter::Optional(binder={ name, .. }, ..) =>
-          self.main.env.set(name, arg_value)
+        Optional(binder={ name, .. }, ..) => self.main.env.set(name, arg_value)
         // 问号可选参数：绑定参数值
-        @syntax.Parameter::QuestionOptional(binder={ name, .. }, ..) =>
+        QuestionOptional(binder={ name, .. }, ..) =>
           self.main.env.set(name, arg_value)
         // 丢弃位置参数：不绑定到任何变量，直接跳过
-        @syntax.Parameter::DiscardPositional(..) =>
+        DiscardPositional(..) =>
           // 丢弃参数不需要绑定，但仍需要求值以保持副作用
           self.visit(arg.value) |> ignore
       }
@@ -121,13 +119,13 @@ pub fn ClosureInterpreter::bind_function_parameters_runtime(
     (@list.More(param, tail=rest_params), @list.Empty) =>
       match param {
         // 可选参数没有对应实参时，使用默认值
-        @syntax.Parameter::Optional(binder={ name, .. }, default~, ..) => {
+        Optional(binder={ name, .. }, default~, ..) => {
           let default_value = self.visit(default)
           self.main.env.set(name, default_value)
           self.bind_function_parameters_runtime(rest_params, @list.new())
         }
         // 问号可选参数没有对应实参时，不绑定任何值
-        @syntax.Parameter::QuestionOptional(..) =>
+        QuestionOptional(..) =>
           self.bind_function_parameters_runtime(rest_params, @list.new())
         _ => ()
       }
@@ -220,10 +218,10 @@ fn ClosureInterpreter::collect_free_variables(
           let new_bound_vars = bound_vars.copy()
           for param in parameters {
             match param {
-              @syntax.Parameter::Positional(binder={ name, .. }, ..)
-              | @syntax.Parameter::Labelled(binder={ name, .. }, ..)
-              | @syntax.Parameter::Optional(binder={ name, .. }, ..)
-              | @syntax.Parameter::QuestionOptional(binder={ name, .. }, ..) =>
+              Positional(binder={ name, .. }, ..)
+              | Labelled(binder={ name, .. }, ..)
+              | Optional(binder={ name, .. }, ..)
+              | QuestionOptional(binder={ name, .. }, ..) =>
                 new_bound_vars.set(name, ())
               _ => ()
             }
@@ -266,8 +264,7 @@ fn ClosureInterpreter::has_unbound_parameters(
   match params {
     @list.More(param, tail=rest) =>
       match param {
-        @syntax.Parameter::Optional(..)
-        | @syntax.Parameter::QuestionOptional(..) =>
+        Optional(..) | QuestionOptional(..) =>
           // 可选参数不强制需要绑定
           self.has_unbound_parameters(rest)
         _ => true // 有必需参数未绑定
@@ -332,40 +329,37 @@ fn ClosureInterpreter::bind_evaluated_parameters(
   values : @list.List[RuntimeValue],
 ) -> Unit raise ControlFlow {
   match (params, values) {
-    (@list.More(param, tail=rest_params), @list.More(value, tail=rest_values)) => {
+    (More(param, tail=rest_params), More(value, tail=rest_values)) => {
       match param {
         // 位置参数：直接绑定参数值
-        @syntax.Parameter::Positional(binder={ name, .. }, ..) =>
-          self.main.env.set(name, value)
+        Positional(binder={ name, .. }, ..)
         // 标签参数：绑定带标签的参数值
-        @syntax.Parameter::Labelled(binder={ name, .. }, ..) =>
-          self.main.env.set(name, value)
-        // 可选参数：当有参数提供时绑定参数值
-        @syntax.Parameter::Optional(binder={ name, .. }, ..) =>
-          self.main.env.set(name, value)
+        | Labelled(binder={ name, .. }, ..)
         // 问号可选参数：绑定参数值
-        @syntax.Parameter::QuestionOptional(binder={ name, .. }, ..) =>
-          self.main.env.set(name, value)
+        | QuestionOptional(binder={ name, .. }, ..)
+        // 可选参数：当有参数提供时绑定参数值
+        | Optional(binder={ name, .. }, ..) =>
+          self.current_module.env.set(name, value)
         // 丢弃位置参数：不绑定到任何变量
-        @syntax.Parameter::DiscardPositional(..) => ()
+        DiscardPositional(..) => ()
       }
       self.bind_evaluated_parameters(rest_params, rest_values)
     }
     // 处理可选参数的默认值情况
-    (@list.More(param, tail=rest_params), @list.Empty) =>
+    (More(param, tail=rest_params), Empty) =>
       match param {
         // 可选参数没有对应实参时，使用默认值
-        @syntax.Parameter::Optional(binder={ name, .. }, default~, ..) => {
+        Optional(binder={ name, .. }, default~, ..) => {
           let default_value = self.visit(default)
-          self.main.env.set(name, default_value)
+          self.current_module.env.set(name, default_value)
           self.bind_evaluated_parameters(rest_params, @list.new())
         }
         // 问号可选参数没有对应实参时，不绑定任何值
-        @syntax.Parameter::QuestionOptional(..) =>
+        QuestionOptional(..) =>
           self.bind_evaluated_parameters(rest_params, @list.new())
         _ => ()
       }
-    (@list.Empty, @list.Empty) => ()
+    (Empty, Empty) => ()
     _ => ()
   }
 }

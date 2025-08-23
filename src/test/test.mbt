@@ -1549,3 +1549,142 @@ test "46. foreach_loop" {
     content="3",
   )
 }
+
+///|
+test "45. iter_expressions" {
+  let vm = MoonBitVM::new()
+
+  // 先测试简单的可变变量赋值
+  assert_eq(vm.eval("let mut x = 0; x = x + 1; x").to_string(), "1")
+
+  // 测试可变变量在序列中的赋值
+  assert_eq(
+    vm
+    .eval("let mut sum = 0; sum = sum + 1; sum = sum + 2; sum = sum + 3; sum")
+    .to_string(),
+    "6",
+  )
+
+  // 测试数组迭代 - 使用不同的循环变量名
+  assert_eq(
+    vm
+    .eval("let mut sum = 0; for item in [1, 2, 3] { sum = sum + item }; sum")
+    .to_string(),
+    "6",
+  )
+
+  // 测试数组迭代 - 原始测试
+  assert_eq(
+    vm
+    .eval("let mut sum = 0; for x in [1, 2, 3] { sum = sum + x }; sum")
+    .to_string(),
+    "6",
+  )
+
+  // 测试字符串迭代
+  assert_eq(
+    vm
+    .eval(
+      "let mut result = \"\"; for c in \"abc\" { result = result + c }; result",
+    )
+    .to_string(),
+    "\"abc\"",
+  )
+
+  // 测试 Map 迭代（键值对元组）
+  assert_eq(
+    vm
+    .eval(
+      "let m = {\"a\": 1, \"b\": 2}; let sum = 0; for pair in m { sum = sum + pair.1 }; sum",
+    )
+    .to_string(),
+    "3",
+  )
+
+  // 测试范围表达式 0..<3
+  assert_eq(
+    vm.eval("let sum = 0; for i in 0..<3 { sum = sum + i }; sum").to_string(),
+    "3",
+  )
+
+  // 测试范围表达式 1..=3
+  assert_eq(
+    vm.eval("let sum = 0; for i in 1..=3 { sum = sum + i }; sum").to_string(),
+    "6",
+  )
+
+  // 测试 break 语句
+  assert_eq(
+    vm
+    .eval(
+      "let sum = 0; for i in 0..<10 { if i == 3 { break }; sum = sum + i }; sum",
+    )
+    .to_string(),
+    "6",
+  )
+
+  // 测试 continue 语句
+  assert_eq(
+    vm
+    .eval(
+      "let sum = 0; for i in 0..<5 { if i == 2 { continue }; sum = sum + i }; sum",
+    )
+    .to_string(),
+    "7",
+  )
+}
+
+///|
+test "iter_method_tests" {
+  let vm = MoonBitVM::new()
+
+  // 测试数组 iter 方法
+  assert_eq(
+    vm
+    .eval(
+      "let arr = [1, 2, 3]; let mut sum = 0; for x in arr.iter() { sum = sum + x }; sum",
+    )
+    .to_string(),
+    "6",
+  )
+
+  // 测试字符串 iter 方法
+  assert_eq(
+    vm
+    .eval(
+      "let str = \"hello\"; let mut count = 0; for c in str.iter() { count = count + 1 }; count",
+    )
+    .to_string(),
+    "5",
+  )
+
+  // 测试 Map iter 方法
+  assert_eq(
+    vm
+    .eval(
+      "let map = {\"a\": 1, \"b\": 2}; let mut sum = 0; for pair in map.iter() { sum = sum + pair.1 }; sum",
+    )
+    .to_string(),
+    "3",
+  )
+
+  // 测试嵌套迭代
+  assert_eq(
+    vm
+    .eval(
+      "let arr1 = [1, 2]; let arr2 = [3, 4]; let mut sum = 0; for x in arr1 { for y in arr2 { sum = sum + x * y } }; sum",
+    )
+    .to_string(),
+    "20",
+  )
+
+  // 测试迭代器与控制流
+  assert_eq(
+    vm
+    .eval(
+      "let arr = [1, 2, 3, 4, 5]; let sum = 0; for x in arr.iter() { if x == 3 { continue }; if x > 4 { break }; sum = sum + x }; sum",
+    )
+    .to_string(),
+    "7",
+  )
+}

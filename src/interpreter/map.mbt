@@ -126,7 +126,7 @@ let map_from_array_fn : RuntimeFunction = ctx => match ctx.arguments {
 
 ///| Map from_iter操作
 let map_from_iter_fn : RuntimeFunction = ctx => match ctx.arguments {
-  [{ value: iter, .. }, ..] =>
+  [{ value: _iter, .. }, ..] =>
     // 简化实现，实际需要迭代器支持
     Map(Map::new())
   _ => Unit
