@@ -105,14 +105,15 @@ inspect(vm.eval("match (1, 2) { (a, b) => a + b }"), content="3")
 | Static method calls | ✅ | Class::method() syntax |
 | Pipe operator | ✅ | \|> operator for function chaining |
 | Function aliases | ✅ | Alias support (e.g., not for %bool_not) |
-| Traits | ✅ | Interface definitions |
-| Trait as expressions | ✅ | (value as Trait) syntax for trait casting |
-| Packages | 🟡 | Module system with @package.function syntax (no trait, trait derive, operator overloading) |
 | Cross-package method calls | ✅ | Method calls across different packages |
 | Error handling | ✅ | Result type error handling |
 | Group expressions | ✅ | Parenthesized expressions for precedence |
+| For-in loops | ✅ | Iterator-based loops |
+| Iterator methods | ✅ | iter, map, filter, reduce, for_each |
+| Traits | 🟡 | Interface definitions |
+| Trait as expressions | 🟡 | (value as Trait) syntax for trait casting |
+| Packages | 🟡 | Module system with @package.function syntax (no trait, trait derive, operator overloading) |
 | **Not Yet Supported** | | |
-| For-in loops | ❌ | Iterator-based loops (commented out in tests) |
 | Async/await | ❌ | Asynchronous programming |
 
 ## Features
