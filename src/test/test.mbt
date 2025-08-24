@@ -1533,7 +1533,7 @@ test "45. map_operations" {
 }
 
 ///|
-test "46. foreach_loop" {
+test "84. foreach_loop" {
   let vm = MoonBitVM::new()
   // Test simple for-in loop with array
   inspect(
@@ -1551,47 +1551,64 @@ test "46. foreach_loop" {
 }
 
 ///|
-test "45. iter_expressions" {
+test "85. basic_mutable_variables" {
   let vm = MoonBitVM::new()
-
-  // 先测试简单的可变变量赋值
   assert_eq(vm.eval("let mut x = 0; x = x + 1; x").to_string(), "1")
+}
 
-  // 测试可变变量在序列中的赋值
+///|
+test "86. sequential_assignments" {
+  let vm = MoonBitVM::new()
   assert_eq(
     vm
     .eval("let mut sum = 0; sum = sum + 1; sum = sum + 2; sum = sum + 3; sum")
     .to_string(),
     "6",
   )
+}
 
-  // 测试数组迭代 - 使用不同的循环变量名
+///|
+test "87. array_iteration" {
+  let vm = MoonBitVM::new()
+  // 测试循环变量名不冲突的情况
   assert_eq(
     vm
     .eval("let mut sum = 0; for item in [1, 2, 3] { sum = sum + item }; sum")
     .to_string(),
     "6",
   )
-
-  // 测试数组迭代 - 原始测试
+  // 测试循环变量名可能冲突的情况
   assert_eq(
     vm
     .eval("let mut sum = 0; for x in [1, 2, 3] { sum = sum + x }; sum")
     .to_string(),
     "6",
   )
+  // 测试循环变量名与外部变量名相同的情况
+  assert_eq(
+    vm
+    .eval("let mut sum = 0; for sum in [1, 2, 3] { println(sum) }; sum")
+    .to_string(),
+    "0",
+  )
+}
 
-  // 测试字符串迭代
+///|
+test "88. string_iteration" {
+  let vm = MoonBitVM::new()
   assert_eq(
     vm
     .eval(
-      "let mut result = \"\"; for c in \"abc\" { result = result + c }; result",
+      "let mut result = \"\"; for c in \"abc\" { result = c + result }; result",
     )
     .to_string(),
-    "\"abc\"",
+    "cba",
   )
+}
 
-  // 测试 Map 迭代（键值对元组）
+///|
+test "89. map_iteration" {
+  let vm = MoonBitVM::new()
   assert_eq(
     vm
     .eval(
@@ -1600,45 +1617,45 @@ test "45. iter_expressions" {
     .to_string(),
     "3",
   )
+}
 
-  // 测试范围表达式 0..<3
+///|
+test "90. range_iteration" {
+  let vm = MoonBitVM::new()
   assert_eq(
     vm.eval("let sum = 0; for i in 0..<3 { sum = sum + i }; sum").to_string(),
     "3",
   )
-
-  // 测试范围表达式 1..=3
   assert_eq(
     vm.eval("let sum = 0; for i in 1..=3 { sum = sum + i }; sum").to_string(),
     "6",
   )
+}
 
-  // 测试 break 语句
+///|
+test "91. break_continue" {
+  let vm = MoonBitVM::new()
   assert_eq(
     vm
     .eval(
-      "let sum = 0; for i in 0..<10 { if i == 3 { break }; sum = sum + i }; sum",
+      "let mut sum = 0; for i in 0..<10 { if i == 3 { break }; sum = sum + i }; sum",
     )
     .to_string(),
-    "6",
+    "3", // 0+1+2=3
   )
-
-  // 测试 continue 语句
   assert_eq(
     vm
     .eval(
-      "let sum = 0; for i in 0..<5 { if i == 2 { continue }; sum = sum + i }; sum",
+      "let mut sum = 0; for i in 0..<5 { if i == 2 { continue }; sum = sum + i }; sum",
     )
     .to_string(),
-    "7",
+    "8", // 0+1+3+4=8
   )
 }
 
 ///|
-test "iter_method_tests" {
+test "92. iterator_methods" {
   let vm = MoonBitVM::new()
-
-  // 测试数组 iter 方法
   assert_eq(
     vm
     .eval(
@@ -1647,8 +1664,6 @@ test "iter_method_tests" {
     .to_string(),
     "6",
   )
-
-  // 测试字符串 iter 方法
   assert_eq(
     vm
     .eval(
@@ -1657,8 +1672,6 @@ test "iter_method_tests" {
     .to_string(),
     "5",
   )
-
-  // 测试 Map iter 方法
   assert_eq(
     vm
     .eval(
@@ -1667,22 +1680,30 @@ test "iter_method_tests" {
     .to_string(),
     "3",
   )
+}
 
-  // 测试嵌套迭代
+///|
+test "93. nested_iteration" {
+  let vm = MoonBitVM::new()
   assert_eq(
     vm
     .eval(
       "let arr1 = [1, 2]; let arr2 = [3, 4]; let mut sum = 0; for x in arr1 { for y in arr2 { sum = sum + x * y } }; sum",
     )
     .to_string(),
-    "20",
+    "21", // 1*3 + 1*4 + 2*3 + 2*4 = 3+4+6+8 = 21
   )
+}
 
-  // 测试迭代器与控制流
+///|
+test "94. iterator_control_flow" {
+  let vm = MoonBitVM::new()
+  inspect(vm.eval("let arr = [1, 2, 3]"), content="()")
+  inspect(vm.eval("arr.iter()"), content="<iterator>")
   assert_eq(
     vm
     .eval(
-      "let arr = [1, 2, 3, 4, 5]; let sum = 0; for x in arr.iter() { if x == 3 { continue }; if x > 4 { break }; sum = sum + x }; sum",
+      "let arr = [1, 2, 3, 4, 5]; let mut sum = 0; for x in arr.iter() { if x == 3 { continue }; if x > 4 { break }; sum = sum + x }; sum",
     )
     .to_string(),
     "7",

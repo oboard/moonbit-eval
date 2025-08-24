@@ -736,6 +736,21 @@ pub fn runtime_value_infix(
         "!=" => Bool(left != right)
         _ => Unit
       }
+    // String 和 Char 混合运算
+    (String(left), Char(right)) =>
+      match op {
+        "+" => String(left + right.to_string())
+        "==" => Bool(false)
+        "!=" => Bool(true)
+        _ => Unit
+      }
+    (Char(left), String(right)) =>
+      match op {
+        "+" => String(left.to_string() + right)
+        "==" => Bool(false)
+        "!=" => Bool(true)
+        _ => Unit
+      }
     // Char 运算
     (Char(left), Char(right)) =>
       match op {

@@ -1129,6 +1129,14 @@ pub fn ClosureInterpreter::visit(
     ForEach(binders~, expr~, body~, ..) => {
       let iterable_value = self.visit(expr)
 
+      // 获取迭代器：如果已经是 Iter 类型就直接使用，否则调用 iter() 方法
+      let get_iterator = fn(value) {
+        match value {
+          Iter(_) => value  // 已经是迭代器，直接使用
+          _ => value.iter()  // 调用 iter() 方法转换为迭代器
+        }
+      }
+
       // 首先检查是否为范围表达式
       let iterator = match expr {
         Infix(op~, lhs~, rhs~, ..) =>
@@ -1151,7 +1159,7 @@ pub fn ClosureInterpreter::visit(
                   }
                   Iter(range_iterator)
                 }
-                _ => iterable_value.iter()
+                _ => get_iterator(iterable_value)
               }
             }
             Ident(name="..=") => {
@@ -1172,18 +1180,20 @@ pub fn ClosureInterpreter::visit(
                   }
                   Iter(range_iterator)
                 }
-                _ => iterable_value.iter()
+                _ => get_iterator(iterable_value)
               }
             }
-            _ => iterable_value.iter()
+            _ => get_iterator(iterable_value)
           }
-        _ => iterable_value.iter()
+        _ => get_iterator(iterable_value)
       }
 
       // 使用迭代器进行迭代
       match iterator {
         Iter(iter_impl) =>
           (iter_impl.iterate_fn)(fn(value) {
+            // 创建新作用域来隔离循环变量
+            self.push_scope()
             // 绑定循环变量
             match binders {
               @list.List::More(Some(binder), tail=@list.List::Empty) =>
@@ -1196,7 +1206,7 @@ pub fn ClosureInterpreter::visit(
                 }
             }
             // 执行循环体
-            try {
+            let result = try {
               self.visit(body) |> ignore
               IterContinue
             } catch {
@@ -1204,6 +1214,9 @@ pub fn ClosureInterpreter::visit(
               Continue(_) => IterContinue
               _ => IterEnd // 其他错误也结束迭代
             }
+            // 销毁作用域
+            self.pop_scope()
+            result
           })
           |> ignore
         _ => () // 如果不是迭代器，什么都不做
@@ -1714,6 +1727,33 @@ fn ClosureInterpreter::execute_method_call(
   args : @list.List[@syntax.Argument],
 ) -> RuntimeValue raise ControlFlow {
   let self_type = self.current_module.env.find_variable_type(self_value)
+  
+  // 首先查找嵌入式方法
+  match self.embedded_methods.get(self_type.name) {
+    Some(type_methods) =>
+      match type_methods.get(method_name) {
+        Some(embedded_method) => {
+          // 准备参数：actual_self_value + 其他参数的求值结果
+          let evaluated_args = @list.construct(
+            self_value,
+            args.map(fn(arg) { self.visit(arg.value) }),
+          )
+          return embedded_method(RuntimeFunctionContext::{
+            context: self,
+            mod: self.current_module,
+            arguments: evaluated_args
+            .map(fn(arg) {
+              RuntimeArgument::{ value: arg, kind: Positional }
+            })
+            .to_array(),
+          })
+        }
+        None => ()
+      }
+    None => ()
+  }
+  
+  // 如果没有找到嵌入式方法，查找普通方法
   match self_type.find_method(method_name) {
     Some(func) =>
       // 普通函数，正常调用
@@ -1745,33 +1785,7 @@ fn ClosureInterpreter::execute_method_call(
         }
       })
     None =>
-      match self.embedded_methods.get(self_type.name) {
-        Some(type_methods) =>
-          match type_methods.get(method_name) {
-            Some(embedded_method) => {
-              // 准备参数：actual_self_value + 其他参数的求值结果
-              let evaluated_args = @list.construct(
-                self_value,
-                args.map(fn(arg) { self.visit(arg.value) }),
-              )
-              embedded_method(RuntimeFunctionContext::{
-                context: self,
-                mod: self.current_module,
-                arguments: evaluated_args
-                .map(fn(arg) {
-                  RuntimeArgument::{ value: arg, kind: Positional }
-                })
-                .to_array(),
-              })
-            }
-            None =>
-              error(
-                "exec: \{self_type.get_full_name()}::\{method_name} not found",
-              )
-          }
-        None =>
-          error("exec: \{self_type.get_full_name()}::\{method_name} not found")
-      }
+      error("exec: \{self_type.get_full_name()}::\{method_name} not found")
   }
 }
 
