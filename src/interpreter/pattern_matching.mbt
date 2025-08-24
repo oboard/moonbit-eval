@@ -67,7 +67,7 @@ pub fn ClosureInterpreter::pattern_matches(
       let runtime_value = self.visit(value)
 
       // 直接绑定RuntimeValue
-      self.main.env.current_scope().set(name, runtime_value)
+      self.current_module.env.set(name, runtime_value)
       true
     }
 

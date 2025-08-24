@@ -18,13 +18,12 @@ pub fn ClosureInterpreter::call_closure(
       let old_env = mod.env
       self.current_module = mod
       self.current_module.env = env
-      let result = self.with_scope(() => {
-        // 在新环境中绑定已解释的参数值
-        self.bind_evaluated_parameters(parameters, arg_values)
-        // 执行函数体
-        self.visit(body)
-      })
-
+      self.push_scope()
+      // 在新环境中绑定已解释的参数值
+      self.bind_evaluated_parameters(parameters, arg_values)
+      // 执行函数体
+      let result = self.visit(body)
+      self.pop_scope()
       // 恢复原环境
       self.current_module.env = old_env
       self.current_module = old_mod
@@ -46,22 +45,20 @@ pub fn ClosureInterpreter::bind_function_parameters(
   params : @list.List[@syntax.Parameter],
   args : @list.List[@syntax.Argument],
 ) -> Unit raise ControlFlow {
+  let env = self.current_module.env
   match (params, args) {
     (@list.More(param, tail=rest_params), @list.More(arg, tail=rest_args)) => {
       let runtime_value = self.visit(arg.value)
       match param {
         // 位置参数：直接绑定参数值
-        Positional(binder={ name, .. }, ..) =>
-          ignore(self.main.env.current_scope().set(name, runtime_value))
+        Positional(binder={ name, .. }, ..) => env.set(name, runtime_value)
         // 标签参数：绑定带标签的参数值
-        Labelled(binder={ name, .. }, ..) =>
-          ignore(self.main.env.current_scope().set(name, runtime_value))
+        Labelled(binder={ name, .. }, ..) => env.set(name, runtime_value)
         // 可选参数：当有参数提供时绑定参数值，否则使用默认值
-        Optional(binder={ name, .. }, ..) =>
-          ignore(self.main.env.current_scope().set(name, runtime_value))
+        Optional(binder={ name, .. }, ..) => env.set(name, runtime_value)
         // 问号可选参数：绑定参数值
         QuestionOptional(binder={ name, .. }, ..) =>
-          ignore(self.main.env.current_scope().set(name, runtime_value))
+          env.set(name, runtime_value)
         // 丢弃位置参数：不绑定到任何变量，直接跳过
         DiscardPositional(..) =>
           // 丢弃参数不需要绑定，但仍需要求值以保持副作用
@@ -75,7 +72,7 @@ pub fn ClosureInterpreter::bind_function_parameters(
         // 可选参数没有对应实参时，使用默认值
         Optional(binder={ name, .. }, default~, ..) => {
           let runtime_value = self.visit(default)
-          self.main.env.current_scope().set(name, runtime_value)
+          env.set(name, runtime_value)
           self.bind_function_parameters(rest_params, @list.new())
         }
         // 问号可选参数没有对应实参时，不绑定任何值
@@ -192,7 +189,7 @@ fn ClosureInterpreter::collect_free_variables(
     Ident(id={ name: Ident(name~), .. }, ..) =>
       // 如果变量未绑定且不在当前环境中，则为自由变量
       if not(bound_vars.contains(name)) &&
-        not(self.main.env.current_scope().contains(name)) {
+        not(self.main.env.values.contains(name)) {
         free_vars.set(name, ())
       }
     Apply(func~, args~, ..) => {

@@ -68,14 +68,6 @@ pub fn ClosureInterpreter::add_embedded_method(
   self.embedded_methods.get(type_name).unwrap().set(method_name, f)
 }
 
-///| 获取当前变量作用域
-pub fn RuntimeEnvironment::current_scope(
-  self : RuntimeEnvironment,
-) -> Map[String, RuntimeValue] {
-  // values 数组永远非空（初始化为 [{}]），直接访问最后一个元素
-  self.values
-}
-
 ///|
 pub fn RuntimeEnvironment::find_fn_alias(
   self : RuntimeEnvironment,
@@ -234,7 +226,7 @@ pub fn ClosureInterpreter::top_visit(
   // TopImplRelation(_) => ...
 }
 
-///| 新的优化版本：直接返回 RuntimeValue
+///| 访问语法树节点，返回运行时值
 pub fn ClosureInterpreter::visit(
   self : ClosureInterpreter,
   node : @syntax.Expr,
@@ -539,6 +531,7 @@ pub fn ClosureInterpreter::visit(
     // 处理可变变量声明
     LetMut(binder={ name, .. }, expr~, body~, ..) => {
       let runtime_value = self.visit(expr)
+      self.push_scope()
       self.current_module.env.set_mutable_variable(name, runtime_value)
       // 执行body部分，这是关键！
       self.visit(body)
@@ -661,8 +654,8 @@ pub fn ClosureInterpreter::visit(
     If(cond~, ifso~, ifnot~, ..) => {
       let cond_val = self.visit(cond)
       match (cond_val, ifnot) {
-        (Bool(true), _) => self.visit(ifso)
-        (Bool(false), Some(else_expr)) => self.visit(else_expr)
+        (Bool(true), _) => self.visit_scoped(ifso)
+        (Bool(false), Some(else_expr)) => self.visit_scoped(else_expr)
         _ => Unit
       }
     }
@@ -782,9 +775,11 @@ pub fn ClosureInterpreter::visit(
     Guard(cond~, otherwise~, body~, ..) => {
       let cond_val = self.visit(cond)
       match cond_val {
-        Bool(true) => self.visit(body)
+        Bool(true) => self.visit_scoped(body)
         Bool(false) =>
-          otherwise.map_or(Unit, expr => self.visit(expr) catch { _ => Unit })
+          otherwise.map_or(Unit, expr => self.visit_scoped(expr) catch {
+            _ => Unit
+          })
         _ => Unit
       }
     }
@@ -799,71 +794,70 @@ pub fn ClosureInterpreter::visit(
     Group(expr~, ..) => self.visit(expr)
 
     // 处理 For 循环
-    For(binders~, condition~, continue_block~, body~, for_else~, ..) =>
-      self.with_scope(fn() {
-        // 初始化循环变量
-        for binder_init in binders {
-          match binder_init {
-            (binder, init_expr) => {
-              let init_value = self.visit(init_expr)
-              self.current_module.env.set(binder.name, init_value)
+    For(binders~, condition~, continue_block~, body~, for_else~, ..) => {
+      // 初始化循环变量
+      for binder_init in binders {
+        match binder_init {
+          (binder, init_expr) => {
+            let init_value = self.visit(init_expr)
+            self.current_module.env.set(binder.name, init_value)
+          }
+        }
+      }
+
+      // 执行更新块的辅助函数
+      let execute_continue_block = () => for update_tuple in continue_block {
+        match update_tuple {
+          (binder, update_expr) => {
+            let new_value = self.visit(update_expr) catch { _ => Unit }
+            self.current_module.env.update(binder.name, new_value)
+          }
+        }
+      }
+
+      // 执行循环
+      while true {
+        // 检查循环条件
+        let should_continue = match condition {
+          Some(cond) => {
+            let condition_result = self.visit(cond) catch { _ => Unit }
+            match condition_result {
+              Bool(value) => value
+              _ => false
             }
           }
+          None => true
+        }
+        if not(should_continue) {
+          break
         }
 
-        // 执行更新块的辅助函数
-        let execute_continue_block = () => for update_tuple in continue_block {
-          match update_tuple {
-            (binder, update_expr) => {
-              let new_value = self.visit(update_expr) catch { _ => Unit }
-              self.current_module.env.update(binder.name, new_value)
+        // 执行循环体，处理break和continue
+        (self.visit_scoped(body) catch {
+          Break(value) => return value.unwrap_or(Unit)
+          Continue(arr) => {
+            if !arr.is_empty() {
+              binders.eachi(fn(i, binder) {
+                self.current_module.env.update(binder.0.name, arr[i])
+              })
+            } else {
+              execute_continue_block()
             }
+            continue
           }
+          _ => Unit
+        })
+        |> ignore
+        execute_continue_block()
+      }
+      if for_else is Some(expr) {
+        self.visit_scoped(expr) catch {
+          _ => Unit
         }
-
-        // 执行循环
-        while true {
-          // 检查循环条件
-          let should_continue = match condition {
-            Some(cond) => {
-              let condition_result = self.visit(cond) catch { _ => Unit }
-              match condition_result {
-                Bool(value) => value
-                _ => false
-              }
-            }
-            None => true
-          }
-          if not(should_continue) {
-            break
-          }
-
-          // 执行循环体，处理break和continue
-          (self.visit(body) catch {
-            Break(value) => return value.unwrap_or(Unit)
-            Continue(arr) => {
-              if !arr.is_empty() {
-                binders.eachi(fn(i, binder) {
-                  self.current_module.env.update(binder.0.name, arr[i])
-                })
-              } else {
-                execute_continue_block()
-              }
-              continue
-            }
-            _ => Unit
-          })
-          |> ignore
-          execute_continue_block()
-        }
-        if for_else is Some(expr) {
-          self.visit(expr) catch {
-            _ => Unit
-          }
-        } else {
-          Unit
-        }
-      })
+      } else {
+        Unit
+      }
+    }
 
     // 处理 While 循环
     While(loop_cond~, loop_body~, while_else~, ..) => {
@@ -877,7 +871,7 @@ pub fn ClosureInterpreter::visit(
         }
 
         // 执行循环体，处理break和continue
-        (self.visit(loop_body) catch {
+        (self.visit_scoped(loop_body) catch {
           Break(value) => {
             result = match value {
               Some(v) => v
@@ -887,14 +881,14 @@ pub fn ClosureInterpreter::visit(
             break
           }
           Continue(_) => continue
-          _ => Unit
+          e => raise e
         })
         |> ignore
       }
       // 如果没有break，执行else分支
       if not(broke) {
         match while_else {
-          Some(else_expr) => result = self.visit(else_expr)
+          Some(else_expr) => result = self.visit_scoped(else_expr)
           None => () // 没有else分支
         }
       }
@@ -1225,6 +1219,17 @@ pub fn ClosureInterpreter::visit(
     }
     _ => error("visit: unimplemented " + node.to_json().stringify())
   }
+}
+
+///|
+pub fn ClosureInterpreter::visit_scoped(
+  self : ClosureInterpreter,
+  node : @syntax.Expr,
+) -> RuntimeValue raise ControlFlow {
+  self.push_scope()
+  let value = self.visit(node)
+  self.pop_scope()
+  value
 }
 
 ///|
@@ -1753,35 +1758,34 @@ fn ClosureInterpreter::execute_method_call(
 
   // 如果没有找到嵌入式方法，查找普通方法
   match self_type.find_method(method_name) {
-    Some(func) =>
-      // 普通函数，正常调用
-      self.with_scope(fn() raise ControlFlow {
-        // 手动绑定self参数和其他参数
-        match func {
-          Closure(Lambda(parameters~, body~, ..), _env) => {
-            // 绑定self参数（第一个参数）
-            match parameters {
-              @list.More(first_param, tail=rest_params) => {
-                match first_param {
-                  @syntax.Parameter::Positional(binder={ name, .. }, ..)
-                  | @syntax.Parameter::Labelled(binder={ name, .. }, ..) =>
-                    self.current_module.env
-                    .current_scope()
-                    .set(name, self_value)
-                  _ => ()
-                }
-                // 绑定其他参数
-                self.bind_function_parameters_runtime(rest_params, args)
+    Some(func) => {
+      self.push_scope()
+      // 手动绑定self参数和其他参数
+      let result = match func {
+        Closure(Lambda(parameters~, body~, ..), _env) => {
+          // 绑定self参数（第一个参数）
+          match parameters {
+            @list.More(first_param, tail=rest_params) => {
+              match first_param {
+                @syntax.Parameter::Positional(binder={ name, .. }, ..)
+                | @syntax.Parameter::Labelled(binder={ name, .. }, ..) =>
+                  self.current_module.env.set(name, self_value)
+                _ => ()
               }
-              @list.Empty => ()
+              // 绑定其他参数
+              self.bind_function_parameters_runtime(rest_params, args)
             }
-
-            // 执行函数体
-            self.visit(body)
+            @list.Empty => ()
           }
-          _ => Unit
+
+          // 执行函数体
+          self.visit(body)
         }
-      })
+        _ => Unit
+      }
+      self.pop_scope()
+      result
+    }
     None =>
       error("exec: \{self_type.get_full_name()}::\{method_name} not found")
   }
@@ -2118,17 +2122,6 @@ fn safe_index_access(values : Array[RuntimeValue], index : Int) -> RuntimeValue 
   } else {
     Unit
   }
-}
-
-///| 作用域管理辅助函数，确保作用域正确清理
-fn[T] ClosureInterpreter::with_scope(
-  self : ClosureInterpreter,
-  f : () -> T raise ControlFlow,
-) -> T raise ControlFlow {
-  self.push_scope()
-  let result = f()
-  self.pop_scope()
-  result
 }
 
 ///| 从函数体推导返回类型

@@ -1709,3 +1709,23 @@ test "94. iterator_control_flow" {
     "7",
   )
 }
+
+///|
+test "95. closure_environment" {
+  let vm = MoonBitVM::new()
+  inspect(
+    vm.eval(
+      (
+        #|let mut x = 0
+        #|fn f1() { x += 1; x }
+        #|let mut x = 0
+        #|fn f2() { x += 1; x }
+      ),
+    ),
+    content="() -> Any",
+  )
+  assert_eq(vm.eval("f1()").to_string(), "1")
+  assert_eq(vm.eval("f1()").to_string(), "2")
+  assert_eq(vm.eval("f2()").to_string(), "1")
+  assert_eq(vm.eval("f2()").to_string(), "2")
+}
