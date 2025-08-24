@@ -43,26 +43,25 @@ pub fn ClosureInterpreter::call_closure(
 pub fn ClosureInterpreter::bind_function_parameters(
   self : ClosureInterpreter,
   params : @list.List[@syntax.Parameter],
-  args : @list.List[@syntax.Argument],
+  args : @list.List[RuntimeArgument],
 ) -> Unit raise ControlFlow {
   let env = self.current_module.env
   match (params, args) {
     (@list.More(param, tail=rest_params), @list.More(arg, tail=rest_args)) => {
-      let runtime_value = self.visit(arg.value)
+      let value = arg.value
       match param {
         // 位置参数：直接绑定参数值
-        Positional(binder={ name, .. }, ..) => env.set(name, runtime_value)
+        Positional(binder={ name, .. }, ..)
         // 标签参数：绑定带标签的参数值
-        Labelled(binder={ name, .. }, ..) => env.set(name, runtime_value)
+        | Labelled(binder={ name, .. }, ..)
         // 可选参数：当有参数提供时绑定参数值，否则使用默认值
-        Optional(binder={ name, .. }, ..) => env.set(name, runtime_value)
+        | Optional(binder={ name, .. }, ..)
         // 问号可选参数：绑定参数值
-        QuestionOptional(binder={ name, .. }, ..) =>
-          env.set(name, runtime_value)
+        | QuestionOptional(binder={ name, .. }, ..) => env.set(name, value)
         // 丢弃位置参数：不绑定到任何变量，直接跳过
         DiscardPositional(..) =>
           // 丢弃参数不需要绑定，但仍需要求值以保持副作用
-          self.visit(arg.value) |> ignore
+          ()
       }
       self.bind_function_parameters(rest_params, rest_args)
     }
@@ -85,52 +84,6 @@ pub fn ClosureInterpreter::bind_function_parameters(
   }
 }
 
-///|
-pub fn ClosureInterpreter::bind_function_parameters_runtime(
-  self : ClosureInterpreter,
-  params : @list.List[@syntax.Parameter],
-  args : @list.List[@syntax.Argument],
-) -> Unit raise ControlFlow {
-  match (params, args) {
-    (@list.More(param, tail=rest_params), @list.More(arg, tail=rest_args)) => {
-      let arg_value = self.visit(arg.value)
-      match param {
-        // 位置参数：直接绑定参数值
-        Positional(binder={ name, .. }, ..) =>
-          self.main.env.set(name, arg_value)
-        // 标签参数：绑定带标签的参数值
-        Labelled(binder={ name, .. }, ..) => self.main.env.set(name, arg_value)
-        // 可选参数：当有参数提供时绑定参数值，否则使用默认值
-        Optional(binder={ name, .. }, ..) => self.main.env.set(name, arg_value)
-        // 问号可选参数：绑定参数值
-        QuestionOptional(binder={ name, .. }, ..) =>
-          self.main.env.set(name, arg_value)
-        // 丢弃位置参数：不绑定到任何变量，直接跳过
-        DiscardPositional(..) =>
-          // 丢弃参数不需要绑定，但仍需要求值以保持副作用
-          self.visit(arg.value) |> ignore
-      }
-      self.bind_function_parameters_runtime(rest_params, rest_args)
-    }
-    // 处理可选参数的默认值情况
-    (@list.More(param, tail=rest_params), @list.Empty) =>
-      match param {
-        // 可选参数没有对应实参时，使用默认值
-        Optional(binder={ name, .. }, default~, ..) => {
-          let default_value = self.visit(default)
-          self.main.env.set(name, default_value)
-          self.bind_function_parameters_runtime(rest_params, @list.new())
-        }
-        // 问号可选参数没有对应实参时，不绑定任何值
-        QuestionOptional(..) =>
-          self.bind_function_parameters_runtime(rest_params, @list.new())
-        _ => ()
-      }
-    (@list.Empty, @list.Empty) => ()
-    _ => ()
-  }
-}
-
 ///| 执行函数调用
 pub fn ClosureInterpreter::call(
   self : ClosureInterpreter,
@@ -143,7 +96,10 @@ pub fn ClosureInterpreter::call(
       self.push_scope()
 
       // 绑定参数
-      self.bind_function_parameters_runtime(parameters, args)
+      self.bind_function_parameters(
+        parameters,
+        args.map(arg => { value: self.visit(arg.value), kind: arg.kind }),
+      )
       // 执行函数体
       let result = self.visit(body) catch {
         Return(v) => v

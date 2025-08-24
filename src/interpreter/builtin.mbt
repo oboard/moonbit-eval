@@ -4,10 +4,12 @@ let core_fn_aliases : Map[String, String] = {
   "ignore": "%ignore",
   "println_mono": "%println",
   "println": "%println_mono",
+  "typeof": "%typeof",
 }
 
 ///|
 let builtin_embedded_code : Map[String, RuntimeFunction] = {
+  "%typeof": typeof_fn,
   "%println_mono": println_mono_fn,
   "%ignore": ignore_fn,
   "%refeq": physical_equal_fn,
@@ -138,6 +140,13 @@ let core_embedded_methods : Map[String, Map[String, RuntimeFunction]] = {
   "Array": array_methods,
   "Option": option_methods,
   "Map": map_methods,
+}
+
+///|
+let typeof_fn : RuntimeFunction = ctx => match ctx.arguments {
+  [{ value, .. }, ..] =>
+    String(ctx.mod.env.find_variable_type(value).get_full_name())
+  _ => Unit
 }
 
 ///|

@@ -76,8 +76,7 @@ pub(all) struct ClosureInterpreter {
 fn ClosureInterpreter::add_embedded_fn(Self, String, (RuntimeFunctionContext) -> RuntimeValue raise ControlFlow) -> Unit
 fn ClosureInterpreter::add_embedded_method(Self, String, String, (RuntimeFunctionContext) -> RuntimeValue raise ControlFlow) -> Unit
 fn ClosureInterpreter::add_extern_fn(Self, String, (RuntimeFunctionContext) -> RuntimeValue raise ControlFlow) -> Unit
-fn ClosureInterpreter::bind_function_parameters(Self, @list.List[@syntax.Parameter], @list.List[@syntax.Argument]) -> Unit raise ControlFlow
-fn ClosureInterpreter::bind_function_parameters_runtime(Self, @list.List[@syntax.Parameter], @list.List[@syntax.Argument]) -> Unit raise ControlFlow
+fn ClosureInterpreter::bind_function_parameters(Self, @list.List[@syntax.Parameter], @list.List[RuntimeArgument]) -> Unit raise ControlFlow
 fn ClosureInterpreter::call(Self, @syntax.Func, @list.List[@syntax.Argument]) -> RuntimeValue raise ControlFlow
 fn ClosureInterpreter::call_closure(Self, @syntax.Func, RuntimeModule, RuntimeEnvironment, @list.List[@syntax.Argument]) -> RuntimeValue raise ControlFlow
 fn ClosureInterpreter::constants_equal(Self, @syntax.Constant, @syntax.Constant) -> Bool

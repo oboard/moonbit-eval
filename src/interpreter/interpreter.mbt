@@ -1733,61 +1733,65 @@ fn ClosureInterpreter::execute_method_call(
 ) -> RuntimeValue raise ControlFlow {
   let self_type = self.current_module.env.find_variable_type(self_value)
 
-  // 首先查找嵌入式方法
-  match self.embedded_methods.get(self_type.name) {
-    Some(type_methods) =>
-      match type_methods.get(method_name) {
-        Some(embedded_method) => {
-          // 准备参数：actual_self_value + 其他参数的求值结果
-          let evaluated_args = @list.construct(
-            self_value,
-            args.map(fn(arg) { self.visit(arg.value) }),
-          )
-          return embedded_method(RuntimeFunctionContext::{
-            context: self,
-            mod: self.current_module,
-            arguments: evaluated_args
-            .map(fn(arg) { RuntimeArgument::{ value: arg, kind: Positional } })
-            .to_array(),
-          })
-        }
-        None => ()
-      }
-    None => ()
-  }
-
-  // 如果没有找到嵌入式方法，查找普通方法
+  // 查找普通方法
   match self_type.find_method(method_name) {
     Some(func) => {
       self.push_scope()
       // 手动绑定self参数和其他参数
       let result = match func {
         Closure(Lambda(parameters~, body~, ..), _env) => {
-          // 绑定self参数（第一个参数）
+          let args = args.map(arg => {
+            value: self.visit(arg.value),
+            kind: arg.kind,
+          })
+          // 绑定参数
           match parameters {
-            @list.More(first_param, tail=rest_params) => {
-              match first_param {
-                @syntax.Parameter::Positional(binder={ name, .. }, ..)
-                | @syntax.Parameter::Labelled(binder={ name, .. }, ..) =>
-                  self.current_module.env.set(name, self_value)
-                _ => ()
-              }
-              // 绑定其他参数
-              self.bind_function_parameters_runtime(rest_params, args)
-            }
-            @list.Empty => ()
+            More(Positional(binder={ name: "self", .. }, ..), ..) =>
+              self.bind_function_parameters(
+                parameters,
+                @list.construct({ value: self_value, kind: Positional }, args),
+              )
+            _ => self.bind_function_parameters(parameters, args)
           }
 
           // 执行函数体
           self.visit(body)
         }
-        _ => Unit
+        _ =>
+          error(
+            "exec method: \{self_type.get_full_name()}::\{method_name} not found",
+          )
       }
       self.pop_scope()
       result
     }
     None =>
-      error("exec: \{self_type.get_full_name()}::\{method_name} not found")
+      // 查找嵌入式方法
+      match self.embedded_methods.get(self_type.name) {
+        Some(type_methods) =>
+          match type_methods.get(method_name) {
+            Some(embedded_method) => {
+              // 准备参数：actual_self_value + 其他参数的求值结果
+              let evaluated_args = @list.construct(
+                self_value,
+                args.map(fn(arg) { self.visit(arg.value) }),
+              )
+              return embedded_method(RuntimeFunctionContext::{
+                context: self,
+                mod: self.current_module,
+                arguments: evaluated_args
+                .map(arg => { value: arg, kind: Positional })
+                .to_array(),
+              })
+            }
+            None =>
+              error(
+                "exec embedded method: \{self_type.get_full_name()}::\{method_name} not found",
+              )
+          }
+        None =>
+          error("exec: \{self_type.get_full_name()}::\{method_name} not found")
+      }
   }
 }
 
@@ -1842,10 +1846,7 @@ fn ClosureInterpreter::execute_embedded_static_method(
       match methods.get(method_name) {
         Some(embedded_func) => {
           let evaluated_args = args
-            .map(arg => RuntimeArgument::{
-              value: self.visit(arg.value),
-              kind: arg.kind,
-            })
+            .map(arg => { value: self.visit(arg.value), kind: arg.kind })
             .to_array()
           embedded_func(RuntimeFunctionContext::{
             mod: self.current_module,
