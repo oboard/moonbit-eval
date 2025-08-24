@@ -14573,7 +14573,7 @@ let moonbitlang_core_list_module : RuntimeModule = RuntimeModule::new(
           #|      let dest = More(f(hd), tail=Empty)
           #|      loop (dest, tail) {
           #|        (_, Empty) => ()
-          #|        (More(_, _) as dest, More(hd, tail~)) => {
+          #|        (More(_) as dest, More(hd, tail~)) => {
           #|          dest.tail = More(f(hd), tail=Empty)
           #|          continue (dest.tail, tail)
           #|        }
@@ -14593,7 +14593,7 @@ let moonbitlang_core_list_module : RuntimeModule = RuntimeModule::new(
           #|      let dest = More(f(0, hd), tail=Empty)
           #|      loop (1, dest, tail) {
           #|        (_, _, Empty) => ()
-          #|        (i, More(_, _) as dest, More(hd, tail~)) => {
+          #|        (i, More(_) as dest, More(hd, tail~)) => {
           #|          dest.tail = More(f(i, hd), tail=Empty)
           #|          continue (i + 1, dest.tail, tail)
           #|        }
@@ -14642,7 +14642,7 @@ let moonbitlang_core_list_module : RuntimeModule = RuntimeModule::new(
           #|        let dest = More(head, tail=Empty)
           #|        loop (dest, tail) {
           #|          (_, Empty) => ()
-          #|          (More(_, _) as dest, More(hd, tail~)) =>
+          #|          (More(_) as dest, More(hd, tail~)) =>
           #|            if f(hd) {
           #|              dest.tail = More(hd, tail=Empty)
           #|              continue (dest.tail, tail)
@@ -14724,8 +14724,8 @@ let moonbitlang_core_list_module : RuntimeModule = RuntimeModule::new(
           #|    More(hd, tail~) => {
           #|      let dest = More(hd, tail=Empty)
           #|      loop (dest, tail) {
-          #|        (More(_, _) as dest, Empty) => dest.tail = other
-          #|        (More(_, _) as dest, More(head, tail~)) => {
+          #|        (More(_) as dest, Empty) => dest.tail = other
+          #|        (More(_) as dest, More(head, tail~)) => {
           #|          dest.tail = More(head, tail=Empty)
           #|          continue (dest.tail, tail)
           #|        }
@@ -14772,7 +14772,7 @@ let moonbitlang_core_list_module : RuntimeModule = RuntimeModule::new(
           #|          let dest = More(head, tail=Empty)
           #|          loop (dest, tail) {
           #|            (_, Empty) => ()
-          #|            (More(_, _) as dest, More(hd, tail~)) =>
+          #|            (More(_) as dest, More(hd, tail~)) =>
           #|              match f(hd) {
           #|                None => continue (dest, tail)
           #|                Some(head) => {
@@ -14822,7 +14822,7 @@ let moonbitlang_core_list_module : RuntimeModule = RuntimeModule::new(
           #|      let dest = More(head, tail=Empty)
           #|      loop (dest, tail) {
           #|        (_, Empty) => ()
-          #|        (More(_, _) as dest, More(hd, tail=tl)) => {
+          #|        (More(_) as dest, More(hd, tail=tl)) => {
           #|          let new_tail = More(hd, tail=Empty)
           #|          dest.tail = More(separator, tail=new_tail)
           #|          continue (new_tail, tl)
@@ -14874,7 +14874,7 @@ let moonbitlang_core_list_module : RuntimeModule = RuntimeModule::new(
           #|          // copy all the elements of `head` first
           #|          let dest1 = loop (dest, tl) {
           #|            (dest, Empty) => dest
-          #|            (More(_, _) as dest, More(hd, tail~)) => {
+          #|            (More(_) as dest, More(hd, tail~)) => {
           #|              dest.tail = More(hd, tail=Empty)
           #|              continue (dest.tail, tail)
           #|            }
@@ -14883,11 +14883,11 @@ let moonbitlang_core_list_module : RuntimeModule = RuntimeModule::new(
           #|          // continue looping on the `tail` of `self`
           #|          loop_over_tail~: loop (dest1, tail) {
           #|            (_, Empty) => ()
-          #|            (More(_, _) as dest, More(t_hd, tail=Empty)) => dest.tail = t_hd
+          #|            (More(_) as dest, More(t_hd, tail=Empty)) => dest.tail = t_hd
           #|            (dest, More(t_hd, tail=t_tl)) =>
           #|              loop (dest, t_hd) {
           #|                (dest, Empty) => continue loop_over_tail~ (dest, t_tl)
-          #|                (More(_, _) as dest, More(hd, tail~)) => {
+          #|                (More(_) as dest, More(hd, tail~)) => {
           #|                  dest.tail = More(hd, tail=Empty)
           #|                  continue (dest.tail, tail)
           #|                }
@@ -14975,7 +14975,7 @@ let moonbitlang_core_list_module : RuntimeModule = RuntimeModule::new(
           #|      let dest = More(element, tail=Empty)
           #|      loop (dest, f(new_state)) {
           #|        (_, None) => ()
-          #|        (More(_, _) as dest, Some((element, new_state))) => {
+          #|        (More(_) as dest, Some((element, new_state))) => {
           #|          dest.tail = More(element, tail=Empty)
           #|          continue (dest.tail, f(new_state))
           #|        }
@@ -15006,7 +15006,7 @@ let moonbitlang_core_list_module : RuntimeModule = RuntimeModule::new(
           #|        loop (dest, tail, n - 1) {
           #|          (_, Empty, _) => ()
           #|          (_, _, 0) => ()
-          #|          (More(_, _) as dest, More(x, tail=xs), n) => {
+          #|          (More(_) as dest, More(x, tail=xs), n) => {
           #|            dest.tail = More(x, tail=Empty)
           #|            continue (dest.tail, xs, n - 1)
           #|          }
@@ -15040,7 +15040,7 @@ let moonbitlang_core_list_module : RuntimeModule = RuntimeModule::new(
           #|        let dest = More(head, tail=Empty)
           #|        loop (dest, tail) {
           #|          (_, Empty) => ()
-          #|          (More(_, _) as dest, More(x, tail=xs)) if p(x) => {
+          #|          (More(_) as dest, More(x, tail=xs)) if p(x) => {
           #|            dest.tail = More(x, tail=Empty)
           #|            continue (dest.tail, xs)
           #|          }
@@ -15109,8 +15109,8 @@ let moonbitlang_core_list_module : RuntimeModule = RuntimeModule::new(
           #|      let dest = More(head, tail=Empty)
           #|      loop (dest, tail, n - 1) {
           #|        (_, Empty, _) => ()
-          #|        (More(_, _) as dest, More(_, tail~), 0) => dest.tail = tail
-          #|        (More(_, _) as dest, More(x, tail=xs), n) => {
+          #|        (More(_) as dest, More(_, tail~), 0) => dest.tail = tail
+          #|        (More(_) as dest, More(x, tail=xs), n) => {
           #|          dest.tail = More(x, tail=Empty)
           #|          continue (dest.tail, xs, n - 1)
           #|        }
@@ -15130,7 +15130,7 @@ let moonbitlang_core_list_module : RuntimeModule = RuntimeModule::new(
           #|      let dest = More(head, tail~)
           #|      loop (dest, tail) {
           #|        (_, Empty) => ()
-          #|        (More(_, _) as dest, More(x, tail=xs)) =>
+          #|        (More(_) as dest, More(x, tail=xs)) =>
           #|          if x == elem {
           #|            dest.tail = xs
           #|          } else {
