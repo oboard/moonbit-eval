@@ -1004,25 +1004,25 @@ pub fn ClosureInterpreter::visit(
     Loop(args~, body~, ..) => {
       let mut arg = Tuple(args.map(arg => self.visit(arg)).to_array())
       let cases = body.map(case => @syntax.Case::{
-        pattern: @syntax.Pattern::Tuple(pats=case.patterns, loc=dummy_loc()),
+        pattern: Tuple(pats=case.patterns, loc=dummy_loc()),
         body: case.body,
         guard_: None,
       })
       let mut is_continue = true
+      let mut result = Unit
       while is_continue {
         is_continue = false
-        (self.execute_match_runtime(arg, cases) catch {
+        result = self.execute_match_runtime(arg, cases) catch {
           Break(value) => return value.unwrap_or(Unit)
           Continue(arr) => {
             arg = Tuple(arr)
             is_continue = true
-            Unit
+            continue
           }
           e => raise e
-        })
-        |> ignore
+        }
       }
-      Unit
+      result
     }
 
     // 处理 Try 表达式
@@ -1736,6 +1736,8 @@ fn ClosureInterpreter::execute_method_call(
   // 查找普通方法
   match self_type.find_method(method_name) {
     Some(func) => {
+      let old_env = self.current_module.env
+      self.current_module.env = self_type.env
       self.push_scope()
       // 手动绑定self参数和其他参数
       let result = match func {
@@ -1763,6 +1765,7 @@ fn ClosureInterpreter::execute_method_call(
           )
       }
       self.pop_scope()
+      self.current_module.env = old_env
       result
     }
     None =>
