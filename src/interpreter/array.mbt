@@ -286,7 +286,7 @@ let array_iter_fn : RuntimeFunction = ctx => match ctx.arguments {
           }
         }
         IterContinue
-      }
+      },
     }
     Iter(iterator)
   }

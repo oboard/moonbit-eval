@@ -30,7 +30,7 @@ pub(all) enum RuntimeValue {
 
   // 异常处理 - 用于实现raise和try语句
   Exception(String) // 异常信息
-  
+
   // 迭代器类型 - 用于实现内部迭代器
   Iter(RuntimeIterator)
 }
@@ -629,7 +629,7 @@ pub fn RuntimeValue::iter(self : RuntimeValue) -> RuntimeValue {
             }
           }
           IterContinue
-        }
+        },
       }
       Iter(iterator)
     }
@@ -644,7 +644,7 @@ pub fn RuntimeValue::iter(self : RuntimeValue) -> RuntimeValue {
             }
           }
           IterContinue
-        }
+        },
       }
       Iter(iterator)
     }
@@ -661,16 +661,18 @@ pub fn RuntimeValue::iter(self : RuntimeValue) -> RuntimeValue {
               }
             }
           })
-          if should_stop { IterEnd } else { IterContinue }
-        }
+          if should_stop {
+            IterEnd
+          } else {
+            IterContinue
+          }
+        },
       }
       Iter(iterator)
     }
     _ => {
       // 对于不支持迭代的类型，返回空迭代器
-      let iterator = RuntimeIterator::{
-        iterate_fn: fn(_visit_fn) { IterEnd }
-      }
+      let iterator = RuntimeIterator::{ iterate_fn: fn(_visit_fn) { IterEnd } }
       Iter(iterator)
     }
   }

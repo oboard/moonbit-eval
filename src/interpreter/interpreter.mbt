@@ -248,9 +248,11 @@ pub fn ClosureInterpreter::visit(
 
     // 处理变量标识符
     Ident(id={ name, .. }, ..) =>
-      self.current_module.with_ident(name, (mod, _pkg, name) => mod.env
-        .find(name)
-        .or_error(error("variable \{name} not found")))
+      self.current_module.with_ident(name, (mod, _pkg, name) => match
+        mod.env.find(name) {
+        Some(v) => v
+        None => error("variable \{name} not found")
+      })
 
     // 处理中缀表达式（如 1+1）
     Infix(op~, lhs~, rhs~, ..) =>

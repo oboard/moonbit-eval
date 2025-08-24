@@ -36,9 +36,9 @@ pub(all) struct MoonBitVM {
   interpreter : @interpreter.ClosureInterpreter
   log : Bool
 }
-fn MoonBitVM::create(log? : Bool, core? : Bool) -> Self
+fn MoonBitVM::create(log? : Bool) -> Self
 fn MoonBitVM::eval(Self, String, log? : Bool, top? : Bool) -> EvalResult raise @interpreter.ControlFlow
-fn MoonBitVM::new(log? : Bool, core? : Bool) -> Self
+fn MoonBitVM::new(log? : Bool) -> Self
 
 // Type aliases
 

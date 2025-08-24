@@ -86,7 +86,7 @@ fn ClosureInterpreter::execute_match(Self, @syntax.Expr, @list.List[@syntax.Case
 fn ClosureInterpreter::execute_match_runtime(Self, RuntimeValue, @list.List[@syntax.Case]) -> RuntimeValue raise ControlFlow
 fn ClosureInterpreter::get_function_type_string(Self, RuntimeValue) -> String
 fn ClosureInterpreter::is_known_function(Self, String) -> Bool
-fn ClosureInterpreter::new(core? : Bool) -> Self
+fn ClosureInterpreter::new() -> Self
 fn ClosureInterpreter::pattern_matches(Self, @syntax.Expr, @syntax.Pattern) -> Bool raise ControlFlow
 fn ClosureInterpreter::pattern_to_value(Self, @syntax.Pattern) -> @syntax.Expr?
 fn ClosureInterpreter::pop_scope(Self) -> Unit
@@ -100,6 +100,11 @@ fn ClosureInterpreter::visit(Self, @syntax.Expr) -> RuntimeValue raise ControlFl
 pub(all) enum InterpreterState {
   Running
   Stopped
+}
+
+pub(all) enum IterResult {
+  IterContinue
+  IterEnd
 }
 
 pub struct ModuleMeta {
@@ -153,6 +158,10 @@ pub(all) struct RuntimeFunctionContext {
   arguments : Array[RuntimeArgument]
 }
 
+pub(all) struct RuntimeIterator {
+  iterate_fn : ((RuntimeValue) -> IterResult) -> IterResult
+}
+
 pub(all) struct RuntimeModule {
   meta : ModuleMeta
   mut env : RuntimeEnvironment
@@ -192,10 +201,12 @@ pub(all) enum RuntimeValue {
   Closure(@syntax.Func, RuntimeEnvironment)
   Constructor(WithType[(String, Array[RuntimeValue])])
   Exception(String)
+  Iter(RuntimeIterator)
 }
 fn RuntimeValue::from_expr(@syntax.Expr) -> Self
 fn RuntimeValue::is_mutable(Self) -> Bool
 fn RuntimeValue::is_reference(Self) -> Bool
+fn RuntimeValue::iter(Self) -> Self
 fn RuntimeValue::to_expr(Self) -> @syntax.Expr
 impl Add for RuntimeValue
 impl Eq for RuntimeValue

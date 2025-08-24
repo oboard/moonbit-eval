@@ -81,12 +81,14 @@ pub fn RuntimeEnvironment::update(
 
 ///| 创建新的作用域
 pub fn ClosureInterpreter::push_scope(self : ClosureInterpreter) -> Unit {
-  self.main.env = RuntimeEnvironment::new(parent=self.main.env)
+  self.current_module.env = RuntimeEnvironment::new(
+    parent=self.current_module.env,
+  )
 }
 
 ///| 销毁当前作用域
 pub fn ClosureInterpreter::pop_scope(self : ClosureInterpreter) -> Unit {
-  if self.main.env.parent is Some(parent) {
-    self.main.env = parent
+  if self.current_module.env.parent is Some(parent) {
+    self.current_module.env = parent
   }
 }
