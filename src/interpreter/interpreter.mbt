@@ -1132,8 +1132,8 @@ pub fn ClosureInterpreter::visit(
       // 获取迭代器：如果已经是 Iter 类型就直接使用，否则调用 iter() 方法
       let get_iterator = fn(value) {
         match value {
-          Iter(_) => value  // 已经是迭代器，直接使用
-          _ => value.iter()  // 调用 iter() 方法转换为迭代器
+          Iter(_) => value // 已经是迭代器，直接使用
+          _ => value.iter() // 调用 iter() 方法转换为迭代器
         }
       }
 
@@ -1727,7 +1727,7 @@ fn ClosureInterpreter::execute_method_call(
   args : @list.List[@syntax.Argument],
 ) -> RuntimeValue raise ControlFlow {
   let self_type = self.current_module.env.find_variable_type(self_value)
-  
+
   // 首先查找嵌入式方法
   match self.embedded_methods.get(self_type.name) {
     Some(type_methods) =>
@@ -1742,9 +1742,7 @@ fn ClosureInterpreter::execute_method_call(
             context: self,
             mod: self.current_module,
             arguments: evaluated_args
-            .map(fn(arg) {
-              RuntimeArgument::{ value: arg, kind: Positional }
-            })
+            .map(fn(arg) { RuntimeArgument::{ value: arg, kind: Positional } })
             .to_array(),
           })
         }
@@ -1752,7 +1750,7 @@ fn ClosureInterpreter::execute_method_call(
       }
     None => ()
   }
-  
+
   // 如果没有找到嵌入式方法，查找普通方法
   match self_type.find_method(method_name) {
     Some(func) =>
