@@ -144,8 +144,7 @@ let core_embedded_methods : Map[String, Map[String, RuntimeFunction]] = {
 
 ///|
 let typeof_fn : RuntimeFunction = ctx => match ctx.arguments {
-  [{ value, .. }, ..] =>
-    String(ctx.mod.env.find_variable_type(value).get_full_name())
+  [{ value, .. }, ..] => String(ctx.mod.env.type_of(value).get_full_name())
   _ => Unit
 }
 

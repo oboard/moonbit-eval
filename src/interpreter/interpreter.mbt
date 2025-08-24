@@ -1731,7 +1731,7 @@ fn ClosureInterpreter::execute_method_call(
   method_name : String,
   args : @list.List[@syntax.Argument],
 ) -> RuntimeValue raise ControlFlow {
-  let self_type = self.current_module.env.find_variable_type(self_value)
+  let self_type = self.current_module.env.type_of(self_value)
 
   // 查找普通方法
   match self_type.find_method(method_name) {
@@ -2003,7 +2003,7 @@ fn RuntimeModule::find_static_type(
 }
 
 ///|
-fn RuntimeEnvironment::find_variable_type(
+fn RuntimeEnvironment::type_of(
   self : RuntimeEnvironment,
   runtime_value : RuntimeValue,
 ) -> RuntimeType {
@@ -2135,7 +2135,7 @@ fn ClosureInterpreter::infer_return_type_from_expr(
     Apply(func~, ..) =>
       match func {
         @syntax.Expr::Ident(id={ name: ident, .. }, ..) =>
-          self.current_module.with_ident(ident, (mod, _pkg, name) => mod.env.find_variable_type(
+          self.current_module.with_ident(ident, (mod, _pkg, name) => mod.env.type_of(
             mod.env.find(name).unwrap_or(Unit),
           ))
         _ => RuntimeType::any()
