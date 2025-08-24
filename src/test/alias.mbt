@@ -1,2 +1,2 @@
 ///|
-typealias @eval.MoonBitVM
+typealias MoonBitVM = @eval.MoonBitVM

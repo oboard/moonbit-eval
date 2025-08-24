@@ -35,7 +35,12 @@ pub fn ClosureInterpreter::execute_match_runtime(
     }
     self.pop_scope()
   }
-  RuntimeValue::Unit // 如果没有匹配的模式，返回unit
+  error(
+    "No match found for value: " +
+    value.to_string() +
+    " in " +
+    cases.to_json().stringify(),
+  )
 }
 
 ///| 检查值是否匹配模式
@@ -204,13 +209,13 @@ pub fn ClosureInterpreter::pattern_matches(
       // 查找构造函数对应的值
       let name1 = constr.name.name
       let value_runtime = self.visit(value)
-      if value_runtime is Constructor({ val: (name2, arr), .. }) {
+      if value_runtime is Constructor({ val: { name: name2, fields }, .. }) {
         if name1 != name2 {
           return false
         }
         if args is Some(args) {
           return args.foldi(init=true, fn(i, acc, arg) {
-            acc && self.pattern_matches_runtime(arr[i], arg.pat)
+            acc && self.pattern_matches_runtime(fields[i].value, arg.pat)
           })
         } else {
           return true

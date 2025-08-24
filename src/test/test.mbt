@@ -1729,3 +1729,164 @@ test "95. closure_environment" {
   assert_eq(vm.eval("f2()").to_string(), "1")
   assert_eq(vm.eval("f2()").to_string(), "2")
 }
+
+///|
+test "field_assignment" {
+  let vm = MoonBitVM::new()
+  // Test field assignment works - separate top and non-top
+  assert_eq(
+    vm
+    .eval(
+      (
+        #|struct Point { mut x : Int, mut y : Int }
+      ),
+      top=true,
+    )
+    .to_string(),
+    "()",
+  )
+  assert_eq(
+    vm
+    .eval(
+      (
+        #|let p = { x: 1, y: 2 }
+        #|p.x = 10
+        #|p.y = 20
+        #|(p.x, p.y)
+      ),
+      top=false,
+    )
+    .to_string(),
+    "(10, 20)",
+  )
+}
+
+///|
+test "list_methods" {
+  let vm = MoonBitVM::new(log=true)
+  assert_eq(
+    vm.eval("let list = @list.of([1, 2, 3]); list").to_string(),
+    "More(1, More(2, More(3, Empty)))",
+  )
+  assert_eq(vm.eval("typeof(list)").to_string(), "@moonbitlang/core/list.List")
+  assert_eq(
+    vm.eval("list.rev()").to_string(),
+    "More(3, More(2, More(1, Empty)))",
+  )
+  assert_eq(vm.eval("list").to_string(), "More(1, More(2, More(3, Empty)))")
+
+  // Test basic list operations
+  assert_eq(vm.eval("let l = @list.empty()").to_string(), "()")
+  assert_eq(vm.eval("l.is_empty()").to_string(), "true")
+  assert_eq(vm.eval("l = l.add(1)").to_string(), "()")
+  assert_eq(vm.eval("l.is_empty()").to_string(), "false")
+  assert_eq(vm.eval("l.length()").to_string(), "1")
+
+  // Test list mapping and filtering
+  assert_eq(vm.eval("let l2 = @list.of([1, 2, 3, 4, 5])").to_string(), "()")
+  assert_eq(
+    vm.eval("l2.map(x => x * 2).to_array()").to_string(),
+    "[2, 4, 6, 8, 10]",
+  )
+  assert_eq(
+    vm.eval("l2.filter(x => x % 2 == 0).to_array()").to_string(),
+    "[2, 4]",
+  )
+
+  // Test list folding
+  assert_eq(vm.eval("l2.fold(init=0, (acc, x) => acc + x)").to_string(), "15")
+
+  // Test list concatenation and reversal
+  assert_eq(vm.eval("let l3 = @list.of([6, 7, 8])").to_string(), "()")
+  assert_eq(
+    vm.eval("l2.concat(l3).to_array()").to_string(),
+    "[1, 2, 3, 4, 5, 6, 7, 8]",
+  )
+  assert_eq(vm.eval("l2.rev().to_array()").to_string(), "[5, 4, 3, 2, 1]")
+
+  // Test list searching
+  assert_eq(vm.eval("l2.contains(3)").to_string(), "true")
+  assert_eq(vm.eval("l2.find(x => x > 4)").to_string(), "Some(5)")
+
+  // Test list slicing
+  assert_eq(vm.eval("l2.take(3).to_array()").to_string(), "[1, 2, 3]")
+  assert_eq(vm.eval("l2.drop(2).to_array()").to_string(), "[3, 4, 5]")
+
+  // Test list sorting
+  assert_eq(
+    vm.eval("let unsorted = @list.of([3, 1, 4, 1, 5, 9, 2, 6])").to_string(),
+    "()",
+  )
+  assert_eq(
+    vm.eval("unsorted.sort().to_array()").to_string(),
+    "[1, 1, 2, 3, 4, 5, 6, 9]",
+  )
+}
+
+///|
+test "debug_as_pattern" {
+  let vm = MoonBitVM::new(log=true)
+  assert_eq(
+    vm
+    .eval(
+      (
+        #|enum List {
+        #|  Empty
+        #|  More(Int, tail=List)
+        #|}
+      ),
+      top=true,
+    )
+    .to_string(),
+    "()",
+  )
+  assert_eq(vm.eval("typeof(Empty)").to_string(), "List")
+  // 测试基本的 as 模式 - 工作正常
+  assert_eq(vm.eval("match 42 { x as y => y }").to_string(), "42")
+  // 测试简单的构造函数 as 模式 - 工作正常
+  assert_eq(
+    vm.eval("match More(1, tail=Empty) { x as y => y }").to_string(),
+    "More(1, Empty)",
+  )
+  // 测试简单的元组as模式 - 工作正常
+  assert_eq(vm.eval("match (42, 24) { (x as y, _) => y }").to_string(), "42")
+
+  // 测试通配符的as模式
+  assert_eq(vm.eval("match 42 { _ as x => x }").to_string(), "42")
+
+  // 测试构造函数内as模式 - 这是关键测试
+  assert_eq(
+    vm.eval("match More(1, tail=Empty) { More(_, _) as x => x }").to_string(),
+    "More(1, Empty)",
+  )
+
+  // 测试更复杂的构造函数内as模式
+  assert_eq(
+    vm
+    .eval("match More(1, tail=Empty) { More(_ as inner, _) => inner }")
+    .to_string(),
+    "1",
+  )
+
+  // 调试：查看More构造函数的字段数量
+  let more_value = vm.eval("More(1, tail=Empty)")
+  println("More value: " + more_value.to_string())
+  
+  // 测试简单的构造函数as模式调试
+  assert_eq(
+    vm.eval("match More(1, tail=Empty) { More(_, _) as x => x }").to_string(),
+    "More(1, Empty)",
+  )
+}
+
+///|
+test "map" {
+  let vm = MoonBitVM::new()
+  inspect(vm.eval("[1, 2, 3].map(x => x * 2)"), content="[2, 4, 6]")
+  
+  // 测试变量遮蔽问题
+  assert_eq(
+    vm.eval("let x = 42; match More(1, tail=Empty) { More(_, _) as x => x.head }").to_string(),
+    "1",
+  )
+}

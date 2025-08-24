@@ -1,3 +1,16 @@
+///| 构造器字段 - 支持带标签和可变性
+pub(all) struct ConstructorField {
+  name : String?  // 字段名称，None表示位置参数
+  mut value : RuntimeValue  // 字段值
+  mutable : Bool  // 是否可变
+}
+
+///| 构造器值 - 包含构造器名称和字段
+pub(all) struct ConstructorValue {
+  name : String  // 构造器名称
+  fields : Array[ConstructorField]  // 字段列表
+}
+
 ///| 运行时值 - 解释器实际操作的数据类型
 pub(all) enum RuntimeValue {
   // 基本值类型
@@ -25,8 +38,8 @@ pub(all) enum RuntimeValue {
   // 闭包 - 包含函数定义和捕获的环境（所有函数都是闭包）
   Closure(@syntax.Func, RuntimeEnvironment)
 
-  // 构造函数调用
-  Constructor(WithType[(String, Array[RuntimeValue])]) // 构造函数名称和参数
+  // 构造函数调用 - 支持带标签参数和可变字段
+  Constructor(WithType[ConstructorValue])
 
   // 异常处理 - 用于实现raise和try语句
   Exception(String) // 异常信息
@@ -129,7 +142,10 @@ pub impl ToJson for RuntimeValue with to_json(self : RuntimeValue) -> Json {
     Array(a) => a.to_json()
     Struct(s) => s.val.to_json()
     Closure(f, _) => f.to_json()
-    Constructor({ val: (name, args), .. }) => [name, args.to_json()]
+    Constructor({ val: { name, fields }, .. }) => {
+      let args = fields.map(fn(field) { field.value })
+      [name, args.to_json()]
+    }
     Exception(msg) => ["exception", msg.to_json()]
     Iter(_) => ["iterator", Json::null()]
   }
@@ -168,9 +184,22 @@ pub impl Eq for RuntimeValue with op_equal(
 
     // 构造函数比较
     (
-      Constructor({ val: (name_a, args_a), .. }),
-      Constructor({ val: (name_b, args_b), .. }),
-    ) => name_a == name_b && args_a == args_b
+      Constructor({ val: { name: name_a, fields: fields_a }, .. }),
+      Constructor({ val: { name: name_b, fields: fields_b }, .. }),
+    ) => {
+      if name_a != name_b || fields_a.length() != fields_b.length() {
+        false
+      } else {
+        let mut all_equal = true
+        for i = 0; i < fields_a.length(); i = i + 1 {
+          if fields_a[i].value != fields_b[i].value {
+            all_equal = false
+            break
+          }
+        }
+        all_equal
+      }
+    }
 
     // 不同类型之间不相等
     _ => false
@@ -406,14 +435,20 @@ pub impl Show for RuntimeValue with to_string(self) -> String {
       })
       "{ " + parts.join(", ") + " }"
     }
-    Constructor({ val: (name, args), .. }) =>
-      // 格式化构造函数调用
-      if args.length() == 0 {
+    Constructor({ val: { name, fields }, .. }) => {
+      // Format constructor call with field names if present
+      if fields.length() == 0 {
         name
       } else {
-        let arg_strs = args.map(fn(v) { v.to_string() })
+        let arg_strs = fields.map(fn(field) {
+          match field.name {
+            Some(field_name) => field_name + "=" + field.value.to_string()
+            None => field.value.to_string()
+          }
+        })
         name + "(" + arg_strs.join(", ") + ")"
       }
+    }
     Iter(_) => "<iterator>"
     // 从函数中提取参数和返回类型信息
     Closure(func, _env) => {
@@ -783,12 +818,18 @@ pub fn RuntimeEnvironment::from_option(
   match val {
     Some(x) =>
       Constructor({
-        val: ("Some", [x]),
+        val: {
+          name: "Some",
+          fields: [{ name: None, value: x, mutable: false }],
+        },
         type_info: { pkg: "", name: "Option", env: self },
       })
     None =>
       Constructor({
-        val: ("None", []),
+        val: {
+          name: "None",
+          fields: [],
+        },
         type_info: { pkg: "", name: "Option", env: self },
       })
   }
