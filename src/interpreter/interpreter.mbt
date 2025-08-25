@@ -693,19 +693,12 @@ pub fn ClosureInterpreter::visit(
           // 构造函数字段访问处理
           let field_name = label.name
 
-          // 对于其他构造函数，按名称查找字段
-          let mut found = false
-          let mut result = Unit
+          // 按名称查找字段
           for i = 0; i < refer.val.fields.length(); i = i + 1 {
             let field = refer.val.fields[i]
             if field.name == Some(field_name) {
-              result = field.value
-              found = true
-              break
+              break field.value
             }
-          }
-          if found {
-            result
           } else {
             error(
               "Field: " +
@@ -1003,27 +996,16 @@ pub fn ClosureInterpreter::visit(
               let field_name = label.name
               let new_field_value = self.visit(field)
 
-              // 对于List的More构造函数，tail字段索引为1
-              if refer.val.name == "More" && field_name == "tail" {
-                if refer.val.fields.length() > 1 && refer.val.fields[1].mutable {
-                  refer.val.fields[1] = {
-                    name: refer.val.fields[1].name,
+              // 处理构造函数的字段赋值
+              for i = 0; i < refer.val.fields.length(); i = i + 1 {
+                let field = refer.val.fields[i]
+                if field.name == Some(field_name) && field.mutable {
+                  refer.val.fields[i] = {
+                    name: field.name,
                     value: new_field_value,
-                    mutable: true,
+                    mutable: field.mutable,
                   }
-                }
-              } else {
-                // 处理其他构造函数的字段赋值
-                for i = 0; i < refer.val.fields.length(); i = i + 1 {
-                  let field = refer.val.fields[i]
-                  if field.name == Some(field_name) && field.mutable {
-                    refer.val.fields[i] = {
-                      name: field.name,
-                      value: new_field_value,
-                      mutable: field.mutable,
-                    }
-                    break
-                  }
+                  break
                 }
               }
             }
@@ -1478,6 +1460,17 @@ fn ClosureInterpreter::pattern_matches_runtime(
                         ),
                       ) {
                       return false
+                    }
+                    match pat_arg.kind {
+                      Positional => ()
+                      Labelled(label)
+                      | LabelledPun(label)
+                      | LabelledOption(label~, ..)
+                      | LabelledOptionPun(label~, ..) =>
+                        self.current_module.env.set(
+                          label.name,
+                          fields[index].value,
+                        )
                     }
                     index += 1
                     continue pat_tail
