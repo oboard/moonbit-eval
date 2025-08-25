@@ -81,12 +81,10 @@ fn ClosureInterpreter::call(Self, @syntax.Func, @list.List[@syntax.Argument]) ->
 fn ClosureInterpreter::call_closure(Self, @syntax.Func, RuntimeModule, RuntimeEnvironment, @list.List[@syntax.Argument]) -> RuntimeValue raise ControlFlow
 fn ClosureInterpreter::constants_equal(Self, @syntax.Constant, @syntax.Constant) -> Bool
 fn ClosureInterpreter::constants_equal_expr(Self, @syntax.Expr, @syntax.Expr) -> Bool
-fn ClosureInterpreter::execute_match(Self, @syntax.Expr, @list.List[@syntax.Case]) -> @syntax.Expr raise ControlFlow
 fn ClosureInterpreter::execute_match_runtime(Self, RuntimeValue, @list.List[@syntax.Case]) -> RuntimeValue raise ControlFlow
 fn ClosureInterpreter::get_function_type_string(Self, RuntimeValue) -> String
 fn ClosureInterpreter::is_known_function(Self, String) -> Bool
 fn ClosureInterpreter::new() -> Self
-fn ClosureInterpreter::pattern_matches(Self, @syntax.Expr, @syntax.Pattern) -> Bool raise ControlFlow
 fn ClosureInterpreter::pattern_to_value(Self, @syntax.Pattern) -> @syntax.Expr?
 fn ClosureInterpreter::pop_scope(Self) -> Unit
 fn ClosureInterpreter::push_scope(Self) -> Unit
@@ -96,6 +94,17 @@ fn ClosureInterpreter::top_visit(Self, @syntax.Impl) -> RuntimeValue raise Contr
 fn ClosureInterpreter::value_in_range(Self, @syntax.Expr, @syntax.Pattern, @syntax.Pattern, Bool) -> Bool
 fn ClosureInterpreter::visit(Self, @syntax.Expr) -> RuntimeValue raise ControlFlow
 fn ClosureInterpreter::visit_scoped(Self, @syntax.Expr) -> RuntimeValue raise ControlFlow
+
+pub(all) struct ConstructorField {
+  name : String?
+  mut value : RuntimeValue
+  mutable : Bool
+}
+
+pub(all) struct ConstructorValue {
+  name : String
+  fields : Array[ConstructorField]
+}
 
 pub(all) enum InterpreterState {
   Running
@@ -167,6 +176,7 @@ pub(all) struct RuntimeModule {
   deps : Map[String, RuntimeModule]
 }
 fn RuntimeModule::cons(Self, String, Array[RuntimeValue]) -> RuntimeValue
+fn RuntimeModule::cons_with_labels(Self, String, Array[(String?, RuntimeValue, Bool)]) -> RuntimeValue
 fn RuntimeModule::new(String, deps~ : Map[String, Self], (RuntimeEnvironment, (String) -> (String?, RuntimeValue)) -> Map[String, (String?, RuntimeValue)]) -> Self
 fn[T] RuntimeModule::with_ident(Self, @syntax.LongIdent, (Self, String, String) -> T raise?) -> T raise?
 impl ToJson for RuntimeModule
@@ -198,7 +208,7 @@ pub(all) enum RuntimeValue {
   Map(Map[RuntimeValue, RuntimeValue])
   Struct(WithType[Map[String, RuntimeValue]])
   Closure(@syntax.Func, RuntimeEnvironment)
-  Constructor(WithType[(String, Array[RuntimeValue])])
+  Constructor(WithType[ConstructorValue])
   Exception(String)
   Iter(RuntimeIterator)
 }

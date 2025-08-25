@@ -618,18 +618,18 @@ pub fn ClosureInterpreter::visit(
             // 对于泛型类型的构造函数，需要根据参数类型推导类型参数
             // 例如：Cons(1, Nil) 应该推导出 List[Int]
             let constr_name = constr.name.name
-            
+
             // 简化实现：对于List的More构造函数，tail字段（索引1）应该是可变的
             let fields = arg_values.mapi(fn(i, value) {
-              let mutable = if constr_name == "More" && i == 1 { true } else { false }
+              let mutable = if constr_name == "More" && i == 1 {
+                true
+              } else {
+                false
+              }
               { name: None, value, mutable }
             })
-            
             Constructor({
-              val: {
-                name: constr_name,
-                fields: fields,
-              },
+              val: { name: constr_name, fields },
               type_info: self.current_module.find_static_type(constr_name),
             })
           }
@@ -692,43 +692,27 @@ pub fn ClosureInterpreter::visit(
         (Constructor(refer), Label(label)) => {
           // 构造函数字段访问处理
           let field_name = label.name
-          
-          // 对于List的More构造函数，特殊处理
-          if refer.val.name == "More" {
-            match field_name {
-              "head" | "hd" => {
-                if refer.val.fields.length() > 0 {
-                  refer.val.fields[0].value
-                } else {
-                  error("Field: head not found in More constructor")
-                }
-              }
-              "tail" => {
-                if refer.val.fields.length() > 1 {
-                  refer.val.fields[1].value
-                } else {
-                  error("Field: tail not found in More constructor")
-                }
-              }
-              _ => error("Field: unknown field " + field_name + " in More constructor")
+
+          // 对于其他构造函数，按名称查找字段
+          let mut found = false
+          let mut result = Unit
+          for i = 0; i < refer.val.fields.length(); i = i + 1 {
+            let field = refer.val.fields[i]
+            if field.name == Some(field_name) {
+              result = field.value
+              found = true
+              break
             }
+          }
+          if found {
+            result
           } else {
-            // 对于其他构造函数，按名称查找字段
-            let mut found = false
-            let mut result = Unit
-            for i = 0; i < refer.val.fields.length(); i = i + 1 {
-              let field = refer.val.fields[i]
-              if field.name == Some(field_name) {
-                result = field.value
-                found = true
-                break
-              }
-            }
-            if found {
-              result
-            } else {
-              error("Field: " + field_name + " not found in constructor " + refer.val.name)
-            }
+            error(
+              "Field: " +
+              field_name +
+              " not found in constructor " +
+              refer.val.name,
+            )
           }
         }
         _ => error("Field: not implemented")
@@ -840,7 +824,8 @@ pub fn ClosureInterpreter::visit(
       self.visit(expr) |> ignore
       res
     }
-    Is(expr~, pat~, ..) => Bool(self.pattern_matches(expr, pat))
+    Is(expr~, pat~, ..) =>
+      Bool(self.pattern_matches_runtime(self.visit(expr), pat))
 
     // 处理分组表达式
     Group(expr~, ..) => self.visit(expr)
@@ -1017,18 +1002,26 @@ pub fn ClosureInterpreter::visit(
               // 构造函数字段赋值处理
               let field_name = label.name
               let new_field_value = self.visit(field)
-              
+
               // 对于List的More构造函数，tail字段索引为1
               if refer.val.name == "More" && field_name == "tail" {
                 if refer.val.fields.length() > 1 && refer.val.fields[1].mutable {
-                  refer.val.fields[1] = { name: refer.val.fields[1].name, value: new_field_value, mutable: true }
+                  refer.val.fields[1] = {
+                    name: refer.val.fields[1].name,
+                    value: new_field_value,
+                    mutable: true,
+                  }
                 }
               } else {
                 // 处理其他构造函数的字段赋值
                 for i = 0; i < refer.val.fields.length(); i = i + 1 {
                   let field = refer.val.fields[i]
                   if field.name == Some(field_name) && field.mutable {
-                    refer.val.fields[i] = { name: field.name, value: new_field_value, mutable: field.mutable }
+                    refer.val.fields[i] = {
+                      name: field.name,
+                      value: new_field_value,
+                      mutable: field.mutable,
+                    }
                     break
                   }
                 }
@@ -1469,6 +1462,8 @@ fn ClosureInterpreter::pattern_matches_runtime(
           if name == constr.name.name {
             // 检查参数匹配
             match pattern_args {
+              // 无参数的构造函数，只需要名称匹配
+              Some(More({ pat: Any(_), .. }, ..)) => true
               Some(pat_args) => {
                 // 有参数的构造函数，需要递归匹配每个参数
                 if fields.length() != pat_args.length() {
@@ -1522,7 +1517,7 @@ fn ClosureInterpreter::pattern_matches_runtime(
       }
 
     // Alias模式匹配（as模式）
-    Alias(pat~, alias_~, ..) => {
+    Alias(pat~, alias_~, ..) =>
       // 先检查内部模式是否匹配
       if self.pattern_matches_runtime(value, pat) {
         // 如果匹配成功，将值绑定到别名变量
@@ -1531,7 +1526,6 @@ fn ClosureInterpreter::pattern_matches_runtime(
       } else {
         false
       }
-    }
 
     // 其他模式暂不支持
     _ => false

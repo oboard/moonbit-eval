@@ -16,10 +16,7 @@ pub fn RuntimeModule::cons(
     let mutable = if name == "More" && i == 1 { true } else { false }
     { name: None, value, mutable }
   })
-  Constructor({
-    val: { name, fields },
-    type_info: self.find_static_type(name),
-  })
+  Constructor({ val: { name, fields }, type_info: self.find_static_type(name) })
 }
 
 ///| 构造带标签参数的 Constructor
@@ -32,10 +29,7 @@ pub fn RuntimeModule::cons_with_labels(
     let (label, value, mutable) = arg
     { name: label, value, mutable }
   })
-  Constructor({
-    val: { name, fields },
-    type_info: self.find_static_type(name),
-  })
+  Constructor({ val: { name, fields }, type_info: self.find_static_type(name) })
 }
 
 ///| 新的函数类型定义 - 统一的上下文访问

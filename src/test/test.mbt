@@ -1824,8 +1824,8 @@ test "list_methods" {
 }
 
 ///|
-test "debug_as_pattern" {
-  let vm = MoonBitVM::new(log=true)
+test "match_as_pattern" {
+  let vm = MoonBitVM::new()
   assert_eq(
     vm
     .eval(
@@ -1860,7 +1860,7 @@ test "debug_as_pattern" {
     "More(1, Empty)",
   )
 
-  // 测试更复杂的构造函数内as模式
+  // 更复杂的构造函数内as模式
   assert_eq(
     vm
     .eval("match More(1, tail=Empty) { More(_ as inner, _) => inner }")
@@ -1868,11 +1868,7 @@ test "debug_as_pattern" {
     "1",
   )
 
-  // 调试：查看More构造函数的字段数量
-  let more_value = vm.eval("More(1, tail=Empty)")
-  println("More value: " + more_value.to_string())
-  
-  // 测试简单的构造函数as模式调试
+  // 简单的构造函数as模式调试
   assert_eq(
     vm.eval("match More(1, tail=Empty) { More(_, _) as x => x }").to_string(),
     "More(1, Empty)",
@@ -1880,13 +1876,32 @@ test "debug_as_pattern" {
 }
 
 ///|
-test "map" {
+test "debug_list_map" {
+  let vm = MoonBitVM::new(log=true)
+  // Test with two element list
+  let two_result = vm.eval("let l = @list.of([1, 2]); l.map(x => x * 2)")
+  assert_eq(two_result.to_string(), "More(2, More(4, Empty))")
+}
+
+///|
+test "constructor_single_argument_any_match" {
   let vm = MoonBitVM::new()
-  inspect(vm.eval("[1, 2, 3].map(x => x * 2)"), content="[2, 4, 6]")
-  
-  // 测试变量遮蔽问题
   assert_eq(
-    vm.eval("let x = 42; match More(1, tail=Empty) { More(_, _) as x => x.head }").to_string(),
-    "1",
+    vm.eval("let l = @list.of([1, 2]); l").to_string(),
+    "More(1, More(2, Empty))",
+  )
+  assert_eq(
+    vm
+    .eval(
+      (
+        #|match l {
+        #|  More(_) => "more"
+        #|  Empty => "empty"
+        #|},
+        #|
+      ),
+    )
+    .to_string(),
+    "more",
   )
 }

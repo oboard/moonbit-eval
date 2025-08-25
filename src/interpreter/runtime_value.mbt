@@ -1,14 +1,14 @@
 ///| 构造器字段 - 支持带标签和可变性
 pub(all) struct ConstructorField {
-  name : String?  // 字段名称，None表示位置参数
-  mut value : RuntimeValue  // 字段值
-  mutable : Bool  // 是否可变
+  name : String? // 字段名称，None表示位置参数
+  mut value : RuntimeValue // 字段值
+  mutable : Bool // 是否可变
 }
 
 ///| 构造器值 - 包含构造器名称和字段
 pub(all) struct ConstructorValue {
-  name : String  // 构造器名称
-  fields : Array[ConstructorField]  // 字段列表
+  name : String // 构造器名称
+  fields : Array[ConstructorField] // 字段列表
 }
 
 ///| 运行时值 - 解释器实际操作的数据类型
@@ -186,7 +186,7 @@ pub impl Eq for RuntimeValue with op_equal(
     (
       Constructor({ val: { name: name_a, fields: fields_a }, .. }),
       Constructor({ val: { name: name_b, fields: fields_b }, .. }),
-    ) => {
+    ) =>
       if name_a != name_b || fields_a.length() != fields_b.length() {
         false
       } else {
@@ -199,7 +199,6 @@ pub impl Eq for RuntimeValue with op_equal(
         }
         all_equal
       }
-    }
 
     // 不同类型之间不相等
     _ => false
@@ -435,7 +434,7 @@ pub impl Show for RuntimeValue with to_string(self) -> String {
       })
       "{ " + parts.join(", ") + " }"
     }
-    Constructor({ val: { name, fields }, .. }) => {
+    Constructor({ val: { name, fields }, .. }) =>
       // Format constructor call with field names if present
       if fields.length() == 0 {
         name
@@ -448,7 +447,6 @@ pub impl Show for RuntimeValue with to_string(self) -> String {
         })
         name + "(" + arg_strs.join(", ") + ")"
       }
-    }
     Iter(_) => "<iterator>"
     // 从函数中提取参数和返回类型信息
     Closure(func, _env) => {
@@ -826,10 +824,7 @@ pub fn RuntimeEnvironment::from_option(
       })
     None =>
       Constructor({
-        val: {
-          name: "None",
-          fields: [],
-        },
+        val: { name: "None", fields: [] },
         type_info: { pkg: "", name: "Option", env: self },
       })
   }

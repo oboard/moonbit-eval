@@ -17,16 +17,29 @@ pub let option_methods : Map[String, RuntimeFunction] = {
 
 ///| Option unwrap 方法
 let option_unwrap_fn : RuntimeFunction = ctx => match ctx.arguments {
-  [{ value: Constructor({ val: { name: "Some", fields: [{ value: inner_value, .. }] }, .. }), .. }, ..] =>
-    inner_value
-  [{ value: Constructor({ val: { name: "None", fields: [] }, .. }), .. }, ..] => Unit
+  [
+    {
+      value: Constructor(
+        { val: { name: "Some", fields: [{ value: inner_value, .. }] }, .. }
+      ),
+      ..,
+    },
+    ..,
+  ] => inner_value
+  [{ value: Constructor({ val: { name: "None", fields: [] }, .. }), .. }, ..] =>
+    Unit
   _ => Unit
 }
 
 ///| Option map 方法
 let option_map_fn : RuntimeFunction = ctx => match ctx.arguments {
   [
-    { value: Constructor({ val: { name: "Some", fields: [{ value: inner_value, .. }] }, .. }), .. },
+    {
+      value: Constructor(
+        { val: { name: "Some", fields: [{ value: inner_value, .. }] }, .. }
+      ),
+      ..,
+    },
     { value: Closure(func, captured_env), .. },
     ..,
   ] => {
@@ -47,7 +60,12 @@ let option_map_fn : RuntimeFunction = ctx => match ctx.arguments {
 ///| Option map_or 方法
 let option_map_or_fn : RuntimeFunction = ctx => match ctx.arguments {
   [
-    { value: Constructor({ val: { name: "Some", fields: [{ value: inner_value, .. }] }, .. }), .. },
+    {
+      value: Constructor(
+        { val: { name: "Some", fields: [{ value: inner_value, .. }] }, .. }
+      ),
+      ..,
+    },
     _,
     { value: Closure(func, captured_env), .. },
     ..,
@@ -71,7 +89,12 @@ let option_map_or_fn : RuntimeFunction = ctx => match ctx.arguments {
 ///| Option map_or_else 方法
 let option_map_or_else_fn : RuntimeFunction = ctx => match ctx.arguments {
   [
-    { value: Constructor({ val: { name: "Some", fields: [{ value: inner_value, .. }] }, .. }), .. },
+    {
+      value: Constructor(
+        { val: { name: "Some", fields: [{ value: inner_value, .. }] }, .. }
+      ),
+      ..,
+    },
     _,
     { value: Closure(map_func, captured_env), .. },
     ..,
@@ -97,7 +120,12 @@ let option_map_or_else_fn : RuntimeFunction = ctx => match ctx.arguments {
 ///| Option bind 方法
 let option_bind_fn : RuntimeFunction = ctx => match ctx.arguments {
   [
-    { value: Constructor({ val: { name: "Some", fields: [{ value: inner_value, .. }] }, .. }), .. },
+    {
+      value: Constructor(
+        { val: { name: "Some", fields: [{ value: inner_value, .. }] }, .. }
+      ),
+      ..,
+    },
     { value: Closure(func, captured_env), .. },
     ..,
   ] =>
@@ -121,10 +149,17 @@ let option_flatten_fn : RuntimeFunction = ctx => match ctx.arguments {
         {
           val: {
             name: "Some",
-            fields: [{
-              value: Constructor({ val: { name: "Some", fields: [{ value: inner_value, .. }] }, .. }),
-              ..
-            }]
+            fields: [
+              {
+                value: Constructor(
+                  {
+                    val: { name: "Some", fields: [{ value: inner_value, .. }] },
+                    ..,
+                  }
+                ),
+                ..,
+              },
+            ],
           },
           ..,
         }
@@ -139,12 +174,14 @@ let option_flatten_fn : RuntimeFunction = ctx => match ctx.arguments {
         {
           val: {
             name: "Some",
-            fields: [{
-              value: Constructor({ val: { name: "None", fields: [] }, .. }),
-              ..
-            }]
+            fields: [
+              {
+                value: Constructor({ val: { name: "None", fields: [] }, .. }),
+                ..,
+              },
+            ],
           },
-          ..
+          ..,
         }
       ),
       ..,
@@ -158,15 +195,22 @@ let option_flatten_fn : RuntimeFunction = ctx => match ctx.arguments {
 
 ///| Option is_empty 方法
 let option_is_empty_fn : RuntimeFunction = ctx => match ctx.arguments {
-  [{ value: Constructor({ val: { name: "Some", .. }, .. }), .. }, ..] => Bool(false)
-  [{ value: Constructor({ val: { name: "None", fields: [] }, .. }), .. }, ..] => Bool(true)
+  [{ value: Constructor({ val: { name: "Some", .. }, .. }), .. }, ..] =>
+    Bool(false)
+  [{ value: Constructor({ val: { name: "None", fields: [] }, .. }), .. }, ..] =>
+    Bool(true)
   _ => Bool(true)
 }
 
 ///| Option filter 方法
 let option_filter_fn : RuntimeFunction = ctx => match ctx.arguments {
   [
-    { value: Constructor({ val: { name: "Some", fields: [{ value: inner_value, .. }] }, .. }), .. },
+    {
+      value: Constructor(
+        { val: { name: "Some", fields: [{ value: inner_value, .. }] }, .. }
+      ),
+      ..,
+    },
     { value: Closure(predicate, captured_env), .. },
     ..,
   ] => {
@@ -190,8 +234,16 @@ let option_filter_fn : RuntimeFunction = ctx => match ctx.arguments {
 
 ///| Option unwrap_or 方法
 let option_unwrap_or_fn : RuntimeFunction = ctx => match ctx.arguments {
-  [{ value: Constructor({ val: { name: "Some", fields: [{ value: inner_value, .. }] }, .. }), .. }, _, ..] =>
-    inner_value
+  [
+    {
+      value: Constructor(
+        { val: { name: "Some", fields: [{ value: inner_value, .. }] }, .. }
+      ),
+      ..,
+    },
+    _,
+    ..,
+  ] => inner_value
   [
     { value: Constructor({ val: { name: "None", fields: [] }, .. }), .. },
     { value: default_value, .. },
@@ -204,8 +256,15 @@ let option_unwrap_or_fn : RuntimeFunction = ctx => match ctx.arguments {
 
 ///| Option unwrap_or_default 方法
 let option_unwrap_or_default_fn : RuntimeFunction = ctx => match ctx.arguments {
-  [{ value: Constructor({ val: { name: "Some", fields: [{ value: inner_value, .. }] }, .. }), .. }, ..] =>
-    inner_value
+  [
+    {
+      value: Constructor(
+        { val: { name: "Some", fields: [{ value: inner_value, .. }] }, .. }
+      ),
+      ..,
+    },
+    ..,
+  ] => inner_value
   [{ value: Constructor({ val: { name: "None", fields: [] }, .. }), .. }, ..] =>
     // 返回默认值，对于数值类型返回0，其他类型返回Unit
     // 这里简化实现，实际应该根据泛型类型参数确定默认值
@@ -215,8 +274,15 @@ let option_unwrap_or_default_fn : RuntimeFunction = ctx => match ctx.arguments {
 
 ///| Option unwrap_or_else 方法
 let option_unwrap_or_else_fn : RuntimeFunction = ctx => match ctx.arguments {
-  [{ value: Constructor({ val: { name: "Some", fields: [{ value: inner_value, .. }] }, .. }), .. }, ..] =>
-    inner_value
+  [
+    {
+      value: Constructor(
+        { val: { name: "Some", fields: [{ value: inner_value, .. }] }, .. }
+      ),
+      ..,
+    },
+    ..,
+  ] => inner_value
   [
     { value: Constructor({ val: { name: "None", fields: [] }, .. }), .. },
     { value: Closure(else_func, captured_env), .. },
