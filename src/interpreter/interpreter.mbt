@@ -1401,23 +1401,20 @@ fn ClosureInterpreter::pattern_matches_runtime(
               if values.length() != patterns.length() {
                 return false
               }
-              let mut pat_list = patterns
               let mut index = 0
-              while true {
-                match pat_list {
-                  @list.More(array_pat, tail=pat_tail) => {
-                    match array_pat {
-                      @syntax.ArrayPattern::Pattern(pat) =>
-                        if not(self.pattern_matches_runtime(values[index], pat)) {
-                          return false
-                        }
-                      _ => return false // 其他数组模式暂不支持
-                    }
-                    pat_list = pat_tail
-                    index = index + 1
+              loop patterns {
+                @list.More(array_pat, tail=pat_tail) => {
+                  match array_pat {
+                    @syntax.ArrayPattern::Pattern(pat) =>
+                      if not(self.pattern_matches_runtime(values[index], pat)) {
+                        return false
+                      }
+                    _ => return false // 其他数组模式暂不支持
                   }
-                  @list.Empty => break
+                  index = index + 1
+                  continue pat_tail
                 }
+                @list.Empty => break
               }
               true
             }
@@ -1463,32 +1460,29 @@ fn ClosureInterpreter::pattern_matches_runtime(
             // 检查参数匹配
             match pattern_args {
               // 无参数的构造函数，只需要名称匹配
-              Some(More({ pat: Any(_), .. }, ..)) => true
+              Some(More({ pat: Any(_), .. }, tail=Empty)) => true
               Some(pat_args) => {
                 // 有参数的构造函数，需要递归匹配每个参数
                 if fields.length() != pat_args.length() {
                   return false
                 }
-                let mut pat_list = pat_args
                 let mut index = 0
-                while true {
-                  match pat_list {
-                    @list.More(pat_arg, tail=pat_tail) => {
-                      // 提取参数模式并递归匹配
-                      let arg_pattern = pat_arg.pat
-                      if not(
-                          self.pattern_matches_runtime(
-                            fields[index].value,
-                            arg_pattern,
-                          ),
-                        ) {
-                        return false
-                      }
-                      pat_list = pat_tail
-                      index = index + 1
+                loop pat_args {
+                  @list.More(pat_arg, tail=pat_tail) => {
+                    // 提取参数模式并递归匹配
+                    let arg_pattern = pat_arg.pat
+                    if not(
+                        self.pattern_matches_runtime(
+                          fields[index].value,
+                          arg_pattern,
+                        ),
+                      ) {
+                      return false
                     }
-                    @list.Empty => break
+                    index += 1
+                    continue pat_tail
                   }
+                  @list.Empty => break
                 }
                 true
               }
