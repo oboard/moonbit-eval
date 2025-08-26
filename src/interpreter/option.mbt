@@ -16,7 +16,7 @@ pub let option_methods : Map[String, RuntimeFunction] = {
 // ===== Option 方法 =====
 
 ///| Option unwrap 方法
-let option_unwrap_fn : RuntimeFunction = ctx => match ctx.arguments {
+let option_unwrap_fn : RuntimeFunction = ctx => match ctx.args {
   [
     {
       val: Constructor(
@@ -32,7 +32,7 @@ let option_unwrap_fn : RuntimeFunction = ctx => match ctx.arguments {
 }
 
 ///| Option map 方法
-let option_map_fn : RuntimeFunction = ctx => match ctx.arguments {
+let option_map_fn : RuntimeFunction = ctx => match ctx.args {
   [
     {
       val: Constructor(
@@ -58,7 +58,7 @@ let option_map_fn : RuntimeFunction = ctx => match ctx.arguments {
 }
 
 ///| Option map_or 方法
-let option_map_or_fn : RuntimeFunction = ctx => match ctx.arguments {
+let option_map_or_fn : RuntimeFunction = ctx => match ctx.args {
   [
     {
       val: Constructor(
@@ -87,7 +87,7 @@ let option_map_or_fn : RuntimeFunction = ctx => match ctx.arguments {
 }
 
 ///| Option map_or_else 方法
-let option_map_or_else_fn : RuntimeFunction = ctx => match ctx.arguments {
+let option_map_or_else_fn : RuntimeFunction = ctx => match ctx.args {
   [
     {
       val: Constructor(
@@ -118,7 +118,7 @@ let option_map_or_else_fn : RuntimeFunction = ctx => match ctx.arguments {
 }
 
 ///| Option bind 方法
-let option_bind_fn : RuntimeFunction = ctx => match ctx.arguments {
+let option_bind_fn : RuntimeFunction = ctx => match ctx.args {
   [
     {
       val: Constructor(
@@ -142,7 +142,7 @@ let option_bind_fn : RuntimeFunction = ctx => match ctx.arguments {
 }
 
 ///| Option flatten 方法
-let option_flatten_fn : RuntimeFunction = ctx => match ctx.arguments {
+let option_flatten_fn : RuntimeFunction = ctx => match ctx.args {
   [
     {
       val: Constructor(
@@ -194,7 +194,7 @@ let option_flatten_fn : RuntimeFunction = ctx => match ctx.arguments {
 }
 
 ///| Option is_empty 方法
-let option_is_empty_fn : RuntimeFunction = ctx => match ctx.arguments {
+let option_is_empty_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Constructor({ val: { name: "Some", .. }, .. }), .. }, ..] =>
     Bool(false)
   [{ val: Constructor({ val: { name: "None", fields: [] }, .. }), .. }, ..] =>
@@ -203,7 +203,7 @@ let option_is_empty_fn : RuntimeFunction = ctx => match ctx.arguments {
 }
 
 ///| Option filter 方法
-let option_filter_fn : RuntimeFunction = ctx => match ctx.arguments {
+let option_filter_fn : RuntimeFunction = ctx => match ctx.args {
   [
     {
       val: Constructor(
@@ -233,7 +233,7 @@ let option_filter_fn : RuntimeFunction = ctx => match ctx.arguments {
 }
 
 ///| Option unwrap_or 方法
-let option_unwrap_or_fn : RuntimeFunction = ctx => match ctx.arguments {
+let option_unwrap_or_fn : RuntimeFunction = ctx => match ctx.args {
   [
     {
       val: Constructor(
@@ -255,7 +255,7 @@ let option_unwrap_or_fn : RuntimeFunction = ctx => match ctx.arguments {
 // option_unwrap_or_else_fn 已移除，现在使用支持解释器的版本
 
 ///| Option unwrap_or_default 方法
-let option_unwrap_or_default_fn : RuntimeFunction = ctx => match ctx.arguments {
+let option_unwrap_or_default_fn : RuntimeFunction = ctx => match ctx.args {
   [
     {
       val: Constructor(
@@ -273,7 +273,7 @@ let option_unwrap_or_default_fn : RuntimeFunction = ctx => match ctx.arguments {
 }
 
 ///| Option unwrap_or_else 方法
-let option_unwrap_or_else_fn : RuntimeFunction = ctx => match ctx.arguments {
+let option_unwrap_or_else_fn : RuntimeFunction = ctx => match ctx.args {
   [
     {
       val: Constructor(

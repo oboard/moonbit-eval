@@ -173,7 +173,7 @@ impl ToJson for RuntimeEnvironment
 pub(all) struct RuntimeFunctionContext {
   context : ClosureInterpreter
   mod : RuntimeModule
-  arguments : Array[RuntimeArgument]
+  args : Array[RuntimeArgument]
 }
 
 pub enum RuntimeLocation {

@@ -32,7 +32,7 @@ pub let array_methods : Map[String, RuntimeFunction] = {
 }
 
 ///| 数组排序
-let array_sort_fn : RuntimeFunction = ctx => match ctx.arguments {
+let array_sort_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Array(arr), .. }, ..] => {
     arr.sort()
     Unit
@@ -41,19 +41,19 @@ let array_sort_fn : RuntimeFunction = ctx => match ctx.arguments {
 }
 
 ///| 数组make操作
-let array_make_fn : RuntimeFunction = ctx => match ctx.arguments {
+let array_make_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Int(len), .. }, { val, .. }, ..] => Array(Array::make(len, val))
   _ => Unit
 }
 
 ///| 数组长度
-let array_length_fn : RuntimeFunction = ctx => match ctx.arguments {
+let array_length_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Array(arr), .. }, ..] => Int(arr.length())
   _ => Unit
 }
 
 ///| 数组push操作
-let array_push_fn : RuntimeFunction = ctx => match ctx.arguments {
+let array_push_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Array(arr), .. }, { val, .. }, ..] => {
     arr.push(val)
     Array(arr)
@@ -62,7 +62,7 @@ let array_push_fn : RuntimeFunction = ctx => match ctx.arguments {
 }
 
 ///| 数组clear操作
-let array_clear_fn : RuntimeFunction = ctx => match ctx.arguments {
+let array_clear_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Array(arr), .. }, ..] => {
     arr.clear()
     Unit
@@ -71,32 +71,32 @@ let array_clear_fn : RuntimeFunction = ctx => match ctx.arguments {
 }
 
 ///| 数组is_empty操作
-let array_is_empty_fn : RuntimeFunction = ctx => match ctx.arguments {
+let array_is_empty_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Array(arr), .. }, ..] => Bool(arr.is_empty())
   _ => Unit
 }
 
 ///| 数组reverse操作
-let array_rev_fn : RuntimeFunction = ctx => match ctx.arguments {
+let array_rev_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Array(arr), .. }, ..] => Array(arr.rev())
   _ => Unit
 }
 
 ///| 数组copy操作
-let array_copy_fn : RuntimeFunction = ctx => match ctx.arguments {
+let array_copy_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Array(arr), .. }, ..] => Array(arr.copy())
   _ => Unit
 }
 
 ///| 数组join操作
-let array_join_fn : RuntimeFunction = ctx => match ctx.arguments {
+let array_join_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Array(arr), .. }, { val: String(sep), .. }, ..] =>
     String(arr.map(v => v.to_string()).join(sep))
   _ => Unit
 }
 
 ///| 数组swap操作
-let array_swap_fn : RuntimeFunction = ctx => match ctx.arguments {
+let array_swap_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Array(arr), .. }, { val: Int(i), .. }, { val: Int(j), .. }, ..] => {
     arr.swap(i, j)
     Unit
@@ -105,14 +105,14 @@ let array_swap_fn : RuntimeFunction = ctx => match ctx.arguments {
 }
 
 ///| 数组get操作
-let array_get_fn : RuntimeFunction = ctx => match ctx.arguments {
+let array_get_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Array(arr), .. }, { val: Int(i), .. }, ..] =>
     ctx.mod.env.from_option(arr.get(i))
   _ => Unit
 }
 
 ///| 数组append操作
-let array_append_fn : RuntimeFunction = ctx => match ctx.arguments {
+let array_append_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Array(arr), .. }, { val: Array(arr2), .. }, ..] => {
     arr.append(arr2)
     Unit
@@ -121,7 +121,7 @@ let array_append_fn : RuntimeFunction = ctx => match ctx.arguments {
 }
 
 ///| 数组set操作
-let array_set_fn : RuntimeFunction = ctx => match ctx.arguments {
+let array_set_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Array(arr), .. }, { val: Int(i), .. }, { val, .. }, ..] => {
     arr[i] = val
     Unit
@@ -130,13 +130,13 @@ let array_set_fn : RuntimeFunction = ctx => match ctx.arguments {
 }
 
 ///| 数组pop操作
-let array_pop_fn : RuntimeFunction = ctx => match ctx.arguments {
+let array_pop_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Array(arr), .. }, ..] => ctx.mod.env.from_option(arr.pop())
   _ => Unit
 }
 
 ///| 数组insert操作
-let array_insert_fn : RuntimeFunction = ctx => match ctx.arguments {
+let array_insert_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Array(arr), .. }, { val: Int(i), .. }, { val, .. }, ..] => {
     arr.insert(i, val)
     Unit
@@ -145,32 +145,32 @@ let array_insert_fn : RuntimeFunction = ctx => match ctx.arguments {
 }
 
 ///| 数组remove操作
-let array_remove_fn : RuntimeFunction = ctx => match ctx.arguments {
+let array_remove_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Array(arr), .. }, { val: Int(i), .. }, ..] => arr.remove(i)
   _ => Unit
 }
 
 ///| 数组contains操作
-let array_contains_fn : RuntimeFunction = ctx => match ctx.arguments {
+let array_contains_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Array(arr), .. }, { val, .. }, ..] => Bool(arr.contains(val))
   _ => Unit
 }
 
 ///| 数组search操作
-let array_search_fn : RuntimeFunction = ctx => match ctx.arguments {
+let array_search_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Array(arr), .. }, { val, .. }, ..] =>
     ctx.mod.env.from_option(arr.search(val).map(fn(i) { RuntimeValue::Int(i) }))
   _ => Unit
 }
 
 ///| 数组capacity操作
-let array_capacity_fn : RuntimeFunction = ctx => match ctx.arguments {
+let array_capacity_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Array(arr), .. }, ..] => Int(arr.capacity())
   _ => Unit
 }
 
 ///| 数组resize操作
-let array_resize_fn : RuntimeFunction = ctx => match ctx.arguments {
+let array_resize_fn : RuntimeFunction = ctx => match ctx.args {
   [
     { val: Array(arr), .. },
     { val: Int(new_size), .. },
@@ -184,7 +184,7 @@ let array_resize_fn : RuntimeFunction = ctx => match ctx.arguments {
 }
 
 ///| 数组truncate操作
-let array_truncate_fn : RuntimeFunction = ctx => match ctx.arguments {
+let array_truncate_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Array(arr), .. }, { val: Int(len), .. }, ..] => {
     arr.truncate(len)
     Unit
@@ -193,7 +193,7 @@ let array_truncate_fn : RuntimeFunction = ctx => match ctx.arguments {
 }
 
 ///| 数组reserve_capacity操作
-let array_reserve_capacity_fn : RuntimeFunction = ctx => match ctx.arguments {
+let array_reserve_capacity_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Array(arr), .. }, { val: Int(additional), .. }, ..] => {
     arr.reserve_capacity(additional)
     Unit
@@ -202,7 +202,7 @@ let array_reserve_capacity_fn : RuntimeFunction = ctx => match ctx.arguments {
 }
 
 ///| 数组each操作
-let array_each_fn : RuntimeFunction = ctx => match ctx.arguments {
+let array_each_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Array(arr), .. }, { val: Closure(f, _env), .. }, ..] => {
     arr.each(fn(val) {
       let arg = @syntax.Argument::{
@@ -217,7 +217,7 @@ let array_each_fn : RuntimeFunction = ctx => match ctx.arguments {
 }
 
 ///| 数组map操作
-let array_map_fn : RuntimeFunction = ctx => match ctx.arguments {
+let array_map_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Array(arr), .. }, { val: Closure(f, _env), .. }, ..] => {
     let new_arr = arr.map(fn(val) {
       let arg = @syntax.Argument::{
@@ -232,7 +232,7 @@ let array_map_fn : RuntimeFunction = ctx => match ctx.arguments {
 }
 
 ///| 数组filter操作
-let array_filter_fn : RuntimeFunction = ctx => match ctx.arguments {
+let array_filter_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Array(arr), .. }, { val: Closure(f, _env), .. }, ..] => {
     let new_arr = arr.filter(fn(val) {
       let arg = @syntax.Argument::{
@@ -247,7 +247,7 @@ let array_filter_fn : RuntimeFunction = ctx => match ctx.arguments {
 }
 
 ///| 数组fold操作
-let array_fold_fn : RuntimeFunction = ctx => match ctx.arguments {
+let array_fold_fn : RuntimeFunction = ctx => match ctx.args {
   [
     { val: Array(arr), .. },
     { val: init_val, .. },
@@ -269,7 +269,7 @@ let array_fold_fn : RuntimeFunction = ctx => match ctx.arguments {
 }
 
 ///| 数组index_of操作
-let array_search_by_fn : RuntimeFunction = ctx => match ctx.arguments {
+let array_search_by_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Array(arr), .. }, { val: Closure(f, _), .. }, ..] => {
     let index = arr.search_by(val => {
       let arg = @syntax.Argument::{
@@ -284,7 +284,7 @@ let array_search_by_fn : RuntimeFunction = ctx => match ctx.arguments {
 }
 
 ///| 数组iter操作
-let array_iter_fn : RuntimeFunction = ctx => match ctx.arguments {
+let array_iter_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Array(arr), .. }, ..] => Iter(arr.iter())
   _ => Unit
 }

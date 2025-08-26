@@ -1803,7 +1803,7 @@ fn ClosureInterpreter::execute_function_by_name(
             embedded_func(RuntimeFunctionContext::{
               mod: self.current_module,
               context: self,
-              arguments: evaluated_args,
+              args: evaluated_args,
             })
           None => error("Embedded function:\{embedded_name} not found")
         }
@@ -1814,13 +1814,13 @@ fn ClosureInterpreter::execute_function_by_name(
         extern_func(RuntimeFunctionContext::{
           mod: self.current_module,
           context: self,
-          arguments: evaluated_args,
+          args: evaluated_args,
         })
       GlobalEmbedded(embedded_func) =>
         embedded_func(RuntimeFunctionContext::{
           mod: self.current_module,
           context: self,
-          arguments: evaluated_args,
+          args: evaluated_args,
         })
       NotFound => error("method \{name} not found")
     }
@@ -1847,7 +1847,7 @@ fn ClosureInterpreter::execute_method_call(
           return embedded_method(RuntimeFunctionContext::{
             context: self,
             mod: self.current_module,
-            arguments: evaluated_args
+            args: evaluated_args
             .map(arg => { val: arg, kind: Positional })
             .to_array(),
           })
@@ -1933,7 +1933,7 @@ fn ClosureInterpreter::execute_static_method_call(
           return embedded_func(RuntimeFunctionContext::{
             mod: self.current_module,
             context: self,
-            arguments: evaluated_args,
+            args: evaluated_args,
           })
         }
         None => ()

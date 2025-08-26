@@ -35,7 +35,7 @@ pub impl Show for EvalResult with to_string(self : EvalResult) -> String {
 ///|
 pub fn MoonBitVM::new(log~ : Bool = false) -> MoonBitVM {
   let interpreter = ClosureInterpreter::new()
-  interpreter.add_extern_fn("println", ctx => match ctx.arguments {
+  interpreter.add_extern_fn("println", ctx => match ctx.args {
     [{ val: value, .. }, ..] => {
       println(value)
       Unit

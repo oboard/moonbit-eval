@@ -36,37 +36,37 @@ pub let int_embedded_code : Map[String, RuntimeFunction] = {
 // ===== 整数位运算 =====
 
 ///| 整数按位取反
-let int_lnot_fn : RuntimeFunction = ctx => match ctx.arguments {
+let int_lnot_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Int(i), .. }, ..] => Int(i.lnot())
   _ => Unit
 }
 
 ///| 整数按位与
-let int_land_fn : RuntimeFunction = ctx => match ctx.arguments {
+let int_land_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Int(a), .. }, { val: Int(b), .. }, ..] => Int(a & b)
   _ => Unit
 }
 
 ///| 整数按位或
-let int_lor_fn : RuntimeFunction = ctx => match ctx.arguments {
+let int_lor_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Int(a), .. }, { val: Int(b), .. }, ..] => Int(a | b)
   _ => Unit
 }
 
 ///| 整数按位异或
-let int_lxor_fn : RuntimeFunction = ctx => match ctx.arguments {
+let int_lxor_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Int(a), .. }, { val: Int(b), .. }, ..] => Int(a ^ b)
   _ => Unit
 }
 
 ///| 整数左移
-let int_shl_fn : RuntimeFunction = ctx => match ctx.arguments {
+let int_shl_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Int(a), .. }, { val: Int(b), .. }, ..] => Int(a << b)
   _ => Unit
 }
 
 ///| 整数右移
-let int_shr_fn : RuntimeFunction = ctx => match ctx.arguments {
+let int_shr_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Int(a), .. }, { val: Int(b), .. }, ..] => Int(a >> b)
   _ => Unit
 }
@@ -74,13 +74,13 @@ let int_shr_fn : RuntimeFunction = ctx => match ctx.arguments {
 // ===== 整数比较运算 =====
 
 ///| 整数相等比较
-let int_eq_fn : RuntimeFunction = ctx => match ctx.arguments {
+let int_eq_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Int(a), .. }, { val: Int(b), .. }, ..] => Bool(a == b)
   _ => Bool(false)
 }
 
 ///| 整数比较
-let int_compare_fn : RuntimeFunction = ctx => match ctx.arguments {
+let int_compare_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Int(a), .. }, { val: Int(b), .. }, ..] =>
     if a == b {
       Int(0)
@@ -93,13 +93,13 @@ let int_compare_fn : RuntimeFunction = ctx => match ctx.arguments {
 }
 
 ///| 整数是否为正
-let int_is_pos_fn : RuntimeFunction = ctx => match ctx.arguments {
+let int_is_pos_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Int(i), .. }, ..] => Bool(i > 0)
   _ => Bool(false)
 }
 
 ///| 整数是否为负
-let int_is_neg_fn : RuntimeFunction = ctx => match ctx.arguments {
+let int_is_neg_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Int(i), .. }, ..] => Bool(i < 0)
   _ => Bool(false)
 }
@@ -107,25 +107,25 @@ let int_is_neg_fn : RuntimeFunction = ctx => match ctx.arguments {
 // ===== 整数工具函数 =====
 
 ///| 计算尾随零的个数
-let int_ctz_fn : RuntimeFunction = ctx => match ctx.arguments {
+let int_ctz_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Int(i), .. }, ..] => Int(i.ctz())
   _ => Unit
 }
 
 ///| 计算前导零的个数
-let int_clz_fn : RuntimeFunction = ctx => match ctx.arguments {
+let int_clz_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Int(i), .. }, ..] => Int(i.clz())
   _ => Unit
 }
 
 ///| 计算设置位的个数
-let int_popcnt_fn : RuntimeFunction = ctx => match ctx.arguments {
+let int_popcnt_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Int(i), .. }, ..] => Int(i.popcnt())
   _ => Unit
 }
 
 ///| 整数转字符串
-let int_to_string_fn : RuntimeFunction = ctx => match ctx.arguments {
+let int_to_string_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Int(i), .. }, ..] => String(i.to_string())
   _ => Unit
 }

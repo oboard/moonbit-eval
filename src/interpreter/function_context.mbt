@@ -2,7 +2,7 @@
 pub(all) struct RuntimeFunctionContext {
   context : ClosureInterpreter
   mod : RuntimeModule
-  arguments : Array[RuntimeArgument]
+  args : Array[RuntimeArgument]
 }
 
 ///| 新的函数类型定义 - 统一的上下文访问
