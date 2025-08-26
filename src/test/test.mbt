@@ -1917,7 +1917,7 @@ test "constructor_single_argument_any_match" {
 }
 
 ///|
-test {
+test "sort" {
   let vm = MoonBitVM::new()
   let unsorted = @list.of([3, 1, 4, 1, 5, 9, 2, 6])
   inspect(unsorted.sort().to_array(), content="[1, 1, 2, 3, 4, 5, 6, 9]")

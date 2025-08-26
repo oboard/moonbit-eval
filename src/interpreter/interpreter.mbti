@@ -250,6 +250,7 @@ fn RuntimeValue::is_reference(Self) -> Bool
 fn RuntimeValue::iter(Self) -> Self
 fn RuntimeValue::to_expr(Self) -> @syntax.Expr
 impl Add for RuntimeValue
+impl Compare for RuntimeValue
 impl Eq for RuntimeValue
 impl Hash for RuntimeValue
 impl Show for RuntimeValue

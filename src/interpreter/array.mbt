@@ -28,6 +28,16 @@ pub let array_methods : Map[String, RuntimeFunction] = {
   "fold": array_fold_fn,
   "make": array_make_fn,
   "iter": array_iter_fn,
+  "sort": array_sort_fn,
+}
+
+///| 数组排序
+let array_sort_fn : RuntimeFunction = ctx => match ctx.arguments {
+  [{ val: Array(arr), .. }, ..] => {
+    arr.sort()
+    Unit
+  }
+  _ => Unit
 }
 
 ///| 数组make操作

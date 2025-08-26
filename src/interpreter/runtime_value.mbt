@@ -60,6 +60,25 @@ pub suberror ControlFlow {
 }
 
 ///|
+pub impl Compare for RuntimeValue with compare(self, other) {
+  match (self, other) {
+    (Int(a), Int(b)) => a.compare(b)
+    (UInt(a), UInt(b)) => a.compare(b)
+    (Int64(a), Int64(b)) => a.compare(b)
+    (UInt64(a), UInt64(b)) => a.compare(b)
+    (Float(a), Float(b)) => a.compare(b)
+    (Double(a), Double(b)) => a.compare(b)
+    (BigInt(a), BigInt(b)) => a.compare(b)
+    (String(a), String(b)) => a.compare(b)
+    (Char(a), Char(b)) => a.compare(b)
+    (Byte(a), Byte(b)) => a.compare(b)
+    (Tuple(a), Tuple(b)) => a.compare(b)
+    (Array(a), Array(b)) => a.compare(b)
+    _ => abort("unable to compare")
+  }
+}
+
+///|
 pub impl Hash for RuntimeValue with hash_combine(
   self : RuntimeValue,
   hasher : Hasher,
