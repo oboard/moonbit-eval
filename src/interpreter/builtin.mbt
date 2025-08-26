@@ -11,7 +11,7 @@ let core_fn_aliases : Map[String, String] = {
 
 ///|
 let builtin_embedded_code : Map[String, RuntimeFunction] = {
-  "abort": abort_fn,
+  "%abort": abort_fn,
   "%panic": panic_fn,
   "%typeof": typeof_fn,
   "%println_mono": println_mono_fn,
