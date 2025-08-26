@@ -142,3 +142,26 @@ pub fn RuntimeModule::new(
   })
   { meta: ModuleMeta::new(pkg), env, deps }
 }
+
+///| 构造 Constructor
+pub fn RuntimeModule::cons(
+  self : RuntimeModule,
+  name : String,
+  args : Array[RuntimeValue],
+) -> RuntimeValue {
+  let fields = args.map(value => { name: None, value, mutable: false })
+  Constructor({ val: { name, fields }, type_info: self.find_static_type(name) })
+}
+
+///| 构造带标签参数的 Constructor
+pub fn RuntimeModule::cons_with_labels(
+  self : RuntimeModule,
+  name : String,
+  labeled_args : Array[(String?, RuntimeValue, Bool)], // (label, value, mutable)
+) -> RuntimeValue {
+  let fields = labeled_args.map(fn(arg) {
+    let (label, value, mutable) = arg
+    { name: label, value, mutable }
+  })
+  Constructor({ val: { name, fields }, type_info: self.find_static_type(name) })
+}
