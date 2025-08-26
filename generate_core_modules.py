@@ -87,9 +87,32 @@ def extract_all_items(mbt_content: str) -> List[Tuple[str, str, str, str]]:
             continue
         
         # Look for function declarations at top level (must be at column 0 and brace_depth == 0)
-        elif not original_line.startswith(' ') and not original_line.startswith('\t') and (line.startswith('fn') or line.startswith('pub fn')) and '{' in line:
-            # Extract function name - handle regular functions, method syntax, and generic functions
-            func_match = re.match(r'(?:pub\s+)?fn(?:\[.*?\])?\s+(?:(?:\w+::)?(\w+))\s*(?:\[.*?\])?\s*\(', line)
+        elif not original_line.startswith(' ') and not original_line.startswith('\t') and brace_depth == 0 and (line.startswith('fn') or line.startswith('pub fn')):
+            # Start collecting function declaration lines
+            func_declaration_lines = [line]
+            func_declaration_text = line
+            
+            # Continue reading until we find the opening brace or determine it's not a function
+            temp_i = i + 1
+            while temp_i < len(lines) and '{' not in func_declaration_text:
+                next_line = lines[temp_i]
+                # If we hit another top-level declaration, this isn't a function
+                if (not next_line.startswith(' ') and not next_line.startswith('\t') and 
+                    (next_line.strip().startswith('fn') or next_line.strip().startswith('pub fn') or 
+                     next_line.strip().startswith('enum') or next_line.strip().startswith('pub enum') or
+                     next_line.strip().startswith('let') or next_line.strip().startswith('pub let'))):
+                    break
+                func_declaration_lines.append(next_line)
+                func_declaration_text += ' ' + next_line.strip()
+                temp_i += 1
+            
+            # Check if we found a valid function declaration
+            if '{' not in func_declaration_text:
+                i += 1
+                continue
+                
+            # Extract function name from the complete declaration
+            func_match = re.search(r'(?:pub\s+)?fn(?:\[.*?\])?\s+(?:(?:\w+::)?(\w+))\s*(?:\[.*?\])?\s*\(', func_declaration_text)
             if not func_match:
                 i += 1
                 continue
@@ -97,25 +120,26 @@ def extract_all_items(mbt_content: str) -> List[Tuple[str, str, str, str]]:
             func_name = func_match.group(1)
             
             # Extract function signature (everything before the opening brace)
-            brace_pos = line.find('{')
-            func_signature = line[:brace_pos].strip()
+            brace_pos = func_declaration_text.find('{')
+            func_signature = func_declaration_text[:brace_pos].strip()
             
             # Find the complete function body - preserve original formatting
-            func_brace_count = line.count('{') - line.count('}')
+            func_brace_count = func_declaration_text.count('{') - func_declaration_text.count('}')
             func_lines = []
             
-            # Start from the current line and collect the entire function
-            current_func_lines = [line]
+            # Start from the collected declaration lines and collect the entire function
+            current_func_lines = func_declaration_lines.copy()
             
-            # Continue reading until braces are balanced
-            i += 1
+            # Continue reading until braces are balanced from where we left off
+            i = temp_i
             while i < len(lines) and func_brace_count > 0:
                 current_line = lines[i]
                 current_func_lines.append(current_line)
                 func_brace_count += current_line.count('{') - current_line.count('}')
-                # Also update the main brace_depth
-                brace_depth += current_line.count('{') - current_line.count('}')
                 i += 1
+            
+            # Reset brace_depth to 0 after processing a complete function
+            brace_depth = 0
             
             # Extract just the function body (everything after the opening brace)
             complete_function = '\n'.join(current_func_lines)
