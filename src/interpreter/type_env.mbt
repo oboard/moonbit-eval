@@ -20,6 +20,159 @@ pub fn RuntimeType::bool() -> RuntimeType {
 }
 
 ///|
+pub fn RuntimeType::int() -> RuntimeType {
+  {
+    pkg: moonbitlang_core_int_module.meta.name,
+    name: "Int",
+    env: moonbitlang_core_int_module.env,
+  }
+}
+
+///|
+pub fn RuntimeType::uint() -> RuntimeType {
+  {
+    pkg: moonbitlang_core_uint_module.meta.name,
+    name: "UInt",
+    env: moonbitlang_core_uint_module.env,
+  }
+}
+
+///|
+pub fn RuntimeType::int64() -> RuntimeType {
+  {
+    pkg: moonbitlang_core_int64_module.meta.name,
+    name: "Int64",
+    env: moonbitlang_core_int64_module.env,
+  }
+}
+
+///|
+pub fn RuntimeType::uint64() -> RuntimeType {
+  {
+    pkg: moonbitlang_core_uint64_module.meta.name,
+    name: "UInt64",
+    env: moonbitlang_core_uint64_module.env,
+  }
+}
+
+///|
+pub fn RuntimeType::float() -> RuntimeType {
+  {
+    pkg: moonbitlang_core_float_module.meta.name,
+    name: "Float",
+    env: moonbitlang_core_float_module.env,
+  }
+}
+
+///|
+pub fn RuntimeType::double() -> RuntimeType {
+  {
+    pkg: moonbitlang_core_double_module.meta.name,
+    name: "Double",
+    env: moonbitlang_core_double_module.env,
+  }
+}
+
+///|
+pub fn RuntimeType::bigint() -> RuntimeType {
+  {
+    pkg: moonbitlang_core_bigint_module.meta.name,
+    name: "BigInt",
+    env: moonbitlang_core_bigint_module.env,
+  }
+}
+
+///|
+pub fn RuntimeType::char() -> RuntimeType {
+  {
+    pkg: moonbitlang_core_char_module.meta.name,
+    name: "Char",
+    env: moonbitlang_core_char_module.env,
+  }
+}
+
+///|
+pub fn RuntimeType::byte() -> RuntimeType {
+  {
+    pkg: moonbitlang_core_byte_module.meta.name,
+    name: "Byte",
+    env: moonbitlang_core_byte_module.env,
+  }
+}
+
+///|
+pub fn RuntimeType::string() -> RuntimeType {
+  {
+    pkg: moonbitlang_core_string_module.meta.name,
+    name: "String",
+    env: moonbitlang_core_string_module.env,
+  }
+}
+
+///|
+pub fn RuntimeType::tuple() -> RuntimeType {
+  {
+    pkg: moonbitlang_core_tuple_module.meta.name,
+    name: "Tuple",
+    env: moonbitlang_core_tuple_module.env,
+  }
+}
+
+///|
+pub fn RuntimeType::array() -> RuntimeType {
+  {
+    pkg: moonbitlang_core_array_module.meta.name,
+    name: "Array",
+    env: moonbitlang_core_array_module.env,
+  }
+}
+
+///|
+pub fn RuntimeType::array_view() -> RuntimeType {
+  {
+    pkg: moonbitlang_core_array_module.meta.name,
+    name: "ArrayView",
+    env: moonbitlang_core_array_module.env,
+  }
+}
+
+///|
+pub fn RuntimeType::uninitialized_array() -> RuntimeType {
+  {
+    pkg: moonbitlang_core_builtin_module.meta.name,
+    name: "UninitializedArray",
+    env: moonbitlang_core_builtin_module.env,
+  }
+}
+
+///|
+pub fn RuntimeType::map() -> RuntimeType {
+  {
+    pkg: moonbitlang_core_builtin_module.meta.name,
+    name: "Map",
+    env: moonbitlang_core_builtin_module.env,
+  }
+}
+
+///|
+pub fn RuntimeType::option() -> RuntimeType {
+  {
+    pkg: moonbitlang_core_option_module.meta.name,
+    name: "Option",
+    env: moonbitlang_core_option_module.env,
+  }
+}
+
+///|
+pub fn RuntimeType::iter() -> RuntimeType {
+  {
+    pkg: moonbitlang_core_builtin_module.meta.name,
+    name: "Iter",
+    env: moonbitlang_core_builtin_module.env,
+  }
+}
+
+///|
 pub fn RuntimeType::any() -> RuntimeType {
   { pkg: "main", name: "Any", env: RuntimeEnvironment::new() }
 }

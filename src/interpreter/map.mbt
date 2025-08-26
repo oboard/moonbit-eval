@@ -126,9 +126,16 @@ let map_from_array_fn : RuntimeFunction = ctx => match ctx.arguments {
 
 ///| Map from_iter操作
 let map_from_iter_fn : RuntimeFunction = ctx => match ctx.arguments {
-  [{ val: _iter, .. }, ..] =>
-    // 简化实现，实际需要迭代器支持
-    Map(Map::new())
+  [{ val: Iter(iter), .. }, ..] =>
+    Map(
+      Map::from_iter(
+        iter.map(item => match item {
+          Tuple([key, val]) => (key, val)
+          // TODO: error handle
+          _ => (Unit, Unit)
+        }),
+      ),
+    )
   _ => Unit
 }
 
@@ -223,27 +230,18 @@ let map_new_fn : RuntimeFunction = ctx => match ctx.arguments {
 
 ///| Map of操作
 let map_of_fn : RuntimeFunction = ctx => match ctx.arguments {
-  [{ val: Array(arr), .. }, ..] => {
-    let map = Map::new()
-    arr.each(fn(item) {
-      match item {
-        Tuple([key, val]) => map.set(key, val)
-        _ => ()
-      }
-    })
-    Map(map)
-  }
-  _ => {
-    // 处理可变参数情况：Map::of(key1, val1, key2, val2, ...)
-    let map = Map::new()
-    let args = ctx.arguments
-    let mut i = 0
-    while i + 1 < args.length() {
-      map.set(args[i].val, args[i + 1].val)
-      i = i + 2
-    }
-    Map(map)
-  }
+  [{ val: Array(arr), .. }, ..] =>
+    Map(
+      Map::from_array(
+        arr.map(fn(item) {
+          match item {
+            Tuple([key, val]) => (key, val)
+            _ => error("Map of: (arr: T)")
+          }
+        }),
+      ),
+    )
+  _ => error("Map of: (arr: T)")
 }
 
 ///| Map remove操作

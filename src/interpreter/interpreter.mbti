@@ -39,6 +39,8 @@ let int_methods : Map[String, (RuntimeFunctionContext) -> RuntimeValue raise Con
 
 fn is_comparison_op(String) -> Bool
 
+let iter_methods : Map[String, (RuntimeFunctionContext) -> RuntimeValue raise ControlFlow]
+
 let map_methods : Map[String, (RuntimeFunctionContext) -> RuntimeValue raise ControlFlow]
 
 let option_methods : Map[String, (RuntimeFunctionContext) -> RuntimeValue raise ControlFlow]
@@ -115,11 +117,6 @@ pub(all) enum InterpreterState {
   Stopped
 }
 
-pub(all) enum IterResult {
-  IterContinue
-  IterEnd
-}
-
 pub struct ModuleMeta {
   name : String
   version : String?
@@ -179,10 +176,6 @@ pub(all) struct RuntimeFunctionContext {
   arguments : Array[RuntimeArgument]
 }
 
-pub(all) struct RuntimeIterator {
-  iterate_fn : ((RuntimeValue) -> IterResult) -> IterResult
-}
-
 pub enum RuntimeLocation {
   FunctionCall(String)
   ControlFlow(String)
@@ -207,8 +200,25 @@ pub struct RuntimeType {
   env : RuntimeEnvironment
 }
 fn RuntimeType::any() -> Self
+fn RuntimeType::array() -> Self
+fn RuntimeType::array_view() -> Self
+fn RuntimeType::bigint() -> Self
 fn RuntimeType::bool() -> Self
+fn RuntimeType::byte() -> Self
+fn RuntimeType::char() -> Self
+fn RuntimeType::double() -> Self
+fn RuntimeType::float() -> Self
 fn RuntimeType::get_full_name(Self) -> String
+fn RuntimeType::int() -> Self
+fn RuntimeType::int64() -> Self
+fn RuntimeType::iter() -> Self
+fn RuntimeType::map() -> Self
+fn RuntimeType::option() -> Self
+fn RuntimeType::string() -> Self
+fn RuntimeType::tuple() -> Self
+fn RuntimeType::uint() -> Self
+fn RuntimeType::uint64() -> Self
+fn RuntimeType::uninitialized_array() -> Self
 
 pub(all) enum RuntimeValue {
   Unit
@@ -226,12 +236,13 @@ pub(all) enum RuntimeValue {
   Tuple(Array[RuntimeValue])
   Array(Array[RuntimeValue])
   ArrayView(ArrayView[RuntimeValue])
+  UninitializedArray(UninitializedArray[RuntimeValue])
   Map(Map[RuntimeValue, RuntimeValue])
   Struct(WithType[Map[String, RuntimeValue]])
   Closure(@syntax.Func, RuntimeEnvironment)
   Constructor(WithType[ConstructorValue])
   Exception(String)
-  Iter(RuntimeIterator)
+  Iter(Iter[RuntimeValue])
 }
 fn RuntimeValue::from_expr(@syntax.Expr) -> Self
 fn RuntimeValue::is_mutable(Self) -> Bool

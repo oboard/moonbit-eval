@@ -92,6 +92,11 @@ let builtin_embedded_code : Map[String, RuntimeFunction] = {
   "%i32_to_u16": to_uint16_fn,
   "%i32_to_i64": to_int64_fn,
   "%u32.to_u64": to_uint64_fn,
+  // ArrayView
+  // ArrayView functions
+  "%arrayview.buf": array_view_buf_fn,
+  "%arrayview.start": array_view_start_fn,
+  "%arrayview.len": array_view_len_fn,
 }
 
 ///|
@@ -143,6 +148,7 @@ let core_embedded_methods : Map[String, Map[String, RuntimeFunction]] = {
   "ArrayView": array_view_methods,
   "Option": option_methods,
   "Map": map_methods,
+  "Iter": iter_methods,
 }
 
 ///|

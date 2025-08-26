@@ -56,21 +56,7 @@ let string_unsafe_get_fn : RuntimeFunction = ctx => match ctx.arguments {
 
 ///| 字符串迭代器
 let string_iter_fn : RuntimeFunction = ctx => match ctx.arguments {
-  [{ val: String(str), .. }, ..] => {
-    let iterator = RuntimeIterator::{
-      iterate_fn: fn(visit_fn) {
-        for i = 0; i < str.length(); i = i + 1 {
-          let char_value = Char(str.get_char(i).unwrap_or(' '))
-          match visit_fn(char_value) {
-            IterEnd => return IterEnd
-            IterContinue => continue
-          }
-        }
-        IterContinue
-      },
-    }
-    Iter(iterator)
-  }
+  [{ val: String(str), .. }, ..] => Iter(str.iter().map(c => Char(c)))
   _ => Unit
 }
 

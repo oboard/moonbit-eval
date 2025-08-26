@@ -30,7 +30,8 @@ pub(all) enum RuntimeValue {
   // 复合值类型
   Tuple(Array[RuntimeValue])
   Array(Array[RuntimeValue])
-  ArrayView(ArrayView[RuntimeValue])
+  ArrayView(@array.View[RuntimeValue])
+  UninitializedArray(UninitializedArray[RuntimeValue])
   Map(Map[RuntimeValue, RuntimeValue])
 
   // 结构类型 - 直接存储字段映射
@@ -46,22 +47,8 @@ pub(all) enum RuntimeValue {
   Exception(String) // 异常信息
 
   // 迭代器类型 - 用于实现内部迭代器
-  Iter(RuntimeIterator)
+  Iter(Iter[RuntimeValue])
 }
-
-///| 迭代器状态枚举
-pub(all) enum IterResult {
-  IterContinue
-  IterEnd
-}
-
-///| 运行时迭代器结构体 - 实现内部迭代器模式
-pub(all) struct RuntimeIterator {
-  // 迭代函数：接受一个访问函数并返回迭代结果
-  iterate_fn : ((RuntimeValue) -> IterResult) -> IterResult
-}
-
-// RuntimeIterator 已移除，采用直接类型匹配的方式处理迭代
 
 ///|
 pub suberror ControlFlow {
@@ -150,6 +137,7 @@ pub impl ToJson for RuntimeValue with to_json(self : RuntimeValue) -> Json {
     }
     Exception(msg) => ["exception", msg.to_json()]
     Iter(_) => ["iterator", Json::null()]
+    UninitializedArray(_) => ["uninitialized_array", Json::null()]
   }
 }
 
@@ -443,6 +431,7 @@ pub impl Show for RuntimeValue with to_string(self) -> String {
       let parts = values.map(fn(v) { v.to_string() })
       "[" + parts.join(", ") + "]"
     }
+    UninitializedArray(_) => "<uninitialized_array>"
     Map(m) => {
       let parts = []
       m.each(fn(key, val) {
@@ -626,6 +615,7 @@ pub fn RuntimeValue::to_expr(self : RuntimeValue) -> @syntax.Expr {
       let exprs = values.map(fn(v) { v.to_expr() })
       Array(exprs=@list.from_array(exprs), loc=_dummy_loc)
     }
+    UninitializedArray(_) => Unit(loc=_dummy_loc, faked=true)
     // 结构类型转换为Record表达式
     Struct(_) => Unit(loc=_dummy_loc, faked=true)
     Closure(func, _env) => Function(func~, loc=_dummy_loc)
@@ -683,62 +673,10 @@ pub fn RuntimeValue::from_expr(expr : @syntax.Expr) -> RuntimeValue {
 ///| 为 RuntimeValue 实现 iter() 方法，返回迭代器
 pub fn RuntimeValue::iter(self : RuntimeValue) -> RuntimeValue {
   match self {
-    Array(arr) => {
-      let iterator = RuntimeIterator::{
-        iterate_fn: fn(visit_fn) {
-          for value in arr {
-            match visit_fn(value) {
-              IterEnd => return IterEnd
-              IterContinue => continue
-            }
-          }
-          IterContinue
-        },
-      }
-      Iter(iterator)
-    }
-    String(str) => {
-      let iterator = RuntimeIterator::{
-        iterate_fn: fn(visit_fn) {
-          for i = 0; i < str.length(); i = i + 1 {
-            let char_value = Char(str.get_char(i).unwrap_or(' '))
-            match visit_fn(char_value) {
-              IterEnd => return IterEnd
-              IterContinue => continue
-            }
-          }
-          IterContinue
-        },
-      }
-      Iter(iterator)
-    }
-    Map(map) => {
-      let iterator = RuntimeIterator::{
-        iterate_fn: fn(visit_fn) {
-          let mut should_stop = false
-          map.each(fn(key, value) {
-            if not(should_stop) {
-              let tuple_value = Tuple([key, value])
-              match visit_fn(tuple_value) {
-                IterEnd => should_stop = true
-                IterContinue => ()
-              }
-            }
-          })
-          if should_stop {
-            IterEnd
-          } else {
-            IterContinue
-          }
-        },
-      }
-      Iter(iterator)
-    }
-    _ => {
-      // 对于不支持迭代的类型，返回空迭代器
-      let iterator = RuntimeIterator::{ iterate_fn: fn(_visit_fn) { IterEnd } }
-      Iter(iterator)
-    }
+    Array(arr) => Iter(arr.iter())
+    String(str) => Iter(str.iter().map(c => Char(c)))
+    Map(map) => Iter(map.iter().map(t => Tuple([t.0, t.1])))
+    _ => Iter(Iter::new(_ => IterEnd))
   }
 }
 

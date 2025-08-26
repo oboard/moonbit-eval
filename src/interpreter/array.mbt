@@ -275,19 +275,6 @@ let array_search_by_fn : RuntimeFunction = ctx => match ctx.arguments {
 
 ///| 数组iter操作
 let array_iter_fn : RuntimeFunction = ctx => match ctx.arguments {
-  [{ val: Array(arr), .. }, ..] => {
-    let iterator = RuntimeIterator::{
-      iterate_fn: fn(visit_fn) {
-        for value in arr {
-          match visit_fn(value) {
-            IterEnd => return IterEnd
-            IterContinue => continue
-          }
-        }
-        IterContinue
-      },
-    }
-    Iter(iterator)
-  }
+  [{ val: Array(arr), .. }, ..] => Iter(arr.iter())
   _ => Unit
 }

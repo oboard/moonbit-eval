@@ -742,6 +742,11 @@ pub fn ClosureInterpreter::visit(
             )
           }
         }
+        (Map(fields), Label(label)) =>
+          match fields.get(String(label.name)) {
+            Some(field_value) => field_value
+            None => error("Field: not found")
+          }
         _ => error("Field: not implemented")
       }
     }
@@ -1227,20 +1232,18 @@ pub fn ClosureInterpreter::visit(
               let start_val = self.visit(lhs)
               let end_val = self.visit(rhs)
               match (start_val, end_val) {
-                (Int(start), Int(end)) => {
-                  let range_iterator = RuntimeIterator::{
-                    iterate_fn: fn(visit_fn) {
-                      for i = start; i < end; i = i + 1 {
+                (Int(start), Int(end)) =>
+                  Iter(
+                    Iter::new(visit_fn => {
+                      for i in start..<end {
                         match visit_fn(Int(i)) {
                           IterEnd => return IterEnd
-                          IterContinue => continue
+                          IterContinue => ()
                         }
                       }
-                      IterContinue
-                    },
-                  }
-                  Iter(range_iterator)
-                }
+                      IterEnd
+                    }),
+                  )
                 _ => get_iterator(iterable_value)
               }
             }
@@ -1248,20 +1251,18 @@ pub fn ClosureInterpreter::visit(
               let start_val = self.visit(lhs)
               let end_val = self.visit(rhs)
               match (start_val, end_val) {
-                (Int(start), Int(end)) => {
-                  let range_iterator = RuntimeIterator::{
-                    iterate_fn: fn(visit_fn) {
-                      for i = start; i <= end; i = i + 1 {
+                (Int(start), Int(end)) =>
+                  Iter(
+                    Iter::new(visit_fn => {
+                      for i in start..=end {
                         match visit_fn(Int(i)) {
                           IterEnd => return IterEnd
-                          IterContinue => continue
+                          IterContinue => ()
                         }
                       }
-                      IterContinue
-                    },
-                  }
-                  Iter(range_iterator)
-                }
+                      IterEnd
+                    }),
+                  )
                 _ => get_iterator(iterable_value)
               }
             }
@@ -1273,9 +1274,9 @@ pub fn ClosureInterpreter::visit(
       // 使用迭代器进行迭代
       match iterator {
         Iter(iter_impl) =>
-          (iter_impl.iterate_fn)(fn(value) {
+          for value in iter_impl {
             // 创建新作用域来隔离循环变量
-            self.push_scope(RuntimeLocation::ControlFlow("for"))
+            self.push_scope(RuntimeLocation::ControlFlow("foreach"))
             defer self.pop_scope()
             // 绑定循环变量
             match binders {
@@ -1290,14 +1291,13 @@ pub fn ClosureInterpreter::visit(
             }
             try {
               self.visit(body) |> ignore
-              IterContinue
+              continue
             } catch {
-              Break(_) => IterEnd
-              Continue(_) => IterContinue
-              _ => IterEnd // 其他错误也结束迭代
+              Break(_) => break
+              Continue(_) => continue
+              e => raise e
             }
-          })
-          |> ignore
+          }
         _ => () // 如果不是迭代器，什么都不做
       }
       Unit
@@ -1835,8 +1835,27 @@ fn ClosureInterpreter::execute_method_call(
   args : @list.List[@syntax.Argument],
 ) -> RuntimeValue raise ControlFlow {
   let self_type = self.current_module.env.type_of(self_value)
-
-  // 查找普通方法
+  match self.embedded_methods.get(self_type.name) {
+    Some(type_methods) =>
+      match type_methods.get(method_name) {
+        Some(embedded_method) => {
+          // Prepare args: actual_self_value + evaluated args
+          let evaluated_args = @list.construct(
+            self_value,
+            args.map(fn(arg) { self.visit(arg.value) }),
+          )
+          return embedded_method(RuntimeFunctionContext::{
+            context: self,
+            mod: self.current_module,
+            arguments: evaluated_args
+            .map(arg => { val: arg, kind: Positional })
+            .to_array(),
+          })
+        }
+        None => () // Continue to try regular methods
+      }
+    None => () // Continue to try regular methods
+  }
   match self_type.find_method(method_name) {
     Some(func) => {
       let old_env = self.current_module.env
@@ -1850,10 +1869,10 @@ fn ClosureInterpreter::execute_method_call(
         self.pop_scope()
         self.current_module.env = old_env
       }
-      // 手动绑定self参数和其他参数
+      // Bind self parameter and other args
       match func {
         Closure(Lambda(parameters~, body~, ..), _env) => {
-          // 绑定参数
+          // Bind parameters
           match parameters {
             More(Positional(binder={ name: "self", .. }, ..), ..) =>
               self.bind_function_parameters(
@@ -1863,7 +1882,7 @@ fn ClosureInterpreter::execute_method_call(
             _ => self.bind_function_parameters(parameters, args)
           }
 
-          // 执行函数体
+          // Execute function body
           self.visit(body)
         }
         _ =>
@@ -1873,32 +1892,7 @@ fn ClosureInterpreter::execute_method_call(
       }
     }
     None =>
-      // 查找嵌入式方法
-      match self.embedded_methods.get(self_type.name) {
-        Some(type_methods) =>
-          match type_methods.get(method_name) {
-            Some(embedded_method) => {
-              // 准备参数：actual_self_value + 其他参数的求值结果
-              let evaluated_args = @list.construct(
-                self_value,
-                args.map(fn(arg) { self.visit(arg.value) }),
-              )
-              return embedded_method(RuntimeFunctionContext::{
-                context: self,
-                mod: self.current_module,
-                arguments: evaluated_args
-                .map(arg => { val: arg, kind: Positional })
-                .to_array(),
-              })
-            }
-            None =>
-              error(
-                "exec embedded method: \{self_type.get_full_name()}::\{method_name} not found",
-              )
-          }
-        None =>
-          error("exec: \{self_type.get_full_name()}::\{method_name} not found")
-      }
+      error("exec: \{self_type.get_full_name()}::\{method_name} not found")
   }
 }
 
@@ -1926,11 +1920,31 @@ fn ClosureInterpreter::execute_static_method_call(
   method_name : String,
   args : @list.List[@syntax.Argument],
 ) -> RuntimeValue raise ControlFlow {
-  // 首先查找用户定义的struct方法
+  match self.embedded_methods.get(type_info.name) {
+    Some(methods) =>
+      match methods.get(method_name) {
+        Some(embedded_func) => {
+          let evaluated_args = args
+            .map(arg => {
+              val: self.visit(arg.value),
+              kind: RuntimeArgumentKind::from_syntax(arg.kind),
+            })
+            .to_array()
+          return embedded_func(RuntimeFunctionContext::{
+            mod: self.current_module,
+            context: self,
+            arguments: evaluated_args,
+          })
+        }
+        None => ()
+      }
+    None => ()
+  }
+
+  // If no embedded method found, try user-defined struct methods
   match type_info.find_method(method_name) {
     Some(func) =>
-      // 执行用户定义的静态方法
-      return match func {
+      match func {
         Closure(func, env) =>
           self.call_closure(
             func,
@@ -1941,38 +1955,7 @@ fn ClosureInterpreter::execute_static_method_call(
           )
         _ => Unit
       }
-    None =>
-      // 如果用户方法中没有找到，继续查找嵌入式方法
-      self.execute_embedded_static_method(type_info.name, method_name, args)
-  }
-}
-
-///| 执行嵌入式静态方法调用
-fn ClosureInterpreter::execute_embedded_static_method(
-  self : ClosureInterpreter,
-  type_name : String,
-  method_name : String,
-  args : @list.List[@syntax.Argument],
-) -> RuntimeValue raise ControlFlow {
-  match self.embedded_methods.get(type_name) {
-    Some(methods) =>
-      match methods.get(method_name) {
-        Some(embedded_func) => {
-          let evaluated_args = args
-            .map(arg => {
-              val: self.visit(arg.value),
-              kind: RuntimeArgumentKind::from_syntax(arg.kind),
-            })
-            .to_array()
-          embedded_func(RuntimeFunctionContext::{
-            mod: self.current_module,
-            context: self,
-            arguments: evaluated_args,
-          })
-        }
-        None => error("Embedded Method:\{type_name}::\{method_name} not found")
-      }
-    None => error("Embedded Method:\{type_name}::\{method_name} not found")
+    None => error("Method \{method_name} not found for type \{type_info.name}")
   }
 }
 
@@ -2021,96 +2004,23 @@ fn RuntimeModule::find_static_type(
 ) -> RuntimeType {
   match name {
     "Bool" => RuntimeType::bool()
-    "Int" =>
-      {
-        pkg: moonbitlang_core_int_module.meta.name,
-        name: "Int",
-        env: moonbitlang_core_int_module.env,
-      }
-    "UInt" =>
-      {
-        pkg: moonbitlang_core_uint_module.meta.name,
-        name: "UInt",
-        env: moonbitlang_core_uint_module.env,
-      }
-    "Int64" =>
-      {
-        pkg: moonbitlang_core_int64_module.meta.name,
-        name: "Int64",
-        env: moonbitlang_core_int64_module.env,
-      }
-    "UInt64" =>
-      {
-        pkg: moonbitlang_core_uint64_module.meta.name,
-        name: "UInt64",
-        env: moonbitlang_core_uint64_module.env,
-      }
-    "Float" =>
-      {
-        pkg: moonbitlang_core_float_module.meta.name,
-        name: "Float",
-        env: moonbitlang_core_float_module.env,
-      }
-    "Double" =>
-      {
-        pkg: moonbitlang_core_double_module.meta.name,
-        name: "Double",
-        env: moonbitlang_core_double_module.env,
-      }
-    "BigInt" =>
-      {
-        pkg: moonbitlang_core_bigint_module.meta.name,
-        name: "BigInt",
-        env: moonbitlang_core_bigint_module.env,
-      }
-    "Char" =>
-      {
-        pkg: moonbitlang_core_char_module.meta.name,
-        name: "Char",
-        env: moonbitlang_core_char_module.env,
-      }
-    "Byte" =>
-      {
-        pkg: moonbitlang_core_byte_module.meta.name,
-        name: "Byte",
-        env: moonbitlang_core_byte_module.env,
-      }
-    "String" =>
-      {
-        pkg: moonbitlang_core_string_module.meta.name,
-        name: "String",
-        env: moonbitlang_core_string_module.env,
-      }
-    "Tuple" =>
-      {
-        pkg: moonbitlang_core_tuple_module.meta.name,
-        name: "Tuple",
-        env: moonbitlang_core_tuple_module.env,
-      }
-    "Array" =>
-      {
-        pkg: moonbitlang_core_array_module.meta.name,
-        name: "Array",
-        env: moonbitlang_core_array_module.env,
-      }
-    "ArrayView" | "View" =>
-      {
-        pkg: moonbitlang_core_array_module.meta.name,
-        name: "ArrayView",
-        env: moonbitlang_core_array_module.env,
-      }
-    "Map" =>
-      {
-        pkg: moonbitlang_core_builtin_module.meta.name,
-        name: "Map",
-        env: moonbitlang_core_builtin_module.env,
-      }
-    "Option" =>
-      {
-        pkg: moonbitlang_core_option_module.meta.name,
-        name: "Option",
-        env: moonbitlang_core_option_module.env,
-      }
+    "Int" => RuntimeType::int()
+    "UInt" => RuntimeType::uint()
+    "Int64" => RuntimeType::int64()
+    "UInt64" => RuntimeType::uint64()
+    "Float" => RuntimeType::float()
+    "Double" => RuntimeType::double()
+    "BigInt" => RuntimeType::bigint()
+    "Char" => RuntimeType::char()
+    "Byte" => RuntimeType::byte()
+    "String" => RuntimeType::string()
+    "Tuple" => RuntimeType::tuple()
+    "Array" => RuntimeType::array()
+    "ArrayView" | "View" => RuntimeType::array_view()
+    "UninitializedArray" => RuntimeType::uninitialized_array()
+    "Map" => RuntimeType::map()
+    "Iter" => RuntimeType::iter()
+    "Option" => RuntimeType::option()
     _ =>
       {
         pkg: self.meta.name,
@@ -2131,96 +2041,22 @@ fn RuntimeEnvironment::type_of(
 ) -> RuntimeType {
   match runtime_value {
     Unit => { pkg: "std", name: "Unit", env: self }
-    Bool(_) =>
-      {
-        pkg: moonbitlang_core_bool_module.meta.name,
-        name: "Bool",
-        env: moonbitlang_core_bool_module.env,
-      }
-    Int(_) =>
-      {
-        pkg: moonbitlang_core_int_module.meta.name,
-        name: "Int",
-        env: moonbitlang_core_int_module.env,
-      }
-    UInt(_) =>
-      {
-        pkg: moonbitlang_core_uint_module.meta.name,
-        name: "UInt",
-        env: moonbitlang_core_uint_module.env,
-      }
-    Int64(_) =>
-      {
-        pkg: moonbitlang_core_int64_module.meta.name,
-        name: "Int64",
-        env: moonbitlang_core_int64_module.env,
-      }
-    UInt64(_) =>
-      {
-        pkg: moonbitlang_core_uint64_module.meta.name,
-        name: "UInt64",
-        env: moonbitlang_core_uint64_module.env,
-      }
-    Float(_) =>
-      {
-        pkg: moonbitlang_core_float_module.meta.name,
-        name: "Float",
-        env: moonbitlang_core_float_module.env,
-      }
-    Double(_) =>
-      {
-        pkg: moonbitlang_core_double_module.meta.name,
-        name: "Double",
-        env: moonbitlang_core_double_module.env,
-      }
-    BigInt(_) =>
-      {
-        pkg: moonbitlang_core_bigint_module.meta.name,
-        name: "BigInt",
-        env: moonbitlang_core_bigint_module.env,
-      }
-    Char(_) =>
-      {
-        pkg: moonbitlang_core_char_module.meta.name,
-        name: "Char",
-        env: moonbitlang_core_char_module.env,
-      }
-    Byte(_) =>
-      {
-        pkg: moonbitlang_core_byte_module.meta.name,
-        name: "Byte",
-        env: moonbitlang_core_byte_module.env,
-      }
-    String(_) =>
-      {
-        pkg: moonbitlang_core_string_module.meta.name,
-        name: "String",
-        env: moonbitlang_core_string_module.env,
-      }
-    Tuple(_) =>
-      {
-        pkg: moonbitlang_core_tuple_module.meta.name,
-        name: "Tuple",
-        env: moonbitlang_core_tuple_module.env,
-      }
-    Array(_) =>
-      {
-        pkg: moonbitlang_core_array_module.meta.name,
-        name: "Array",
-        env: moonbitlang_core_array_module.env,
-      }
-    ArrayView(_) =>
-      {
-        pkg: moonbitlang_core_array_module.meta.name,
-        name: "ArrayView",
-        env: moonbitlang_core_array_module.env,
-      }
-    Map(_) =>
-      {
-        pkg: moonbitlang_core_hashmap_module.meta.name,
-        name: "Map",
-        env: moonbitlang_core_hashmap_module.env,
-      }
+    Bool(_) => RuntimeType::bool()
+    Int(_) => RuntimeType::int()
+    UInt(_) => RuntimeType::uint()
+    Int64(_) => RuntimeType::int64()
+    UInt64(_) => RuntimeType::uint64()
+    Float(_) => RuntimeType::float()
+    Double(_) => RuntimeType::double()
+    BigInt(_) => RuntimeType::bigint()
+    Char(_) => RuntimeType::char()
+    Byte(_) => RuntimeType::byte()
+    String(_) => RuntimeType::string()
+    Tuple(_) => RuntimeType::tuple()
+    Array(_) => RuntimeType::array()
+    ArrayView(_) => RuntimeType::array_view()
+    UninitializedArray(_) => RuntimeType::uninitialized_array()
+    Map(_) => RuntimeType::map()
     Struct(data) => data.type_info
     Closure(_) => { pkg: "std", name: "Closure", env: self }
     Exception(_) => { pkg: "std", name: "Exception", env: self }
@@ -2235,12 +2071,7 @@ fn RuntimeEnvironment::type_of(
           }
         _ => type_info
       }
-    Iter(_) =>
-      {
-        pkg: moonbitlang_core_builtin_module.meta.name,
-        name: "Iter",
-        env: moonbitlang_core_builtin_module.env,
-      }
+    Iter(_) => RuntimeType::iter()
   }
 }
 
