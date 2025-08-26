@@ -32,7 +32,7 @@ pub fn RuntimeEnvironment::new(
   } else {
     {
       traits: Map::new(),
-      fn_aliases: Map::new(),
+      fn_aliases: core_fn_aliases.copy(),
       type_definitions: Map::new(),
       struct_methods: struct_methods.unwrap_or({}),
       type_environment: TypeEnvironment::new(),
