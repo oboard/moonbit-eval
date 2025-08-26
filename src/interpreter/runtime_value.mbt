@@ -30,6 +30,7 @@ pub(all) enum RuntimeValue {
   // 复合值类型
   Tuple(Array[RuntimeValue])
   Array(Array[RuntimeValue])
+  ArrayView(ArrayView[RuntimeValue])
   Map(Map[RuntimeValue, RuntimeValue])
 
   // 结构类型 - 直接存储字段映射
@@ -140,6 +141,7 @@ pub impl ToJson for RuntimeValue with to_json(self : RuntimeValue) -> Json {
     String(s) => s.to_json()
     Tuple(t) => t.to_json()
     Array(a) => a.to_json()
+    ArrayView(a) => a.to_json()
     Struct(s) => s.val.to_json()
     Closure(f, _) => f.to_json()
     Constructor({ val: { name, fields }, .. }) => {
@@ -368,7 +370,28 @@ fn compare_type_signatures(ty_a : @syntax.Type, ty_b : @syntax.Type) -> Bool {
 ///|
 pub(all) struct RuntimeArgument {
   value : RuntimeValue
-  kind : @syntax.ArgumentKind
+  kind : RuntimeArgumentKind
+}
+
+///|
+pub(all) enum RuntimeArgumentKind {
+  Positional
+  Labelled(String)
+  LabelledPun(String)
+  LabelledOption(String)
+  LabelledOptionPun(String)
+}
+
+///|
+pub fn RuntimeArgumentKind::from_syntax(
+  arg : @syntax.ArgumentKind,
+) -> RuntimeArgumentKind {
+  match arg {
+    Positional => Positional
+    Labelled({ name, .. }) | LabelledPun({ name, .. }) => LabelledPun(name)
+    LabelledOption(label={ name, .. }, ..)
+    | LabelledOptionPun(label={ name, .. }, ..) => LabelledOptionPun(name)
+  }
 }
 
 ///| 检查值是否为引用类型
@@ -396,17 +419,6 @@ pub impl Show for RuntimeValue with output(self, logger : &Logger) -> Unit {
 ///| 将RuntimeValue转换为字符串表示
 pub impl Show for RuntimeValue with to_string(self) -> String {
   match self {
-    Map(m) => {
-      let parts = []
-      m.each(fn(key, val) {
-        let key_str = match key {
-          String(s) => "\"" + s + "\""
-          _ => key.to_string()
-        }
-        parts.push(key_str + ": " + val.to_string())
-      })
-      "{" + parts.join(", ") + "}"
-    }
     Unit => "()"
     Bool(b) => b.to_string()
     Int(i) => i.to_string()
@@ -426,6 +438,21 @@ pub impl Show for RuntimeValue with to_string(self) -> String {
     Array(values) => {
       let parts = values.map(fn(v) { v.to_string() })
       "[" + parts.join(", ") + "]"
+    }
+    ArrayView(values) => {
+      let parts = values.map(fn(v) { v.to_string() })
+      "[" + parts.join(", ") + "]"
+    }
+    Map(m) => {
+      let parts = []
+      m.each(fn(key, val) {
+        let key_str = match key {
+          String(s) => "\"" + s + "\""
+          _ => key.to_string()
+        }
+        parts.push(key_str + ": " + val.to_string())
+      })
+      "{" + parts.join(", ") + "}"
     }
     Struct(fields) => {
       let parts = []
@@ -592,6 +619,10 @@ pub fn RuntimeValue::to_expr(self : RuntimeValue) -> @syntax.Expr {
       Tuple(exprs=@list.from_array(exprs), loc=_dummy_loc)
     }
     Array(values) => {
+      let exprs = values.map(fn(v) { v.to_expr() })
+      Array(exprs=@list.from_array(exprs), loc=_dummy_loc)
+    }
+    ArrayView(values) => {
       let exprs = values.map(fn(v) { v.to_expr() })
       Array(exprs=@list.from_array(exprs), loc=_dummy_loc)
     }

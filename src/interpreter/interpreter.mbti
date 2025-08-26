@@ -72,13 +72,15 @@ pub(all) struct ClosureInterpreter {
   main : RuntimeModule
   mut current_module : RuntimeModule
   mut state : InterpreterState
+  mut call_stack : Array[RuntimeLocation]
 }
 fn ClosureInterpreter::add_embedded_fn(Self, String, (RuntimeFunctionContext) -> RuntimeValue raise ControlFlow) -> Unit
 fn ClosureInterpreter::add_embedded_method(Self, String, String, (RuntimeFunctionContext) -> RuntimeValue raise ControlFlow) -> Unit
 fn ClosureInterpreter::add_extern_fn(Self, String, (RuntimeFunctionContext) -> RuntimeValue raise ControlFlow) -> Unit
 fn ClosureInterpreter::bind_function_parameters(Self, @list.List[@syntax.Parameter], @list.List[RuntimeArgument]) -> Unit raise ControlFlow
 fn ClosureInterpreter::call(Self, @syntax.Func, @list.List[@syntax.Argument]) -> RuntimeValue raise ControlFlow
-fn ClosureInterpreter::call_closure(Self, @syntax.Func, RuntimeModule, RuntimeEnvironment, @list.List[@syntax.Argument]) -> RuntimeValue raise ControlFlow
+fn ClosureInterpreter::call_closure(Self, @syntax.Func, RuntimeModule, RuntimeEnvironment, @list.List[@syntax.Argument], name? : String) -> RuntimeValue raise ControlFlow
+fn ClosureInterpreter::call_closure_runtime(Self, @syntax.Func, RuntimeModule, RuntimeEnvironment, @list.List[RuntimeArgument], name? : String) -> RuntimeValue raise ControlFlow
 fn ClosureInterpreter::constants_equal(Self, @syntax.Constant, @syntax.Constant) -> Bool
 fn ClosureInterpreter::constants_equal_expr(Self, @syntax.Expr, @syntax.Expr) -> Bool
 fn ClosureInterpreter::execute_match_runtime(Self, RuntimeValue, @list.List[@syntax.Case]) -> RuntimeValue raise ControlFlow
@@ -87,13 +89,13 @@ fn ClosureInterpreter::is_known_function(Self, String) -> Bool
 fn ClosureInterpreter::new() -> Self
 fn ClosureInterpreter::pattern_to_value(Self, @syntax.Pattern) -> @syntax.Expr?
 fn ClosureInterpreter::pop_scope(Self) -> Unit
-fn ClosureInterpreter::push_scope(Self) -> Unit
+fn ClosureInterpreter::push_scope(Self, RuntimeLocation) -> Unit
 fn ClosureInterpreter::start(Self) -> Unit
 fn ClosureInterpreter::stop(Self) -> Unit
 fn ClosureInterpreter::top_visit(Self, @syntax.Impl) -> RuntimeValue raise ControlFlow
 fn ClosureInterpreter::value_in_range(Self, @syntax.Expr, @syntax.Pattern, @syntax.Pattern, Bool) -> Bool
 fn ClosureInterpreter::visit(Self, @syntax.Expr) -> RuntimeValue raise ControlFlow
-fn ClosureInterpreter::visit_scoped(Self, @syntax.Expr) -> RuntimeValue raise ControlFlow
+fn ClosureInterpreter::visit_scoped(Self, @syntax.Expr, RuntimeLocation) -> RuntimeValue raise ControlFlow
 
 pub(all) struct ConstructorField {
   name : String?
@@ -134,8 +136,17 @@ impl @json.FromJson for ModuleMeta
 
 pub(all) struct RuntimeArgument {
   value : RuntimeValue
-  kind : @syntax.ArgumentKind
+  kind : RuntimeArgumentKind
 }
+
+pub(all) enum RuntimeArgumentKind {
+  Positional
+  Labelled(String)
+  LabelledPun(String)
+  LabelledOption(String)
+  LabelledOptionPun(String)
+}
+fn RuntimeArgumentKind::from_syntax(@syntax.ArgumentKind) -> Self
 
 pub(all) struct RuntimeEnvironment {
   traits : Map[String, @syntax.TraitDecl]
@@ -169,6 +180,13 @@ pub(all) struct RuntimeFunctionContext {
 pub(all) struct RuntimeIterator {
   iterate_fn : ((RuntimeValue) -> IterResult) -> IterResult
 }
+
+pub enum RuntimeLocation {
+  FunctionCall(String)
+  ControlFlow(String)
+  LetMut(String)
+}
+impl Show for RuntimeLocation
 
 pub(all) struct RuntimeModule {
   meta : ModuleMeta
@@ -205,6 +223,7 @@ pub(all) enum RuntimeValue {
   String(String)
   Tuple(Array[RuntimeValue])
   Array(Array[RuntimeValue])
+  ArrayView(ArrayView[RuntimeValue])
   Map(Map[RuntimeValue, RuntimeValue])
   Struct(WithType[Map[String, RuntimeValue]])
   Closure(@syntax.Func, RuntimeEnvironment)

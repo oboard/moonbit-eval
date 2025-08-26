@@ -9,6 +9,8 @@ pub(all) struct ClosureInterpreter {
   mut current_module : RuntimeModule
   // 解释器状态
   mut state : InterpreterState
+  // 调用栈跟踪
+  mut call_stack : Array[RuntimeLocation]
 }
 
 ///| 解释器状态
@@ -24,9 +26,6 @@ pub fn ClosureInterpreter::new() -> ClosureInterpreter {
     meta: ModuleMeta::new("main"),
     deps: core_modules,
   }
-  for name, a in core_fn_aliases {
-    main.env.fn_aliases.set(name, a)
-  }
   {
     extern_fns: {},
     embedded_fns: core_embedded_code,
@@ -34,6 +33,7 @@ pub fn ClosureInterpreter::new() -> ClosureInterpreter {
     main,
     current_module: main,
     state: InterpreterState::Stopped,
+    call_stack: [],
   }
 }
 
@@ -416,18 +416,18 @@ pub fn ClosureInterpreter::visit(
       Array(result_values)
     }
     ArrayGetSlice(array~, start_index~, end_index~, ..) => {
-      let array_value = self.visit(array)
-      match array_value {
-        Array(arr) => {
-          let start = match start_index {
-            Some(expr) => Some(self.visit(expr))
-            _ => None
-          }
-          let end = match end_index {
-            Some(expr) => Some(self.visit(expr))
-            _ => None
-          }
-          Array(
+      let self_value = self.visit(array)
+      let start = match start_index {
+        Some(expr) => Some(self.visit(expr))
+        _ => None
+      }
+      let end = match end_index {
+        Some(expr) => Some(self.visit(expr))
+        _ => None
+      }
+      match self_value {
+        Array(arr) =>
+          ArrayView(
             (match (start, end) {
               (Some(Int(start)), Some(Int(end))) => arr[start:end]
               (Some(Int(start)), None) => arr[start:]
@@ -435,8 +435,30 @@ pub fn ClosureInterpreter::visit(
               _ => arr[:]
             }).to_array(),
           )
+        // 调用op_as_view
+        _ => {
+          let ty = self.current_module.env.type_of(self_value)
+          match ty.find_method("op_as_view") {
+            Some(Closure(func, env)) =>
+              self.call_closure_runtime(
+                func,
+                self.current_module,
+                env,
+                @list.of([
+                  { value: self_value, kind: Positional },
+                  {
+                    value: start.unwrap_or(Unit),
+                    kind: LabelledOption("start"),
+                  },
+                  { value: end.unwrap_or(Unit), kind: LabelledOption("end") },
+                ]),
+                name="op_as_view",
+              )
+            Some(_) =>
+              error("\{ty.get_full_name()}::op_as_view is not a function")
+            None => error("\{ty.get_full_name()}::op_as_view not found")
+          }
         }
-        _ => Unit
       }
     }
     ArraySet(array~, index~, value~, ..) => {
@@ -531,7 +553,7 @@ pub fn ClosureInterpreter::visit(
     // 处理可变变量声明
     LetMut(binder={ name, .. }, expr~, body~, ..) => {
       let runtime_value = self.visit(expr)
-      self.push_scope()
+      self.push_scope(RuntimeLocation::LetMut(name))
       self.current_module.env.set_mutable_variable(name, runtime_value)
       // 执行body部分，这是关键！
       self.visit(body)
@@ -667,8 +689,10 @@ pub fn ClosureInterpreter::visit(
     If(cond~, ifso~, ifnot~, ..) => {
       let cond_val = self.visit(cond)
       match (cond_val, ifnot) {
-        (Bool(true), _) => self.visit_scoped(ifso)
-        (Bool(false), Some(else_expr)) => self.visit_scoped(else_expr)
+        (Bool(true), _) =>
+          self.visit_scoped(ifso, RuntimeLocation::ControlFlow("if"))
+        (Bool(false), Some(else_expr)) =>
+          self.visit_scoped(else_expr, RuntimeLocation::ControlFlow("else"))
         _ => Unit
       }
     }
@@ -799,7 +823,7 @@ pub fn ClosureInterpreter::visit(
         let result = self.visit(expr)
         match result {
           Exception(_) => return result
-          _ => () // 继续执行下一个表达式
+          _ => continue
         }
       }
       self.visit(last_expr)
@@ -807,11 +831,17 @@ pub fn ClosureInterpreter::visit(
     Guard(cond~, otherwise~, body~, ..) => {
       let cond_val = self.visit(cond)
       match cond_val {
-        Bool(true) => self.visit_scoped(body)
+        Bool(true) =>
+          self.visit_scoped(body, RuntimeLocation::ControlFlow("guard"))
         Bool(false) =>
-          otherwise.map_or(Unit, expr => self.visit_scoped(expr) catch {
-            _ => Unit
-          })
+          match otherwise {
+            Some(expr) =>
+              self.visit_scoped(
+                expr,
+                RuntimeLocation::ControlFlow("guard else"),
+              )
+            None => Unit
+          }
         _ => Unit
       }
     }
@@ -866,7 +896,7 @@ pub fn ClosureInterpreter::visit(
         }
 
         // 执行循环体，处理break和continue
-        (self.visit_scoped(body) catch {
+        (self.visit_scoped(body, RuntimeLocation::ControlFlow("for")) catch {
           Break(value) => return value.unwrap_or(Unit)
           Continue(arr) => {
             if !arr.is_empty() {
@@ -884,7 +914,7 @@ pub fn ClosureInterpreter::visit(
         execute_continue_block()
       }
       if for_else is Some(expr) {
-        self.visit_scoped(expr) catch {
+        self.visit_scoped(expr, RuntimeLocation::ControlFlow("for else")) catch {
           _ => Unit
         }
       } else {
@@ -904,7 +934,7 @@ pub fn ClosureInterpreter::visit(
         }
 
         // 执行循环体，处理break和continue
-        (self.visit_scoped(loop_body) catch {
+        (self.visit_scoped(loop_body, RuntimeLocation::ControlFlow("while")) catch {
           Break(value) => {
             result = match value {
               Some(v) => v
@@ -921,7 +951,11 @@ pub fn ClosureInterpreter::visit(
       // 如果没有break，执行else分支
       if not(broke) {
         match while_else {
-          Some(else_expr) => result = self.visit_scoped(else_expr)
+          Some(else_expr) =>
+            result = self.visit_scoped(
+              else_expr,
+              RuntimeLocation::ControlFlow("while"),
+            )
           None => () // 没有else分支
         }
       }
@@ -994,22 +1028,14 @@ pub fn ClosureInterpreter::visit(
           }
         Constructor(refer) =>
           match accessor {
-            Label(label) => {
+            Label({ name, .. }) => {
               // 构造函数字段赋值处理
-              let field_name = label.name
               let new_field_value = self.visit(field)
-
+              let field = refer.val.fields.search_by(field => field.name ==
+                Some(name))
               // 处理构造函数的字段赋值
-              for i = 0; i < refer.val.fields.length(); i = i + 1 {
-                let field = refer.val.fields[i]
-                if field.name == Some(field_name) && field.mutable {
-                  refer.val.fields[i] = {
-                    name: field.name,
-                    value: new_field_value,
-                    mutable: field.mutable,
-                  }
-                  break
-                }
+              if field is Some(i) {
+                refer.val.fields[i].value = new_field_value
               }
             }
             _ => () // 其他访问器类型暂不支持
@@ -1242,7 +1268,8 @@ pub fn ClosureInterpreter::visit(
         Iter(iter_impl) =>
           (iter_impl.iterate_fn)(fn(value) {
             // 创建新作用域来隔离循环变量
-            self.push_scope()
+            self.push_scope(RuntimeLocation::ControlFlow("for"))
+            defer self.pop_scope()
             // 绑定循环变量
             match binders {
               @list.List::More(Some(binder), tail=@list.List::Empty) =>
@@ -1254,8 +1281,7 @@ pub fn ClosureInterpreter::visit(
                   _ => ()
                 }
             }
-            // 执行循环体
-            let result = try {
+            try {
               self.visit(body) |> ignore
               IterContinue
             } catch {
@@ -1263,9 +1289,6 @@ pub fn ClosureInterpreter::visit(
               Continue(_) => IterContinue
               _ => IterEnd // 其他错误也结束迭代
             }
-            // 销毁作用域
-            self.pop_scope()
-            result
           })
           |> ignore
         _ => () // 如果不是迭代器，什么都不做
@@ -1280,11 +1303,11 @@ pub fn ClosureInterpreter::visit(
 pub fn ClosureInterpreter::visit_scoped(
   self : ClosureInterpreter,
   node : @syntax.Expr,
+  loc : RuntimeLocation,
 ) -> RuntimeValue raise ControlFlow {
-  self.push_scope()
-  let value = self.visit(node)
-  self.pop_scope()
-  value
+  self.push_scope(loc)
+  defer self.pop_scope()
+  self.visit(node)
 }
 
 ///|
@@ -1734,7 +1757,7 @@ fn ClosureInterpreter::execute_function_by_name(
   let evaluated_args = args
     .map(arg => RuntimeArgument::{
       value: self.visit(arg.value),
-      kind: arg.kind,
+      kind: RuntimeArgumentKind::from_syntax(arg.kind),
     })
     .to_array()
   self.current_module.with_ident(long_ident, fn(mod, _pkg, name) {
@@ -1779,7 +1802,7 @@ fn ClosureInterpreter::execute_function_by_name(
         }
       RuntimeClosure(lambda_func, captured_env) =>
         // 调用闭包：使用专门的闭包调用方法
-        self.call_closure(lambda_func, mod, captured_env, args)
+        self.call_closure(lambda_func, mod, captured_env, args, name~)
       ExternFunction(extern_func) =>
         extern_func(RuntimeFunctionContext::{
           mod: self.current_module,
@@ -1792,7 +1815,7 @@ fn ClosureInterpreter::execute_function_by_name(
           context: self,
           arguments: evaluated_args,
         })
-      NotFound => error("Method:\{long_ident.to_json().stringify()} not found")
+      NotFound => error("method \{name} not found")
     }
   })
 }
@@ -1810,15 +1833,19 @@ fn ClosureInterpreter::execute_method_call(
   match self_type.find_method(method_name) {
     Some(func) => {
       let old_env = self.current_module.env
+      let args = args.map(arg => {
+        value: self.visit(arg.value),
+        kind: RuntimeArgumentKind::from_syntax(arg.kind),
+      })
       self.current_module.env = self_type.env
-      self.push_scope()
+      self.push_scope(RuntimeLocation::FunctionCall(method_name))
+      defer {
+        self.pop_scope()
+        self.current_module.env = old_env
+      }
       // 手动绑定self参数和其他参数
-      let result = match func {
+      match func {
         Closure(Lambda(parameters~, body~, ..), _env) => {
-          let args = args.map(arg => {
-            value: self.visit(arg.value),
-            kind: arg.kind,
-          })
           // 绑定参数
           match parameters {
             More(Positional(binder={ name: "self", .. }, ..), ..) =>
@@ -1837,9 +1864,6 @@ fn ClosureInterpreter::execute_method_call(
             "exec method: \{self_type.get_full_name()}::\{method_name} not found",
           )
       }
-      self.pop_scope()
-      self.current_module.env = old_env
-      result
     }
     None =>
       // 查找嵌入式方法
@@ -1901,7 +1925,13 @@ fn ClosureInterpreter::execute_static_method_call(
       // 执行用户定义的静态方法
       return match func {
         Closure(func, env) =>
-          self.call_closure(func, self.current_module, env, args)
+          self.call_closure(
+            func,
+            self.current_module,
+            env,
+            args,
+            name=method_name,
+          )
         _ => Unit
       }
     None =>
@@ -1922,7 +1952,10 @@ fn ClosureInterpreter::execute_embedded_static_method(
       match methods.get(method_name) {
         Some(embedded_func) => {
           let evaluated_args = args
-            .map(arg => { value: self.visit(arg.value), kind: arg.kind })
+            .map(arg => {
+              value: self.visit(arg.value),
+              kind: RuntimeArgumentKind::from_syntax(arg.kind),
+            })
             .to_array()
           embedded_func(RuntimeFunctionContext::{
             mod: self.current_module,
@@ -2047,7 +2080,7 @@ fn RuntimeModule::find_static_type(
         name: "Tuple",
         env: moonbitlang_core_tuple_module.env,
       }
-    "Array" =>
+    "Array" | "ArrayView" | "View" =>
       {
         pkg: moonbitlang_core_array_module.meta.name,
         name: "Array",
@@ -2158,6 +2191,12 @@ fn RuntimeEnvironment::type_of(
         env: moonbitlang_core_tuple_module.env,
       }
     Array(_) =>
+      {
+        pkg: moonbitlang_core_array_module.meta.name,
+        name: "Array",
+        env: moonbitlang_core_array_module.env,
+      }
+    ArrayView(_) =>
       {
         pkg: moonbitlang_core_array_module.meta.name,
         name: "Array",

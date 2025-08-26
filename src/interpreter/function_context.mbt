@@ -5,6 +5,5 @@ pub(all) struct RuntimeFunctionContext {
   arguments : Array[RuntimeArgument]
 }
 
-
 ///| 新的函数类型定义 - 统一的上下文访问
 pub typealias (RuntimeFunctionContext) -> RuntimeValue raise ControlFlow as RuntimeFunction
