@@ -1,3 +1,10 @@
+///|
+pub enum RuntimeLocation {
+  FunctionCall(String)
+  ControlFlow(String)
+  LetMut(String)
+} derive(Show)
+
 ///| 变量管理模块
 
 ///| 处理变量查找、设置和作用域管理
@@ -80,7 +87,12 @@ pub fn RuntimeEnvironment::update(
 }
 
 ///| 创建新的作用域
-pub fn ClosureInterpreter::push_scope(self : ClosureInterpreter) -> Unit {
+pub fn ClosureInterpreter::push_scope(
+  self : ClosureInterpreter,
+  loc : RuntimeLocation,
+) -> Unit {
+  self.call_stack.push(loc)
+  // println(String::make(self.call_stack.length(), ' ') + loc.to_string() + "{")
   self.current_module.env = RuntimeEnvironment::new(
     parent=self.current_module.env,
   )
@@ -88,6 +100,8 @@ pub fn ClosureInterpreter::push_scope(self : ClosureInterpreter) -> Unit {
 
 ///| 销毁当前作用域
 pub fn ClosureInterpreter::pop_scope(self : ClosureInterpreter) -> Unit {
+  // println(String::make(self.call_stack.length(), ' ') + self.call_stack.pop().to_string() + "}")
+  self.call_stack.pop() |> ignore
   if self.current_module.env.parent is Some(parent) {
     self.current_module.env = parent
   }
