@@ -12,6 +12,8 @@ import(
 // Values
 let array_methods : Map[String, (RuntimeFunctionContext) -> RuntimeValue raise ControlFlow]
 
+let array_view_methods : Map[String, (RuntimeFunctionContext) -> RuntimeValue raise ControlFlow]
+
 fn[T : Compare] compare(T, T, String) -> @syntax.Constant
 
 fn constant_infix(String, @syntax.Constant, @syntax.Constant) -> @syntax.Constant
@@ -135,7 +137,7 @@ impl ToJson for ModuleMeta
 impl @json.FromJson for ModuleMeta
 
 pub(all) struct RuntimeArgument {
-  value : RuntimeValue
+  val : RuntimeValue
   kind : RuntimeArgumentKind
 }
 

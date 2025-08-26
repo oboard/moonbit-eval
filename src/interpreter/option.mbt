@@ -19,14 +19,14 @@ pub let option_methods : Map[String, RuntimeFunction] = {
 let option_unwrap_fn : RuntimeFunction = ctx => match ctx.arguments {
   [
     {
-      value: Constructor(
+      val: Constructor(
         { val: { name: "Some", fields: [{ value: inner_value, .. }] }, .. }
       ),
       ..,
     },
     ..,
   ] => inner_value
-  [{ value: Constructor({ val: { name: "None", fields: [] }, .. }), .. }, ..] =>
+  [{ val: Constructor({ val: { name: "None", fields: [] }, .. }), .. }, ..] =>
     Unit
   _ => Unit
 }
@@ -35,12 +35,12 @@ let option_unwrap_fn : RuntimeFunction = ctx => match ctx.arguments {
 let option_map_fn : RuntimeFunction = ctx => match ctx.arguments {
   [
     {
-      value: Constructor(
+      val: Constructor(
         { val: { name: "Some", fields: [{ value: inner_value, .. }] }, .. }
       ),
       ..,
     },
-    { value: Closure(func, captured_env), .. },
+    { val: Closure(func, captured_env), .. },
     ..,
   ] => {
     // 执行闭包调用
@@ -52,7 +52,7 @@ let option_map_fn : RuntimeFunction = ctx => match ctx.arguments {
     )
     ctx.mod.cons("Some", [result])
   }
-  [{ value: Constructor({ val: { name: "None", fields: [] }, .. }), .. }, _, ..] =>
+  [{ val: Constructor({ val: { name: "None", fields: [] }, .. }), .. }, _, ..] =>
     ctx.mod.cons("None", [])
   _ => ctx.mod.cons("None", [])
 }
@@ -61,13 +61,13 @@ let option_map_fn : RuntimeFunction = ctx => match ctx.arguments {
 let option_map_or_fn : RuntimeFunction = ctx => match ctx.arguments {
   [
     {
-      value: Constructor(
+      val: Constructor(
         { val: { name: "Some", fields: [{ value: inner_value, .. }] }, .. }
       ),
       ..,
     },
     _,
-    { value: Closure(func, captured_env), .. },
+    { val: Closure(func, captured_env), .. },
     ..,
   ] =>
     // 对于Some值，执行闭包调用
@@ -78,8 +78,8 @@ let option_map_or_fn : RuntimeFunction = ctx => match ctx.arguments {
       @list.of([{ value: inner_value.to_expr(), kind: Positional }]),
     )
   [
-    { value: Constructor({ val: { name: "None", fields: [] }, .. }), .. },
-    { value: default_value, .. },
+    { val: Constructor({ val: { name: "None", fields: [] }, .. }), .. },
+    { val: default_value, .. },
     _,
     ..,
   ] => default_value
@@ -90,13 +90,13 @@ let option_map_or_fn : RuntimeFunction = ctx => match ctx.arguments {
 let option_map_or_else_fn : RuntimeFunction = ctx => match ctx.arguments {
   [
     {
-      value: Constructor(
+      val: Constructor(
         { val: { name: "Some", fields: [{ value: inner_value, .. }] }, .. }
       ),
       ..,
     },
     _,
-    { value: Closure(map_func, captured_env), .. },
+    { val: Closure(map_func, captured_env), .. },
     ..,
   ] =>
     // 对于Some值，执行map闭包
@@ -107,8 +107,8 @@ let option_map_or_else_fn : RuntimeFunction = ctx => match ctx.arguments {
       @list.of([{ value: inner_value.to_expr(), kind: Positional }]),
     )
   [
-    { value: Constructor({ val: { name: "None", fields: [] }, .. }), .. },
-    { value: Closure(else_func, captured_env), .. },
+    { val: Constructor({ val: { name: "None", fields: [] }, .. }), .. },
+    { val: Closure(else_func, captured_env), .. },
     _,
     ..,
   ] =>
@@ -121,12 +121,12 @@ let option_map_or_else_fn : RuntimeFunction = ctx => match ctx.arguments {
 let option_bind_fn : RuntimeFunction = ctx => match ctx.arguments {
   [
     {
-      value: Constructor(
+      val: Constructor(
         { val: { name: "Some", fields: [{ value: inner_value, .. }] }, .. }
       ),
       ..,
     },
-    { value: Closure(func, captured_env), .. },
+    { val: Closure(func, captured_env), .. },
     ..,
   ] =>
     // 执行闭包调用，bind应该返回函数的结果（应该是Option类型）
@@ -136,7 +136,7 @@ let option_bind_fn : RuntimeFunction = ctx => match ctx.arguments {
       captured_env,
       @list.of([{ value: inner_value.to_expr(), kind: Positional }]),
     )
-  [{ value: Constructor({ val: { name: "None", fields: [] }, .. }), .. }, _, ..] =>
+  [{ val: Constructor({ val: { name: "None", fields: [] }, .. }), .. }, _, ..] =>
     ctx.mod.cons("None", [])
   _ => ctx.mod.cons("None", [])
 }
@@ -145,7 +145,7 @@ let option_bind_fn : RuntimeFunction = ctx => match ctx.arguments {
 let option_flatten_fn : RuntimeFunction = ctx => match ctx.arguments {
   [
     {
-      value: Constructor(
+      val: Constructor(
         {
           val: {
             name: "Some",
@@ -170,7 +170,7 @@ let option_flatten_fn : RuntimeFunction = ctx => match ctx.arguments {
   ] => ctx.mod.cons("Some", [inner_value])
   [
     {
-      value: Constructor(
+      val: Constructor(
         {
           val: {
             name: "Some",
@@ -188,16 +188,16 @@ let option_flatten_fn : RuntimeFunction = ctx => match ctx.arguments {
     },
     ..,
   ] => ctx.mod.cons("None", [])
-  [{ value: Constructor({ val: { name: "None", fields: [] }, .. }), .. }, ..] =>
+  [{ val: Constructor({ val: { name: "None", fields: [] }, .. }), .. }, ..] =>
     ctx.mod.cons("None", [])
   _ => ctx.mod.cons("None", [])
 }
 
 ///| Option is_empty 方法
 let option_is_empty_fn : RuntimeFunction = ctx => match ctx.arguments {
-  [{ value: Constructor({ val: { name: "Some", .. }, .. }), .. }, ..] =>
+  [{ val: Constructor({ val: { name: "Some", .. }, .. }), .. }, ..] =>
     Bool(false)
-  [{ value: Constructor({ val: { name: "None", fields: [] }, .. }), .. }, ..] =>
+  [{ val: Constructor({ val: { name: "None", fields: [] }, .. }), .. }, ..] =>
     Bool(true)
   _ => Bool(true)
 }
@@ -206,12 +206,12 @@ let option_is_empty_fn : RuntimeFunction = ctx => match ctx.arguments {
 let option_filter_fn : RuntimeFunction = ctx => match ctx.arguments {
   [
     {
-      value: Constructor(
+      val: Constructor(
         { val: { name: "Some", fields: [{ value: inner_value, .. }] }, .. }
       ),
       ..,
     },
-    { value: Closure(predicate, captured_env), .. },
+    { val: Closure(predicate, captured_env), .. },
     ..,
   ] => {
     // 执行谓词闭包
@@ -227,7 +227,7 @@ let option_filter_fn : RuntimeFunction = ctx => match ctx.arguments {
       _ => ctx.mod.cons("None", [])
     }
   }
-  [{ value: Constructor({ val: { name: "None", fields: [] }, .. }), .. }, _, ..] =>
+  [{ val: Constructor({ val: { name: "None", fields: [] }, .. }), .. }, _, ..] =>
     ctx.mod.cons("None", [])
   _ => ctx.mod.cons("None", [])
 }
@@ -236,7 +236,7 @@ let option_filter_fn : RuntimeFunction = ctx => match ctx.arguments {
 let option_unwrap_or_fn : RuntimeFunction = ctx => match ctx.arguments {
   [
     {
-      value: Constructor(
+      val: Constructor(
         { val: { name: "Some", fields: [{ value: inner_value, .. }] }, .. }
       ),
       ..,
@@ -245,8 +245,8 @@ let option_unwrap_or_fn : RuntimeFunction = ctx => match ctx.arguments {
     ..,
   ] => inner_value
   [
-    { value: Constructor({ val: { name: "None", fields: [] }, .. }), .. },
-    { value: default_value, .. },
+    { val: Constructor({ val: { name: "None", fields: [] }, .. }), .. },
+    { val: default_value, .. },
     ..,
   ] => default_value
   _ => Unit
@@ -258,14 +258,14 @@ let option_unwrap_or_fn : RuntimeFunction = ctx => match ctx.arguments {
 let option_unwrap_or_default_fn : RuntimeFunction = ctx => match ctx.arguments {
   [
     {
-      value: Constructor(
+      val: Constructor(
         { val: { name: "Some", fields: [{ value: inner_value, .. }] }, .. }
       ),
       ..,
     },
     ..,
   ] => inner_value
-  [{ value: Constructor({ val: { name: "None", fields: [] }, .. }), .. }, ..] =>
+  [{ val: Constructor({ val: { name: "None", fields: [] }, .. }), .. }, ..] =>
     // 返回默认值，对于数值类型返回0，其他类型返回Unit
     // 这里简化实现，实际应该根据泛型类型参数确定默认值
     Int(0)
@@ -276,7 +276,7 @@ let option_unwrap_or_default_fn : RuntimeFunction = ctx => match ctx.arguments {
 let option_unwrap_or_else_fn : RuntimeFunction = ctx => match ctx.arguments {
   [
     {
-      value: Constructor(
+      val: Constructor(
         { val: { name: "Some", fields: [{ value: inner_value, .. }] }, .. }
       ),
       ..,
@@ -284,8 +284,8 @@ let option_unwrap_or_else_fn : RuntimeFunction = ctx => match ctx.arguments {
     ..,
   ] => inner_value
   [
-    { value: Constructor({ val: { name: "None", fields: [] }, .. }), .. },
-    { value: Closure(else_func, captured_env), .. },
+    { val: Constructor({ val: { name: "None", fields: [] }, .. }), .. },
+    { val: Closure(else_func, captured_env), .. },
     ..,
   ] =>
     // 对于None值，执行else闭包

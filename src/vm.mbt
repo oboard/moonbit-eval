@@ -12,22 +12,31 @@ pub enum EvalResult {
 
 ///|
 pub impl Show for EvalResult with output(self : EvalResult, logger : &Logger) -> Unit {
-  logger.write_string(self.to_string())
+  match self {
+    Success(value, _) => logger.write_string(value.to_string())
+    Error(msg, interpreter) => {
+      logger.write_string("Error: " + msg)
+      interpreter.call_stack.each(frame => match frame {
+        FunctionCall(name) => logger.write_string(".(" + name + ")")
+        ControlFlow(name) => logger.write_string(".(" + name + ")")
+        LetMut(name) => logger.write_string(".(" + name + ")")
+      })
+    }
+  }
 }
 
 ///|
 pub impl Show for EvalResult with to_string(self : EvalResult) -> String {
-  match self {
-    Success(value, _) => value.to_string()
-    Error(msg, _) => "Error: " + msg
-  }
+  let buf = @buffer.new()
+  self.output(buf)
+  buf.to_string()
 }
 
 ///|
 pub fn MoonBitVM::new(log~ : Bool = false) -> MoonBitVM {
   let interpreter = ClosureInterpreter::new()
   interpreter.add_extern_fn("println", ctx => match ctx.arguments {
-    [{ value, .. }, ..] => {
+    [{ val: value, .. }, ..] => {
       println(value)
       Unit
     }

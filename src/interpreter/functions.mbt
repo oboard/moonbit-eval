@@ -75,7 +75,7 @@ pub fn ClosureInterpreter::bind_function_parameters(
   let env = self.current_module.env
   match (params, args) {
     (@list.More(param, tail=rest_params), @list.More(arg, tail=rest_args)) => {
-      let value = arg.value
+      let value = arg.val
       match param {
         // 位置参数：直接绑定参数值
         Positional(binder={ name, .. }, ..)
@@ -117,7 +117,7 @@ fn ClosureInterpreter::convert_to_runtime_arguments(
   args : @list.List[@syntax.Argument],
 ) -> @list.List[RuntimeArgument] raise ControlFlow {
   args.map(arg => RuntimeArgument::{
-    value: self.visit(arg.value),
+    val: self.visit(arg.value),
     kind: RuntimeArgumentKind::from_syntax(arg.kind),
   })
 }
@@ -132,7 +132,7 @@ fn ClosureInterpreter::bind_runtime_parameters(
     // 处理可选参数的默认值情况
     (
       @list.More(param, tail=rest_params),
-      @list.More({ value: Unit, .. }, tail=rest_args),
+      @list.More({ val: Unit, .. }, tail=rest_args),
     ) =>
       match param {
         // 可选参数没有对应实参时，使用默认值
@@ -146,7 +146,7 @@ fn ClosureInterpreter::bind_runtime_parameters(
         _ => ()
       }
     (@list.More(param, tail=rest_params), @list.More(arg, tail=rest_args)) => {
-      let value = arg.value
+      let value = arg.val
       match param {
         // 位置参数：直接绑定参数值
         Positional(binder={ name, .. }, ..)

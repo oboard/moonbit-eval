@@ -369,7 +369,7 @@ fn compare_type_signatures(ty_a : @syntax.Type, ty_b : @syntax.Type) -> Bool {
 
 ///|
 pub(all) struct RuntimeArgument {
-  value : RuntimeValue
+  val : RuntimeValue
   kind : RuntimeArgumentKind
 }
 

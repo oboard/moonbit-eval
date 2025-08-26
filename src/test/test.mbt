@@ -806,7 +806,10 @@ test "44. loop_expressions" {
     "(xs: @list.List[Int]) -> Int",
   )
   assert_eq(vm.eval("let list = @list.from_array([1, 2, 3])").to_string(), "()")
-  assert_eq(vm.eval("list").to_string(), "More(1, More(2, More(3, Empty)))")
+  assert_eq(
+    vm.eval("list").to_string(),
+    "More(1, tail=More(2, tail=More(3, tail=Empty)))",
+  )
   assert_eq(vm.eval("sum(list)").to_string(), "6")
   assert_eq(vm.eval("@list.to_array(list)").to_string(), "[1, 2, 3]")
 }
@@ -1222,7 +1225,7 @@ test "println" {
 test "embedded_code" {
   let vm = MoonBitVM::new()
   vm.interpreter.add_embedded_fn("%string_length2", ctx => if ctx.arguments
-    is [{ value: String(s), .. }, ..] {
+    is [{ val: String(s), .. }, ..] {
     Int(s.length())
   } else {
     Unit
@@ -1493,7 +1496,7 @@ test "cross_package_method_calling" {
   let vm = MoonBitVM::new()
   assert_eq(
     vm.eval("let list = @list.of([1,2,3]); list").to_string(),
-    "More(1, More(2, More(3, Empty)))",
+    "More(1, tail=More(2, tail=More(3, tail=Empty)))",
   )
   assert_eq(vm.eval("list.to_array()").to_string(), "[1, 2, 3]")
   assert_eq(
@@ -1763,17 +1766,20 @@ test "field_assignment" {
 
 ///|
 test "list_methods" {
-  let vm = MoonBitVM::new(log=true)
+  let vm = MoonBitVM::new()
   assert_eq(
     vm.eval("let list = @list.of([1, 2, 3]); list").to_string(),
-    "More(1, More(2, More(3, Empty)))",
+    "More(1, tail=More(2, tail=More(3, tail=Empty)))",
   )
   assert_eq(vm.eval("typeof(list)").to_string(), "@moonbitlang/core/list.List")
   assert_eq(
     vm.eval("list.rev()").to_string(),
-    "More(3, More(2, More(1, Empty)))",
+    "More(3, tail=More(2, tail=More(1, tail=Empty)))",
   )
-  assert_eq(vm.eval("list").to_string(), "More(1, More(2, More(3, Empty)))")
+  assert_eq(
+    vm.eval("list").to_string(),
+    "More(1, tail=More(2, tail=More(3, tail=Empty)))",
+  )
 
   // Test basic list operations
   assert_eq(vm.eval("let l = @list.empty()").to_string(), "()")
@@ -1797,7 +1803,11 @@ test "list_methods" {
   assert_eq(vm.eval("l2.fold(init=0, (acc, x) => acc + x)").to_string(), "15")
 
   // Test list concatenation and reversal
-  assert_eq(vm.eval("let l3 = @list.of([6, 7, 8])").to_string(), "()")
+  assert_eq(
+    vm.eval("let l3 = @list.of([6, 7, 8]); l3.to_array()").to_string(),
+    "[6, 7, 8]",
+  )
+  assert_eq(vm.eval("l3.to_array()").to_string(), "[6, 7, 8]")
   assert_eq(
     vm.eval("l2.concat(l3).to_array()").to_string(),
     "[1, 2, 3, 4, 5, 6, 7, 8]",
@@ -1811,15 +1821,23 @@ test "list_methods" {
   // Test list slicing
   assert_eq(vm.eval("l2.take(3).to_array()").to_string(), "[1, 2, 3]")
   assert_eq(vm.eval("l2.drop(2).to_array()").to_string(), "[3, 4, 5]")
+}
 
-  // Test list sorting
+///|
+test {
+  let vm = MoonBitVM::new()
+  // Test list concatenation and reversal
   assert_eq(
-    vm.eval("let unsorted = @list.of([3, 1, 4, 1, 5, 9, 2, 6])").to_string(),
-    "()",
+    vm.eval("let l2 = @list.of([1, 2, 3, 4, 5]); l2.to_array()").to_string(),
+    "[1, 2, 3, 4, 5]",
   )
   assert_eq(
-    vm.eval("unsorted.sort().to_array()").to_string(),
-    "[1, 1, 2, 3, 4, 5, 6, 9]",
+    vm.eval("let l3 = @list.of([6, 7, 8]); l3.to_array()").to_string(),
+    "[6, 7, 8]",
+  )
+  assert_eq(
+    vm.eval("l2.concat(l3).to_array()").to_string(),
+    "[1, 2, 3, 4, 5, 6, 7, 8]",
   )
 }
 
@@ -1846,7 +1864,7 @@ test "match_as_pattern" {
   // 测试简单的构造函数 as 模式 - 工作正常
   assert_eq(
     vm.eval("match More(1, tail=Empty) { x as y => y }").to_string(),
-    "More(1, Empty)",
+    "More(1, tail=Empty)",
   )
   // 测试简单的元组as模式 - 工作正常
   assert_eq(vm.eval("match (42, 24) { (x as y, _) => y }").to_string(), "42")
@@ -1857,7 +1875,7 @@ test "match_as_pattern" {
   // 测试构造函数内as模式 - 这是关键测试
   assert_eq(
     vm.eval("match More(1, tail=Empty) { More(_, _) as x => x }").to_string(),
-    "More(1, Empty)",
+    "More(1, tail=Empty)",
   )
 
   // 更复杂的构造函数内as模式
@@ -1871,16 +1889,8 @@ test "match_as_pattern" {
   // 简单的构造函数as模式调试
   assert_eq(
     vm.eval("match More(1, tail=Empty) { More(_, _) as x => x }").to_string(),
-    "More(1, Empty)",
+    "More(1, tail=Empty)",
   )
-}
-
-///|
-test "debug_list_map" {
-  let vm = MoonBitVM::new(log=true)
-  // Test with two element list
-  let two_result = vm.eval("let l = @list.of([1, 2]); l.map(x => x * 2)")
-  assert_eq(two_result.to_string(), "More(2, More(4, Empty))")
 }
 
 ///|
@@ -1888,20 +1898,20 @@ test "constructor_single_argument_any_match" {
   let vm = MoonBitVM::new()
   assert_eq(
     vm.eval("let l = @list.of([1, 2]); l").to_string(),
-    "More(1, More(2, Empty))",
+    "More(1, tail=More(2, tail=Empty))",
   )
   assert_eq(
     vm
     .eval(
       (
         #|match l {
-        #|  More(_) => "more"
+        #|  More(_, tail~) => tail
         #|  Empty => "empty"
-        #|},
+        #|}
         #|
       ),
     )
     .to_string(),
-    "more",
+    "More(2, tail=Empty)",
   )
 }

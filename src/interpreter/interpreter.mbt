@@ -428,12 +428,12 @@ pub fn ClosureInterpreter::visit(
       match self_value {
         Array(arr) =>
           ArrayView(
-            (match (start, end) {
+            match (start, end) {
               (Some(Int(start)), Some(Int(end))) => arr[start:end]
               (Some(Int(start)), None) => arr[start:]
               (None, Some(Int(end))) => arr[:end]
               _ => arr[:]
-            }).to_array(),
+            },
           )
         // 调用op_as_view
         _ => {
@@ -445,12 +445,9 @@ pub fn ClosureInterpreter::visit(
                 self.current_module,
                 env,
                 @list.of([
-                  { value: self_value, kind: Positional },
-                  {
-                    value: start.unwrap_or(Unit),
-                    kind: LabelledOption("start"),
-                  },
-                  { value: end.unwrap_or(Unit), kind: LabelledOption("end") },
+                  { val: self_value, kind: Positional },
+                  { val: start.unwrap_or(Unit), kind: LabelledOption("start") },
+                  { val: end.unwrap_or(Unit), kind: LabelledOption("end") },
                 ]),
                 name="op_as_view",
               )
@@ -470,6 +467,16 @@ pub fn ClosureInterpreter::visit(
             Int(index) => {
               let value = self.visit(value)
               arr[index] = value
+            }
+            _ => ()
+          }
+        }
+        ArrayView(view) => {
+          let index = self.visit(index)
+          match index {
+            Int(index) => {
+              let value = self.visit(value)
+              view[index] = value
             }
             _ => ()
           }
@@ -1756,7 +1763,7 @@ fn ClosureInterpreter::execute_function_by_name(
 ) -> RuntimeValue raise ControlFlow {
   let evaluated_args = args
     .map(arg => RuntimeArgument::{
-      value: self.visit(arg.value),
+      val: self.visit(arg.value),
       kind: RuntimeArgumentKind::from_syntax(arg.kind),
     })
     .to_array()
@@ -1834,7 +1841,7 @@ fn ClosureInterpreter::execute_method_call(
     Some(func) => {
       let old_env = self.current_module.env
       let args = args.map(arg => {
-        value: self.visit(arg.value),
+        val: self.visit(arg.value),
         kind: RuntimeArgumentKind::from_syntax(arg.kind),
       })
       self.current_module.env = self_type.env
@@ -1851,7 +1858,7 @@ fn ClosureInterpreter::execute_method_call(
             More(Positional(binder={ name: "self", .. }, ..), ..) =>
               self.bind_function_parameters(
                 parameters,
-                @list.construct({ value: self_value, kind: Positional }, args),
+                @list.construct({ val: self_value, kind: Positional }, args),
               )
             _ => self.bind_function_parameters(parameters, args)
           }
@@ -1880,7 +1887,7 @@ fn ClosureInterpreter::execute_method_call(
                 context: self,
                 mod: self.current_module,
                 arguments: evaluated_args
-                .map(arg => { value: arg, kind: Positional })
+                .map(arg => { val: arg, kind: Positional })
                 .to_array(),
               })
             }
@@ -1953,7 +1960,7 @@ fn ClosureInterpreter::execute_embedded_static_method(
         Some(embedded_func) => {
           let evaluated_args = args
             .map(arg => {
-              value: self.visit(arg.value),
+              val: self.visit(arg.value),
               kind: RuntimeArgumentKind::from_syntax(arg.kind),
             })
             .to_array()
@@ -2080,10 +2087,16 @@ fn RuntimeModule::find_static_type(
         name: "Tuple",
         env: moonbitlang_core_tuple_module.env,
       }
-    "Array" | "ArrayView" | "View" =>
+    "Array" =>
       {
         pkg: moonbitlang_core_array_module.meta.name,
         name: "Array",
+        env: moonbitlang_core_array_module.env,
+      }
+    "ArrayView" | "View" =>
+      {
+        pkg: moonbitlang_core_array_module.meta.name,
+        name: "ArrayView",
         env: moonbitlang_core_array_module.env,
       }
     "Map" =>
@@ -2199,7 +2212,7 @@ fn RuntimeEnvironment::type_of(
     ArrayView(_) =>
       {
         pkg: moonbitlang_core_array_module.meta.name,
-        name: "Array",
+        name: "ArrayView",
         env: moonbitlang_core_array_module.env,
       }
     Map(_) =>
