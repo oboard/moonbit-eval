@@ -611,23 +611,26 @@ pub fn ClosureInterpreter::visit(
             self.execute_function_by_name(name, args)
           // 处理构造函数调用，如 Some(5)
           Constr(constr~, ..) => {
-            let arg_values = args
-              .map(fn(arg) { self.visit(arg.value) })
+            let fields = args
+              .map(arg => match arg.kind {
+                Positional =>
+                  ConstructorField::{
+                    name: None,
+                    value: self.visit(arg.value),
+                    mutable: false,
+                  }
+                Labelled(label)
+                | LabelledPun(label)
+                | LabelledOption(label~, ..)
+                | LabelledOptionPun(label~, ..) =>
+                  ConstructorField::{
+                    name: Some(label.name),
+                    value: self.visit(arg.value),
+                    mutable: false,
+                  }
+              })
               .to_array()
-
-            // 对于泛型类型的构造函数，需要根据参数类型推导类型参数
-            // 例如：Cons(1, Nil) 应该推导出 List[Int]
             let constr_name = constr.name.name
-
-            // 简化实现：对于List的More构造函数，tail字段（索引1）应该是可变的
-            let fields = arg_values.mapi(fn(i, value) {
-              let mutable = if constr_name == "More" && i == 1 {
-                true
-              } else {
-                false
-              }
-              { name: None, value, mutable }
-            })
             Constructor({
               val: { name: constr_name, fields },
               type_info: self.current_module.find_static_type(constr_name),
