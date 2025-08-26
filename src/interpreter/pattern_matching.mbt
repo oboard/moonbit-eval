@@ -6,13 +6,13 @@ pub fn ClosureInterpreter::execute_match_runtime(
   value : RuntimeValue,
   cases : @list.List[@syntax.Case],
 ) -> RuntimeValue raise ControlFlow {
-  for case in cases {
+  self.push_scope(RuntimeLocation::ControlFlow("match"))
+  defer self.pop_scope()
+  for i, case in cases {
     // 为每个case创建新的作用域
-    self.push_scope()
     if self.pattern_matches_runtime(value, case.pattern) {
-      return self.visit(case.body)
+      return self.visit_scoped(case.body, ControlFlow("case \{i}"))
     }
-    self.pop_scope()
   }
   error(
     "No match found for value: " +
