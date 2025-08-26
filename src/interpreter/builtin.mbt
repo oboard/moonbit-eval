@@ -5,10 +5,12 @@ let core_fn_aliases : Map[String, String] = {
   "println_mono": "%println",
   "println": "%println_mono",
   "typeof": "%typeof",
+  "panic": "%panic",
 }
 
 ///|
 let builtin_embedded_code : Map[String, RuntimeFunction] = {
+  "%panic": panic_fn,
   "%typeof": typeof_fn,
   "%println_mono": println_mono_fn,
   "%ignore": ignore_fn,
@@ -220,7 +222,7 @@ let physical_equal_fn : RuntimeFunction = ctx => match ctx.arguments {
 
 ///| panic 函数 - 触发 panic
 let panic_fn : RuntimeFunction = _ctx => {
-  abort("panic called")
+  error("panic")
   Unit
 }
 
