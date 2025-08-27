@@ -24,6 +24,7 @@ pub let array_methods : Map[String, RuntimeFunction] = {
   "truncate": array_truncate_fn,
   "reserve_capacity": array_reserve_capacity_fn,
   "each": array_each_fn,
+  "eachi": array_eachi_fn,
   "map": array_map_fn,
   "filter": array_filter_fn,
   "fold": array_fold_fn,
@@ -224,6 +225,23 @@ let array_each_fn : RuntimeFunction = ctx => match ctx.args {
         ctx.mod,
         env,
         @list.singleton({ val, kind: Positional }),
+      )
+      |> ignore
+    })
+    Unit
+  }
+  _ => Unit
+}
+
+///| 数组eachi操作
+let array_eachi_fn : RuntimeFunction = ctx => match ctx.args {
+  [{ val: Array(arr), .. }, { val: Closure(f, env), .. }, ..] => {
+    arr.eachi(fn(i, val) {
+      ctx.context.call_closure_runtime(
+        f,
+        ctx.mod,
+        env,
+        @list.of([{ val: Int(i), kind: Positional }, { val, kind: Positional }]),
       )
       |> ignore
     })

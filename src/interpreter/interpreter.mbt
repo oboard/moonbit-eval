@@ -774,7 +774,10 @@ pub fn ClosureInterpreter::visit(
             Some(value) => value
             None => error("MapGet: not found")
           }
-        _ => error("ArrayGet: \{array_val}[\{index_val}] not implemented")
+        _ =>
+          error(
+            "\{self.lookup_current_function()} ArrayGet: \{array_val}[\{index_val}] not implemented",
+          )
       }
     }
 
@@ -1349,14 +1352,28 @@ fn ClosureInterpreter::pattern_matches_runtime(
       self.current_module.env.set(name, value)
       true
     }
-    Constraint(pat~, ty~, ..) => {
-      // 首先检查类型约束
-      if not(self.current_module.check_type_constraint(value, ty)) {
-        return false
+    Constraint(pat~, ty~, ..) =>
+      // 首先尝试类型约束检查
+      if self.current_module.check_type_constraint(value, ty) {
+        // 类型检查通过，继续检查模式匹配
+        self.pattern_matches_runtime(value, pat)
+      } else {
+        // 类型不匹配，尝试隐式转换
+        match (value, ty) {
+          // Char 到 Int 的隐式转换
+          (Char(c), Name(constr_id={ id: Ident(name="Int"), .. }, ..))
+          | (Char(c), Name(constr_id={ id: Dot(id="Int", ..), .. }, ..)) => {
+            let converted_value = Int(c.to_int())
+            self.pattern_matches_runtime(converted_value, pat)
+          }
+          // Array 到 ArrayView
+          (Array(arr), Name(constr_id={ id: Dot(id="ArrayView", ..), .. }, ..)) => {
+            let converted_value = ArrayView(arr)
+            self.pattern_matches_runtime(converted_value, pat)
+          }
+          _ => false
+        }
       }
-      // 类型检查通过后，继续检查模式匹配
-      self.pattern_matches_runtime(value, pat)
-    }
 
     // 常量模式匹配
     Constant(c=pattern_const, ..) =>

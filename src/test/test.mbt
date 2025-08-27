@@ -1923,3 +1923,13 @@ test "sort" {
     "[1, 1, 2, 3, 4, 5, 6, 9]",
   )
 }
+
+///|
+test "101. char_literals" {
+  let vm = MoonBitVM::new()
+  // Test character literals and conversions
+  inspect(vm.eval("let c : Char = '1'"), content="()")
+  assert_eq(vm.eval("c").to_string(), "1")
+  inspect(vm.eval("let i : Int = '1'"), content="()")
+  assert_eq(vm.eval("i").to_string(), "49")
+}
