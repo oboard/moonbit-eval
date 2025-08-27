@@ -10,7 +10,7 @@ pub(all) struct ClosureInterpreter {
   // 解释器状态
   mut state : InterpreterState
   // 调用栈跟踪
-  mut call_stack : Array[RuntimeLocation]
+  call_stack : Array[RuntimeLocation]
 }
 
 ///| 解释器状态
@@ -240,10 +240,10 @@ pub fn ClosureInterpreter::visit(
 
     // 处理变量标识符
     Ident(id={ name, .. }, ..) =>
-      self.current_module.with_ident(name, (mod, _pkg, name) => match
+      self.current_module.with_ident(name, (mod, pkg, name) => match
         mod.env.find(name) {
         Some(v) => v
-        None => error("variable \{name} not found")
+        None => error("variable \{pkg}.\{name} not found")
       })
 
     // 处理中缀表达式（如 1+1）

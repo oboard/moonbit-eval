@@ -223,17 +223,8 @@ let iter_each_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Iter(iter), .. }, { val: Closure(func, env), .. }, ..] => {
     iter.each(fn(val) {
       let runtime_args = @list.of([{ val, kind: Positional }])
-      try {
-        let _ = ctx.context.call_closure_runtime(
-          func,
-          ctx.mod,
-          env,
-          runtime_args,
-        )
-
-      } catch {
-        _ => () // Ignore errors for now
-      }
+      ctx.context.call_closure_runtime(func, ctx.mod, env, runtime_args)
+      |> ignore
     })
     Unit
   }

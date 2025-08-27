@@ -217,9 +217,14 @@ let array_reserve_capacity_fn : RuntimeFunction = ctx => match ctx.args {
 
 ///| 数组each操作
 let array_each_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Array(arr), .. }, { val: Closure(f, _env), .. }, ..] => {
+  [{ val: Array(arr), .. }, { val: Closure(f, env), .. }, ..] => {
     arr.each(fn(val) {
-      ctx.context.call_runtime(f, @list.singleton({ val, kind: Positional }))
+      ctx.context.call_closure_runtime(
+        f,
+        ctx.mod,
+        env,
+        @list.singleton({ val, kind: Positional }),
+      )
       |> ignore
     })
     Unit
@@ -229,9 +234,14 @@ let array_each_fn : RuntimeFunction = ctx => match ctx.args {
 
 ///| 数组map操作
 let array_map_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Array(arr), .. }, { val: Closure(f, _env), .. }, ..] => {
+  [{ val: Array(arr), .. }, { val: Closure(f, env), .. }, ..] => {
     let new_arr = arr.map(fn(val) {
-      ctx.context.call_runtime(f, @list.singleton({ val, kind: Positional }))
+      ctx.context.call_closure_runtime(
+        f,
+        ctx.mod,
+        env,
+        @list.singleton({ val, kind: Positional }),
+      )
     })
     Array(new_arr)
   }
@@ -240,9 +250,14 @@ let array_map_fn : RuntimeFunction = ctx => match ctx.args {
 
 ///| 数组filter操作
 let array_filter_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Array(arr), .. }, { val: Closure(f, _env), .. }, ..] => {
+  [{ val: Array(arr), .. }, { val: Closure(f, env), .. }, ..] => {
     let new_arr = arr.filter(fn(val) {
-      ctx.context.call_runtime(f, @list.singleton({ val, kind: Positional }))
+      ctx.context.call_closure_runtime(
+        f,
+        ctx.mod,
+        env,
+        @list.singleton({ val, kind: Positional }),
+      )
       is Bool(true)
     })
     Array(new_arr)
@@ -255,12 +270,14 @@ let array_fold_fn : RuntimeFunction = ctx => match ctx.args {
   [
     { val: Array(arr), .. },
     { val: init_val, .. },
-    { val: Closure(f, _env), .. },
+    { val: Closure(f, env), .. },
     ..,
   ] =>
     arr.fold(init=init_val, fn(acc, val) {
-      ctx.context.call_runtime(
+      ctx.context.call_closure_runtime(
         f,
+        ctx.mod,
+        env,
         @list.of([{ val: acc, kind: Positional }, { val, kind: Positional }]),
       )
     })
@@ -269,9 +286,11 @@ let array_fold_fn : RuntimeFunction = ctx => match ctx.args {
 
 ///| 数组index_of操作
 let array_search_by_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Array(arr), .. }, { val: Closure(f, _), .. }, ..] => {
-    let index = arr.search_by(val => (try? ctx.context.call_runtime(
+  [{ val: Array(arr), .. }, { val: Closure(f, env), .. }, ..] => {
+    let index = arr.search_by(val => (try? ctx.context.call_closure_runtime(
         f,
+        ctx.mod,
+        env,
         @list.singleton({ val, kind: Positional }),
       ))
       is Ok(Bool(true)))

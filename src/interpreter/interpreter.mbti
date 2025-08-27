@@ -76,7 +76,7 @@ pub(all) struct ClosureInterpreter {
   main : RuntimeModule
   mut current_module : RuntimeModule
   mut state : InterpreterState
-  mut call_stack : Array[RuntimeLocation]
+  call_stack : Array[RuntimeLocation]
 }
 fn ClosureInterpreter::add_embedded_fn(Self, String, (RuntimeFunctionContext) -> RuntimeValue raise ControlFlow) -> Unit
 fn ClosureInterpreter::add_embedded_method(Self, String, String, (RuntimeFunctionContext) -> RuntimeValue raise ControlFlow) -> Unit
@@ -84,7 +84,6 @@ fn ClosureInterpreter::add_extern_fn(Self, String, (RuntimeFunctionContext) -> R
 fn ClosureInterpreter::bind_function_parameters(Self, @list.List[@syntax.Parameter], @list.List[RuntimeArgument]) -> Unit raise ControlFlow
 fn ClosureInterpreter::call_closure(Self, @syntax.Func, RuntimeModule, RuntimeEnvironment, @list.List[@syntax.Argument], name? : String) -> RuntimeValue raise ControlFlow
 fn ClosureInterpreter::call_closure_runtime(Self, @syntax.Func, RuntimeModule, RuntimeEnvironment, @list.List[RuntimeArgument], name? : String) -> RuntimeValue raise ControlFlow
-fn ClosureInterpreter::call_runtime(Self, @syntax.Func, @list.List[RuntimeArgument]) -> RuntimeValue raise ControlFlow
 fn ClosureInterpreter::constants_equal(Self, @syntax.Constant, @syntax.Constant) -> Bool
 fn ClosureInterpreter::constants_equal_expr(Self, @syntax.Expr, @syntax.Expr) -> Bool
 fn ClosureInterpreter::execute_match_runtime(Self, RuntimeValue, @list.List[@syntax.Case]) -> RuntimeValue raise ControlFlow
