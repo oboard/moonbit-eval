@@ -87,6 +87,7 @@ fn ClosureInterpreter::call_closure_runtime(Self, @syntax.Func, RuntimeModule, R
 fn ClosureInterpreter::constants_equal(Self, @syntax.Constant, @syntax.Constant) -> Bool
 fn ClosureInterpreter::constants_equal_expr(Self, @syntax.Expr, @syntax.Expr) -> Bool
 fn ClosureInterpreter::execute_match_runtime(Self, RuntimeValue, @list.List[@syntax.Case]) -> RuntimeValue raise ControlFlow
+fn ClosureInterpreter::format_patterns(Self, @list.List[@syntax.Case]) -> String
 fn ClosureInterpreter::get_function_type_string(Self, RuntimeValue) -> String
 fn ClosureInterpreter::is_known_function(Self, String) -> Bool
 fn ClosureInterpreter::lookup_current_function(Self) -> String
@@ -208,13 +209,13 @@ fn RuntimeType::byte() -> Self
 fn RuntimeType::char() -> Self
 fn RuntimeType::double() -> Self
 fn RuntimeType::float() -> Self
-fn RuntimeType::get_full_name(Self) -> String
 fn RuntimeType::int() -> Self
 fn RuntimeType::int64() -> Self
 fn RuntimeType::iter() -> Self
 fn RuntimeType::map() -> Self
 fn RuntimeType::option() -> Self
 fn RuntimeType::string() -> Self
+fn RuntimeType::to_string(Self) -> String
 fn RuntimeType::tuple() -> Self
 fn RuntimeType::uint() -> Self
 fn RuntimeType::uint64() -> Self

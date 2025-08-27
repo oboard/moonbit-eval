@@ -1833,7 +1833,6 @@ test "list_methods" {
   )
 }
 
-
 ///|
 test "match_as_pattern" {
   let vm = MoonBitVM::new()

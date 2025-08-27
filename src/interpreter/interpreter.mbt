@@ -452,8 +452,7 @@ pub fn ClosureInterpreter::visit(
                 ]),
                 name="op_as_view",
               )
-            Some(_) =>
-              error("\{ty.to_string()}::op_as_view is not a function")
+            Some(_) => error("\{ty.to_string()}::op_as_view is not a function")
             None => error("\{ty.to_string()}::op_as_view not found")
           }
         }
@@ -1892,8 +1891,7 @@ fn ClosureInterpreter::execute_method_call(
           )
       }
     }
-    None =>
-      error("exec: \{self_type.to_string()}::\{method_name} not found")
+    None => error("exec: \{self_type.to_string()}::\{method_name} not found")
   }
 }
 
