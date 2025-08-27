@@ -220,10 +220,18 @@ pub fn ClosureInterpreter::top_visit(
       self.current_module.env.traits.set(decl.name.name, decl)
       Unit
     }
-    _ => error("TopExpr: unimplemented:" + node.to_json().stringify())
+    _ => self.error("TopExpr: unimplemented:" + node.to_json().stringify())
   }
   // TopTest(_) => ...
   // TopImplRelation(_) => ...
+}
+
+///|
+pub fn[A] ClosureInterpreter::error(
+  self : ClosureInterpreter,
+  msg : String,
+) -> A raise ControlFlow {
+  error("\{self.lookup_current_function()} \{msg}")
 }
 
 ///| 访问语法树节点，返回运行时值
@@ -243,8 +251,7 @@ pub fn ClosureInterpreter::visit(
       self.current_module.with_ident(name, (mod, _pkg, name) => match
         mod.env.find(name) {
         Some(v) => v
-        None =>
-          error("\{self.lookup_current_function()} variable \{name} not found")
+        None => self.error("variable \{name} not found")
       })
 
     // 处理中缀表达式（如 1+1）
@@ -441,7 +448,7 @@ pub fn ClosureInterpreter::visit(
           let ty = self.current_module.env.type_of(self_value)
           match ty.find_method("op_as_view") {
             Some(Closure(func, env)) =>
-              self.call_closure_runtime(
+              self.call(
                 func,
                 self.current_module,
                 env,
@@ -452,8 +459,9 @@ pub fn ClosureInterpreter::visit(
                 ]),
                 name="op_as_view",
               )
-            Some(_) => error("\{ty.to_string()}::op_as_view is not a function")
-            None => error("\{ty.to_string()}::op_as_view not found")
+            Some(_) =>
+              self.error("\{ty.to_string()}::op_as_view is not a function")
+            None => self.error("\{ty.to_string()}::op_as_view not found")
           }
         }
       }
@@ -717,7 +725,7 @@ pub fn ClosureInterpreter::visit(
         (Struct({ val: fields, .. }), Label(label)) =>
           match fields.get(label.name) {
             Some(field_value) => field_value
-            None => error("Field: not found")
+            None => self.error("Field: not found")
           }
         (Tuple(values), Index(tuple_index~, ..)) => values[tuple_index]
         (Array(values), Index(tuple_index~, ..)) => values[tuple_index]
@@ -732,7 +740,7 @@ pub fn ClosureInterpreter::visit(
               break field.value
             }
           } else {
-            error(
+            self.error(
               "Field: " +
               field_name +
               " not found in constructor " +
@@ -743,9 +751,9 @@ pub fn ClosureInterpreter::visit(
         (Map(fields), Label(label)) =>
           match fields.get(String(label.name)) {
             Some(field_value) => field_value
-            None => error("Field: not found")
+            None => self.error("Field: not found")
           }
-        _ => error("Field: not implemented")
+        _ => self.error("Field: not implemented")
       }
     }
 
@@ -772,12 +780,9 @@ pub fn ClosureInterpreter::visit(
         (Map(values), index) =>
           match values.get(index) {
             Some(value) => value
-            None => error("MapGet: not found")
+            None => self.error("MapGet: not found")
           }
-        _ =>
-          error(
-            "\{self.lookup_current_function()} ArrayGet: \{array_val}[\{index_val}] not implemented",
-          )
+        _ => self.error("ArrayGet: \{array_val}[\{index_val}] not implemented")
       }
     }
 
@@ -1171,7 +1176,7 @@ pub fn ClosureInterpreter::visit(
           // 返回新的结构体
           Struct({ val: new_fields, type_info: original_ref.type_info })
         }
-        _ => error("RecordUpdate: expected struct")
+        _ => self.error("RecordUpdate: expected struct")
       }
     }
     Method(type_name~, method_name~, ..) =>
@@ -1182,9 +1187,10 @@ pub fn ClosureInterpreter::visit(
           Some(methods) =>
             match methods.get(method_name.name) {
               Some(func) => func
-              None => error("Method:\{ty_name}:\{method_name.name} not found")
+              None =>
+                self.error("Method:\{ty_name}:\{method_name.name} not found")
             }
-          None => error("Method:\{ty_name} not found")
+          None => self.error("Method:\{ty_name} not found")
         }
       })
     Map(elems~, ..) => {
@@ -1305,7 +1311,7 @@ pub fn ClosureInterpreter::visit(
       }
       Unit
     }
-    _ => error("visit: unimplemented " + node.to_json().stringify())
+    _ => self.error("visit: unimplemented " + node.to_json().stringify())
   }
 }
 
@@ -1333,7 +1339,7 @@ fn ClosureInterpreter::interp_string(
       Source({ source, .. }) =>
         match parse_code_to_expr(source) {
           Ok(expr) => buffer.write_string(self.visit(expr).to_string())
-          Err(msg) => error(msg)
+          Err(msg) => self.error(msg)
         }
     }
   }
@@ -1822,7 +1828,7 @@ fn ClosureInterpreter::execute_function_by_name(
               context: self,
               args: evaluated_args,
             })
-          None => error("Embedded function:\{embedded_name} not found")
+          None => self.error("Embedded function:\{embedded_name} not found")
         }
       RuntimeClosure(lambda_func, captured_env) =>
         // 调用闭包：使用专门的闭包调用方法
@@ -1839,7 +1845,7 @@ fn ClosureInterpreter::execute_function_by_name(
           context: self,
           args: evaluated_args,
         })
-      NotFound => error("method \{name} not found")
+      NotFound => self.error("method \{name} not found")
     }
   })
 }
@@ -1903,12 +1909,13 @@ fn ClosureInterpreter::execute_method_call(
           self.visit(body)
         }
         _ =>
-          error(
+          self.error(
             "exec method: \{self_type.to_string()}::\{method_name} not found",
           )
       }
     }
-    None => error("exec: \{self_type.to_string()}::\{method_name} not found")
+    None =>
+      self.error("exec: \{self_type.to_string()}::\{method_name} not found")
   }
 }
 
@@ -1971,7 +1978,8 @@ fn ClosureInterpreter::execute_static_method_call(
           )
         _ => Unit
       }
-    None => error("Method \{method_name} not found for type \{type_info.name}")
+    None =>
+      self.error("Method \{method_name} not found for type \{type_info.name}")
   }
 }
 
@@ -2068,6 +2076,8 @@ fn RuntimeEnvironment::type_of(
     Char(_) => RuntimeType::char()
     Byte(_) => RuntimeType::byte()
     String(_) => RuntimeType::string()
+    Bytes(_) => RuntimeType::string()
+    StringView(_) => RuntimeType::string()
     Tuple(_) => RuntimeType::tuple()
     Array(_) => RuntimeType::array()
     ArrayView(_) => RuntimeType::array_view()

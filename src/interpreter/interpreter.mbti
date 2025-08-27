@@ -5,6 +5,7 @@ import(
   "moonbitlang/core/bigint"
   "moonbitlang/core/json"
   "moonbitlang/core/list"
+  "moonbitlang/core/string"
   "moonbitlang/parser/basic"
   "moonbitlang/parser/syntax"
 )
@@ -53,8 +54,6 @@ fn runtime_value_infix(String, RuntimeValue, RuntimeValue) -> RuntimeValue
 
 let string_embedded_code : Map[String, (RuntimeFunctionContext) -> RuntimeValue raise ControlFlow]
 
-let string_methods : Map[String, (RuntimeFunctionContext) -> RuntimeValue raise ControlFlow]
-
 fn type_to_string(@syntax.Type) -> String
 
 fn unit(loc? : @basic.Location) -> @syntax.Expr
@@ -82,10 +81,11 @@ fn ClosureInterpreter::add_embedded_fn(Self, String, (RuntimeFunctionContext) ->
 fn ClosureInterpreter::add_embedded_method(Self, String, String, (RuntimeFunctionContext) -> RuntimeValue raise ControlFlow) -> Unit
 fn ClosureInterpreter::add_extern_fn(Self, String, (RuntimeFunctionContext) -> RuntimeValue raise ControlFlow) -> Unit
 fn ClosureInterpreter::bind_function_parameters(Self, @list.List[@syntax.Parameter], @list.List[RuntimeArgument]) -> Unit raise ControlFlow
+fn ClosureInterpreter::call(Self, @syntax.Func, RuntimeModule, RuntimeEnvironment, @list.List[RuntimeArgument], name? : String) -> RuntimeValue raise ControlFlow
 fn ClosureInterpreter::call_closure(Self, @syntax.Func, RuntimeModule, RuntimeEnvironment, @list.List[@syntax.Argument], name? : String) -> RuntimeValue raise ControlFlow
-fn ClosureInterpreter::call_closure_runtime(Self, @syntax.Func, RuntimeModule, RuntimeEnvironment, @list.List[RuntimeArgument], name? : String) -> RuntimeValue raise ControlFlow
 fn ClosureInterpreter::constants_equal(Self, @syntax.Constant, @syntax.Constant) -> Bool
 fn ClosureInterpreter::constants_equal_expr(Self, @syntax.Expr, @syntax.Expr) -> Bool
+fn[A] ClosureInterpreter::error(Self, String) -> A raise ControlFlow
 fn ClosureInterpreter::execute_match_runtime(Self, RuntimeValue, @list.List[@syntax.Case]) -> RuntimeValue raise ControlFlow
 fn ClosureInterpreter::format_patterns(Self, @list.List[@syntax.Case]) -> String
 fn ClosureInterpreter::get_function_type_string(Self, RuntimeValue) -> String
@@ -142,9 +142,7 @@ pub(all) struct RuntimeArgument {
 pub(all) enum RuntimeArgumentKind {
   Positional
   Labelled(String)
-  LabelledPun(String)
   LabelledOption(String)
-  LabelledOptionPun(String)
 }
 fn RuntimeArgumentKind::from_syntax(@syntax.ArgumentKind) -> Self
 
@@ -234,6 +232,8 @@ pub(all) enum RuntimeValue {
   Char(Char)
   Byte(Byte)
   String(String)
+  Bytes(Bytes)
+  StringView(@string.StringView)
   Tuple(Array[RuntimeValue])
   Array(Array[RuntimeValue])
   ArrayView(ArrayView[RuntimeValue])

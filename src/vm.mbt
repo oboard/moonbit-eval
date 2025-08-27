@@ -14,14 +14,7 @@ pub enum EvalResult {
 pub impl Show for EvalResult with output(self : EvalResult, logger : &Logger) -> Unit {
   match self {
     Success(value, _) => logger.write_string(value.to_string())
-    Error(msg, interpreter) => {
-      logger.write_string("Error: " + msg)
-      interpreter.call_stack.each(frame => match frame {
-        FunctionCall(name) => logger.write_string("->" + name)
-        ControlFlow(name) => logger.write_string(".(" + name + ")")
-        LetMut(name) => logger.write_string(".(" + name + ")")
-      })
-    }
+    Error(msg, _) => logger.write_string("Error: " + msg)
   }
 }
 

@@ -86,14 +86,12 @@ pub fn RuntimeEnvironment::update(
   }
 }
 
-///| 创建新的作用域
+///| 查找当前调用的函数名
 pub fn ClosureInterpreter::lookup_current_function(
   self : ClosureInterpreter,
 ) -> String {
   let buf = @buffer.new()
-  self.call_stack
-  .filter(frame => frame is FunctionCall(_))
-  .each(frame => if frame is FunctionCall(name) {
+  self.call_stack.each(frame => if frame is FunctionCall(name) {
     buf.write_string("\{name} => ")
   })
   buf.to_string()

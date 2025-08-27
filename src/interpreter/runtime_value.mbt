@@ -26,6 +26,8 @@ pub(all) enum RuntimeValue {
   Char(Char)
   Byte(Byte)
   String(String)
+  Bytes(Bytes)
+  StringView(@string.View)
 
   // 复合值类型
   Tuple(Array[RuntimeValue])
@@ -72,6 +74,8 @@ pub impl Compare for RuntimeValue with compare(self, other) {
     (String(a), String(b)) => a.compare(b)
     (Char(a), Char(b)) => a.compare(b)
     (Byte(a), Byte(b)) => a.compare(b)
+    (Bytes(a), Bytes(b)) => a.compare(b)
+    (StringView(a), StringView(b)) => a.compare(b)
     (Tuple(a), Tuple(b)) => a.compare(b)
     (Array(a), Array(b)) => a.compare(b)
     _ => abort("unable to compare")
@@ -102,6 +106,8 @@ pub impl Add for RuntimeValue with op_add(
     (String(a), String(b)) => String(a + b)
     (Char(a), Char(b)) => String(a.to_string() + b.to_string())
     (Byte(a), Byte(b)) => Byte(a + b)
+    (Bytes(a), Bytes(b)) => Bytes(a + b)
+    (StringView(a), StringView(b)) => StringView(a + b)
     (Tuple(a), Tuple(b)) => Tuple(a + b)
     (Array(a), Array(b)) => Array(a + b)
     _ => abort("unable to add")
@@ -123,6 +129,8 @@ pub impl Hash for RuntimeValue with hash(self : RuntimeValue) -> Int {
     Char(c) => c.hash()
     Byte(b) => b.hash()
     String(s) => s.hash()
+    Bytes(b) => b.hash()
+    StringView(sv) => sv.hash()
     Tuple(t) => t.hash()
     Array(a) => a.hash()
     _ => abort("unable to hash")
@@ -145,6 +153,8 @@ pub impl ToJson for RuntimeValue with to_json(self : RuntimeValue) -> Json {
     Char(c) => c.to_json()
     Byte(b) => b.to_json()
     String(s) => s.to_json()
+    Bytes(b) => b.to_string().to_json()
+    StringView(sv) => sv.to_string().to_json()
     Tuple(t) => t.to_json()
     Array(a) => a.to_json()
     ArrayView(a) => a.to_json()
@@ -180,6 +190,8 @@ pub impl Eq for RuntimeValue with op_equal(
     (Char(a), Char(b)) => a == b
     (Byte(a), Byte(b)) => a == b
     (String(a), String(b)) => a == b
+    (Bytes(a), Bytes(b)) => a == b
+    (StringView(a), StringView(b)) => a == b
 
     // 复合值类型比较
     (Tuple(a), Tuple(b)) | (Array(a), Array(b)) => a == b
@@ -384,9 +396,7 @@ pub(all) struct RuntimeArgument {
 pub(all) enum RuntimeArgumentKind {
   Positional
   Labelled(String)
-  LabelledPun(String)
   LabelledOption(String)
-  LabelledOptionPun(String)
 }
 
 ///|
@@ -395,9 +405,9 @@ pub fn RuntimeArgumentKind::from_syntax(
 ) -> RuntimeArgumentKind {
   match arg {
     Positional => Positional
-    Labelled({ name, .. }) | LabelledPun({ name, .. }) => LabelledPun(name)
+    Labelled({ name, .. }) | LabelledPun({ name, .. }) => Labelled(name)
     LabelledOption(label={ name, .. }, ..)
-    | LabelledOptionPun(label={ name, .. }, ..) => LabelledOptionPun(name)
+    | LabelledOptionPun(label={ name, .. }, ..) => LabelledOption(name)
   }
 }
 
@@ -438,6 +448,8 @@ pub impl Show for RuntimeValue with to_string(self) -> String {
     Char(c) => c.to_string()
     Byte(b) => b.to_int().to_string()
     String(s) => s
+    Bytes(b) => b.to_string()
+    StringView(sv) => sv.to_string()
     Tuple(values) => {
       let parts = values.map(fn(v) { v.to_string() })
       "(" + parts.join(", ") + ")"
@@ -622,6 +634,8 @@ pub fn RuntimeValue::to_expr(self : RuntimeValue) -> @syntax.Expr {
     Char(c) => Constant(c=Char(c.to_string()), loc=_dummy_loc)
     Byte(b) => Constant(c=Int(b.to_int().to_string()), loc=_dummy_loc)
     String(s) => Constant(c=String(s), loc=_dummy_loc)
+    Bytes(b) => Constant(c=Bytes(b.to_string()), loc=_dummy_loc)
+    StringView(sv) => Constant(c=String(sv.to_string()), loc=_dummy_loc)
     Tuple(values) => {
       let exprs = values.map(fn(v) { v.to_expr() })
       Tuple(exprs=@list.from_array(exprs), loc=_dummy_loc)
@@ -655,6 +669,7 @@ pub fn RuntimeValue::from_expr(expr : @syntax.Expr) -> RuntimeValue {
         Double(d) => Double((try? @strconv.parse_double(d)).unwrap())
         Char(c) => Char(c.get_char(0).unwrap())
         String(s) => String(s)
+        Bytes(b) => Bytes(b.to_bytes())
         _ => Unit
       }
     Tuple(exprs~, ..) => {
@@ -776,6 +791,22 @@ pub fn runtime_value_infix(
     (Char(left), Char(right)) =>
       match op {
         "+" => String(left.to_string() + right.to_string())
+        "==" => Bool(left == right)
+        "!=" => Bool(left != right)
+        _ => Unit
+      }
+    // Bytes 运算
+    (Bytes(left), Bytes(right)) =>
+      match op {
+        "+" => Bytes(left + right)
+        "==" => Bool(left == right)
+        "!=" => Bool(left != right)
+        _ => Unit
+      }
+    // StringView 运算
+    (StringView(left), StringView(right)) =>
+      match op {
+        "+" => StringView(left + right)
         "==" => Bool(left == right)
         "!=" => Bool(left != right)
         _ => Unit

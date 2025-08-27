@@ -71,7 +71,7 @@ let map_copy_fn : RuntimeFunction = ctx => match ctx.args {
 let map_each_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Map(map), .. }, { val: Closure(f, env), .. }, ..] => {
     map.each(fn(key, val) {
-      ctx.context.call_closure_runtime(
+      ctx.context.call(
         f,
         ctx.mod,
         env,
@@ -88,7 +88,7 @@ let map_each_fn : RuntimeFunction = ctx => match ctx.args {
 let map_eachi_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Map(map), .. }, { val: Closure(f, env), .. }, ..] => {
     map.eachi(fn(i, key, val) {
-      ctx.context.call_closure_runtime(
+      ctx.context.call(
         f,
         ctx.mod,
         env,
@@ -158,12 +158,7 @@ let map_get_or_init_fn : RuntimeFunction = ctx => match ctx.args {
     match map.get(key) {
       Some(val) => val
       None => {
-        let val = ctx.context.call_closure_runtime(
-          f,
-          ctx.mod,
-          env,
-          @list.empty(),
-        )
+        let val = ctx.context.call(f, ctx.mod, env, @list.empty())
         map.set(key, val)
         val
       }
@@ -208,7 +203,7 @@ let map_map_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Map(map), .. }, { val: Closure(f, env), .. }, ..] => {
     let new_map = Map::new()
     map.each(fn(key, val) {
-      let new_val = ctx.context.call_closure_runtime(
+      let new_val = ctx.context.call(
         f,
         ctx.mod,
         env,
@@ -281,7 +276,7 @@ let map_update_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Map(map), .. }, { val: key, .. }, { val: Closure(f, env), .. }, ..] => {
     match map.get(key) {
       Some(old_val) => {
-        let new_val = ctx.context.call_closure_runtime(
+        let new_val = ctx.context.call(
           f,
           ctx.mod,
           env,

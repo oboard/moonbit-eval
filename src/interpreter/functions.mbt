@@ -15,14 +15,14 @@ pub fn ClosureInterpreter::call_closure(
       let runtime_args = self.convert_to_runtime_arguments(args)
 
       // 调用运行时版本
-      self.call_closure_runtime(function, mod, env, runtime_args, name?)
+      self.call(function, mod, env, runtime_args, name?)
     }
     _ => RuntimeValue::Unit
   }
 }
 
 ///| 调用闭包函数，使用已求值的运行时参数
-pub fn ClosureInterpreter::call_closure_runtime(
+pub fn ClosureInterpreter::call(
   self : ClosureInterpreter,
   function : @syntax.Func,
   mod : RuntimeModule,
