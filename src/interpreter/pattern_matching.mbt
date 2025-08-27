@@ -15,10 +15,11 @@ pub fn ClosureInterpreter::execute_match_runtime(
     }
   }
   error(
-    "No match found for value: " +
+    "\{self.lookup_current_function()} No match found for value: " +
     value.to_string() +
-    " in " +
-    cases.to_json().stringify(),
+    " in patterns: [" +
+    self.format_patterns(cases) +
+    "]",
   )
 }
 
@@ -139,5 +140,87 @@ pub fn ClosureInterpreter::pattern_to_value(
     }
     Any(..) => None // 通配符表示开放边界
     _ => None
+  }
+}
+
+///| 格式化模式列表为可读字符串
+pub fn ClosureInterpreter::format_patterns(
+  _self : ClosureInterpreter,
+  cases : @list.List[@syntax.Case],
+) -> String {
+  let pattern_strs = []
+  for case in cases {
+    pattern_strs.push(format_pattern(case.pattern))
+  }
+  pattern_strs.join(", ")
+}
+
+///| 将单个模式转换为可读字符串
+fn format_pattern(pattern : @syntax.Pattern) -> String {
+  match pattern {
+    Constant(c~, ..) =>
+      match c {
+        Int(v) => v
+        Bool(v) => v.to_string()
+        String(v) => "\"" + v + "\""
+        Double(v) => v
+        Char(v) => "'" + v + "'"
+        _ => "<constant>"
+      }
+    Any(..) => "_"
+    Tuple(pats~, ..) => {
+      let pat_strs = []
+      for pat in pats {
+        pat_strs.push(format_pattern(pat))
+      }
+      "(" + pat_strs.join(", ") + ")"
+    }
+    Array(pats~, ..) => {
+      let pat_strs = []
+      match pats {
+        @syntax.ArrayPatterns::Closed(patterns) =>
+          loop patterns {
+            @list.More(array_pat, tail=pat_tail) => {
+              match array_pat {
+                @syntax.ArrayPattern::Pattern(pat) =>
+                  pat_strs.push(format_pattern(pat))
+                _ => pat_strs.push("<array_pattern>")
+              }
+              continue pat_tail
+            }
+            @list.Empty => break
+          }
+        _ => pat_strs.push("<array_pattern>")
+      }
+      "[" + pat_strs.join(", ") + "]"
+    }
+    Or(pat1~, pat2~, ..) => format_pattern(pat1) + " | " + format_pattern(pat2)
+    Record(fields~, ..) => {
+      let field_strs = []
+      for field in fields {
+        field_strs.push(field.label.name + ": " + format_pattern(field.pattern))
+      }
+      "{ " + field_strs.join(", ") + " }"
+    }
+    Range(lhs~, rhs~, inclusive~, ..) => {
+      let lhs_str = format_pattern(lhs)
+      let rhs_str = format_pattern(rhs)
+      let op = if inclusive { "..=" } else { ".." }
+      lhs_str + op + rhs_str
+    }
+    Constr(constr~, args~, ..) => {
+      let name = constr.name.name
+      match args {
+        Some(arg_list) => {
+          let arg_strs = []
+          for arg in arg_list {
+            arg_strs.push(format_pattern(arg.pat))
+          }
+          name + "(" + arg_strs.join(", ") + ")"
+        }
+        None => name
+      }
+    }
+    _ => "<pattern>"
   }
 }

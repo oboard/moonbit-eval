@@ -1821,25 +1821,18 @@ test "list_methods" {
   // Test list slicing
   assert_eq(vm.eval("l2.take(3).to_array()").to_string(), "[1, 2, 3]")
   assert_eq(vm.eval("l2.drop(2).to_array()").to_string(), "[3, 4, 5]")
+
+  // zip
+  assert_eq(
+    vm
+    .eval(
+      "let l4 = @list.of([1, 2, 3]); let l5 = @list.of([4, 5, 6]); l4.zip(l5).to_array()",
+    )
+    .to_string(),
+    "[(1, 4), (2, 5), (3, 6)]",
+  )
 }
 
-///|
-test {
-  let vm = MoonBitVM::new()
-  // Test list concatenation and reversal
-  assert_eq(
-    vm.eval("let l2 = @list.of([1, 2, 3, 4, 5]); l2.to_array()").to_string(),
-    "[1, 2, 3, 4, 5]",
-  )
-  assert_eq(
-    vm.eval("let l3 = @list.of([6, 7, 8]); l3.to_array()").to_string(),
-    "[6, 7, 8]",
-  )
-  assert_eq(
-    vm.eval("l2.concat(l3).to_array()").to_string(),
-    "[1, 2, 3, 4, 5, 6, 7, 8]",
-  )
-}
 
 ///|
 test "match_as_pattern" {

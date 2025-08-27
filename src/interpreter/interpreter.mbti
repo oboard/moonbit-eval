@@ -89,6 +89,7 @@ fn ClosureInterpreter::constants_equal_expr(Self, @syntax.Expr, @syntax.Expr) ->
 fn ClosureInterpreter::execute_match_runtime(Self, RuntimeValue, @list.List[@syntax.Case]) -> RuntimeValue raise ControlFlow
 fn ClosureInterpreter::get_function_type_string(Self, RuntimeValue) -> String
 fn ClosureInterpreter::is_known_function(Self, String) -> Bool
+fn ClosureInterpreter::lookup_current_function(Self) -> String
 fn ClosureInterpreter::new() -> Self
 fn ClosureInterpreter::pattern_to_value(Self, @syntax.Pattern) -> @syntax.Expr?
 fn ClosureInterpreter::pop_scope(Self) -> Unit

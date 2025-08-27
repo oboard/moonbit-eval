@@ -240,10 +240,11 @@ pub fn ClosureInterpreter::visit(
 
     // 处理变量标识符
     Ident(id={ name, .. }, ..) =>
-      self.current_module.with_ident(name, (mod, pkg, name) => match
+      self.current_module.with_ident(name, (mod, _pkg, name) => match
         mod.env.find(name) {
         Some(v) => v
-        None => error("variable \{pkg}.\{name} not found")
+        None =>
+          error("\{self.lookup_current_function()} variable \{name} not found")
       })
 
     // 处理中缀表达式（如 1+1）
@@ -452,8 +453,8 @@ pub fn ClosureInterpreter::visit(
                 name="op_as_view",
               )
             Some(_) =>
-              error("\{ty.get_full_name()}::op_as_view is not a function")
-            None => error("\{ty.get_full_name()}::op_as_view not found")
+              error("\{ty.to_string()}::op_as_view is not a function")
+            None => error("\{ty.to_string()}::op_as_view not found")
           }
         }
       }
@@ -719,10 +720,8 @@ pub fn ClosureInterpreter::visit(
             Some(field_value) => field_value
             None => error("Field: not found")
           }
-        (Tuple(values), Index(tuple_index~, ..)) =>
-          safe_index_access(values, tuple_index)
-        (Array(values), Index(tuple_index~, ..)) =>
-          safe_index_access(values, tuple_index)
+        (Tuple(values), Index(tuple_index~, ..)) => values[tuple_index]
+        (Array(values), Index(tuple_index~, ..)) => values[tuple_index]
         (Constructor(refer), Label(label)) => {
           // 构造函数字段访问处理
           let field_name = label.name
@@ -767,14 +766,16 @@ pub fn ClosureInterpreter::visit(
       let array_val = self.visit(array)
       let index_val = self.visit(index)
       match (array_val, index_val) {
-        (Array(values), Int(index_num)) => safe_index_access(values, index_num)
+        (Array(values), Int(index_num)) => values[index_num]
+        (ArrayView(values), Int(index_num)) => values[index_num]
+        (UninitializedArray(values), Int(index_num)) => values[index_num]
         (String(values), Int(index_num)) => Int(values[index_num])
         (Map(values), index) =>
           match values.get(index) {
             Some(value) => value
             None => error("MapGet: not found")
           }
-        _ => error("ArrayGet: not implemented")
+        _ => error("ArrayGet: \{array_val}[\{index_val}] not implemented")
       }
     }
 
@@ -1887,12 +1888,12 @@ fn ClosureInterpreter::execute_method_call(
         }
         _ =>
           error(
-            "exec method: \{self_type.get_full_name()}::\{method_name} not found",
+            "exec method: \{self_type.to_string()}::\{method_name} not found",
           )
       }
     }
     None =>
-      error("exec: \{self_type.get_full_name()}::\{method_name} not found")
+      error("exec: \{self_type.to_string()}::\{method_name} not found")
   }
 }
 
@@ -2058,29 +2059,14 @@ fn RuntimeEnvironment::type_of(
     UninitializedArray(_) => RuntimeType::uninitialized_array()
     Map(_) => RuntimeType::map()
     Struct(data) => data.type_info
-    Closure(_) => { pkg: "std", name: "Closure", env: self }
+    Closure(_) => { pkg: "main", name: runtime_value.to_string(), env: self }
     Exception(_) => { pkg: "std", name: "Exception", env: self }
     Constructor({ val: { name, .. }, type_info }) =>
-      // 将Option构造函数映射到Option类型
       match name {
-        "Some" | "None" =>
-          {
-            pkg: moonbitlang_core_option_module.meta.name,
-            name: "Option",
-            env: moonbitlang_core_option_module.env,
-          }
+        "Some" | "None" => RuntimeType::option()
         _ => type_info
       }
     Iter(_) => RuntimeType::iter()
-  }
-}
-
-///| 安全的索引访问，统一处理数组和元组的边界检查
-fn safe_index_access(values : Array[RuntimeValue], index : Int) -> RuntimeValue {
-  if index >= 0 && index < values.length() {
-    values[index]
-  } else {
-    Unit
   }
 }
 
@@ -2161,7 +2147,7 @@ pub fn ClosureInterpreter::get_function_type_string(
               // 推断返回类型，对于柯里化函数需要特殊处理
               let inferred_type = self
                 .infer_return_type_from_expr(body)
-                .get_full_name()
+                .to_string()
               "(" + param_strs.join(", ") + ") -> " + inferred_type
             }
           }

@@ -17,7 +17,7 @@ pub impl Show for EvalResult with output(self : EvalResult, logger : &Logger) ->
     Error(msg, interpreter) => {
       logger.write_string("Error: " + msg)
       interpreter.call_stack.each(frame => match frame {
-        FunctionCall(name) => logger.write_string(".(" + name + ")")
+        FunctionCall(name) => logger.write_string("->" + name)
         ControlFlow(name) => logger.write_string(".(" + name + ")")
         LetMut(name) => logger.write_string(".(" + name + ")")
       })

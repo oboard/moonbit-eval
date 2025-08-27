@@ -6,7 +6,7 @@ pub struct RuntimeType {
 }
 
 ///|
-pub fn RuntimeType::get_full_name(self : RuntimeType) -> String {
+pub fn RuntimeType::to_string(self : RuntimeType) -> String {
   (if self.pkg == "main" { "" } else { "@" + self.pkg + "." }) + self.name
 }
 

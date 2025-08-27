@@ -469,7 +469,7 @@ pub impl Show for RuntimeValue with to_string(self) -> String {
       })
       "{ " + parts.join(", ") + " }"
     }
-    Constructor({ val: { name, fields }, .. }) =>
+    Constructor({ val: { name, fields }, .. }) =>{
       // Format constructor call with field names if present
       if fields.length() == 0 {
         name
@@ -481,7 +481,7 @@ pub impl Show for RuntimeValue with to_string(self) -> String {
           }
         })
         name + "(" + arg_strs.join(", ") + ")"
-      }
+      }}
     Iter(_) => "<iterator>"
     // 从函数中提取参数和返回类型信息
     Closure(func, _env) => {
