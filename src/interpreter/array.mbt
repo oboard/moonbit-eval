@@ -1,5 +1,6 @@
 ///|
 pub let array_methods : Map[String, RuntimeFunction] = {
+  "new": array_new_fn,
   "length": array_length_fn,
   "push": array_push_fn,
   "clear": array_clear_fn,
@@ -44,6 +45,19 @@ let array_sort_fn : RuntimeFunction = ctx => match ctx.args {
 let array_make_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Int(len), .. }, { val, .. }, ..] => Array(Array::make(len, val))
   _ => Unit
+}
+
+///| 数组new操作
+let array_new_fn : RuntimeFunction = ctx => match ctx.args {
+  [
+    {
+      val: Int(len),
+      kind: LabelledOption("capacity")
+      | LabelledOptionPun("capacity"),
+    },
+    ..,
+  ] => Array(Array::new(capacity=len))
+  _ => Array(Array::new())
 }
 
 ///| 数组长度
@@ -159,7 +173,7 @@ let array_contains_fn : RuntimeFunction = ctx => match ctx.args {
 ///| 数组search操作
 let array_search_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Array(arr), .. }, { val, .. }, ..] =>
-    ctx.mod.env.from_option(arr.search(val).map(fn(i) { RuntimeValue::Int(i) }))
+    ctx.mod.env.from_option(arr.search(val).map(fn(i) { Int(i) }))
   _ => Unit
 }
 
@@ -205,11 +219,8 @@ let array_reserve_capacity_fn : RuntimeFunction = ctx => match ctx.args {
 let array_each_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Array(arr), .. }, { val: Closure(f, _env), .. }, ..] => {
     arr.each(fn(val) {
-      let arg = @syntax.Argument::{
-        value: val.to_expr(),
-        kind: @syntax.ArgumentKind::Positional,
-      }
-      ctx.context.call(f, @list.of([arg])) |> ignore
+      ctx.context.call_runtime(f, @list.singleton({ val, kind: Positional }))
+      |> ignore
     })
     Unit
   }
@@ -220,11 +231,7 @@ let array_each_fn : RuntimeFunction = ctx => match ctx.args {
 let array_map_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Array(arr), .. }, { val: Closure(f, _env), .. }, ..] => {
     let new_arr = arr.map(fn(val) {
-      let arg = @syntax.Argument::{
-        value: val.to_expr(),
-        kind: @syntax.ArgumentKind::Positional,
-      }
-      ctx.context.call(f, @list.from_array([arg]))
+      ctx.context.call_runtime(f, @list.singleton({ val, kind: Positional }))
     })
     Array(new_arr)
   }
@@ -235,11 +242,8 @@ let array_map_fn : RuntimeFunction = ctx => match ctx.args {
 let array_filter_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Array(arr), .. }, { val: Closure(f, _env), .. }, ..] => {
     let new_arr = arr.filter(fn(val) {
-      let arg = @syntax.Argument::{
-        value: val.to_expr(),
-        kind: @syntax.ArgumentKind::Positional,
-      }
-      ctx.context.call(f, @list.of([arg])) is Bool(true)
+      ctx.context.call_runtime(f, @list.singleton({ val, kind: Positional }))
+      is Bool(true)
     })
     Array(new_arr)
   }
@@ -255,15 +259,10 @@ let array_fold_fn : RuntimeFunction = ctx => match ctx.args {
     ..,
   ] =>
     arr.fold(init=init_val, fn(acc, val) {
-      let acc_arg = @syntax.Argument::{
-        value: acc.to_expr(),
-        kind: @syntax.ArgumentKind::Positional,
-      }
-      let val_arg = @syntax.Argument::{
-        value: val.to_expr(),
-        kind: @syntax.ArgumentKind::Positional,
-      }
-      ctx.context.call(f, @list.of([acc_arg, val_arg]))
+      ctx.context.call_runtime(
+        f,
+        @list.of([{ val: acc, kind: Positional }, { val, kind: Positional }]),
+      )
     })
   _ => Unit
 }
@@ -271,13 +270,11 @@ let array_fold_fn : RuntimeFunction = ctx => match ctx.args {
 ///| 数组index_of操作
 let array_search_by_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Array(arr), .. }, { val: Closure(f, _), .. }, ..] => {
-    let index = arr.search_by(val => {
-      let arg = @syntax.Argument::{
-        value: val.to_expr(),
-        kind: @syntax.ArgumentKind::Positional,
-      }
-      (try? ctx.context.call(f, @list.of([arg]))) is Ok(Bool(true))
-    })
+    let index = arr.search_by(val => (try? ctx.context.call_runtime(
+        f,
+        @list.singleton({ val, kind: Positional }),
+      ))
+      is Ok(Bool(true)))
     ctx.mod.env.from_option(index.map(Int(_)))
   }
   _ => Unit

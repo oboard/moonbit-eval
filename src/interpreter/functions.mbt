@@ -181,10 +181,10 @@ fn ClosureInterpreter::bind_runtime_parameters(
 }
 
 ///| 执行函数调用
-pub fn ClosureInterpreter::call(
+pub fn ClosureInterpreter::call_runtime(
   self : ClosureInterpreter,
   function : @syntax.Func,
-  args : @list.List[@syntax.Argument],
+  args : @list.List[RuntimeArgument],
 ) -> RuntimeValue raise ControlFlow {
   match function {
     @syntax.Func::Lambda(parameters~, body~, ..) => {
@@ -192,10 +192,7 @@ pub fn ClosureInterpreter::call(
       self.push_scope(RuntimeLocation::FunctionCall("<function>"))
       defer self.pop_scope()
       // 绑定参数
-      self.bind_function_parameters(
-        parameters,
-        self.convert_to_runtime_arguments(args),
-      )
+      self.bind_function_parameters(parameters, args)
       // 执行函数体
       self.visit(body) catch {
         Return(v) => v

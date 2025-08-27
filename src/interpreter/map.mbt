@@ -71,15 +71,11 @@ let map_copy_fn : RuntimeFunction = ctx => match ctx.args {
 let map_each_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Map(map), .. }, { val: Closure(f, _env), .. }, ..] => {
     map.each(fn(key, val) {
-      let key_arg = @syntax.Argument::{
-        value: key.to_expr(),
-        kind: @syntax.ArgumentKind::Positional,
-      }
-      let val_arg = @syntax.Argument::{
-        value: val.to_expr(),
-        kind: @syntax.ArgumentKind::Positional,
-      }
-      ctx.context.call(f, @list.of([key_arg, val_arg])) |> ignore
+      ctx.context.call_runtime(
+        f,
+        @list.of([{ val: key, kind: Positional }, { val, kind: Positional }]),
+      )
+      |> ignore
     })
     Unit
   }
@@ -90,19 +86,15 @@ let map_each_fn : RuntimeFunction = ctx => match ctx.args {
 let map_eachi_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Map(map), .. }, { val: Closure(f, _env), .. }, ..] => {
     map.eachi(fn(i, key, val) {
-      let i_arg = @syntax.Argument::{
-        value: Int(i).to_expr(),
-        kind: @syntax.ArgumentKind::Positional,
-      }
-      let key_arg = @syntax.Argument::{
-        value: key.to_expr(),
-        kind: @syntax.ArgumentKind::Positional,
-      }
-      let val_arg = @syntax.Argument::{
-        value: val.to_expr(),
-        kind: @syntax.ArgumentKind::Positional,
-      }
-      ctx.context.call(f, @list.of([i_arg, key_arg, val_arg])) |> ignore
+      ctx.context.call_runtime(
+        f,
+        @list.of([
+          { val: Int(i), kind: Positional },
+          { val: key, kind: Positional },
+          { val, kind: Positional },
+        ]),
+      )
+      |> ignore
     })
     Unit
   }
@@ -162,7 +154,7 @@ let map_get_or_init_fn : RuntimeFunction = ctx => match ctx.args {
     match map.get(key) {
       Some(val) => val
       None => {
-        let val = ctx.context.call(f, @list.of([]))
+        let val = ctx.context.call_runtime(f, @list.empty())
         map.set(key, val)
         val
       }
@@ -207,15 +199,10 @@ let map_map_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Map(map), .. }, { val: Closure(f, _env), .. }, ..] => {
     let new_map = Map::new()
     map.each(fn(key, val) {
-      let key_arg = @syntax.Argument::{
-        value: key.to_expr(),
-        kind: @syntax.ArgumentKind::Positional,
-      }
-      let val_arg = @syntax.Argument::{
-        value: val.to_expr(),
-        kind: @syntax.ArgumentKind::Positional,
-      }
-      let new_val = ctx.context.call(f, @list.of([key_arg, val_arg]))
+      let new_val = ctx.context.call_runtime(
+        f,
+        @list.of([{ val: key, kind: Positional }, { val, kind: Positional }]),
+      )
       new_map.set(key, new_val)
     })
     Map(new_map)
@@ -283,11 +270,10 @@ let map_update_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Map(map), .. }, { val: key, .. }, { val: Closure(f, _env), .. }, ..] => {
     match map.get(key) {
       Some(old_val) => {
-        let arg = @syntax.Argument::{
-          value: old_val.to_expr(),
-          kind: @syntax.ArgumentKind::Positional,
-        }
-        let new_val = ctx.context.call(f, @list.of([arg]))
+        let new_val = ctx.context.call_runtime(
+          f,
+          @list.singleton({ val: old_val, kind: Positional }),
+        )
         map.set(key, new_val)
       }
       None => ()
