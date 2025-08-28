@@ -27,7 +27,8 @@ pub let map_methods : Map[String, RuntimeFunction] = {
   "values": map_values_fn,
 }
 
-///| Map clear操作
+///|
+/// Map clear操作
 let map_clear_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Map(map), .. }, ..] => {
     map.clear()
@@ -36,38 +37,44 @@ let map_clear_fn : RuntimeFunction = ctx => match ctx.args {
   _ => Unit
 }
 
-///| Map is_empty操作
+///|
+/// Map is_empty操作
 let map_is_empty_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Map(map), .. }, ..] => Bool(map.is_empty())
   _ => Unit
 }
 
-///| Map capacity操作
+///|
+/// Map capacity操作
 let map_capacity_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Map(map), .. }, ..] => Int(map.capacity())
   _ => Unit
 }
 
-///| Map contains操作
+///|
+/// Map contains操作
 let map_contains_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Map(map), .. }, { val: key, .. }, ..] => Bool(map.contains(key))
   _ => Unit
 }
 
-///| Map contains_kv操作
+///|
+/// Map contains_kv操作
 let map_contains_kv_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Map(map), .. }, { val: key, .. }, { val, .. }, ..] =>
     Bool(map.get(key) == Some(val))
   _ => Unit
 }
 
-///| Map copy操作
+///|
+/// Map copy操作
 let map_copy_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Map(map), .. }, ..] => Map(map.copy())
   _ => Unit
 }
 
-///| Map each操作
+///|
+/// Map each操作
 let map_each_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Map(map), .. }, { val: Closure(f, env), .. }, ..] => {
     map.each(fn(key, val) {
@@ -84,7 +91,8 @@ let map_each_fn : RuntimeFunction = ctx => match ctx.args {
   _ => Unit
 }
 
-///| Map eachi操作
+///|
+/// Map eachi操作
 let map_eachi_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Map(map), .. }, { val: Closure(f, env), .. }, ..] => {
     map.eachi(fn(i, key, val) {
@@ -105,7 +113,8 @@ let map_eachi_fn : RuntimeFunction = ctx => match ctx.args {
   _ => Unit
 }
 
-///| Map from_array操作
+///|
+/// Map from_array操作
 let map_from_array_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Array(arr), .. }, ..] => {
     let map = Map::new()
@@ -120,7 +129,8 @@ let map_from_array_fn : RuntimeFunction = ctx => match ctx.args {
   _ => Unit
 }
 
-///| Map from_iter操作
+///|
+/// Map from_iter操作
 let map_from_iter_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Iter(iter), .. }, ..] =>
     Map(
@@ -135,14 +145,16 @@ let map_from_iter_fn : RuntimeFunction = ctx => match ctx.args {
   _ => Unit
 }
 
-///| Map get操作
+///|
+/// Map get操作
 let map_get_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Map(map), .. }, { val: key, .. }, ..] =>
     ctx.mod.env.from_option(map.get(key))
   _ => Unit
 }
 
-///| Map get_or_default操作
+///|
+/// Map get_or_default操作
 let map_get_or_default_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Map(map), .. }, { val: key, .. }, { val: default, .. }, ..] =>
     match map.get(key) {
@@ -152,7 +164,8 @@ let map_get_or_default_fn : RuntimeFunction = ctx => match ctx.args {
   _ => Unit
 }
 
-///| Map get_or_init操作
+///|
+/// Map get_or_init操作
 let map_get_or_init_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Map(map), .. }, { val: key, .. }, { val: Closure(f, env), .. }, ..] =>
     match map.get(key) {
@@ -166,7 +179,8 @@ let map_get_or_init_fn : RuntimeFunction = ctx => match ctx.args {
   _ => Unit
 }
 
-///| Map iter操作
+///|
+/// Map iter操作
 let map_iter_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Map(map), .. }, ..] => {
     // 简化实现，返回键值对数组
@@ -177,7 +191,8 @@ let map_iter_fn : RuntimeFunction = ctx => match ctx.args {
   _ => Unit
 }
 
-///| Map iter2操作
+///|
+/// Map iter2操作
 let map_iter2_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Map(map), .. }, ..] => {
     // 简化实现，返回键值对数组
@@ -188,7 +203,8 @@ let map_iter2_fn : RuntimeFunction = ctx => match ctx.args {
   _ => Unit
 }
 
-///| Map keys操作
+///|
+/// Map keys操作
 let map_keys_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Map(map), .. }, ..] => {
     let arr = Array::new()
@@ -198,7 +214,8 @@ let map_keys_fn : RuntimeFunction = ctx => match ctx.args {
   _ => Unit
 }
 
-///| Map map操作
+///|
+/// Map map操作
 let map_map_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Map(map), .. }, { val: Closure(f, env), .. }, ..] => {
     let new_map = Map::new()
@@ -216,12 +233,14 @@ let map_map_fn : RuntimeFunction = ctx => match ctx.args {
   _ => Unit
 }
 
-///| Map new操作
+///|
+/// Map new操作
 let map_new_fn : RuntimeFunction = ctx => match ctx.args {
   _ => Map(Map::new())
 }
 
-///| Map of操作
+///|
+/// Map of操作
 let map_of_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Array(arr), .. }, ..] =>
     Map(
@@ -237,7 +256,8 @@ let map_of_fn : RuntimeFunction = ctx => match ctx.args {
   _ => error("Map of: (arr: T)")
 }
 
-///| Map remove操作
+///|
+/// Map remove操作
 let map_remove_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Map(map), .. }, { val: key, .. }, ..] => {
     map.remove(key)
@@ -246,7 +266,8 @@ let map_remove_fn : RuntimeFunction = ctx => match ctx.args {
   _ => Unit
 }
 
-///| Map set操作
+///|
+/// Map set操作
 let map_set_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Map(map), .. }, { val: key, .. }, { val, .. }, ..] => {
     map.set(key, val)
@@ -255,13 +276,15 @@ let map_set_fn : RuntimeFunction = ctx => match ctx.args {
   _ => Unit
 }
 
-///| Map size操作
+///|
+/// Map size操作
 let map_size_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Map(map), .. }, ..] => Int(map.size())
   _ => Unit
 }
 
-///| Map to_array操作
+///|
+/// Map to_array操作
 let map_to_array_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Map(map), .. }, ..] => {
     let arr = Array::new()
@@ -271,7 +294,8 @@ let map_to_array_fn : RuntimeFunction = ctx => match ctx.args {
   _ => Unit
 }
 
-///| Map update操作
+///|
+/// Map update操作
 let map_update_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Map(map), .. }, { val: key, .. }, { val: Closure(f, env), .. }, ..] => {
     match map.get(key) {
@@ -291,7 +315,8 @@ let map_update_fn : RuntimeFunction = ctx => match ctx.args {
   _ => Unit
 }
 
-///| Map values操作
+///|
+/// Map values操作
 let map_values_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Map(map), .. }, ..] => {
     let arr = Array::new()

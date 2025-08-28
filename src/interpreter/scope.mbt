@@ -9,7 +9,8 @@ pub enum RuntimeLocation {
 
 ///| 处理变量查找、设置和作用域管理
 
-///| 在解释器中查找变量
+///|
+/// 在解释器中查找变量
 pub fn RuntimeEnvironment::find(
   self : RuntimeEnvironment,
   name : String,
@@ -42,7 +43,8 @@ pub fn[T] RuntimeModule::with_ident(
   }
 }
 
-///| 设置不可变变量
+///|
+/// 设置不可变变量
 pub fn RuntimeEnvironment::set(
   self : RuntimeEnvironment,
   name : String,
@@ -52,7 +54,8 @@ pub fn RuntimeEnvironment::set(
   self.mutable_vars.set(name, false)
 }
 
-///| 设置可变变量
+///|
+/// 设置可变变量
 pub fn RuntimeEnvironment::set_mutable_variable(
   self : RuntimeEnvironment,
   name : String,
@@ -64,7 +67,8 @@ pub fn RuntimeEnvironment::set_mutable_variable(
 
 ///| 更新可变变量的值
 
-///| 在可变变量数组中查找并更新指定变量
+///|
+/// 在可变变量数组中查找并更新指定变量
 pub fn RuntimeEnvironment::update(
   self : RuntimeEnvironment,
   name : String,
@@ -86,7 +90,8 @@ pub fn RuntimeEnvironment::update(
   }
 }
 
-///| 查找当前调用的函数名
+///|
+/// 查找当前调用的函数名
 pub fn ClosureInterpreter::lookup_current_function(
   self : ClosureInterpreter,
 ) -> String {
@@ -97,7 +102,8 @@ pub fn ClosureInterpreter::lookup_current_function(
   buf.to_string()
 }
 
-///| 创建新的作用域
+///|
+/// 创建新的作用域
 pub fn ClosureInterpreter::push_scope(
   self : ClosureInterpreter,
   loc : RuntimeLocation,
@@ -109,7 +115,8 @@ pub fn ClosureInterpreter::push_scope(
   )
 }
 
-///| 销毁当前作用域
+///|
+/// 销毁当前作用域
 pub fn ClosureInterpreter::pop_scope(self : ClosureInterpreter) -> Unit {
   // println(String::make(self.call_stack.length(), ' ') + self.call_stack.pop().to_string() + "}")
   self.call_stack.pop() |> ignore

@@ -1,6 +1,7 @@
 ///| 函数管理模块
 
-///| 调用闭包函数，恢复捕获的环境
+///|
+/// 调用闭包函数，恢复捕获的环境
 pub fn ClosureInterpreter::call_closure(
   self : ClosureInterpreter,
   function : @syntax.Func,
@@ -21,7 +22,8 @@ pub fn ClosureInterpreter::call_closure(
   }
 }
 
-///| 调用闭包函数，使用已求值的运行时参数
+///|
+/// 调用闭包函数，使用已求值的运行时参数
 pub fn ClosureInterpreter::call(
   self : ClosureInterpreter,
   function : @syntax.Func,
@@ -66,7 +68,8 @@ pub fn ClosureInterpreter::call(
 
 ///| 递归处理多个参数，将参数值绑定到函数作用域中
 
-///| 支持所有参数类型：位置参数、标签参数、可选参数、问号可选参数、丢弃参数
+///|
+/// 支持所有参数类型：位置参数、标签参数、可选参数、问号可选参数、丢弃参数
 pub fn ClosureInterpreter::bind_function_parameters(
   self : ClosureInterpreter,
   params : @list.List[@syntax.Parameter],
@@ -111,7 +114,8 @@ pub fn ClosureInterpreter::bind_function_parameters(
   }
 }
 
-///| 将语法参数转换为运行时参数
+///|
+/// 将语法参数转换为运行时参数
 fn ClosureInterpreter::convert_to_runtime_arguments(
   self : ClosureInterpreter,
   args : @list.List[@syntax.Argument],
@@ -122,7 +126,8 @@ fn ClosureInterpreter::convert_to_runtime_arguments(
   })
 }
 
-///| 绑定运行时参数到新环境
+///|
+/// 绑定运行时参数到新环境
 fn ClosureInterpreter::bind_runtime_parameters(
   self : ClosureInterpreter,
   params : @list.List[@syntax.Parameter],
@@ -180,7 +185,8 @@ fn ClosureInterpreter::bind_runtime_parameters(
   }
 }
 
-///| 处理函数定义
+///|
+/// 处理函数定义
 pub fn RuntimeEnvironment::define_struct_method(
   self : RuntimeEnvironment,
   type_name : String,

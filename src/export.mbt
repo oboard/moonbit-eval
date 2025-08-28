@@ -9,7 +9,7 @@ pub fn value_to_string(value : RuntimeValue) -> String {
 }
 
 ///|
-pub fn MoonBitVM::create(log~ : Bool = false) -> MoonBitVM {
+pub fn MoonBitVM::create(log? : Bool = false) -> MoonBitVM {
   MoonBitVM::new(log~)
 }
 

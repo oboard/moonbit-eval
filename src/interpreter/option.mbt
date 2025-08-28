@@ -15,7 +15,8 @@ pub let option_methods : Map[String, RuntimeFunction] = {
 
 // ===== Option 方法 =====
 
-///| Option unwrap 方法
+///|
+/// Option unwrap 方法
 let option_unwrap_fn : RuntimeFunction = ctx => match ctx.args {
   [
     {
@@ -31,7 +32,8 @@ let option_unwrap_fn : RuntimeFunction = ctx => match ctx.args {
   _ => Unit
 }
 
-///| Option map 方法
+///|
+/// Option map 方法
 let option_map_fn : RuntimeFunction = ctx => match ctx.args {
   [
     {
@@ -57,7 +59,8 @@ let option_map_fn : RuntimeFunction = ctx => match ctx.args {
   _ => ctx.mod.cons("None", [])
 }
 
-///| Option map_or 方法
+///|
+/// Option map_or 方法
 let option_map_or_fn : RuntimeFunction = ctx => match ctx.args {
   [
     {
@@ -86,7 +89,8 @@ let option_map_or_fn : RuntimeFunction = ctx => match ctx.args {
   _ => Unit
 }
 
-///| Option map_or_else 方法
+///|
+/// Option map_or_else 方法
 let option_map_or_else_fn : RuntimeFunction = ctx => match ctx.args {
   [
     {
@@ -117,7 +121,8 @@ let option_map_or_else_fn : RuntimeFunction = ctx => match ctx.args {
   _ => Unit
 }
 
-///| Option bind 方法
+///|
+/// Option bind 方法
 let option_bind_fn : RuntimeFunction = ctx => match ctx.args {
   [
     {
@@ -141,7 +146,8 @@ let option_bind_fn : RuntimeFunction = ctx => match ctx.args {
   _ => ctx.mod.cons("None", [])
 }
 
-///| Option flatten 方法
+///|
+/// Option flatten 方法
 let option_flatten_fn : RuntimeFunction = ctx => match ctx.args {
   [
     {
@@ -193,7 +199,8 @@ let option_flatten_fn : RuntimeFunction = ctx => match ctx.args {
   _ => ctx.mod.cons("None", [])
 }
 
-///| Option is_empty 方法
+///|
+/// Option is_empty 方法
 let option_is_empty_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Constructor({ val: { name: "Some", .. }, .. }), .. }, ..] =>
     Bool(false)
@@ -202,7 +209,8 @@ let option_is_empty_fn : RuntimeFunction = ctx => match ctx.args {
   _ => Bool(true)
 }
 
-///| Option filter 方法
+///|
+/// Option filter 方法
 let option_filter_fn : RuntimeFunction = ctx => match ctx.args {
   [
     {
@@ -232,7 +240,8 @@ let option_filter_fn : RuntimeFunction = ctx => match ctx.args {
   _ => ctx.mod.cons("None", [])
 }
 
-///| Option unwrap_or 方法
+///|
+/// Option unwrap_or 方法
 let option_unwrap_or_fn : RuntimeFunction = ctx => match ctx.args {
   [
     {
@@ -254,7 +263,8 @@ let option_unwrap_or_fn : RuntimeFunction = ctx => match ctx.args {
 
 // option_unwrap_or_else_fn 已移除，现在使用支持解释器的版本
 
-///| Option unwrap_or_default 方法
+///|
+/// Option unwrap_or_default 方法
 let option_unwrap_or_default_fn : RuntimeFunction = ctx => match ctx.args {
   [
     {
@@ -272,7 +282,8 @@ let option_unwrap_or_default_fn : RuntimeFunction = ctx => match ctx.args {
   _ => Int(0)
 }
 
-///| Option unwrap_or_else 方法
+///|
+/// Option unwrap_or_else 方法
 let option_unwrap_or_else_fn : RuntimeFunction = ctx => match ctx.args {
   [
     {

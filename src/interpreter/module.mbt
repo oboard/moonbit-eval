@@ -5,7 +5,8 @@ pub(all) struct RuntimeModule {
   deps : Map[String, RuntimeModule]
 } derive(ToJson)
 
-///| 模块元数据
+///|
+/// 模块元数据
 pub struct ModuleMeta {
   name : String
   version : String?
@@ -18,7 +19,8 @@ pub struct ModuleMeta {
   source : String?
 } derive(Show, ToJson, FromJson)
 
-///| 模块元数据构造函数
+///|
+/// 模块元数据构造函数
 pub fn ModuleMeta::new(
   name : String,
   version? : String,
@@ -143,7 +145,8 @@ pub fn RuntimeModule::new(
   { meta: ModuleMeta::new(pkg), env, deps }
 }
 
-///| 构造 Constructor
+///|
+/// 构造 Constructor
 pub fn RuntimeModule::cons(
   self : RuntimeModule,
   name : String,
@@ -153,7 +156,8 @@ pub fn RuntimeModule::cons(
   Constructor({ val: { name, fields }, type_info: self.find_static_type(name) })
 }
 
-///| 构造带标签参数的 Constructor
+///|
+/// 构造带标签参数的 Constructor
 pub fn RuntimeModule::cons_with_labels(
   self : RuntimeModule,
   name : String,

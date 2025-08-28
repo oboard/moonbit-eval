@@ -43,7 +43,8 @@ pub fn RuntimeEnvironment::new(
   }
 }
 
-///| 深拷贝环境 - 完全复制所有内容
+///|
+/// 深拷贝环境 - 完全复制所有内容
 pub fn RuntimeEnvironment::copy(
   self : RuntimeEnvironment,
 ) -> RuntimeEnvironment {
@@ -65,7 +66,8 @@ pub fn RuntimeEnvironment::copy(
   }
 }
 
-///| 为闭包创建捕获环境 - 实现正确的变量捕获语义
+///|
+/// 为闭包创建捕获环境 - 实现正确的变量捕获语义
 pub fn RuntimeEnvironment::create_closure_env(
   self : RuntimeEnvironment,
 ) -> RuntimeEnvironment {
@@ -93,7 +95,8 @@ pub fn RuntimeEnvironment::create_closure_env(
   }
 }
 
-///| 处理函数声明体，创建Lambda函数
+///|
+/// 处理函数声明体，创建Lambda函数
 pub fn RuntimeEnvironment::top_func_def_to_closure(
   self : RuntimeEnvironment,
   func : @syntax.Impl,

@@ -26,7 +26,7 @@ pub impl Show for EvalResult with to_string(self : EvalResult) -> String {
 }
 
 ///|
-pub fn MoonBitVM::new(log~ : Bool = false) -> MoonBitVM {
+pub fn MoonBitVM::new(log? : Bool = false) -> MoonBitVM {
   let interpreter = ClosureInterpreter::new()
   interpreter.add_extern_fn("println", ctx => match ctx.args {
     [{ val: value, .. }, ..] => {
@@ -222,7 +222,7 @@ pub fn MoonBitVM::eval(
   self : MoonBitVM,
   code : String,
   log? : Bool,
-  top~ : Bool = false,
+  top? : Bool = false,
 ) -> EvalResult raise @interpreter.ControlFlow {
   try {
     if top {

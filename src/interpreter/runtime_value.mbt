@@ -1,23 +1,27 @@
-///| 构造器字段 - 支持带标签和可变性
+///|
+/// 构造器字段 - 支持带标签和可变性
 pub(all) struct ConstructorField {
   name : String? // 字段名称，None表示位置参数
   mut value : RuntimeValue // 字段值
   mutable : Bool // 是否可变
 }
 
-///| 构造器值 - 包含构造器名称和字段
+///|
+/// 构造器值 - 包含构造器名称和字段
 pub(all) struct ConstructorValue {
   name : String // 构造器名称
   fields : Array[ConstructorField] // 字段列表
 }
 
-///| 运行时值 - 解释器实际操作的数据类型
+///|
+/// 运行时值 - 解释器实际操作的数据类型
 pub(all) enum RuntimeValue {
   // 基本值类型
   Unit
   Bool(Bool)
   Int(Int)
   UInt(UInt)
+  UInt16(UInt16)
   Int64(Int64)
   UInt64(UInt64)
   Float(Float)
@@ -137,7 +141,8 @@ pub impl Hash for RuntimeValue with hash(self : RuntimeValue) -> Int {
   }
 }
 
-///| 为 RuntimeValue 实现自定义的 ToJson trait
+///|
+/// 为 RuntimeValue 实现自定义的 ToJson trait
 pub impl ToJson for RuntimeValue with to_json(self : RuntimeValue) -> Json {
   match self {
     Map(m) => m.to_json()
@@ -146,6 +151,7 @@ pub impl ToJson for RuntimeValue with to_json(self : RuntimeValue) -> Json {
     Int(i) => i.to_json()
     UInt(u) => u.to_json()
     Int64(i) => i.to_json()
+    UInt16(u) => u.to_json()
     UInt64(u) => u.to_json()
     Float(f) => f.to_json()
     Double(d) => d.to_json()
@@ -172,7 +178,8 @@ pub impl ToJson for RuntimeValue with to_json(self : RuntimeValue) -> Json {
 
 ///| 为 RuntimeValue 实现自定义的 Eq trait
 
-///| 特别处理 Function 类型，通过函数签名比较相等性
+///|
+/// 特别处理 Function 类型，通过函数签名比较相等性
 pub impl Eq for RuntimeValue with op_equal(
   self : RuntimeValue,
   other : RuntimeValue,
@@ -228,7 +235,8 @@ pub impl Eq for RuntimeValue with op_equal(
 
 ///| 比较两个函数的签名是否相等
 
-///| 通过参数类型、返回类型等信息判断函数是否相同
+///|
+/// 通过参数类型、返回类型等信息判断函数是否相同
 fn compare_function_signatures(
   func_a : @syntax.Func,
   func_b : @syntax.Func,
@@ -271,7 +279,8 @@ fn compare_function_signatures(
   }
 }
 
-///| 比较两个参数的签名是否相等
+///|
+/// 比较两个参数的签名是否相等
 fn compare_parameter_signatures(
   param_a : @syntax.Parameter,
   param_b : @syntax.Parameter,
@@ -321,7 +330,8 @@ fn RuntimeValue::from_constant(c : @syntax.Constant) -> RuntimeValue {
   }
 }
 
-///| 比较两个可选类型是否相等
+///|
+/// 比较两个可选类型是否相等
 fn compare_optional_types(ty_a : @syntax.Type?, ty_b : @syntax.Type?) -> Bool {
   match (ty_a, ty_b) {
     (Some(t_a), Some(t_b)) => compare_type_signatures(t_a, t_b)
@@ -369,7 +379,8 @@ fn compare_types(
   true
 }
 
-///| 比较两个类型签名是否相等
+///|
+/// 比较两个类型签名是否相等
 fn compare_type_signatures(ty_a : @syntax.Type, ty_b : @syntax.Type) -> Bool {
   // 简化实现：对于函数签名比较，我们只做基本的类型匹配
   match (ty_a, ty_b) {
@@ -411,7 +422,8 @@ pub fn RuntimeArgumentKind::from_syntax(
   }
 }
 
-///| 检查值是否为引用类型
+///|
+/// 检查值是否为引用类型
 pub fn RuntimeValue::is_reference(self : RuntimeValue) -> Bool {
   match self {
     Struct(_) => true
@@ -420,7 +432,8 @@ pub fn RuntimeValue::is_reference(self : RuntimeValue) -> Bool {
   }
 }
 
-///| 检查值是否为可变类型
+///|
+/// 检查值是否为可变类型
 pub fn RuntimeValue::is_mutable(self : RuntimeValue) -> Bool {
   match self {
     Struct(_) => true
@@ -433,13 +446,15 @@ pub impl Show for RuntimeValue with output(self, logger : &Logger) -> Unit {
   logger.write_string(self.to_string())
 }
 
-///| 将RuntimeValue转换为字符串表示
+///|
+/// 将RuntimeValue转换为字符串表示
 pub impl Show for RuntimeValue with to_string(self) -> String {
   match self {
     Unit => "()"
     Bool(b) => b.to_string()
     Int(i) => i.to_string()
     UInt(u) => u.to_string()
+    UInt16(u) => u.to_string()
     Int64(i64) => i64.to_string()
     UInt64(u64) => u64.to_string()
     Float(f) => f.to_string()
@@ -545,6 +560,7 @@ pub impl Show for RuntimeValue with to_string(self) -> String {
                       Int(_) => "Int"
                       UInt(_) => "UInt"
                       Int64(_) => "Int64"
+                      // UInt16(_) => "UInt16"
                       UInt64(_) => "UInt64"
                       Float(_) => "Float"
                       Double(_) => "Double"
@@ -614,7 +630,8 @@ pub fn type_to_string(ty : @syntax.Type) -> String {
   }
 }
 
-///| 将RuntimeValue转换为表达式（用于输出）
+///|
+/// 将RuntimeValue转换为表达式（用于输出）
 pub fn RuntimeValue::to_expr(self : RuntimeValue) -> @syntax.Expr {
   let _dummy_loc = @basic.Location::{
     start: { fname: "", lnum: 0, bol: 0, cnum: 0 },
@@ -626,6 +643,7 @@ pub fn RuntimeValue::to_expr(self : RuntimeValue) -> @syntax.Expr {
     Bool(b) => Constant(c=Bool(b), loc=_dummy_loc)
     Int(i) => Constant(c=Int(i.to_string()), loc=_dummy_loc)
     UInt(u) => Constant(c=Int(u.to_string()), loc=_dummy_loc)
+    UInt16(u) => Constant(c=Int(u.to_string()), loc=_dummy_loc)
     Int64(i64) => Constant(c=Int64(i64.to_string()), loc=_dummy_loc)
     UInt64(u64) => Constant(c=UInt64(u64.to_string()), loc=_dummy_loc)
     Float(f) => Constant(c=Float(f.to_string()), loc=_dummy_loc)
@@ -658,7 +676,8 @@ pub fn RuntimeValue::to_expr(self : RuntimeValue) -> @syntax.Expr {
   }
 }
 
-///| 将@syntax.Expr转换为RuntimeValue
+///|
+/// 将@syntax.Expr转换为RuntimeValue
 pub fn RuntimeValue::from_expr(expr : @syntax.Expr) -> RuntimeValue {
   match expr {
     Unit(..) => Unit
@@ -704,7 +723,8 @@ pub fn RuntimeValue::from_expr(expr : @syntax.Expr) -> RuntimeValue {
   }
 }
 
-///| 为 RuntimeValue 实现 iter() 方法，返回迭代器
+///|
+/// 为 RuntimeValue 实现 iter() 方法，返回迭代器
 pub fn RuntimeValue::iter(self : RuntimeValue) -> RuntimeValue {
   match self {
     Array(arr) => Iter(arr.iter())
@@ -714,7 +734,8 @@ pub fn RuntimeValue::iter(self : RuntimeValue) -> RuntimeValue {
   }
 }
 
-///| RuntimeValue 之间的中缀运算 - 消除对 constant_infix 的依赖
+///|
+/// RuntimeValue 之间的中缀运算 - 消除对 constant_infix 的依赖
 pub fn runtime_value_infix(
   op : String,
   lhs : RuntimeValue,

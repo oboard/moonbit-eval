@@ -1,4 +1,5 @@
-///| 运行时类型信息 - 包含包名、类型名和环境
+///|
+/// 运行时类型信息 - 包含包名、类型名和环境
 pub struct RuntimeType {
   pkg : String
   name : String
@@ -43,6 +44,15 @@ pub fn RuntimeType::int64() -> RuntimeType {
     pkg: moonbitlang_core_int64_module.meta.name,
     name: "Int64",
     env: moonbitlang_core_int64_module.env,
+  }
+}
+
+///|
+pub fn RuntimeType::uint16() -> RuntimeType {
+  {
+    pkg: moonbitlang_core_uint16_module.meta.name,
+    name: "UInt16",
+    env: moonbitlang_core_uint16_module.env,
   }
 }
 
@@ -177,13 +187,15 @@ pub fn RuntimeType::any() -> RuntimeType {
   { pkg: "main", name: "Any", env: RuntimeEnvironment::new() }
 }
 
-///| 带类型信息的值包装器
+///|
+/// 带类型信息的值包装器
 pub struct WithType[T] {
   val : T
   type_info : RuntimeType
 }
 
-///| 泛型类型环境 - 跟踪类型变量绑定
+///|
+/// 泛型类型环境 - 跟踪类型变量绑定
 pub struct TypeEnvironment {
   // 类型变量到具体类型的映射
   type_bindings : Map[String, String]
@@ -191,7 +203,8 @@ pub struct TypeEnvironment {
   parent : TypeEnvironment?
 } derive(ToJson)
 
-///| TypeEnvironment 方法
+///|
+/// TypeEnvironment 方法
 fn TypeEnvironment::new() -> TypeEnvironment {
   { type_bindings: Map::new(), parent: None }
 }

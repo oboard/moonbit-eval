@@ -1,6 +1,7 @@
 ///| 模式匹配模块 - 专门处理各种模式匹配逻辑
 
-///| 执行match表达式的模式匹配（返回RuntimeValue）
+///|
+/// 执行match表达式的模式匹配（返回RuntimeValue）
 pub fn ClosureInterpreter::execute_match_runtime(
   self : ClosureInterpreter,
   value : RuntimeValue,
@@ -23,7 +24,8 @@ pub fn ClosureInterpreter::execute_match_runtime(
   )
 }
 
-///| 检查两个常量是否相等
+///|
+/// 检查两个常量是否相等
 pub fn ClosureInterpreter::constants_equal(
   _self : ClosureInterpreter,
   c1 : @syntax.Constant,
@@ -39,7 +41,8 @@ pub fn ClosureInterpreter::constants_equal(
   }
 }
 
-///| 检查两个表达式是否相等（用于构造函数匹配）
+///|
+/// 检查两个表达式是否相等（用于构造函数匹配）
 pub fn ClosureInterpreter::constants_equal_expr(
   self : ClosureInterpreter,
   expr1 : @syntax.Expr,
@@ -52,7 +55,8 @@ pub fn ClosureInterpreter::constants_equal_expr(
   }
 }
 
-///| 检查值是否在范围内
+///|
+/// 检查值是否在范围内
 pub fn ClosureInterpreter::value_in_range(
   self : ClosureInterpreter,
   value : @syntax.Expr,
@@ -126,7 +130,8 @@ pub fn ClosureInterpreter::value_in_range(
   }
 }
 
-///| 将模式转换为值（用于范围匹配）
+///|
+/// 将模式转换为值（用于范围匹配）
 pub fn ClosureInterpreter::pattern_to_value(
   self : ClosureInterpreter,
   pattern : @syntax.Pattern,
@@ -143,7 +148,8 @@ pub fn ClosureInterpreter::pattern_to_value(
   }
 }
 
-///| 格式化模式列表为可读字符串
+///|
+/// 格式化模式列表为可读字符串
 pub fn ClosureInterpreter::format_patterns(
   _self : ClosureInterpreter,
   cases : @list.List[@syntax.Case],
@@ -155,7 +161,8 @@ pub fn ClosureInterpreter::format_patterns(
   pattern_strs.join(", ")
 }
 
-///| 将单个模式转换为可读字符串
+///|
+/// 将单个模式转换为可读字符串
 fn format_pattern(pattern : @syntax.Pattern) -> String {
   match pattern {
     Constant(c~, ..) =>

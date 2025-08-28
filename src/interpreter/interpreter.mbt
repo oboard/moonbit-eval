@@ -1,4 +1,5 @@
-///| 支持引用系统和泛型的解释器
+///|
+/// 支持引用系统和泛型的解释器
 pub(all) struct ClosureInterpreter {
   extern_fns : Map[String, RuntimeFunction]
   // embedded函数存储 - 全局函数
@@ -13,7 +14,8 @@ pub(all) struct ClosureInterpreter {
   call_stack : Array[RuntimeLocation]
 }
 
-///| 解释器状态
+///|
+/// 解释器状态
 pub(all) enum InterpreterState {
   Running
   Stopped
@@ -234,7 +236,8 @@ pub fn[A] ClosureInterpreter::error(
   error("\{self.lookup_current_function()} \{msg}")
 }
 
-///| 访问语法树节点，返回运行时值
+///|
+/// 访问语法树节点，返回运行时值
 pub fn ClosureInterpreter::visit(
   self : ClosureInterpreter,
   node : @syntax.Expr,
@@ -1346,7 +1349,8 @@ fn ClosureInterpreter::interp_string(
   buffer.to_string()
 }
 
-///| 模式匹配的 RuntimeValue 版本
+///|
+/// 模式匹配的 RuntimeValue 版本
 fn ClosureInterpreter::pattern_matches_runtime(
   self : ClosureInterpreter,
   value : RuntimeValue,
@@ -1575,7 +1579,8 @@ fn ClosureInterpreter::pattern_matches_runtime(
   }
 }
 
-///| 检查类型约束
+///|
+/// 检查类型约束
 fn RuntimeModule::check_type_constraint(
   self : RuntimeModule,
   value : RuntimeValue,
@@ -1658,7 +1663,8 @@ fn RuntimeModule::check_type_constraint(
   }
 }
 
-///| 检查 RuntimeValue 是否在指定范围内
+///|
+/// 检查 RuntimeValue 是否在指定范围内
 fn ClosureInterpreter::runtime_value_in_range(
   self : ClosureInterpreter,
   value : RuntimeValue,
@@ -1705,7 +1711,8 @@ fn ClosureInterpreter::runtime_value_in_range(
   }
 }
 
-///| 将模式转换为 RuntimeValue（用于范围匹配）
+///|
+/// 将模式转换为 RuntimeValue（用于范围匹配）
 fn ClosureInterpreter::pattern_to_runtime_value(
   self : ClosureInterpreter,
   pattern : @syntax.Pattern,
@@ -1745,7 +1752,8 @@ fn ClosureInterpreter::pattern_to_runtime_value(
   }
 }
 
-///| 检查函数是否为已知函数（存在于任何函数映射中）
+///|
+/// 检查函数是否为已知函数（存在于任何函数映射中）
 pub fn ClosureInterpreter::is_known_function(
   self : ClosureInterpreter,
   name : String,
@@ -1769,7 +1777,8 @@ pub fn ClosureInterpreter::is_known_function(
   false
 }
 
-///| 查找方法的类型和执行器
+///|
+/// 查找方法的类型和执行器
 priv enum MethodType {
   EmbeddedFunction(String)
   RuntimeClosure(@syntax.Func, RuntimeEnvironment)
@@ -1778,7 +1787,8 @@ priv enum MethodType {
   NotFound
 }
 
-///| 按名称执行函数调用
+///|
+/// 按名称执行函数调用
 fn ClosureInterpreter::execute_function_by_name(
   self : ClosureInterpreter,
   long_ident : @syntax.LongIdent,
@@ -1850,7 +1860,8 @@ fn ClosureInterpreter::execute_function_by_name(
   })
 }
 
-///| 执行结构体方法调用（返回 RuntimeValue）
+///|
+/// 执行结构体方法调用（返回 RuntimeValue）
 fn ClosureInterpreter::execute_method_call(
   self : ClosureInterpreter,
   self_value : RuntimeValue,
@@ -1936,7 +1947,8 @@ fn RuntimeType::find_method(
   None
 }
 
-///| 执行静态方法调用（如 Bool::default()）
+///|
+/// 执行静态方法调用（如 Bool::default()）
 fn ClosureInterpreter::execute_static_method_call(
   self : ClosureInterpreter,
   type_info : RuntimeType,
@@ -1983,7 +1995,8 @@ fn ClosureInterpreter::execute_static_method_call(
   }
 }
 
-///| 根据 RuntimeValue 推断类型
+///|
+/// 根据 RuntimeValue 推断类型
 // 提取的公共方法：根据字段名推导结构体类型
 fn RuntimeEnvironment::infer_struct_type_from_fields(
   self : RuntimeEnvironment,
@@ -2031,6 +2044,7 @@ fn RuntimeModule::find_static_type(
     "Int" => RuntimeType::int()
     "UInt" => RuntimeType::uint()
     "Int64" => RuntimeType::int64()
+    "UInt16" => RuntimeType::uint16()
     "UInt64" => RuntimeType::uint64()
     "Float" => RuntimeType::float()
     "Double" => RuntimeType::double()
@@ -2069,6 +2083,7 @@ fn RuntimeEnvironment::type_of(
     Int(_) => RuntimeType::int()
     UInt(_) => RuntimeType::uint()
     Int64(_) => RuntimeType::int64()
+    UInt16(_) => RuntimeType::uint16()
     UInt64(_) => RuntimeType::uint64()
     Float(_) => RuntimeType::float()
     Double(_) => RuntimeType::double()
@@ -2095,7 +2110,8 @@ fn RuntimeEnvironment::type_of(
   }
 }
 
-///| 从函数体推导返回类型
+///|
+/// 从函数体推导返回类型
 fn ClosureInterpreter::infer_return_type_from_expr(
   self : ClosureInterpreter,
   body : @syntax.Expr,
@@ -2123,7 +2139,8 @@ fn ClosureInterpreter::infer_return_type_from_expr(
   }
 }
 
-///| 将RuntimeValue转换为字符串表示（带解释器支持，用于正确的类型推导）
+///|
+/// 将RuntimeValue转换为字符串表示（带解释器支持，用于正确的类型推导）
 pub fn ClosureInterpreter::get_function_type_string(
   self : ClosureInterpreter,
   value : RuntimeValue,
