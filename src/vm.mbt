@@ -226,10 +226,8 @@ pub fn MoonBitVM::eval(
 ) -> EvalResult raise @interpreter.ControlFlow {
   try {
     if top {
-      let buf = @buffer.new()
-      @encoding.encode_to(code, buf, encoding=UTF8)
-      let (impls, _diagnostics) = @moonbitlang/parser.parse_bytes(
-        buf.to_bytes(),
+      let (impls, _diagnostics) = @moonbitlang/parser.parse_string(
+        code,
         parser=Handrolled,
       )
       let mut last_result = RuntimeValue::Unit

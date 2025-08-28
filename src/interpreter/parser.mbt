@@ -1,9 +1,7 @@
 ///|
 pub fn parse_code_to_expr(code : String) -> Result[@syntax.Expr, String] {
-  let buf = @buffer.new()
-  @encoding.encode_to("fn init {\n\{code}\n}", buf, encoding=UTF8)
-  let (impls, diagnostics) = @moonbitlang/parser.parse_bytes(
-    buf.to_bytes(),
+  let (impls, diagnostics) = @moonbitlang/parser.parse_string(
+    code,
     parser=Handrolled,
   )
   match impls {
@@ -21,10 +19,8 @@ pub fn parse_code_to_expr(code : String) -> Result[@syntax.Expr, String] {
 
 ///|
 pub fn parse_code_to_impl(code : String) -> Result[@syntax.Impl, String] {
-  let buf = @buffer.new()
-  @encoding.encode_to(code, buf, encoding=UTF8)
-  let (impls, diagnostics) = @moonbitlang/parser.parse_bytes(
-    buf.to_bytes(),
+  let (impls, diagnostics) = @moonbitlang/parser.parse_string(
+    code,
     parser=Handrolled,
   )
   match impls {
