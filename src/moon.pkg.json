@@ -2,7 +2,6 @@
   "import": [
     "moonbitlang/parser",
     "moonbitlang/parser/syntax",
-    "moonbitlang/x/encoding",
     "oboard/moonbit-eval/interpreter"
   ],
   "link": {

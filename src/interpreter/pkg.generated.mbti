@@ -1,0 +1,277 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "oboard/moonbit-eval/interpreter"
+
+import(
+  "moonbitlang/core/bigint"
+  "moonbitlang/core/json"
+  "moonbitlang/core/list"
+  "moonbitlang/core/string"
+  "moonbitlang/parser/basic"
+  "moonbitlang/parser/syntax"
+)
+
+// Values
+let array_methods : Map[String, (RuntimeFunctionContext) -> RuntimeValue raise ControlFlow]
+
+let array_view_methods : Map[String, (RuntimeFunctionContext) -> RuntimeValue raise ControlFlow]
+
+fn[T : Compare] compare(T, T, String) -> @syntax.Constant
+
+fn constant_infix(String, @syntax.Constant, @syntax.Constant) -> @syntax.Constant
+
+#callsite(autofill(loc))
+fn[A] error(String, loc~ : SourceLoc) -> A raise ControlFlow
+
+fn eval_double_op(Double, Double, String) -> @syntax.Constant
+
+fn eval_float_op(Double, Double, String) -> @syntax.Constant
+
+fn eval_int64_op(Int64, Int64, String) -> @syntax.Constant
+
+fn eval_int_op(Int, Int, String) -> @syntax.Constant
+
+fn eval_uint64_op(UInt64, UInt64, String) -> @syntax.Constant
+
+fn eval_uint_op(UInt, UInt, String) -> @syntax.Constant
+
+let int_embedded_code : Map[String, (RuntimeFunctionContext) -> RuntimeValue raise ControlFlow]
+
+let int_methods : Map[String, (RuntimeFunctionContext) -> RuntimeValue raise ControlFlow]
+
+fn is_comparison_op(String) -> Bool
+
+let iter_methods : Map[String, (RuntimeFunctionContext) -> RuntimeValue raise ControlFlow]
+
+let map_methods : Map[String, (RuntimeFunctionContext) -> RuntimeValue raise ControlFlow]
+
+let option_methods : Map[String, (RuntimeFunctionContext) -> RuntimeValue raise ControlFlow]
+
+fn parse_code_to_expr(String) -> Result[@syntax.Expr, String]
+
+fn parse_code_to_impl(String) -> Result[@syntax.Impl, String]
+
+fn runtime_value_infix(String, RuntimeValue, RuntimeValue) -> RuntimeValue
+
+let string_embedded_code : Map[String, (RuntimeFunctionContext) -> RuntimeValue raise ControlFlow]
+
+fn type_to_string(@syntax.Type) -> String
+
+fn unit(loc? : @basic.Location) -> @syntax.Expr
+
+// Errors
+pub suberror ControlFlow {
+  Raise(RuntimeValue)
+  Continue(Array[RuntimeValue])
+  Break(RuntimeValue?)
+  Return(RuntimeValue)
+  Error(String)
+}
+
+// Types and methods
+pub(all) struct ClosureInterpreter {
+  extern_fns : Map[String, (RuntimeFunctionContext) -> RuntimeValue raise ControlFlow]
+  embedded_fns : Map[String, (RuntimeFunctionContext) -> RuntimeValue raise ControlFlow]
+  embedded_methods : Map[String, Map[String, (RuntimeFunctionContext) -> RuntimeValue raise ControlFlow]]
+  main : RuntimeModule
+  mut current_module : RuntimeModule
+  mut state : InterpreterState
+  call_stack : Array[RuntimeLocation]
+}
+fn ClosureInterpreter::add_embedded_fn(Self, String, (RuntimeFunctionContext) -> RuntimeValue raise ControlFlow) -> Unit
+fn ClosureInterpreter::add_embedded_method(Self, String, String, (RuntimeFunctionContext) -> RuntimeValue raise ControlFlow) -> Unit
+fn ClosureInterpreter::add_extern_fn(Self, String, (RuntimeFunctionContext) -> RuntimeValue raise ControlFlow) -> Unit
+fn ClosureInterpreter::bind_function_parameters(Self, @list.List[@syntax.Parameter], @list.List[RuntimeArgument]) -> Unit raise ControlFlow
+fn ClosureInterpreter::call(Self, @syntax.Func, RuntimeModule, RuntimeEnvironment, @list.List[RuntimeArgument], name? : String) -> RuntimeValue raise ControlFlow
+fn ClosureInterpreter::call_closure(Self, @syntax.Func, RuntimeModule, RuntimeEnvironment, @list.List[@syntax.Argument], name? : String) -> RuntimeValue raise ControlFlow
+fn ClosureInterpreter::constants_equal(Self, @syntax.Constant, @syntax.Constant) -> Bool
+fn ClosureInterpreter::constants_equal_expr(Self, @syntax.Expr, @syntax.Expr) -> Bool
+fn[A] ClosureInterpreter::error(Self, String) -> A raise ControlFlow
+fn ClosureInterpreter::execute_match_runtime(Self, RuntimeValue, @list.List[@syntax.Case]) -> RuntimeValue raise ControlFlow
+fn ClosureInterpreter::format_patterns(Self, @list.List[@syntax.Case]) -> String
+fn ClosureInterpreter::get_function_type_string(Self, RuntimeValue) -> String
+fn ClosureInterpreter::is_known_function(Self, String) -> Bool
+fn ClosureInterpreter::lookup_current_function(Self) -> String
+fn ClosureInterpreter::new() -> Self
+fn ClosureInterpreter::pattern_to_value(Self, @syntax.Pattern) -> @syntax.Expr?
+fn ClosureInterpreter::pop_scope(Self) -> Unit
+fn ClosureInterpreter::push_scope(Self, RuntimeLocation) -> Unit
+fn ClosureInterpreter::start(Self) -> Unit
+fn ClosureInterpreter::stop(Self) -> Unit
+fn ClosureInterpreter::top_visit(Self, @syntax.Impl) -> RuntimeValue raise ControlFlow
+fn ClosureInterpreter::value_in_range(Self, @syntax.Expr, @syntax.Pattern, @syntax.Pattern, Bool) -> Bool
+fn ClosureInterpreter::visit(Self, @syntax.Expr) -> RuntimeValue raise ControlFlow
+fn ClosureInterpreter::visit_scoped(Self, @syntax.Expr, RuntimeLocation) -> RuntimeValue raise ControlFlow
+
+pub(all) struct ConstructorField {
+  name : String?
+  mut value : RuntimeValue
+  mutable : Bool
+}
+
+pub(all) struct ConstructorValue {
+  name : String
+  fields : Array[ConstructorField]
+}
+
+pub(all) enum InterpreterState {
+  Running
+  Stopped
+}
+
+pub struct ModuleMeta {
+  name : String
+  version : String?
+  deps : Map[String, String]?
+  readme : String?
+  repository : String?
+  license : String?
+  keywords : Array[String]?
+  description : String?
+  source : String?
+}
+fn ModuleMeta::new(String, version? : String, readme? : String, repository? : String, license? : String, keywords? : Array[String], description? : String, source? : String, deps? : Map[String, String]) -> Self
+impl Show for ModuleMeta
+impl ToJson for ModuleMeta
+impl @json.FromJson for ModuleMeta
+
+pub(all) struct RuntimeArgument {
+  val : RuntimeValue
+  kind : RuntimeArgumentKind
+}
+
+pub(all) enum RuntimeArgumentKind {
+  Positional
+  Labelled(String)
+  LabelledOption(String)
+}
+fn RuntimeArgumentKind::from_syntax(@syntax.ArgumentKind) -> Self
+
+pub(all) struct RuntimeEnvironment {
+  traits : Map[String, @syntax.TraitDecl]
+  fn_aliases : Map[String, String]
+  type_definitions : Map[String, @syntax.TypeDecl]
+  struct_methods : Map[String, Map[String, RuntimeValue]]
+  type_environment : TypeEnvironment
+  values : Map[String, RuntimeValue]
+  mutable_vars : Map[String, Bool]
+  parent : RuntimeEnvironment?
+}
+fn RuntimeEnvironment::copy(Self) -> Self
+fn RuntimeEnvironment::create_closure_env(Self) -> Self
+fn RuntimeEnvironment::define_struct_method(Self, String, String, @syntax.Func) -> Unit
+fn RuntimeEnvironment::find(Self, String) -> RuntimeValue?
+fn RuntimeEnvironment::find_fn_alias(Self, String) -> String
+fn RuntimeEnvironment::from_option(Self, RuntimeValue?) -> RuntimeValue
+fn RuntimeEnvironment::new(parent? : Self, values? : Map[String, RuntimeValue], struct_methods? : Map[String, Map[String, RuntimeValue]]) -> Self
+fn RuntimeEnvironment::set(Self, String, RuntimeValue) -> Unit
+fn RuntimeEnvironment::set_mutable_variable(Self, String, RuntimeValue) -> Unit
+fn RuntimeEnvironment::top_func_def_to_closure(Self, @syntax.Impl) -> (String?, RuntimeValue)
+fn RuntimeEnvironment::update(Self, String, RuntimeValue) -> Unit
+impl ToJson for RuntimeEnvironment
+
+pub(all) struct RuntimeFunctionContext {
+  context : ClosureInterpreter
+  mod : RuntimeModule
+  args : Array[RuntimeArgument]
+}
+
+pub enum RuntimeLocation {
+  FunctionCall(String)
+  ControlFlow(String)
+  LetMut(String)
+}
+impl Show for RuntimeLocation
+
+pub(all) struct RuntimeModule {
+  meta : ModuleMeta
+  mut env : RuntimeEnvironment
+  deps : Map[String, RuntimeModule]
+}
+fn RuntimeModule::cons(Self, String, Array[RuntimeValue]) -> RuntimeValue
+fn RuntimeModule::cons_with_labels(Self, String, Array[(String?, RuntimeValue, Bool)]) -> RuntimeValue
+fn RuntimeModule::new(String, deps~ : Map[String, Self], (RuntimeEnvironment, (String) -> (String?, RuntimeValue)) -> Map[String, (String?, RuntimeValue)]) -> Self
+fn[T] RuntimeModule::with_ident(Self, @syntax.LongIdent, (Self, String, String) -> T raise?) -> T raise?
+impl ToJson for RuntimeModule
+
+pub struct RuntimeType {
+  pkg : String
+  name : String
+  env : RuntimeEnvironment
+}
+fn RuntimeType::any() -> Self
+fn RuntimeType::array() -> Self
+fn RuntimeType::array_view() -> Self
+fn RuntimeType::bigint() -> Self
+fn RuntimeType::bool() -> Self
+fn RuntimeType::byte() -> Self
+fn RuntimeType::char() -> Self
+fn RuntimeType::double() -> Self
+fn RuntimeType::float() -> Self
+fn RuntimeType::int() -> Self
+fn RuntimeType::int64() -> Self
+fn RuntimeType::iter() -> Self
+fn RuntimeType::map() -> Self
+fn RuntimeType::option() -> Self
+fn RuntimeType::string() -> Self
+fn RuntimeType::to_string(Self) -> String
+fn RuntimeType::tuple() -> Self
+fn RuntimeType::uint() -> Self
+fn RuntimeType::uint16() -> Self
+fn RuntimeType::uint64() -> Self
+fn RuntimeType::uninitialized_array() -> Self
+
+pub(all) enum RuntimeValue {
+  Unit
+  Bool(Bool)
+  Int(Int)
+  UInt(UInt)
+  UInt16(UInt16)
+  Int64(Int64)
+  UInt64(UInt64)
+  Float(Float)
+  Double(Double)
+  BigInt(@bigint.BigInt)
+  Char(Char)
+  Byte(Byte)
+  String(String)
+  Bytes(Bytes)
+  StringView(@string.View)
+  Tuple(Array[RuntimeValue])
+  Array(Array[RuntimeValue])
+  ArrayView(ArrayView[RuntimeValue])
+  UninitializedArray(UninitializedArray[RuntimeValue])
+  Map(Map[RuntimeValue, RuntimeValue])
+  Struct(WithType[Map[String, RuntimeValue]])
+  Closure(@syntax.Func, RuntimeEnvironment)
+  Constructor(WithType[ConstructorValue])
+  Exception(String)
+  Iter(Iter[RuntimeValue])
+}
+fn RuntimeValue::from_expr(@syntax.Expr) -> Self
+fn RuntimeValue::is_mutable(Self) -> Bool
+fn RuntimeValue::is_reference(Self) -> Bool
+fn RuntimeValue::iter(Self) -> Self
+fn RuntimeValue::to_expr(Self) -> @syntax.Expr
+impl Add for RuntimeValue
+impl Compare for RuntimeValue
+impl Eq for RuntimeValue
+impl Hash for RuntimeValue
+impl Show for RuntimeValue
+impl ToJson for RuntimeValue
+
+pub struct TypeEnvironment {
+  type_bindings : Map[String, String]
+  parent : TypeEnvironment?
+}
+impl ToJson for TypeEnvironment
+
+pub struct WithType[T] {
+  val : T
+  type_info : RuntimeType
+}
+
+// Type aliases
+pub typealias (RuntimeFunctionContext) -> RuntimeValue raise ControlFlow as RuntimeFunction
+
+// Traits
+

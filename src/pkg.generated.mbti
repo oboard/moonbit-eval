@@ -1,0 +1,46 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "oboard/moonbit-eval"
+
+import(
+  "moonbitlang/parser/syntax"
+  "oboard/moonbit-eval/interpreter"
+)
+
+// Values
+fn add_embedded_fn(MoonBitVM, String, (@interpreter.RuntimeFunctionContext) -> @interpreter.RuntimeValue raise @interpreter.ControlFlow) -> Unit
+
+fn add_embedded_method(MoonBitVM, String, String, (@interpreter.RuntimeFunctionContext) -> @interpreter.RuntimeValue raise @interpreter.ControlFlow) -> Unit
+
+fn add_extern_fn(MoonBitVM, String, (@interpreter.RuntimeFunctionContext) -> @interpreter.RuntimeValue raise @interpreter.ControlFlow) -> Unit
+
+fn eval_result_to_string(EvalResult) -> String
+
+fn expr_to_string(@syntax.Expr) -> String
+
+fn stop(MoonBitVM) -> Unit
+
+fn value_to_json(@interpreter.RuntimeValue) -> String
+
+fn value_to_string(@interpreter.RuntimeValue) -> String
+
+// Errors
+
+// Types and methods
+pub enum EvalResult {
+  Success(@interpreter.RuntimeValue, @interpreter.ClosureInterpreter)
+  Error(String, @interpreter.ClosureInterpreter)
+}
+impl Show for EvalResult
+
+pub(all) struct MoonBitVM {
+  interpreter : @interpreter.ClosureInterpreter
+  log : Bool
+}
+fn MoonBitVM::create(log? : Bool) -> Self
+fn MoonBitVM::eval(Self, String, log? : Bool, top? : Bool) -> EvalResult raise @interpreter.ControlFlow
+fn MoonBitVM::new(log? : Bool) -> Self
+
+// Type aliases
+
+// Traits
+

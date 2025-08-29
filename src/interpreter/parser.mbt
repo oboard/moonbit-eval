@@ -1,7 +1,7 @@
 ///|
 pub fn parse_code_to_expr(code : String) -> Result[@syntax.Expr, String] {
   let (impls, diagnostics) = @moonbitlang/parser.parse_string(
-    code,
+    "fn init{\n  \{code}\n}",
     parser=Handrolled,
   )
   match impls {
