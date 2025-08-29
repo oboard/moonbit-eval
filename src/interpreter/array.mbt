@@ -31,6 +31,7 @@ pub let array_methods : Map[String, RuntimeFunction] = {
   "make": array_make_fn,
   "iter": array_iter_fn,
   "sort": array_sort_fn,
+  "zip": array_zip_fn,
 }
 
 ///|
@@ -40,6 +41,14 @@ let array_sort_fn : RuntimeFunction = ctx => match ctx.args {
     arr.sort()
     Unit
   }
+  _ => Unit
+}
+
+///|
+/// 数组zip操作
+let array_zip_fn : RuntimeFunction = ctx => match ctx.args {
+  [{ val: Array(arr1), .. }, { val: Array(arr2), .. }] =>
+    Array(arr1.zip(arr2).map(pair => Tuple([pair.0, pair.1])))
   _ => Unit
 }
 
