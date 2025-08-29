@@ -743,6 +743,10 @@ pub fn runtime_value_infix(
 ) -> RuntimeValue {
   match (lhs, rhs) {
     // Int 运算
+    (Int(left), Char(right)) =>
+      runtime_value_infix(op, Int(left), Int(right.to_int()))
+    (Char(left), Int(right)) =>
+      runtime_value_infix(op, Int(left.to_int()), Int(right))
     (Int(left), Int(right)) =>
       match op {
         "+" => Int(left + right)
