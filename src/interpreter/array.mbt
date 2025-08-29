@@ -26,6 +26,7 @@ pub let array_methods : Map[String, RuntimeFunction] = {
   "each": array_each_fn,
   "eachi": array_eachi_fn,
   "map": array_map_fn,
+  "mapi": array_mapi_fn,
   "filter": array_filter_fn,
   "fold": array_fold_fn,
   "make": array_make_fn,
@@ -288,6 +289,23 @@ let array_map_fn : RuntimeFunction = ctx => match ctx.args {
         ctx.mod,
         env,
         @list.singleton({ val, kind: Positional }),
+      )
+    })
+    Array(new_arr)
+  }
+  _ => Unit
+}
+
+///|
+/// 数组mapi操作
+let array_mapi_fn : RuntimeFunction = ctx => match ctx.args {
+  [{ val: Array(arr), .. }, { val: Closure(f, env), .. }] => {
+    let new_arr = arr.mapi(fn(i, val) {
+      ctx.context.call(
+        f,
+        ctx.mod,
+        env,
+        @list.of([{ val: Int(i), kind: Positional }, { val, kind: Positional }]),
       )
     })
     Array(new_arr)
