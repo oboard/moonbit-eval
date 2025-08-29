@@ -56,13 +56,13 @@ let string_methods : Map[String, RuntimeFunction] = {
 
 ///|
 let string_length : RuntimeFunction = ctx => match ctx.args {
-  [{ val: String(s), .. }, ..] => Int(s.length())
+  [{ val: String(s), .. }] => Int(s.length())
   _ => Int(0)
 }
 
 ///|
 let string_get_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: String(s), .. }, { val: Int(i), .. }, ..] =>
+  [{ val: String(s), .. }, { val: Int(i), .. }] =>
     if i >= 0 && i < s.length() {
       Int(s[i])
     } else {
@@ -73,25 +73,25 @@ let string_get_fn : RuntimeFunction = ctx => match ctx.args {
 
 ///|
 let string_unsafe_get_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: String(s), .. }, { val: Int(i), .. }, ..] => Int(s[i])
+  [{ val: String(s), .. }, { val: Int(i), .. }] => Int(s[i])
   _ => Int(0)
 }
 
 ///|
 let string_add_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: String(a), .. }, { val: String(b), .. }, ..] => String(a + b)
+  [{ val: String(a), .. }, { val: String(b), .. }] => String(a + b)
   _ => String("")
 }
 
 ///|
 let string_eq_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: String(a), .. }, { val: String(b), .. }, ..] => Bool(a == b)
+  [{ val: String(a), .. }, { val: String(b), .. }] => Bool(a == b)
   _ => Bool(false)
 }
 
 ///|
 let string_to_string_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: String(s), .. }, ..] => String(s)
+  [{ val: String(s), .. }] => String(s)
   _ => String("")
 }
 
@@ -99,28 +99,27 @@ let string_to_string_fn : RuntimeFunction = ctx => match ctx.args {
 
 ///|
 let string_make_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Int(len), .. }, { val: Char(value), .. }, ..] =>
+  [{ val: Int(len), .. }, { val: Char(value), .. }] =>
     String(String::make(len, value))
   _ => String("")
 }
 
 ///|
 let string_iter_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: String(s), .. }, ..] => Iter(s.iter().map(Char(_)))
+  [{ val: String(s), .. }] => Iter(s.iter().map(Char(_)))
   _ => Array([]).iter()
 }
 
 ///|
 let string_to_array_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: String(s), .. }, ..] => Array(s.to_array().map(Char(_)))
+  [{ val: String(s), .. }] => Array(s.to_array().map(Char(_)))
   _ => Array([])
 }
 
 ///|
 let string_contains_fn : RuntimeFunction = ctx => Bool(
   match ctx.args {
-    [{ val: String(str), .. }, { val: String(str2), .. }, ..] =>
-      str.contains(str2)
+    [{ val: String(str), .. }, { val: String(str2), .. }] => str.contains(str2)
     _ => false
   },
 )
@@ -128,21 +127,21 @@ let string_contains_fn : RuntimeFunction = ctx => Bool(
 ///|
 let string_contains_char_fn : RuntimeFunction = ctx => Bool(
   match ctx.args {
-    [{ val: String(str), .. }, { val: Char(c), .. }, ..] => str.contains_char(c)
+    [{ val: String(str), .. }, { val: Char(c), .. }] => str.contains_char(c)
     _ => false
   },
 )
 
 ///|
 let string_find_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: String(str), .. }, { val: StringView(view), .. }, ..] =>
+  [{ val: String(str), .. }, { val: StringView(view), .. }] =>
     ctx.mod.env.from_option(str.find(view).map(Int(_)))
   _ => ctx.mod.env.from_option(None)
 }
 
 ///|
 let string_find_by_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: String(s), .. }, { val: Closure(func, env), .. }, ..] =>
+  [{ val: String(s), .. }, { val: Closure(func, env), .. }] =>
     ctx.mod.env.from_option(
       s
       .find_by(char => {
@@ -190,14 +189,14 @@ let string_fold_fn : RuntimeFunction = ctx => match ctx.args {
 
 ///|
 let string_has_prefix_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: String(s), .. }, { val: String(prefix), .. }, ..] =>
+  [{ val: String(s), .. }, { val: String(prefix), .. }] =>
     Bool(s.has_prefix(prefix))
   _ => Bool(false)
 }
 
 ///|
 let string_has_suffix_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: String(s), .. }, { val: String(suffix), .. }, ..] =>
+  [{ val: String(s), .. }, { val: String(suffix), .. }] =>
     Bool(s.has_suffix(suffix))
   _ => Bool(false)
 }
@@ -214,7 +213,7 @@ let string_is_empty_fn : RuntimeFunction = ctx => if ctx.args.length() > 0 {
 
 ///|
 let string_is_blank_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: String(s), .. }, ..] => Bool(s.is_blank())
+  [{ val: String(s), .. }] => Bool(s.is_blank())
   _ => Bool(false)
 }
 
@@ -224,7 +223,6 @@ let string_pad_end_fn : RuntimeFunction = ctx => match ctx.args {
     { val: String(s), .. },
     { val: Int(total_width), .. },
     { val: Char(padding_char), .. },
-    ..,
   ] => String(s.pad_end(total_width, padding_char))
   _ => String("")
 }
@@ -235,15 +233,13 @@ let string_pad_start_fn : RuntimeFunction = ctx => match ctx.args {
     { val: String(s), .. },
     { val: Int(total_width), .. },
     { val: Char(padding_char), .. },
-    ..,
   ] => String(s.pad_start(total_width, padding_char))
   _ => String("")
 }
 
 ///|
 let string_repeat_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: String(s), .. }, { val: Int(count), .. }, ..] =>
-    String(s.repeat(count))
+  [{ val: String(s), .. }, { val: Int(count), .. }] => String(s.repeat(count))
   _ => String("")
 }
 
@@ -253,135 +249,124 @@ let string_replace_fn : RuntimeFunction = ctx => match ctx.args {
     { val: String(s), .. },
     { val: String(from), kind: Labelled("old") },
     { val: String(to), kind: Labelled("new") },
-    ..,
   ] => String(s.replace(old=from, new=to))
   _ => String("")
 }
 
 ///|
 let string_replace_all_fn : RuntimeFunction = ctx => match ctx.args {
-  [
-    { val: String(s), .. },
-    { val: String(from), .. },
-    { val: String(to), .. },
-    ..,
-  ] => String(s.replace_all(old=from, new=to))
+  [{ val: String(s), .. }, { val: String(from), .. }, { val: String(to), .. }] =>
+    String(s.replace_all(old=from, new=to))
   _ => String("")
 }
 
 ///|
 let string_rev_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: String(s), .. }, ..] => String(s.rev())
+  [{ val: String(s), .. }] => String(s.rev())
   _ => String("")
 }
 
 ///|
 let string_rev_find_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: String(s), .. }, { val: String(substr), .. }, ..] =>
-    match s.rev_find(substr) {
-      Some(index) => Int(index)
-      None => Int(-1)
-    }
-  _ => Int(-1)
+  [{ val: String(s), .. }, { val: String(substr), .. }] =>
+    ctx.mod.env.from_option(s.rev_find(substr).map(Int(_)))
+  _ => ctx.mod.env.from_option(None)
 }
 
 ///|
 let string_rev_fold_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: String(_s), .. }, init_val, { val: Closure(_f, _env), .. }, ..] =>
-    // 简化实现：直接返回初始值，避免复杂的闭包调用
-    init_val.val
+  [
+    { val: String(s), .. },
+    { val: init, kind: Labelled("init") },
+    { val: Closure(func, env), .. },
+    ..,
+  ] =>
+    s.rev_fold(init~, fn(acc, char) {
+      ctx.context.call(
+        func,
+        ctx.mod,
+        env,
+        @list.of([
+          { val: acc, kind: Positional },
+          { val: Char(char), kind: Positional },
+        ]),
+      ) catch {
+        _ => Unit
+      }
+    })
   _ => Unit
 }
 
 ///|
 let string_rev_iter_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: String(_s), .. }, { val: Closure(_f, _env), .. }, ..] =>
-    // 简化实现：直接返回 Unit，避免复杂的闭包调用
-    Unit
+  [{ val: String(s), .. }] => Iter(s.rev_iter().map(Char(_)))
   _ => Unit
 }
 
 ///|
 let string_split_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: String(s), .. }, { val: String(sep), .. }, ..] =>
-    Iter(s.split(sep).map(fn(s) { StringView(s) }))
+  [{ val: String(s), .. }, { val: String(sep), .. }] =>
+    Iter(s.split(sep).map(StringView(_)))
   _ => Unit
 }
 
 ///|
 let string_strip_prefix_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: String(s), .. }, { val: String(prefix), .. }, ..] =>
-    if s.has_prefix(prefix) {
-      String(s.substring(start=prefix.length()))
-    } else {
-      String(s)
-    }
-  _ => Unit
+  [{ val: String(s), .. }, { val: String(prefix), .. }] =>
+    ctx.mod.env.from_option(s.strip_prefix(prefix).map(StringView(_)))
+  _ => StringView("")
 }
 
 ///|
 let string_strip_suffix_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: String(s), .. }, { val: String(suffix), .. }, ..] =>
-    if s.has_suffix(suffix) {
-      String(s.substring(end=s.length() - suffix.length()))
-    } else {
-      String(s)
-    }
-  _ => String("")
+  [{ val: String(s), .. }, { val: String(suffix), .. }] =>
+    ctx.mod.env.from_option(s.strip_prefix(suffix).map(StringView(_)))
+  _ => StringView("")
 }
 
 ///|
 let string_to_bytes_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: String(s), .. }, ..] => Bytes(s.to_bytes())
+  [{ val: String(s), .. }] => Bytes(s.to_bytes())
   _ => Bytes(b"")
 }
 
 ///|
 let string_to_lower_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: String(s), .. }, ..] => String(s.to_lower())
+  [{ val: String(s), .. }] => String(s.to_lower())
   _ => String("")
 }
 
 ///|
 let string_to_upper_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: String(s), .. }, ..] => String(s.to_upper())
+  [{ val: String(s), .. }] => String(s.to_upper())
   _ => String("")
 }
 
 ///|
 let string_trim_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: String(s), .. }, ..] => {
-    // 使用原生trim方法，去除空白字符（空格、制表符、换行符等）
-    let whitespace = " \t\n\r"
-    String(s.trim(whitespace).to_string())
-  }
-  _ => String("")
+  [{ val: String(s), .. }, { val: StringView(char_set), .. }] =>
+    StringView(s.trim(char_set))
+  _ => StringView("")
 }
 
 ///|
 let string_trim_start_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: String(s), .. }, ..] => {
-    // 使用原生trim_start方法，去除开头空白字符
-    let whitespace = " \t\n\r"
-    String(s.trim_start(whitespace).to_string())
-  }
-  _ => String("")
+  [{ val: String(s), .. }, { val: StringView(char_set), .. }] =>
+    StringView(s.trim_start(char_set))
+  _ => StringView("")
 }
 
 ///|
 let string_trim_end_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: String(s), .. }, ..] => {
-    // 使用原生trim_end方法，去除结尾空白字符
-    let whitespace = " \t\n\r"
-    String(s.trim_end(whitespace).to_string())
-  }
-  _ => String("")
+  [{ val: String(s), .. }, { val: StringView(char_set), .. }] =>
+    StringView(s.trim_end(char_set))
+  _ => StringView("")
 }
 
 ///|
 let string_trim_space_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: String(s), .. }, ..] => String(s.trim_space().to_string())
-  _ => String("")
+  [{ val: String(s), .. }] => StringView(s.trim_space())
+  _ => StringView("")
 }
 
 ///|
@@ -389,7 +374,19 @@ let string_view_fn : RuntimeFunction = ctx => match ctx.args {
   [
     { val: String(s), .. },
     { val: Int(start_offset), kind: Labelled("start_offset") },
+    { val: Int(end_offset), kind: Labelled("end_offset") },
+    ..,
+  ] => StringView(s.view(start_offset~, end_offset~))
+  [
+    { val: String(s), .. },
+    { val: Int(start_offset), kind: Labelled("start_offset") },
     ..,
   ] => StringView(s.view(start_offset~))
-  _ => String("")
+  [
+    { val: String(s), .. },
+    { val: Int(end_offset), kind: Labelled("end_offset") },
+    ..,
+  ] => StringView(s.view(end_offset~))
+  [{ val: String(s), .. }] => StringView(s.view())
+  _ => StringView("")
 }
