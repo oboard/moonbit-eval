@@ -27,8 +27,7 @@ let option_unwrap_fn : RuntimeFunction = ctx => match ctx.args {
     },
     ..,
   ] => inner_value
-  [{ val: Constructor({ val: { name: "None", fields: [] }, .. }), .. }, ..] =>
-    Unit
+  [{ val: Constructor({ val: { name: "None", fields: [] }, .. }), .. }] => Unit
   _ => Unit
 }
 
@@ -194,7 +193,7 @@ let option_flatten_fn : RuntimeFunction = ctx => match ctx.args {
     },
     ..,
   ] => ctx.mod.cons("None", [])
-  [{ val: Constructor({ val: { name: "None", fields: [] }, .. }), .. }, ..] =>
+  [{ val: Constructor({ val: { name: "None", fields: [] }, .. }), .. }] =>
     ctx.mod.cons("None", [])
   _ => ctx.mod.cons("None", [])
 }
@@ -202,9 +201,8 @@ let option_flatten_fn : RuntimeFunction = ctx => match ctx.args {
 ///|
 /// Option is_empty 方法
 let option_is_empty_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Constructor({ val: { name: "Some", .. }, .. }), .. }, ..] =>
-    Bool(false)
-  [{ val: Constructor({ val: { name: "None", fields: [] }, .. }), .. }, ..] =>
+  [{ val: Constructor({ val: { name: "Some", .. }, .. }), .. }] => Bool(false)
+  [{ val: Constructor({ val: { name: "None", fields: [] }, .. }), .. }] =>
     Bool(true)
   _ => Bool(true)
 }
@@ -275,7 +273,7 @@ let option_unwrap_or_default_fn : RuntimeFunction = ctx => match ctx.args {
     },
     ..,
   ] => inner_value
-  [{ val: Constructor({ val: { name: "None", fields: [] }, .. }), .. }, ..] =>
+  [{ val: Constructor({ val: { name: "None", fields: [] }, .. }), .. }] =>
     // 返回默认值，对于数值类型返回0，其他类型返回Unit
     // 这里简化实现，实际应该根据泛型类型参数确定默认值
     Int(0)

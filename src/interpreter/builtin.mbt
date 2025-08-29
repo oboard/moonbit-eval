@@ -155,13 +155,13 @@ let core_embedded_methods : Map[String, Map[String, RuntimeFunction]] = {
 
 ///|
 let typeof_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: value, .. }, ..] => String(ctx.mod.env.type_of(value).to_string())
+  [{ val: value, .. }] => String(ctx.mod.env.type_of(value).to_string())
   _ => Unit
 }
 
 ///|
 let println_mono_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: value, .. }, ..] => {
+  [{ val: value, .. }] => {
     println(value)
     Unit
   }
@@ -173,35 +173,35 @@ let println_mono_fn : RuntimeFunction = ctx => match ctx.args {
 ///|
 /// 整数取负
 let int_neg_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Int(i), .. }, ..] => Int(-i)
+  [{ val: Int(i), .. }] => Int(-i)
   _ => Unit
 }
 
 ///|
 /// 整数加法
 let int_add_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Int(a), .. }, { val: Int(b), .. }, ..] => Int(a + b)
+  [{ val: Int(a), .. }, { val: Int(b), .. }] => Int(a + b)
   _ => Unit
 }
 
 ///|
 /// 整数减法
 let int_sub_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Int(a), .. }, { val: Int(b), .. }, ..] => Int(a - b)
+  [{ val: Int(a), .. }, { val: Int(b), .. }] => Int(a - b)
   _ => Unit
 }
 
 ///|
 /// 整数乘法
 let int_mul_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Int(a), .. }, { val: Int(b), .. }, ..] => Int(a * b)
+  [{ val: Int(a), .. }, { val: Int(b), .. }] => Int(a * b)
   _ => Unit
 }
 
 ///|
 /// 整数除法
 let int_div_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Int(a), .. }, { val: Int(b), .. }, ..] =>
+  [{ val: Int(a), .. }, { val: Int(b), .. }] =>
     if b != 0 {
       Int(a / b)
     } else {
@@ -214,7 +214,7 @@ let int_div_fn : RuntimeFunction = ctx => match ctx.args {
 ///|
 /// 整数取模
 let int_mod_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Int(a), .. }, { val: Int(b), .. }, ..] =>
+  [{ val: Int(a), .. }, { val: Int(b), .. }] =>
     if b != 0 {
       Int(a % b)
     } else {
@@ -233,7 +233,7 @@ let ignore_fn : RuntimeFunction = _ctx => Unit
 ///|
 /// physical_equal 函数 - 检查两个值是否物理相等
 let physical_equal_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: a, .. }, { val: b, .. }, ..] => Bool(physical_equal(a, b))
+  [{ val: a, .. }, { val: b, .. }] => Bool(physical_equal(a, b))
   _ => Bool(false)
 }
 
@@ -247,7 +247,7 @@ let panic_fn : RuntimeFunction = _ctx => {
 ///|
 /// abort 函数 - 触发 abort
 let abort_fn : RuntimeFunction = ctx => {
-  if ctx.args is [{ val: String(msg), .. }, ..] {
+  if ctx.args is [{ val: String(msg), .. }] {
     error("abort: \{msg}")
   }
   Unit
@@ -257,8 +257,7 @@ let abort_fn : RuntimeFunction = ctx => {
 
 ///|
 /// 布尔 NOT 运算
-let bool_not_fn : RuntimeFunction = ctx => if ctx.args
-  is [{ val: Bool(b), .. }, ..] {
+let bool_not_fn : RuntimeFunction = ctx => if ctx.args is [{ val: Bool(b), .. }] {
   Bool(not(b))
 } else {
   Unit
@@ -267,14 +266,14 @@ let bool_not_fn : RuntimeFunction = ctx => if ctx.args
 ///|
 /// 布尔相等比较
 let bool_eq_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Bool(a), .. }, { val: Bool(b), .. }, ..] => Bool(a == b)
+  [{ val: Bool(a), .. }, { val: Bool(b), .. }] => Bool(a == b)
   _ => Bool(false)
 }
 
 ///|
 /// 布尔比较
 let bool_compare_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Bool(a), .. }, { val: Bool(b), .. }, ..] =>
+  [{ val: Bool(a), .. }, { val: Bool(b), .. }] =>
     if a == b {
       Int(0)
     } else if a {
@@ -294,67 +293,67 @@ let bool_default_fn : RuntimeFunction = _ctx => Bool(false)
 ///|
 /// 转换为 Double
 let to_double_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Int(i), .. }, ..] => Double(i.to_double())
-  [{ val: Float(f), .. }, ..] => Double(f.to_double())
-  [{ val: Double(d), .. }, ..] => Double(d)
-  [{ val: UInt(u), .. }, ..] => Double(u.to_double())
-  [{ val: Int64(i64), .. }, ..] => Double(i64.to_double())
-  [{ val: UInt64(u64), .. }, ..] => Double(u64.to_double())
+  [{ val: Int(i), .. }] => Double(i.to_double())
+  [{ val: Float(f), .. }] => Double(f.to_double())
+  [{ val: Double(d), .. }] => Double(d)
+  [{ val: UInt(u), .. }] => Double(u.to_double())
+  [{ val: Int64(i64), .. }] => Double(i64.to_double())
+  [{ val: UInt64(u64), .. }] => Double(u64.to_double())
   _ => Unit
 }
 
 ///|
 /// 转换为 Float
 let to_float_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Int(i), .. }, ..] => Float(i.to_float())
-  [{ val: Float(f), .. }, ..] => Float(f)
-  [{ val: Double(d), .. }, ..] => Float(d.to_float())
-  [{ val: UInt(u), .. }, ..] => Float(u.to_float())
+  [{ val: Int(i), .. }] => Float(i.to_float())
+  [{ val: Float(f), .. }] => Float(f)
+  [{ val: Double(d), .. }] => Float(d.to_float())
+  [{ val: UInt(u), .. }] => Float(u.to_float())
   _ => Unit
 }
 
 ///|
 /// 转换为 Byte
 let to_byte_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Int(i), .. }, ..] => Byte(i.to_byte())
-  [{ val: UInt(u), .. }, ..] => Byte(u.to_byte())
-  [{ val: Byte(b), .. }, ..] => Byte(b)
+  [{ val: Int(i), .. }] => Byte(i.to_byte())
+  [{ val: UInt(u), .. }] => Byte(u.to_byte())
+  [{ val: Byte(b), .. }] => Byte(b)
   _ => Unit
 }
 
 ///|
 /// 转换为 Int16 (使用 Int 表示)
 let to_int16_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Int(i), .. }, ..] => Int(i & 0xFFFF)
-  [{ val: UInt(u), .. }, ..] => Int(u.reinterpret_as_int() & 0xFFFF)
+  [{ val: Int(i), .. }] => Int(i & 0xFFFF)
+  [{ val: UInt(u), .. }] => Int(u.reinterpret_as_int() & 0xFFFF)
   _ => Unit
 }
 
 ///|
 /// 转换为 UInt16 
 let to_uint16_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Int(i), .. }, ..] => UInt16(i.to_uint16())
+  [{ val: Int(i), .. }] => UInt16(i.to_uint16())
   _ => Unit
 }
 
 ///|
 /// 转换为 Int64
 let to_int64_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Int(i), .. }, ..] => Int64(i.to_int64())
-  [{ val: UInt(u), .. }, ..] => Int64(u.to_int64())
-  [{ val: Int64(i64), .. }, ..] => Int64(i64)
-  [{ val: UInt64(u64), .. }, ..] => Int64(u64.reinterpret_as_int64())
-  [{ val: Double(d), .. }, ..] => Int64(d.to_int64())
+  [{ val: Int(i), .. }] => Int64(i.to_int64())
+  [{ val: UInt(u), .. }] => Int64(u.to_int64())
+  [{ val: Int64(i64), .. }] => Int64(i64)
+  [{ val: UInt64(u64), .. }] => Int64(u64.reinterpret_as_int64())
+  [{ val: Double(d), .. }] => Int64(d.to_int64())
   _ => Unit
 }
 
 ///|
 /// 转换为 UInt64
 let to_uint64_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Int(i), .. }, ..] => UInt64(i.to_uint64())
-  [{ val: UInt(u), .. }, ..] => UInt64(u.to_uint64())
-  [{ val: Int64(i64), .. }, ..] => UInt64(i64.reinterpret_as_uint64())
-  [{ val: UInt64(u64), .. }, ..] => UInt64(u64)
+  [{ val: Int(i), .. }] => UInt64(i.to_uint64())
+  [{ val: UInt(u), .. }] => UInt64(u.to_uint64())
+  [{ val: Int64(i64), .. }] => UInt64(i64.reinterpret_as_uint64())
+  [{ val: UInt64(u64), .. }] => UInt64(u64)
   _ => Unit
 }
 
@@ -363,63 +362,63 @@ let to_uint64_fn : RuntimeFunction = ctx => match ctx.args {
 ///|
 /// UInt 加法
 let uint_add_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: UInt(a), .. }, { val: UInt(b), .. }, ..] => UInt(a + b)
+  [{ val: UInt(a), .. }, { val: UInt(b), .. }] => UInt(a + b)
   _ => Unit
 }
 
 ///|
 /// UInt 减法
 let uint_sub_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: UInt(a), .. }, { val: UInt(b), .. }, ..] => UInt(a - b)
+  [{ val: UInt(a), .. }, { val: UInt(b), .. }] => UInt(a - b)
   _ => Unit
 }
 
 ///|
 /// UInt 乘法
 let uint_mul_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: UInt(a), .. }, { val: UInt(b), .. }, ..] => UInt(a * b)
+  [{ val: UInt(a), .. }, { val: UInt(b), .. }] => UInt(a * b)
   _ => Unit
 }
 
 ///|
 /// UInt 除法
 let uint_div_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: UInt(a), .. }, { val: UInt(b), .. }, ..] => UInt(a / b)
+  [{ val: UInt(a), .. }, { val: UInt(b), .. }] => UInt(a / b)
   _ => Unit
 }
 
 ///|
 /// UInt 取模
 let uint_mod_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: UInt(a), .. }, { val: UInt(b), .. }, ..] => UInt(a % b)
+  [{ val: UInt(a), .. }, { val: UInt(b), .. }] => UInt(a % b)
   _ => Unit
 }
 
 ///|
 /// UInt 相等比较
 let uint_eq_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: UInt(a), .. }, { val: UInt(b), .. }, ..] => Bool(a == b)
+  [{ val: UInt(a), .. }, { val: UInt(b), .. }] => Bool(a == b)
   _ => Unit
 }
 
 ///|
 /// UInt 比较
 let uint_compare_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: UInt(a), .. }, { val: UInt(b), .. }, ..] => Int(a.compare(b))
+  [{ val: UInt(a), .. }, { val: UInt(b), .. }] => Int(a.compare(b))
   _ => Unit
 }
 
 ///|
 /// UInt 转 Int
 let uint_to_int_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: UInt(u), .. }, ..] => Int(u.reinterpret_as_int())
+  [{ val: UInt(u), .. }] => Int(u.reinterpret_as_int())
   _ => Unit
 }
 
 ///|
 /// UInt 转 Double
 let uint_to_double_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: UInt(u), .. }, ..] => Double(u.to_double())
+  [{ val: UInt(u), .. }] => Double(u.to_double())
   _ => Unit
 }
 
@@ -428,49 +427,49 @@ let uint_to_double_fn : RuntimeFunction = ctx => match ctx.args {
 ///|
 /// Float 加法
 let float_add_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Float(a), .. }, { val: Float(b), .. }, ..] => Float(a + b)
+  [{ val: Float(a), .. }, { val: Float(b), .. }] => Float(a + b)
   _ => Unit
 }
 
 ///|
 /// Float 减法
 let float_sub_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Float(a), .. }, { val: Float(b), .. }, ..] => Float(a - b)
+  [{ val: Float(a), .. }, { val: Float(b), .. }] => Float(a - b)
   _ => Unit
 }
 
 ///|
 /// Float 乘法
 let float_mul_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Float(a), .. }, { val: Float(b), .. }, ..] => Float(a * b)
+  [{ val: Float(a), .. }, { val: Float(b), .. }] => Float(a * b)
   _ => Unit
 }
 
 ///|
 /// Float 除法
 let float_div_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Float(a), .. }, { val: Float(b), .. }, ..] => Float(a / b)
+  [{ val: Float(a), .. }, { val: Float(b), .. }] => Float(a / b)
   _ => Unit
 }
 
 ///|
 /// Float 相等比较
 let float_eq_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Float(a), .. }, { val: Float(b), .. }, ..] => Bool(a == b)
+  [{ val: Float(a), .. }, { val: Float(b), .. }] => Bool(a == b)
   _ => Unit
 }
 
 ///|
 /// Float 比较
 let float_compare_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Float(a), .. }, { val: Float(b), .. }, ..] => Int(a.compare(b))
+  [{ val: Float(a), .. }, { val: Float(b), .. }] => Int(a.compare(b))
   _ => Unit
 }
 
 ///|
 /// Float 转 Double
 let float_to_double_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Float(f), .. }, ..] => Double(f.to_double())
+  [{ val: Float(f), .. }] => Double(f.to_double())
   _ => Unit
 }
 
@@ -479,49 +478,49 @@ let float_to_double_fn : RuntimeFunction = ctx => match ctx.args {
 ///|
 /// Double 加法
 let double_add_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Double(a), .. }, { val: Double(b), .. }, ..] => Double(a + b)
+  [{ val: Double(a), .. }, { val: Double(b), .. }] => Double(a + b)
   _ => Unit
 }
 
 ///|
 /// Double 减法
 let double_sub_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Double(a), .. }, { val: Double(b), .. }, ..] => Double(a - b)
+  [{ val: Double(a), .. }, { val: Double(b), .. }] => Double(a - b)
   _ => Unit
 }
 
 ///|
 /// Double 乘法
 let double_mul_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Double(a), .. }, { val: Double(b), .. }, ..] => Double(a * b)
+  [{ val: Double(a), .. }, { val: Double(b), .. }] => Double(a * b)
   _ => Unit
 }
 
 ///|
 /// Double 除法
 let double_div_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Double(a), .. }, { val: Double(b), .. }, ..] => Double(a / b)
+  [{ val: Double(a), .. }, { val: Double(b), .. }] => Double(a / b)
   _ => Unit
 }
 
 ///|
 /// Double 相等比较
 let double_eq_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Double(a), .. }, { val: Double(b), .. }, ..] => Bool(a == b)
+  [{ val: Double(a), .. }, { val: Double(b), .. }] => Bool(a == b)
   _ => Unit
 }
 
 ///|
 /// Double 比较
 let double_compare_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Double(a), .. }, { val: Double(b), .. }, ..] => Int(a.compare(b))
+  [{ val: Double(a), .. }, { val: Double(b), .. }] => Int(a.compare(b))
   _ => Unit
 }
 
 ///|
 /// Double 转 Int64
 let double_to_int64_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Double(d), .. }, ..] => Int64(d.to_int64())
+  [{ val: Double(d), .. }] => Int64(d.to_int64())
   _ => Unit
 }
 
@@ -530,35 +529,35 @@ let double_to_int64_fn : RuntimeFunction = ctx => match ctx.args {
 ///|
 /// Char 相等比较
 let char_eq_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Char(a), .. }, { val: Char(b), .. }, ..] => Bool(a == b)
+  [{ val: Char(a), .. }, { val: Char(b), .. }] => Bool(a == b)
   _ => Unit
 }
 
 ///|
 /// Char 比较
 let char_compare_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Char(a), .. }, { val: Char(b), .. }, ..] => Int(a.compare(b))
+  [{ val: Char(a), .. }, { val: Char(b), .. }] => Int(a.compare(b))
   _ => Unit
 }
 
 ///|
 /// Char 转 Int
 let char_to_int_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Char(c), .. }, ..] => Int(c.to_int())
+  [{ val: Char(c), .. }] => Int(c.to_int())
   _ => Unit
 }
 
 ///|
 /// Char 转 String
 let char_to_string_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Char(c), .. }, ..] => String(c.to_string())
+  [{ val: Char(c), .. }] => String(c.to_string())
   _ => Unit
 }
 
 ///|
 /// Char 从 Int 构造
 let char_from_int_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Int(i), .. }, ..] => Char(i.unsafe_to_char())
+  [{ val: Int(i), .. }] => Char(i.unsafe_to_char())
   _ => Unit
 }
 
@@ -567,28 +566,28 @@ let char_from_int_fn : RuntimeFunction = ctx => match ctx.args {
 ///|
 /// Byte 相等比较
 let byte_eq_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Byte(a), .. }, { val: Byte(b), .. }, ..] => Bool(a == b)
+  [{ val: Byte(a), .. }, { val: Byte(b), .. }] => Bool(a == b)
   _ => Unit
 }
 
 ///|
 /// Byte 比较
 let byte_compare_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Byte(a), .. }, { val: Byte(b), .. }, ..] => Int(a.compare(b))
+  [{ val: Byte(a), .. }, { val: Byte(b), .. }] => Int(a.compare(b))
   _ => Unit
 }
 
 ///|
 /// Byte 转 Int
 let byte_to_int_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Byte(b), .. }, ..] => Int(b.to_int())
+  [{ val: Byte(b), .. }] => Int(b.to_int())
   _ => Unit
 }
 
 ///|
 /// Byte 转 UInt
 let byte_to_uint_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Byte(b), .. }, ..] => UInt(b.to_uint())
+  [{ val: Byte(b), .. }] => UInt(b.to_uint())
   _ => Unit
 }
 
@@ -597,63 +596,63 @@ let byte_to_uint_fn : RuntimeFunction = ctx => match ctx.args {
 ///|
 /// Int64 加法
 let int64_add_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Int64(a), .. }, { val: Int64(b), .. }, ..] => Int64(a + b)
+  [{ val: Int64(a), .. }, { val: Int64(b), .. }] => Int64(a + b)
   _ => Unit
 }
 
 ///|
 /// Int64 减法
 let int64_sub_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Int64(a), .. }, { val: Int64(b), .. }, ..] => Int64(a - b)
+  [{ val: Int64(a), .. }, { val: Int64(b), .. }] => Int64(a - b)
   _ => Unit
 }
 
 ///|
 /// Int64 乘法
 let int64_mul_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Int64(a), .. }, { val: Int64(b), .. }, ..] => Int64(a * b)
+  [{ val: Int64(a), .. }, { val: Int64(b), .. }] => Int64(a * b)
   _ => Unit
 }
 
 ///|
 /// Int64 除法
 let int64_div_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Int64(a), .. }, { val: Int64(b), .. }, ..] => Int64(a / b)
+  [{ val: Int64(a), .. }, { val: Int64(b), .. }] => Int64(a / b)
   _ => Unit
 }
 
 ///|
 /// Int64 取模
 let int64_mod_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Int64(a), .. }, { val: Int64(b), .. }, ..] => Int64(a % b)
+  [{ val: Int64(a), .. }, { val: Int64(b), .. }] => Int64(a % b)
   _ => Unit
 }
 
 ///|
 /// Int64 相等比较
 let int64_eq_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Int64(a), .. }, { val: Int64(b), .. }, ..] => Bool(a == b)
+  [{ val: Int64(a), .. }, { val: Int64(b), .. }] => Bool(a == b)
   _ => Unit
 }
 
 ///|
 /// Int64 比较
 let int64_compare_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Int64(a), .. }, { val: Int64(b), .. }, ..] => Int(a.compare(b))
+  [{ val: Int64(a), .. }, { val: Int64(b), .. }] => Int(a.compare(b))
   _ => Unit
 }
 
 ///|
 /// Int64 转 Int
 let int64_to_int_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Int64(i64), .. }, ..] => Int(i64.to_int())
+  [{ val: Int64(i64), .. }] => Int(i64.to_int())
   _ => Unit
 }
 
 ///|
 /// Int64 转 Double
 let int64_to_double_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Int64(i64), .. }, ..] => Double(i64.to_double())
+  [{ val: Int64(i64), .. }] => Double(i64.to_double())
   _ => Unit
 }
 
@@ -662,62 +661,62 @@ let int64_to_double_fn : RuntimeFunction = ctx => match ctx.args {
 ///|
 /// UInt64 加法
 let uint64_add_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: UInt64(a), .. }, { val: UInt64(b), .. }, ..] => UInt64(a + b)
+  [{ val: UInt64(a), .. }, { val: UInt64(b), .. }] => UInt64(a + b)
   _ => Unit
 }
 
 ///|
 /// UInt64 减法
 let uint64_sub_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: UInt64(a), .. }, { val: UInt64(b), .. }, ..] => UInt64(a - b)
+  [{ val: UInt64(a), .. }, { val: UInt64(b), .. }] => UInt64(a - b)
   _ => Unit
 }
 
 ///|
 /// UInt64 乘法
 let uint64_mul_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: UInt64(a), .. }, { val: UInt64(b), .. }, ..] => UInt64(a * b)
+  [{ val: UInt64(a), .. }, { val: UInt64(b), .. }] => UInt64(a * b)
   _ => Unit
 }
 
 ///|
 /// UInt64 除法
 let uint64_div_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: UInt64(a), .. }, { val: UInt64(b), .. }, ..] => UInt64(a / b)
+  [{ val: UInt64(a), .. }, { val: UInt64(b), .. }] => UInt64(a / b)
   _ => Unit
 }
 
 ///|
 /// UInt64 取模
 let uint64_mod_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: UInt64(a), .. }, { val: UInt64(b), .. }, ..] => UInt64(a % b)
+  [{ val: UInt64(a), .. }, { val: UInt64(b), .. }] => UInt64(a % b)
   _ => Unit
 }
 
 ///|
 /// UInt64 相等比较
 let uint64_eq_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: UInt64(a), .. }, { val: UInt64(b), .. }, ..] => Bool(a == b)
+  [{ val: UInt64(a), .. }, { val: UInt64(b), .. }] => Bool(a == b)
   _ => Unit
 }
 
 ///|
 /// UInt64 比较
 let uint64_compare_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: UInt64(a), .. }, { val: UInt64(b), .. }, ..] => Int(a.compare(b))
+  [{ val: UInt64(a), .. }, { val: UInt64(b), .. }] => Int(a.compare(b))
   _ => Unit
 }
 
 ///|
 /// UInt64 转 UInt
 let uint64_to_uint_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: UInt64(u64), .. }, ..] => UInt(u64.to_uint())
+  [{ val: UInt64(u64), .. }] => UInt(u64.to_uint())
   _ => Unit
 }
 
 ///|
 /// UInt64 转 Int64
 let uint64_to_int64_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: UInt64(u64), .. }, ..] => Int64(u64.reinterpret_as_int64())
+  [{ val: UInt64(u64), .. }] => Int64(u64.reinterpret_as_int64())
   _ => Unit
 }
