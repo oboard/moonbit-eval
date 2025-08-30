@@ -89,17 +89,23 @@ fn[A] ClosureInterpreter::error(Self, String) -> A raise ControlFlow
 fn ClosureInterpreter::execute_match_runtime(Self, RuntimeValue, @list.List[@syntax.Case]) -> RuntimeValue raise ControlFlow
 fn ClosureInterpreter::format_patterns(Self, @list.List[@syntax.Case]) -> String
 fn ClosureInterpreter::get_function_type_string(Self, RuntimeValue) -> String
+fn ClosureInterpreter::interp_string(Self, @list.List[@syntax.InterpElem]) -> String raise ControlFlow
 fn ClosureInterpreter::is_known_function(Self, String) -> Bool
 fn ClosureInterpreter::lookup_current_function(Self) -> String
 fn ClosureInterpreter::new() -> Self
+fn ClosureInterpreter::pattern_matches_runtime(Self, RuntimeValue, @syntax.Pattern) -> Bool
+fn ClosureInterpreter::pattern_to_runtime_value(Self, @syntax.Pattern) -> RuntimeValue?
 fn ClosureInterpreter::pattern_to_value(Self, @syntax.Pattern) -> @syntax.Expr?
 fn ClosureInterpreter::pop_scope(Self) -> Unit
 fn ClosureInterpreter::push_scope(Self, RuntimeLocation) -> Unit
+fn ClosureInterpreter::runtime_value_in_range(Self, RuntimeValue, @syntax.Pattern, @syntax.Pattern, Bool) -> Bool
 fn ClosureInterpreter::start(Self) -> Unit
 fn ClosureInterpreter::stop(Self) -> Unit
 fn ClosureInterpreter::top_visit(Self, @syntax.Impl) -> RuntimeValue raise ControlFlow
 fn ClosureInterpreter::value_in_range(Self, @syntax.Expr, @syntax.Pattern, @syntax.Pattern, Bool) -> Bool
 fn ClosureInterpreter::visit(Self, @syntax.Expr) -> RuntimeValue raise ControlFlow
+fn ClosureInterpreter::visit_interp(Self, @list.List[@syntax.InterpElem]) -> RuntimeValue raise ControlFlow
+fn ClosureInterpreter::visit_multiline_string(Self, @list.List[@syntax.MultilineStringElem]) -> RuntimeValue raise ControlFlow
 fn ClosureInterpreter::visit_scoped(Self, @syntax.Expr, RuntimeLocation) -> RuntimeValue raise ControlFlow
 
 pub(all) struct ConstructorField {
@@ -187,6 +193,7 @@ pub(all) struct RuntimeModule {
   mut env : RuntimeEnvironment
   deps : Map[String, RuntimeModule]
 }
+fn RuntimeModule::check_type_constraint(Self, RuntimeValue, @syntax.Type) -> Bool
 fn RuntimeModule::cons(Self, String, Array[RuntimeValue]) -> RuntimeValue
 fn RuntimeModule::cons_with_labels(Self, String, Array[(String?, RuntimeValue, Bool)]) -> RuntimeValue
 fn RuntimeModule::new(String, deps~ : Map[String, Self], (RuntimeEnvironment, (String) -> (String?, RuntimeValue)) -> Map[String, (String?, RuntimeValue)]) -> Self
