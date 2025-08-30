@@ -331,6 +331,90 @@ fn RuntimeValue::from_constant(c : @syntax.Constant) -> RuntimeValue {
 }
 
 ///|
+/// 从@syntax.Type中提取简单的类型名
+pub fn extract_type_name(ty : @syntax.Type) -> String {
+  match ty {
+    Name(constr_id={ id: Ident(name~), .. }, ..) => name
+    Name(constr_id={ id: Dot(id~, ..), .. }, ..) => id
+    _ => "Any"
+  }
+}
+
+///|
+/// 重载字面量转换 - 将默认类型的RuntimeValue转换为期望的类型
+/// 遵循MoonBit重载字面量规则，同时支持模式匹配中的隐式转换
+pub fn RuntimeValue::overload_literal(
+  self : RuntimeValue,
+  expected_type : String,
+) -> RuntimeValue {
+  match (self, expected_type) {
+    // 数字字面量重载 (默认Int -> 其他数字类型)
+    (Int(i), "UInt") => UInt(i.reinterpret_as_uint())
+    (Int(i), "Int64") => Int64(i.to_int64())
+    (Int(i), "UInt64") => UInt64(i.to_uint64())
+    (Int(i), "UInt16") => UInt16(i.to_uint16())
+    (Int(i), "Byte") => Byte(i.to_byte())
+    (Int(i), "Double") => Double(i.to_double())
+    (Int(i), "Float") => Float(i.to_float())
+    (Int(i), "BigInt") => BigInt(BigInt::from_int(i))
+
+    // 字符串字面量重载 (默认String -> Bytes)
+    (String(s), "Bytes") => Bytes(@encoding.encode(UTF8, s))
+
+    // 字符字面量重载 (默认Char -> Int/Byte)
+    (Char(c), "Int") => Int(c.to_int())
+    (Char(c), "Byte") => Byte(c.to_int().to_byte())
+
+    // 浮点数字面量重载 (默认Double -> Float)
+    (Double(d), "Float") => Float(d.to_float())
+
+    // 模式匹配中的隐式转换
+    (Array(arr), "ArrayView") => ArrayView(arr)
+
+    // Array[Char] -> String 转换
+    (Array(arr), "String") => {
+      let chars = []
+      for i = 0; i < arr.length(); i = i + 1 {
+        match arr[i] {
+          Char(c) => chars.push(c)
+          _ => return self // 如果不是Char数组，返回原值
+        }
+      }
+      String(String::from_array(chars))
+    }
+
+    // Array[Int] -> Bytes 转换
+    (Array(arr), "Bytes") => {
+      let bytes = []
+      for i = 0; i < arr.length(); i = i + 1 {
+        match arr[i] {
+          Int(n) => bytes.push(n.to_byte())
+          Byte(b) => bytes.push(b)
+          _ => return self // 如果不是Int数组，返回原值
+        }
+      }
+      Bytes(Bytes::from_array(bytes))
+    }
+
+    // 如果类型匹配或无法转换，返回原值
+    _ => self
+  }
+}
+
+///|
+/// 带期望类型的常量创建函数
+pub fn RuntimeValue::from_constant_with_type(
+  c : @syntax.Constant,
+  expected_type : String?,
+) -> RuntimeValue {
+  let default_value = RuntimeValue::from_constant(c)
+  match expected_type {
+    Some(ty) => default_value.overload_literal(ty)
+    None => default_value
+  }
+}
+
+///|
 /// 比较两个可选类型是否相等
 fn compare_optional_types(ty_a : @syntax.Type?, ty_b : @syntax.Type?) -> Bool {
   match (ty_a, ty_b) {
@@ -433,11 +517,91 @@ pub fn RuntimeValue::is_reference(self : RuntimeValue) -> Bool {
 }
 
 ///|
+/// 检查数组元素是否可以重载为指定类型
+fn can_overload_array_elements(
+  elements : Array[RuntimeValue],
+  element_type : String,
+) -> Bool {
+  let mut all_match = true
+  for elem in elements {
+    match (elem, element_type) {
+      (Int(_), "Byte") => continue
+      (Char(_), "Char") => continue
+      (Int(_), "Int") => continue
+      (Double(_), "Double") => continue
+      (String(_), "String") => continue
+      _ => {
+        all_match = false
+        break
+      }
+    }
+  }
+  all_match
+}
+
+///|
+/// 重载数组字面量 - 支持组合重载如[1,2,3] -> Bytes
+pub fn RuntimeValue::overload_array_literal(
+  self : RuntimeValue,
+  expected_type : String,
+) -> RuntimeValue {
+  match (self, expected_type) {
+    (Array(elements), "Bytes") =>
+      if can_overload_array_elements(elements, "Byte") {
+        let bytes = elements.map(fn(elem) {
+          match elem.overload_literal("Byte") {
+            Byte(b) => b
+            _ => 0
+          }
+        })
+        Bytes(Bytes::from_array(bytes))
+      } else {
+        self
+      }
+    (Array(elements), "String") =>
+      if can_overload_array_elements(elements, "Char") {
+        let chars = elements.map(fn(elem) {
+          match elem {
+            Char(c) => c
+            _ => ' '
+          }
+        })
+        String(String::from_array(chars))
+      } else {
+        self
+      }
+    (Array(elements), "ArrayView") => ArrayView(elements[:])
+    _ => self
+  }
+}
+
+///|
 /// 检查值是否为可变类型
 pub fn RuntimeValue::is_mutable(self : RuntimeValue) -> Bool {
   match self {
     Struct(_) => true
     _ => false
+  }
+}
+
+///|
+/// 从类型名称推断期望的RuntimeValue类型
+pub fn get_expected_runtime_type(type_name : String) -> String? {
+  match type_name {
+    "Int" => Some("Int")
+    "UInt" => Some("UInt")
+    "Int64" => Some("Int64")
+    "UInt64" => Some("UInt64")
+    "UInt16" => Some("UInt16")
+    "Byte" => Some("Byte")
+    "Double" => Some("Double")
+    "Float" => Some("Float")
+    "BigInt" => Some("BigInt")
+    "String" => Some("String")
+    "Bytes" => Some("Bytes")
+    "Char" => Some("Char")
+    "Bool" => Some("Bool")
+    _ => None
   }
 }
 
@@ -473,10 +637,7 @@ pub impl Show for RuntimeValue with to_string(self) -> String {
       let parts = values.map(fn(v) { v.to_string() })
       "[" + parts.join(", ") + "]"
     }
-    ArrayView(values) => {
-      let parts = values.map(fn(v) { v.to_string() })
-      "[" + parts.join(", ") + "]"
-    }
+    ArrayView(values) => values.to_string()
     UninitializedArray(_) => "<uninitialized_array>"
     Map(m) => {
       let parts = []
@@ -494,7 +655,7 @@ pub impl Show for RuntimeValue with to_string(self) -> String {
       fields.val.each(fn(field_name, field_value) {
         parts.push(field_name + ": " + field_value.to_string())
       })
-      "{ " + parts.join(", ") + " }"
+      "{" + parts.join(", ") + "}"
     }
     Constructor({ val: { name, fields }, .. }) =>
       // Format constructor call with field names if present

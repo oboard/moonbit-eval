@@ -233,7 +233,7 @@ pub fn[A] ClosureInterpreter::error(
   self : ClosureInterpreter,
   msg : String,
 ) -> A raise ControlFlow {
-  error("\{self.lookup_current_function()} \{msg}")
+  error("\{self.lookup_current_function()}\{msg}")
 }
 
 ///|
@@ -242,12 +242,54 @@ pub fn ClosureInterpreter::visit(
   self : ClosureInterpreter,
   node : @syntax.Expr,
 ) -> RuntimeValue raise ControlFlow {
+  self.visit_with_type(node, None)
+}
+
+///|
+/// 从模式中推导类型
+pub fn ClosureInterpreter::infer_pattern_type(
+  _ : ClosureInterpreter,
+  pattern : @syntax.Pattern,
+) -> String? {
+  match pattern {
+    // 类型注解模式，如 x : Int
+    Constraint(pat=_, ty~, ..) =>
+      // 从类型中提取类型名
+      match ty {
+        Name(constr_id={ id: Ident(name=type_name), .. }, ..) => Some(type_name)
+        Name(constr_id={ id: Dot(id=type_name, ..), .. }, ..) => Some(type_name)
+        _ => None
+      }
+    // 变量模式，无法推导类型
+    Var({ name: _, .. }) => None
+    // 构造函数模式，如 Some(x)
+    Constr(constr~, ..) => {
+      let constr_name = constr.name.name
+      // 根据构造函数名推导类型
+      match constr_name {
+        "Some" | "None" => Some("Option")
+        "Ok" | "Err" => Some("Result")
+        _ => None
+      }
+    }
+    // 其他模式暂不支持类型推导
+    _ => None
+  }
+}
+
+///|
+/// 带期望类型的访问语法树节点
+pub fn ClosureInterpreter::visit_with_type(
+  self : ClosureInterpreter,
+  node : @syntax.Expr,
+  expected_type : String?,
+) -> RuntimeValue raise ControlFlow {
   if self.state is InterpreterState::Stopped {
     return Unit
   }
   match node {
-    // 处理常量
-    Constant(c~, ..) => RuntimeValue::from_constant(c)
+    // 处理常量 - 支持重载字面量
+    Constant(c~, ..) => RuntimeValue::from_constant_with_type(c, expected_type)
 
     // 处理变量标识符
     Ident(id={ name, .. }, ..) =>
@@ -331,8 +373,14 @@ pub fn ClosureInterpreter::visit(
     // 处理元组
     Tuple(exprs~, ..) => self.visit_tuple(exprs)
 
-    // 处理数组
-    Array(exprs~, ..) => self.visit_array(exprs)
+    // 处理数组 - 支持重载字面量
+    Array(exprs~, ..) => {
+      let array_result = self.visit_array(exprs)
+      match expected_type {
+        Some(ty) => array_result.overload_array_literal(ty)
+        None => array_result
+      }
+    }
 
     // 处理函数 - 闭包应该捕获对环境的引用以支持可变变量
     Function(func~, ..) =>
@@ -340,8 +388,7 @@ pub fn ClosureInterpreter::visit(
 
     // 处理 Let 绑定
     Let(pattern~, expr~, body~, ..) => {
-      let evaluated_expr = self.visit(expr)
-      ignore(self.pattern_matches_runtime(evaluated_expr, pattern))
+      ignore(self.pattern_matches_runtime(self.visit(expr), pattern))
       self.visit(body)
     }
 
@@ -620,7 +667,13 @@ pub fn ClosureInterpreter::visit(
     }
 
     // 处理 As 表达式 (trait casting)
-    As(expr~, ..) => self.visit(expr)
+    As(expr~, trait_~, ..) => {
+      let value = self.visit(expr)
+      self.current_module.with_ident(trait_.name, fn(_env, _pkg, name) {
+        // 使用重载字面量函数进行类型转换
+        value.overload_literal(name)
+      })
+    }
     RecordUpdate(record~, fields~, ..) =>
       self.visit_record_update(record, fields)
     Method(type_name~, method_name~, ..) =>

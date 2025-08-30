@@ -2,7 +2,7 @@
 /// 运行时模式匹配模块 - 处理所有模式匹配逻辑
 
 ///|
-/// 模式匹配的 RuntimeValue 版本
+/// 检查模式是否匹配给定的运行时值
 pub fn ClosureInterpreter::pattern_matches_runtime(
   self : ClosureInterpreter,
   value : RuntimeValue,
@@ -20,20 +20,14 @@ pub fn ClosureInterpreter::pattern_matches_runtime(
         // 类型检查通过，继续检查模式匹配
         self.pattern_matches_runtime(value, pat)
       } else {
-        // 类型不匹配，尝试隐式转换
-        match (value, ty) {
-          // Char 到 Int 的隐式转换
-          (Char(c), Name(constr_id={ id: Ident(name="Int"), .. }, ..))
-          | (Char(c), Name(constr_id={ id: Dot(id="Int", ..), .. }, ..)) => {
-            let converted_value = Int(c.to_int())
-            self.pattern_matches_runtime(converted_value, pat)
-          }
-          // Array 到 ArrayView
-          (Array(arr), Name(constr_id={ id: Dot(id="ArrayView", ..), .. }, ..)) => {
-            let converted_value = ArrayView(arr)
-            self.pattern_matches_runtime(converted_value, pat)
-          }
-          _ => false
+        // 类型不匹配，尝试字面量重载
+        let expected_type = extract_type_name(ty)
+        let converted_value = value.overload_literal(expected_type)
+        // 如果转换成功（值发生了变化），使用转换后的值继续模式匹配
+        if converted_value != value {
+          self.pattern_matches_runtime(converted_value, pat) // 这里使用转换后的值
+        } else {
+          false
         }
       }
 

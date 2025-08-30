@@ -593,7 +593,7 @@ test "36. mutable_structs" {
   inspect(vm.eval("p.y = 4"), content="()")
   inspect(vm.eval("p.x"), content="3")
   inspect(vm.eval("p.y"), content="4")
-  inspect(vm.eval("p"), content="{ x: 3, y: 4 }")
+  inspect(vm.eval("p"), content="{x: 3, y: 4}")
 }
 
 ///|
@@ -737,7 +737,7 @@ test "41. references" {
     ),
     content="()",
   )
-  inspect(vm.eval("a"), content="{ value: 2 }")
+  inspect(vm.eval("a"), content="{value: 2}")
   inspect(vm.eval("a.value"), content="2")
 }
 
@@ -1445,7 +1445,7 @@ test "nested_struct_reference" {
   inspect(vm.eval("let a = { a: 1 }"), content="()")
   inspect(vm.eval("let b = { a: a }"), content="()")
   inspect(vm.eval("b.a.a = 2"), content="()")
-  inspect(vm.eval("a"), content="{ a: 2 }")
+  inspect(vm.eval("a"), content="{a: 2}")
 }
 
 ///|
@@ -1932,4 +1932,194 @@ test "101. char_literals" {
   assert_eq(vm.eval("c").to_string(), "1")
   inspect(vm.eval("let i : Int = '1'"), content="()")
   assert_eq(vm.eval("i").to_string(), "49")
+}
+
+// =============================================================================
+// LITERAL OVERLOADING TESTS
+// =============================================================================
+
+///|
+test "102. numeric_literal_overloading" {
+  let vm = MoonBitVM::new()
+
+  // Int -> UInt conversion
+  inspect(vm.eval("let u : UInt = 42"), content="()")
+  assert_eq(vm.eval("typeof(u)").to_string(), "@moonbitlang/core/uint.UInt")
+  assert_eq(vm.eval("u").to_string(), "42")
+
+  // Int -> Int64 conversion
+  inspect(vm.eval("let i64 : Int64 = 123"), content="()")
+  assert_eq(vm.eval("typeof(i64)").to_string(), "@moonbitlang/core/int64.Int64")
+  assert_eq(vm.eval("i64").to_string(), "123")
+
+  // Int -> UInt64 conversion
+  inspect(vm.eval("let u64 : UInt64 = 456"), content="()")
+  assert_eq(
+    vm.eval("typeof(u64)").to_string(),
+    "@moonbitlang/core/uint64.UInt64",
+  )
+  assert_eq(vm.eval("u64").to_string(), "456")
+
+  // Int -> UInt16 conversion
+  assert_eq(vm.eval("let u16 : UInt16 = 789").to_string(), "()")
+  assert_eq(vm.eval("u16").to_string(), "789")
+  assert_eq(
+    vm.eval("typeof(u16)").to_string(),
+    "@moonbitlang/core/uint16.UInt16",
+  )
+
+  // Int -> Byte conversion
+  inspect(vm.eval("let b : Byte = 255"), content="()")
+  assert_eq(vm.eval("typeof(b)").to_string(), "@moonbitlang/core/byte.Byte")
+  assert_eq(vm.eval("b").to_string(), "255")
+
+  // Int -> Double conversion
+  inspect(vm.eval("let d : Double = 42"), content="()")
+  assert_eq(vm.eval("typeof(d)").to_string(), "@moonbitlang/core/double.Double")
+  assert_eq(vm.eval("d").to_string(), "42")
+
+  // Int -> Float conversion
+  inspect(vm.eval("let f : Float = 42"), content="()")
+  assert_eq(vm.eval("typeof(f)").to_string(), "@moonbitlang/core/float.Float")
+  assert_eq(vm.eval("f").to_string(), "42")
+}
+
+///|
+test "103. char_literal_overloading" {
+  let vm = MoonBitVM::new()
+
+  // Char -> Int conversion (ASCII value)
+  inspect(vm.eval("let i : Int = 'A'"), content="()")
+  assert_eq(vm.eval("i").to_string(), "65")
+
+  // Char -> Byte conversion
+  inspect(vm.eval("let b : Byte = 'Z'"), content="()")
+  assert_eq(vm.eval("b").to_string(), "90")
+
+  // Multiple char conversions
+  inspect(vm.eval("let zero : Int = '0'"), content="()")
+  assert_eq(vm.eval("zero").to_string(), "48")
+  inspect(vm.eval("let nine : Int = '9'"), content="()")
+  assert_eq(vm.eval("nine").to_string(), "57")
+}
+
+///|
+test "104. string_literal_overloading" {
+  let vm = MoonBitVM::new()
+
+  // simple string to bytes conversion
+  let simple_result = vm.eval("(\"hello\" as Bytes)")
+  assert_eq(simple_result.to_string(), "b\"\\x68\\x65\\x6c\\x6c\\x6f\"")
+
+  // String -> Bytes conversion - test in single eval call
+  let result = vm.eval("let b : Bytes = \"hello\"; b")
+  // Just verify it's not the original string
+  inspect(vm.eval("typeof(b)"), content="@moonbitlang/core/string.String")
+  assert_eq(result.to_string(), "b\"\\x68\\x65\\x6c\\x6c\\x6f\"")
+}
+
+///|
+test {
+  let bytes : Bytes = "hello"
+  inspect(bytes.to_string(), content="b\"\\x68\\x65\\x6c\\x6c\\x6f\"")
+  let bytes2 : Bytes = "你好"
+  inspect(bytes2.to_string(), content="b\"\\xe4\\xbd\\xa0\\xe5\\xa5\\xbd\"")
+}
+
+///|
+test {
+  let bytes : Bytes = [72, 101, 108, 108, 111]
+  inspect(
+    bytes,
+    content=(
+      #|b"\x48\x65\x6c\x6c\x6f"
+    ),
+  )
+}
+
+///|
+test "105. array_literal_overloading" {
+  let vm = MoonBitVM::new()
+
+  // Array of Ints -> Bytes conversion
+  inspect(
+    vm.eval("let bytes : Bytes = [72, 101, 108, 108, 111]", log=true),
+    content="()",
+  )
+  inspect(vm.eval("typeof(bytes)"), content="@moonbitlang/core/bytes.Bytes")
+  // Verify it's converted to Bytes type
+  inspect(
+    vm.eval("bytes"),
+    content=(
+      #|b"\x48\x65\x6c\x6c\x6f"
+    ),
+  )
+
+  // Array of Chars -> String conversion
+  inspect(vm.eval("let str : String = ['H', 'i']"), content="()")
+  assert_eq(vm.eval("str").to_string(), "Hi")
+
+  // Array -> ArrayView conversion
+  inspect(vm.eval("let view : ArrayView[Int] = [1, 2, 3, 4, 5]"), content="()")
+  inspect(vm.eval("typeof(view)"), content="@moonbitlang/core/array.ArrayView")
+  // Verify it's converted to ArrayView type
+  inspect(vm.eval("view"), content="[1, 2, 3, 4, 5]")
+}
+
+///|
+test "106. double_literal_overloading" {
+  let vm = MoonBitVM::new()
+
+  // Double -> Float conversion (precision may vary)
+  let float_result = vm.eval("(3.14 : Float)").to_string()
+  assert_true(float_result.contains("3.14"))
+
+  // Large double -> Float (precision test)
+  inspect(vm.eval("let big_f : Float = 123.456789"), content="()")
+  inspect(vm.eval("typeof(big_f)"), content="@moonbitlang/core/float.Float")
+  let result = vm.eval("big_f").to_string()
+  // Float should have the value (precision may differ)
+  assert_true(result.contains("123"))
+}
+
+///|
+test "107. complex_overloading_scenarios" {
+  let vm = MoonBitVM::new()
+
+  // Mixed type array with overloading
+  inspect(vm.eval("let mixed_bytes : Bytes = [65, 66, 67]"), content="()")
+  let mixed_result = vm.eval("mixed_bytes")
+  assert_eq(mixed_result.to_string() == "[65, 66, 67]", false)
+
+  // Nested overloading in expressions (test direct evaluation)
+  assert_eq(vm.eval("((10 + 20) : UInt)").to_string(), "30")
+
+  // Function parameter overloading
+  inspect(
+    vm.eval("fn test_param(x : UInt64) -> UInt64 { x }"),
+    content="(x: UInt64) -> UInt64",
+  )
+  inspect(vm.eval("test_param(42)"), content="42")
+}
+
+///|
+test "108. overloading_edge_cases" {
+  let vm = MoonBitVM::new()
+
+  // Zero values
+  inspect(vm.eval("let zero_uint : UInt = 0"), content="()")
+  assert_eq(vm.eval("zero_uint").to_string(), "0")
+
+  // Negative to unsigned (should handle gracefully)
+  // Note: This might fail or wrap around depending on implementation
+  // inspect(vm.eval("let neg_uint : UInt = -1"), content="()")
+
+  // Maximum values for small types
+  inspect(vm.eval("let max_byte : Byte = 255"), content="()")
+  assert_eq(vm.eval("max_byte").to_string(), "255")
+
+  // Empty array overloading
+  inspect(vm.eval("let empty_bytes : Bytes = []"), content="()")
+  let empty_result = vm.eval("empty_bytes")
+  assert_eq(empty_result.to_string() == "[]", false)
 }

@@ -34,6 +34,10 @@ fn eval_uint64_op(UInt64, UInt64, String) -> @syntax.Constant
 
 fn eval_uint_op(UInt, UInt, String) -> @syntax.Constant
 
+fn extract_type_name(@syntax.Type) -> String
+
+fn get_expected_runtime_type(String) -> String?
+
 let int_embedded_code : Map[String, (RuntimeFunctionContext) -> RuntimeValue raise ControlFlow]
 
 let int_methods : Map[String, (RuntimeFunctionContext) -> RuntimeValue raise ControlFlow]
@@ -89,6 +93,7 @@ fn[A] ClosureInterpreter::error(Self, String) -> A raise ControlFlow
 fn ClosureInterpreter::execute_match_runtime(Self, RuntimeValue, @list.List[@syntax.Case]) -> RuntimeValue raise ControlFlow
 fn ClosureInterpreter::format_patterns(Self, @list.List[@syntax.Case]) -> String
 fn ClosureInterpreter::get_function_type_string(Self, RuntimeValue) -> String
+fn ClosureInterpreter::infer_pattern_type(Self, @syntax.Pattern) -> String?
 fn ClosureInterpreter::interp_string(Self, @list.List[@syntax.InterpElem]) -> String raise ControlFlow
 fn ClosureInterpreter::is_known_function(Self, String) -> Bool
 fn ClosureInterpreter::lookup_current_function(Self) -> String
@@ -107,6 +112,7 @@ fn ClosureInterpreter::visit(Self, @syntax.Expr) -> RuntimeValue raise ControlFl
 fn ClosureInterpreter::visit_interp(Self, @list.List[@syntax.InterpElem]) -> RuntimeValue raise ControlFlow
 fn ClosureInterpreter::visit_multiline_string(Self, @list.List[@syntax.MultilineStringElem]) -> RuntimeValue raise ControlFlow
 fn ClosureInterpreter::visit_scoped(Self, @syntax.Expr, RuntimeLocation) -> RuntimeValue raise ControlFlow
+fn ClosureInterpreter::visit_with_type(Self, @syntax.Expr, String?) -> RuntimeValue raise ControlFlow
 
 pub(all) struct ConstructorField {
   name : String?
@@ -254,10 +260,13 @@ pub(all) enum RuntimeValue {
   Exception(String)
   Iter(Iter[RuntimeValue])
 }
+fn RuntimeValue::from_constant_with_type(@syntax.Constant, String?) -> Self
 fn RuntimeValue::from_expr(@syntax.Expr) -> Self
 fn RuntimeValue::is_mutable(Self) -> Bool
 fn RuntimeValue::is_reference(Self) -> Bool
 fn RuntimeValue::iter(Self) -> Self
+fn RuntimeValue::overload_array_literal(Self, String) -> Self
+fn RuntimeValue::overload_literal(Self, String) -> Self
 fn RuntimeValue::to_expr(Self) -> @syntax.Expr
 impl Add for RuntimeValue
 impl Compare for RuntimeValue
