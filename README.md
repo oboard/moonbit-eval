@@ -1,5 +1,10 @@
 # MoonBit Eval
 
+[![Version](https://img.shields.io/badge/dynamic/json?url=https%3A//mooncakes.io/assets/oboard/moonbit-eval/resource.json&query=%24.meta_info.version&label=mooncakes&color=yellow)](https://mooncakes.io/docs/oboard/moonbit-eval)
+[![GitHub Workflow Status (with event)](https://img.shields.io/github/actions/workflow/status/oboard/moonbit-eval/check.yaml)](https://github.com/oboard/moonbit-eval/actions/workflows/check.yaml)
+[![License](https://img.shields.io/github/license/oboard/moonbit-eval)](https://github.com/oboard/moonbit-eval/blob/main/LICENSE)
+
+## Demo
 🚀 **[REPL Demo https://moonrepl.oboard.eu.org/](https://moonrepl.oboard.eu.org/)**
 🚀 **[Notebook Demo https://moonbit-notebook.oboard.fun/](https://moonbit-notebook.oboard.fun/)**
 
@@ -110,6 +115,41 @@ inspect(vm.eval("match (1, 2) { (a, b) => a + b }"), content="3")
 | Group expressions | ✅ | Parenthesized expressions for precedence |
 | For-in loops | ✅ | Iterator-based loops |
 | Iterator methods | ✅ | iter, map, filter, reduce, for_each |
+| Nested iteration | ✅ | Complex nested loop structures |
+| Iterator control flow | ✅ | break/continue in iterator contexts |
+| **Package System** | | |
+| Module imports | ✅ | @package.function syntax |
+| Cross-package types | ✅ | Using types from other packages |
+| Built-in packages | ✅ | @int, @math, @bigint, @cmp, @list support |
+| Package method calling | ✅ | Method calls across package boundaries |
+| **IO and FFI** | | |
+| Print functions | ✅ | println and print support |
+| Embedded functions | ✅ | Native function integration via FFI |
+| External function binding | ✅ | Custom function registration |
+| **Sorting and Collections** | | |
+| List sorting | ✅ | Built-in sort methods for collections |
+| Array sorting | ✅ | Sorting operations on arrays |
+| Collection methods | ✅ | Comprehensive collection manipulation |
+| **Comparison Operations** | | |
+| Equality operators | ✅ | == and != operators |
+| Relational operators | ✅ | <, >, <=, >= operators |
+| Type-aware comparison | ✅ | Proper type checking in comparisons |
+| **Constructor Patterns** | | |
+| Single argument matching | ✅ | Constructor pattern with single args |
+| Named field matching | ✅ | Constructor patterns with named fields |
+| Wildcard patterns | ✅ | _ patterns in constructor matching |
+| **Functional Programming** | | |
+| Higher-order functions | ✅ | Functions as first-class values |
+| Function composition | ✅ | Combining functions effectively |
+| Closure environments | ✅ | Proper variable capture in closures |
+| **Literal Overloading** | | |
+| Numeric literal overloading | ✅ | Automatic conversion between numeric types |
+| Character literal overloading | ✅ | Char to Int conversion in pattern matching |
+| String literal overloading | ✅ | String to Bytes conversion |
+| Array literal overloading | ✅ | Array to various types (Bytes, String) conversion |
+| Double literal overloading | ✅ | Double to Float precision conversion |
+| Map literal overloading | ✅ | Map to Json object conversion |
+| Complex overloading scenarios | ✅ | Multi-step type conversions |
 | Traits | 🟡 | Interface definitions |
 | Trait as expressions | 🟡 | (value as Trait) syntax for trait casting |
 | Packages | 🟡 | Module system with @package.function syntax (no trait, trait derive, operator overloading) |
