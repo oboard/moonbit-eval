@@ -768,20 +768,19 @@ pub fn ClosureInterpreter::visit_with_type(
       // 使用迭代器进行迭代
       match iterator {
         Iter(iter_impl) =>
-          for value in iter_impl {
+          for idx, value in iter_impl {
             // 创建新作用域来隔离循环变量
             self.push_scope(RuntimeLocation::ControlFlow("foreach"))
             defer self.pop_scope()
             // 绑定循环变量
             match binders {
-              @list.List::More(Some(binder), tail=@list.List::Empty) =>
+              More(Some(binder), tail=Empty) =>
                 self.current_module.env.set(binder.name, value)
-              _ =>
-                match binders {
-                  @list.List::More(Some(binder), tail=_) =>
-                    self.current_module.env.set(binder.name, value)
-                  _ => ()
-                }
+              More(Some(binder1), tail=More(Some(binder2), ..)) => {
+                self.current_module.env.set(binder1.name, Int(idx))
+                self.current_module.env.set(binder2.name, value)
+              }
+              _ => ()
             }
             try {
               self.visit(body) |> ignore
