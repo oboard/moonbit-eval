@@ -167,7 +167,6 @@ pub(all) struct RuntimeEnvironment {
   fn_aliases : Map[String, String]
   type_definitions : Map[String, @syntax.TypeDecl]
   struct_methods : Map[String, Map[String, RuntimeValue]]
-  type_environment : TypeEnvironment
   values : Map[String, RuntimeValue]
   mutable_vars : Map[String, Bool]
   parent : RuntimeEnvironment?
@@ -210,8 +209,8 @@ fn[T] RuntimeModule::with_ident(Self, @syntax.LongIdent, (Self, String, String) 
 impl ToJson for RuntimeModule
 
 pub struct RuntimeType {
-  pkg : String
   name : String
+  path : String
   env : RuntimeEnvironment
 }
 fn RuntimeType::any() -> Self
@@ -285,12 +284,6 @@ impl Eq for RuntimeValue
 impl Hash for RuntimeValue
 impl Show for RuntimeValue
 impl ToJson for RuntimeValue
-
-pub struct TypeEnvironment {
-  type_bindings : Map[String, String]
-  parent : TypeEnvironment?
-}
-impl ToJson for TypeEnvironment
 
 pub struct WithType[T] {
   val : T

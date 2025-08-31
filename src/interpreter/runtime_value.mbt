@@ -940,7 +940,7 @@ pub fn RuntimeValue::from_expr(expr : @syntax.Expr) -> RuntimeValue {
       }
       Struct({
         val: struct_data,
-        type_info: { pkg: "", name: "Any", env: RuntimeEnvironment::new() },
+        type_info: { path: "", name: "Any", env: RuntimeEnvironment::new() },
       })
     }
     Ident(..) => Unit // Ident表达式需要通过环境查找，这里返回Unit作为占位符

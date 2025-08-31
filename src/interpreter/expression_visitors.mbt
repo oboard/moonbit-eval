@@ -66,7 +66,7 @@ fn ClosureInterpreter::visit_record_creation(
     pkg : String,
     name : String,
   ) -> RuntimeValue {
-    Struct({ val: evaluated_fields, type_info: { pkg, name, env } })
+    Struct({ val: evaluated_fields, type_info: { path: pkg, name, env } })
   }
 
   if type_name is Some(type_name) {

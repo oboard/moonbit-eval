@@ -56,7 +56,7 @@ fn RuntimeModule::find_static_type(
     "Option" => RuntimeType::option()
     _ =>
       {
-        pkg: self.meta.name,
+        path: self.meta.name,
         name: if self.env.type_definitions.get(name) is Some(decl) {
           decl.tycon
         } else {
@@ -74,7 +74,7 @@ fn RuntimeEnvironment::type_of(
   runtime_value : RuntimeValue,
 ) -> RuntimeType {
   match runtime_value {
-    Unit => { pkg: "std", name: "Unit", env: self }
+    Unit => { path: "std", name: "Unit", env: self }
     Bool(_) => RuntimeType::bool()
     Int(_) => RuntimeType::int()
     UInt(_) => RuntimeType::uint()
@@ -96,8 +96,8 @@ fn RuntimeEnvironment::type_of(
     UninitializedArray(_) => RuntimeType::uninitialized_array()
     Map(_) => RuntimeType::map()
     Struct(data) => data.type_info
-    Closure(_) => { pkg: "main", name: runtime_value.to_string(), env: self }
-    Exception(_) => { pkg: "std", name: "Exception", env: self }
+    Closure(_) => { path: "main", name: runtime_value.to_string(), env: self }
+    Exception(_) => { path: "std", name: "Exception", env: self }
     Constructor({ val: { name, .. }, type_info }) =>
       match name {
         "Some" | "None" => RuntimeType::option()

@@ -5,6 +5,16 @@ pub(all) struct RuntimeModule {
   deps : Map[String, RuntimeModule]
 } derive(ToJson)
 
+// TODO: reflactor package struct
+// pub(all) struct MoonBitPackage {
+//   name: String
+//   traits: Map[String, @syntax.TraitDecl]
+//   errors: Map[String, String]
+//   types: Map[String, RuntimeType]
+//   typealiases: Map[String, String]
+//   values: Map[String, RuntimeValue]
+// }
+
 ///|
 /// 模块元数据
 pub(all) struct ModuleMeta {

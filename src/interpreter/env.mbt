@@ -7,8 +7,6 @@ pub(all) struct RuntimeEnvironment {
   type_definitions : Map[String, @syntax.TypeDecl]
   // 结构体方法定义 - 按类型名组织方法
   struct_methods : Map[String, Map[String, RuntimeValue]]
-  // 泛型类型环境
-  type_environment : TypeEnvironment
   values : Map[String, RuntimeValue]
   // 跟踪哪些变量是可变的
   mutable_vars : Map[String, Bool]
@@ -35,7 +33,6 @@ pub fn RuntimeEnvironment::new(
       fn_aliases: core_fn_aliases.copy(),
       type_definitions: Map::new(),
       struct_methods: struct_methods.unwrap_or({}),
-      type_environment: TypeEnvironment::new(),
       values: values.unwrap_or({}),
       mutable_vars: Map::new(),
       parent: None,
