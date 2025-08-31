@@ -1,0 +1,18 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "oboard/moonbit-eval/mooncakes"
+
+import(
+  "oboard/moonbit-eval/interpreter"
+)
+
+// Values
+async fn load_package(String) -> Map[String, @interpreter.RuntimeModule]
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits
+

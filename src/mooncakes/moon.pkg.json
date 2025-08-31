@@ -1,0 +1,7 @@
+{
+  "import": [
+    "oboard/moonbit-eval/interpreter",
+    "oboard/mio",
+    "moonbitlang/parser"
+  ],
+}
