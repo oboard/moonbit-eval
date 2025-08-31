@@ -120,6 +120,15 @@ pub fn RuntimeType::string() -> RuntimeType {
 }
 
 ///|
+pub fn RuntimeType::bytes() -> RuntimeType {
+  {
+    pkg: moonbitlang_core_bytes_module.meta.name,
+    name: "Bytes",
+    env: moonbitlang_core_bytes_module.env,
+  }
+}
+
+///|
 pub fn RuntimeType::tuple() -> RuntimeType {
   {
     pkg: moonbitlang_core_tuple_module.meta.name,

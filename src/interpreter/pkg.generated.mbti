@@ -217,6 +217,7 @@ fn RuntimeType::array_view() -> Self
 fn RuntimeType::bigint() -> Self
 fn RuntimeType::bool() -> Self
 fn RuntimeType::byte() -> Self
+fn RuntimeType::bytes() -> Self
 fn RuntimeType::char() -> Self
 fn RuntimeType::double() -> Self
 fn RuntimeType::float() -> Self

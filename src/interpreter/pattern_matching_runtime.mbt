@@ -25,7 +25,7 @@ pub fn ClosureInterpreter::pattern_matches_runtime(
         let converted_value = value.overload_literal(expected_type)
         // 如果转换成功（值发生了变化），使用转换后的值继续模式匹配
         if converted_value != value {
-          self.pattern_matches_runtime(converted_value, pat) // 这里使用转换后的值
+          self.pattern_matches_runtime(converted_value, pat)
         } else {
           false
         }

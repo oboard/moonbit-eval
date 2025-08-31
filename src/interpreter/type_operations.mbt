@@ -99,7 +99,7 @@ fn RuntimeEnvironment::type_of(
     Char(_) => RuntimeType::char()
     Byte(_) => RuntimeType::byte()
     String(_) => RuntimeType::string()
-    Bytes(_) => RuntimeType::string()
+    Bytes(_) => RuntimeType::bytes()
     StringView(_) => RuntimeType::string()
     Tuple(_) => RuntimeType::tuple()
     Array(_) => RuntimeType::array()
