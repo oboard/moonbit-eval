@@ -174,6 +174,15 @@ pub fn RuntimeType::map() -> RuntimeType {
 }
 
 ///|
+pub fn RuntimeType::json() -> RuntimeType {
+  {
+    pkg: moonbitlang_core_builtin_module.meta.name,
+    name: "Json",
+    env: moonbitlang_core_builtin_module.env,
+  }
+}
+
+///|
 pub fn RuntimeType::option() -> RuntimeType {
   {
     pkg: moonbitlang_core_option_module.meta.name,

@@ -54,6 +54,9 @@ pub(all) enum RuntimeValue {
 
   // 迭代器类型 - 用于实现内部迭代器
   Iter(Iter[RuntimeValue])
+
+  // JSON 类型 - 用于 JSON 数据处理
+  Json(Json)
 }
 
 ///|
@@ -82,6 +85,7 @@ pub impl Compare for RuntimeValue with compare(self, other) {
     (StringView(a), StringView(b)) => a.compare(b)
     (Tuple(a), Tuple(b)) => a.compare(b)
     (Array(a), Array(b)) => a.compare(b)
+    (Json(a), Json(b)) => a.to_string().compare(b.to_string())
     _ => abort("unable to compare")
   }
 }
@@ -137,6 +141,7 @@ pub impl Hash for RuntimeValue with hash(self : RuntimeValue) -> Int {
     StringView(sv) => sv.hash()
     Tuple(t) => t.hash()
     Array(a) => a.hash()
+    Json(j) => j.to_string().hash()
     _ => abort("unable to hash")
   }
 }
@@ -173,6 +178,7 @@ pub impl ToJson for RuntimeValue with to_json(self : RuntimeValue) -> Json {
     Exception(msg) => ["exception", msg.to_json()]
     Iter(_) => ["iterator", Json::null()]
     UninitializedArray(_) => ["uninitialized_array", Json::null()]
+    Json(j) => j
   }
 }
 
@@ -367,6 +373,24 @@ pub fn RuntimeValue::overload_literal(
 
     // 浮点数字面量重载 (默认Double -> Float)
     (Double(d), "Float") => Float(d.to_float())
+
+    // JSON 类型重载 - 支持基本类型到 JSON 的转换
+    (Int(i), "Json") => Json(i.to_json())
+    (Double(d), "Json") => Json(d.to_json())
+    (String(s), "Json") => Json(s.to_json())
+    (Bool(b), "Json") => Json(b.to_json())
+
+    // Map 到 Json 的转换 - 处理对象字面量
+    (Map(m), "Json") =>
+      // 和其他基本类型一样的方法：使用 to_json() 转换
+      Json(m.to_json())
+
+    // Array 到 Json 的转换 - 处理数组字面量  
+    (Array(arr), "Json") => {
+      // 简单的转换：将 Array 转换为 Json 字符串表示
+      let json_str = arr.to_string() // 这会生成类似 ["item1", "item2"] 的格式
+      Json(@json.parse(json_str) catch { _ => return self })
+    }
 
     // 模式匹配中的隐式转换
     (Array(arr), "ArrayView") => ArrayView(arr)
@@ -601,6 +625,7 @@ pub fn get_expected_runtime_type(type_name : String) -> String? {
     "Bytes" => Some("Bytes")
     "Char" => Some("Char")
     "Bool" => Some("Bool")
+    "Json" => Some("Json")
     _ => None
   }
 }
@@ -634,21 +659,32 @@ pub impl Show for RuntimeValue with to_string(self) -> String {
       "(" + parts.join(", ") + ")"
     }
     Array(values) => {
-      let parts = values.map(fn(v) { v.to_string() })
-      "[" + parts.join(", ") + "]"
+      let parts = values
+        .map(val => match val {
+          String(s) => "\"\{s}\""
+          _ => val.to_string()
+        })
+        .join(", ")
+      "[\{parts}]"
     }
     ArrayView(values) => values.to_string()
     UninitializedArray(_) => "<uninitialized_array>"
-    Map(m) => {
-      let parts = []
-      m.each(fn(key, val) {
-        let key_str = match key {
-          String(s) => "\"" + s + "\""
-          _ => key.to_string()
-        }
-        parts.push(key_str + ": " + val.to_string())
-      })
-      "{" + parts.join(", ") + "}"
+    Map(entities) => {
+      let parts = entities
+        .map(fn(key, val) {
+          let key_str = match key {
+            String(s) => "\"\{s}\""
+            _ => key.to_string()
+          }
+          let val_str = match val {
+            String(s) => "\"\{s}\""
+            _ => val.to_string()
+          }
+          "\{key_str}: \{val_str}"
+        })
+        .values()
+        .join(", ")
+      "{\{parts}}"
     }
     Struct(fields) => {
       let parts = []
@@ -750,6 +786,7 @@ pub impl Show for RuntimeValue with to_string(self) -> String {
       infer_func_type(func)
     }
     Exception(msg) => "exception: " + msg
+    Json(j) => j.to_string()
   }
 }
 
@@ -834,6 +871,7 @@ pub fn RuntimeValue::to_expr(self : RuntimeValue) -> @syntax.Expr {
     Constructor(_) => Unit(loc=_dummy_loc, faked=true)
     Exception(_) => Unit(loc=_dummy_loc, faked=true)
     Iter(_) => Unit(loc=_dummy_loc, faked=true)
+    Json(_) => Unit(loc=_dummy_loc, faked=true)
   }
 }
 

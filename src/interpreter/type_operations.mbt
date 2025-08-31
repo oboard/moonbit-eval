@@ -115,6 +115,7 @@ fn RuntimeEnvironment::type_of(
         _ => type_info
       }
     Iter(_) => RuntimeType::iter()
+    Json(_) => RuntimeType::json()
   }
 }
 

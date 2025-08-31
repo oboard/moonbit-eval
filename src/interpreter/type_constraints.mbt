@@ -47,6 +47,10 @@ pub fn RuntimeModule::check_type_constraint(
     (Unit, Name(constr_id={ id: Ident(name="Unit"), .. }, ..))
     | (Unit, Name(constr_id={ id: Dot(id="Unit", ..), .. }, ..)) => true
 
+    // Json 类型检查
+    (Json(_), Name(constr_id={ id: Ident(name="Json"), .. }, ..))
+    | (Json(_), Name(constr_id={ id: Dot(id="Json", ..), .. }, ..)) => true
+
     // Any 类型总是匹配
     (_, Any(..))
     | (_, Name(constr_id={ id: Ident(name="Any"), .. }, ..))

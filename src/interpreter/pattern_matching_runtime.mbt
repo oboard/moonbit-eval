@@ -25,7 +25,10 @@ pub fn ClosureInterpreter::pattern_matches_runtime(
         let converted_value = value.overload_literal(expected_type)
         // 如果转换成功（值发生了变化），使用转换后的值继续模式匹配
         if converted_value != value {
-          self.pattern_matches_runtime(converted_value, pat)
+          // 重要：需要将转换后的值绑定到变量
+          // 对于 Constraint 模式，我们需要先绑定转换后的值，然后检查内部模式
+          let result = self.pattern_matches_runtime(converted_value, pat)
+          result
         } else {
           false
         }
