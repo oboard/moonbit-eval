@@ -149,7 +149,7 @@ let map_from_iter_fn : RuntimeFunction = ctx => match ctx.args {
 /// Map get操作
 let map_get_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Map(map), .. }, { val: key, .. }] =>
-    ctx.mod.env.from_option(map.get(key))
+    RuntimeValue::from_option(map.get(key))
   _ => Unit
 }
 

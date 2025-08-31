@@ -286,7 +286,7 @@ let moonbitlang_core_array_module : RuntimeModule = RuntimeModule::new(
       ),
       "join": build(
         (
-          #|pub fn join(self : Array[String], separator : @string.View) -> String { self[:].join(separator) }
+          #|pub fn[A : @string.ToStringView] Array::join( self : Array[A], separator : @string.View, ) -> String { self[:].join(separator) }
         ),
       ),
       "each": build(
@@ -1501,28 +1501,34 @@ let moonbitlang_core_array_module : RuntimeModule = RuntimeModule::new(
       ),
       "join": build(
         (
-          #|pub fn View::join(self : ArrayView[String], separator : @string.View) -> String { match self {
+          #|pub fn[A : @string.ToStringView] View::join( self : ArrayView[A], separator : @string.View, ) -> String { match self {
           #|    [] => \"\"
           #|    [hd, .. tl] => {
+          #|      let hd = hd.to_string_view()
           #|      let mut size_hint = hd.length()
           #|      for s in tl {
-          #|        size_hint += s.length() + separator.length()
+          #|        size_hint += s.to_string_view().length() + separator.length()
           #|      }
           #|      size_hint = size_hint << 1
           #|      let buf = StringBuilder::new(size_hint~)
-          #|      buf.write_string(hd)
+          #|      // buf.write_string(hd)
+          #|      buf.write_substring(hd.data(), hd.start_offset(), hd.length())
           #|      if separator is \"\" {
           #|        for s in tl {
-          #|          buf.write_string(s)
+          #|          // buf.write_string(s)
+          #|          let s = s.to_string_view()
+          #|          buf.write_substring(s.data(), s.start_offset(), s.length())
           #|        }
           #|      } else {
           #|        for s in tl {
+          #|          let s = s.to_string_view()
           #|          buf.write_substring(
           #|            separator.data(),
           #|            separator.start_offset(),
           #|            separator.length(),
           #|          )
-          #|          buf.write_string(s)
+          #|          // buf.write_string(s)
+          #|          buf.write_substring(s.data(), s.start_offset(), s.length())
           #|        }
           #|      }
           #|      buf.to_string()
@@ -1835,7 +1841,7 @@ let moonbitlang_core_bench_module : RuntimeModule = RuntimeModule::new(
       ),
       "bench": build(
         (
-          #|pub fn bench( self : T, name? : String, f : () -> Unit, count~ : UInt = 10, ) -> Unit { let summary = iter_count(name?, f, count)
+          #|pub fn bench( self : T, name? : String, f : () -> Unit, count? : UInt = 10, ) -> Unit { let summary = iter_count(name?, f, count)
           #|  if !self.buffer.is_empty() {
           #|    self.buffer.write_char(',')
           #|  }
@@ -1845,7 +1851,7 @@ let moonbitlang_core_bench_module : RuntimeModule = RuntimeModule::new(
       ),
       "single_bench": build(
         (
-          #|pub fn single_bench( name? : String, f : () -> Unit, count~ : UInt = 10, ) -> Summary { iter_count(name?, f, count) }
+          #|pub fn single_bench( name? : String, f : () -> Unit, count? : UInt = 10, ) -> Summary { iter_count(name?, f, count) }
         ),
       ),
       "keep": build(
@@ -2412,7 +2418,7 @@ let moonbitlang_core_bigint_module : RuntimeModule = RuntimeModule::new(
       ),
       "to_hex": build(
         (
-          #|pub fn BigInt::to_hex(self : BigInt, uppercase~ : Bool = true) -> String { if self.is_zero() {
+          #|pub fn BigInt::to_hex(self : BigInt, uppercase? : Bool = true) -> String { if self.is_zero() {
           #|    return \"0\"
           #|  }
           #|  // WARN: this implementation assumes that `radix_bit_len` is a multiple of 4.
@@ -2505,7 +2511,7 @@ let moonbitlang_core_bigint_module : RuntimeModule = RuntimeModule::new(
       ),
       "from_octets": build(
         (
-          #|pub fn BigInt::from_octets(input : Bytes, signum~ : Int = 1) -> BigInt { let len = input.length() // number of bytes
+          #|pub fn BigInt::from_octets(input : Bytes, signum? : Int = 1) -> BigInt { let len = input.length() // number of bytes
           #|  if signum == 0 {
           #|    return zero
           #|  } else if signum < 0 {
@@ -2667,7 +2673,7 @@ let moonbitlang_core_bigint_module : RuntimeModule = RuntimeModule::new(
       ),
       "from_octets": build(
         (
-          #|pub fn BigInt::from_octets(octets : Bytes, signum~ : Int = 1) -> BigInt { if signum < 0 {
+          #|pub fn BigInt::from_octets(octets : Bytes, signum? : Int = 1) -> BigInt { if signum < 0 {
           #|    return -1N * BigInt::from_octets(octets, signum=1)
           #|  }
           #|  if signum == 0 {
@@ -2947,7 +2953,7 @@ let moonbitlang_core_buffer_module : RuntimeModule = RuntimeModule::new(
       ),
       "new": build(
         (
-          #|pub fn new(size_hint~ : Int = 0) -> T { let initial = if size_hint < 1 { 1 } else { size_hint }
+          #|pub fn new(size_hint? : Int = 0) -> T { let initial = if size_hint < 1 { 1 } else { size_hint }
           #|  let data = FixedArray::make(initial, Byte::default())
           #|  { data, len: 0, initial_data: data } }
         ),
@@ -3220,7 +3226,7 @@ let moonbitlang_core_builtin_module : RuntimeModule = RuntimeModule::new(
       ),
       "until": build(
         (
-          #|pub fn Int::until( self : Int, end : Int, step~ : Int = 1, inclusive~ : Bool = false, ) -> Iter[Int] { if step == 0 {
+          #|pub fn Int::until( self : Int, end : Int, step? : Int = 1, inclusive? : Bool = false, ) -> Iter[Int] { if step == 0 {
           #|    return Iter::empty()
           #|  }
           #|  yield_ => {
@@ -3245,7 +3251,7 @@ let moonbitlang_core_builtin_module : RuntimeModule = RuntimeModule::new(
       ),
       "until": build(
         (
-          #|pub fn Int64::until( self : Int64, end : Int64, step~ : Int64 = 1L, inclusive~ : Bool = false, ) -> Iter[Int64] { if step == 0 {
+          #|pub fn Int64::until( self : Int64, end : Int64, step? : Int64 = 1L, inclusive? : Bool = false, ) -> Iter[Int64] { if step == 0 {
           #|    return Iter::empty()
           #|  }
           #|  yield_ => {
@@ -3270,7 +3276,7 @@ let moonbitlang_core_builtin_module : RuntimeModule = RuntimeModule::new(
       ),
       "until": build(
         (
-          #|pub fn Float::until( self : Float, end : Float, step~ : Float = 1.0, inclusive~ : Bool = false, ) -> Iter[Float] { if step == 0.0 {
+          #|pub fn Float::until( self : Float, end : Float, step? : Float = 1.0, inclusive? : Bool = false, ) -> Iter[Float] { if step == 0.0 {
           #|    return Iter::empty()
           #|  }
           #|  yield_ => {
@@ -3295,7 +3301,7 @@ let moonbitlang_core_builtin_module : RuntimeModule = RuntimeModule::new(
       ),
       "until": build(
         (
-          #|pub fn Double::until( self : Double, end : Double, step~ : Double = 1.0, inclusive~ : Bool = false, ) -> Iter[Double] { if step == 0.0 {
+          #|pub fn Double::until( self : Double, end : Double, step? : Double = 1.0, inclusive? : Bool = false, ) -> Iter[Double] { if step == 0.0 {
           #|    return Iter::empty()
           #|  }
           #|  yield_ => {
@@ -3573,7 +3579,7 @@ let moonbitlang_core_builtin_module : RuntimeModule = RuntimeModule::new(
       ),
       "op_as_view": build(
         (
-          #|pub fn[A] Iter::op_as_view( self : Iter[A], start~ : Int = 0, end? : Int, ) -> Iter[A] { // Note here we mark `end` as an optional parameter
+          #|pub fn[A] Iter::op_as_view( self : Iter[A], start? : Int = 0, end? : Int, ) -> Iter[A] { // Note here we mark `end` as an optional parameter
           #|  // since the meaningful default value of `end` is the length of the iterator
           #|  // this is time consuming to calculate
           #|  // while `None` is more appropriate.
@@ -3652,7 +3658,7 @@ let moonbitlang_core_builtin_module : RuntimeModule = RuntimeModule::new(
       ),
       "op_as_view": build(
         (
-          #|pub fn[T] UninitializedArray::op_as_view( self : UninitializedArray[T], start~ : Int = 0, end? : Int, ) -> ArrayView[T] { let len = self.length()
+          #|pub fn[T] UninitializedArray::op_as_view( self : UninitializedArray[T], start? : Int = 0, end? : Int, ) -> ArrayView[T] { let len = self.length()
           #|  let end = match end {
           #|    None => len
           #|    Some(end) => end
@@ -3672,6 +3678,13 @@ let moonbitlang_core_builtin_module : RuntimeModule = RuntimeModule::new(
       "unsafe_blit": build(
         (
           #|pub fn[T] UninitializedArray::unsafe_blit( dst : UninitializedArray[T], dst_offset : Int, src : UninitializedArray[T], src_offset : Int, len : Int, ) -> Unit { FixedArray::unsafe_blit(dst.0, dst_offset, src.0, src_offset, len) }
+        ),
+      ),
+      "unchecked_fill": build(
+        (
+          #|fn[T] UninitializedArray::unchecked_fill( self : UninitializedArray[T], start : Int, value : T, len : Int, ) -> Unit { for i in start..<(start + len) {
+          #|    self[i] = value
+          #|  } }
         ),
       ),
       "to_int64": build(
@@ -4323,7 +4336,22 @@ let moonbitlang_core_builtin_module : RuntimeModule = RuntimeModule::new(
       ),
       "fill": build(
         (
-          #|pub fn[T] FixedArray::fill(self : FixedArray[T], value : T) -> Unit { for i in 0..<self.length() {
+          #|pub fn[T] FixedArray::fill( self : FixedArray[T], value : T, start? : Int = 0, end? : Int, ) -> Unit { let array_length = self.length()
+          #|  guard array_length > 0 else { return }
+          #|  guard start >= 0 && start < array_length
+          #|  let length = match end {
+          #|    None => array_length - start
+          #|    Some(e) => {
+          #|      guard e >= start && e <= array_length
+          #|      e - start
+          #|    }
+          #|  }
+          #|  self.unchecked_fill(start, value, length) }
+        ),
+      ),
+      "unchecked_fill": build(
+        (
+          #|fn[T] FixedArray::unchecked_fill( self : FixedArray[T], start : Int, value : T, len : Int, ) -> Unit { for i in start..<(start + len) {
           #|    self[i] = value
           #|  } }
         ),
@@ -4825,7 +4853,7 @@ let moonbitlang_core_builtin_module : RuntimeModule = RuntimeModule::new(
       ),
       "blit_to": build(
         (
-          #|pub fn[A] Array::blit_to( self : Array[A], dst : Array[A], len~ : Int, src_offset~ : Int = 0, dst_offset~ : Int = 0, ) -> Unit { guard len >= 0 &&
+          #|pub fn[A] Array::blit_to( self : Array[A], dst : Array[A], len~ : Int, src_offset? : Int = 0, dst_offset? : Int = 0, ) -> Unit { guard len >= 0 &&
           #|    dst_offset >= 0 &&
           #|    src_offset >= 0 &&
           #|    dst_offset <= dst.length() &&
@@ -4918,40 +4946,40 @@ let moonbitlang_core_builtin_module : RuntimeModule = RuntimeModule::new(
       ),
       "to_string": build(
         (
-          #|pub fn Int64::to_string(self : Int64, radix~ : Int = 10) -> String { let buf = StringBuilder::new(size_hint=Int64::output_size_hint(radix~))
+          #|pub fn Int64::to_string(self : Int64, radix? : Int = 10) -> String { let buf = StringBuilder::new(size_hint=Int64::output_size_hint(radix~))
           #|  self.output(buf, radix~)
           #|  buf.to_string() }
         ),
       ),
       "to_string": build(
         (
-          #|pub fn Int::to_string(self : Int, radix~ : Int = 10) -> String { let buf = StringBuilder::new(size_hint=Int::output_size_hint(radix~))
+          #|pub fn Int::to_string(self : Int, radix? : Int = 10) -> String { let buf = StringBuilder::new(size_hint=Int::output_size_hint(radix~))
           #|  self.output(buf, radix~)
           #|  buf.to_string() }
         ),
       ),
       "to_string": build(
         (
-          #|pub fn UInt::to_string(self : UInt, radix~ : Int = 10) -> String { let buf = StringBuilder::new(size_hint=UInt::output_size_hint(radix~))
+          #|pub fn UInt::to_string(self : UInt, radix? : Int = 10) -> String { let buf = StringBuilder::new(size_hint=UInt::output_size_hint(radix~))
           #|  self.output(buf, radix~)
           #|  buf.to_string() }
         ),
       ),
       "to_string": build(
         (
-          #|pub fn UInt64::to_string(self : UInt64, radix~ : Int = 10) -> String { let buf = StringBuilder::new(size_hint=UInt64::output_size_hint(radix~))
+          #|pub fn UInt64::to_string(self : UInt64, radix? : Int = 10) -> String { let buf = StringBuilder::new(size_hint=UInt64::output_size_hint(radix~))
           #|  self.output(buf, radix~)
           #|  buf.to_string() }
         ),
       ),
       "to_string": build(
         (
-          #|pub fn Int16::to_string(self : Int16, radix~ : Int = 10) -> String { self.to_int().to_string(radix~) }
+          #|pub fn Int16::to_string(self : Int16, radix? : Int = 10) -> String { self.to_int().to_string(radix~) }
         ),
       ),
       "to_string": build(
         (
-          #|pub fn UInt16::to_string(self : UInt16, radix~ : Int = 10) -> String { self.to_int().to_string(radix~) }
+          #|pub fn UInt16::to_string(self : UInt16, radix? : Int = 10) -> String { self.to_int().to_string(radix~) }
         ),
       ),
       "unsafe_blit": build(
@@ -4976,7 +5004,7 @@ let moonbitlang_core_builtin_module : RuntimeModule = RuntimeModule::new(
       ),
       "blit_to": build(
         (
-          #|pub fn[A] FixedArray::blit_to( self : FixedArray[A], dst : FixedArray[A], len~ : Int, src_offset~ : Int = 0, dst_offset~ : Int = 0, ) -> Unit { guard dst_offset >= 0 &&
+          #|pub fn[A] FixedArray::blit_to( self : FixedArray[A], dst : FixedArray[A], len~ : Int, src_offset? : Int = 0, dst_offset? : Int = 0, ) -> Unit { guard dst_offset >= 0 &&
           #|    src_offset >= 0 &&
           #|    dst_offset + len <= dst.length() &&
           #|    src_offset + len <= self.length() else {
@@ -5000,7 +5028,7 @@ let moonbitlang_core_builtin_module : RuntimeModule = RuntimeModule::new(
       ),
       "new": build(
         (
-          #|pub fn[T] Array::new(capacity~ : Int = 0) -> Array[T] { if capacity == 0 {
+          #|pub fn[T] Array::new(capacity? : Int = 0) -> Array[T] { if capacity == 0 {
           #|    []
           #|  } else {
           #|    { buf: UninitializedArray::make(capacity), len: 0 }
@@ -5162,9 +5190,24 @@ let moonbitlang_core_builtin_module : RuntimeModule = RuntimeModule::new(
           #|  self.buf = new_buf }
         ),
       ),
+      "fill": build(
+        (
+          #|pub fn[A] Array::fill( self : Array[A], value : A, start? : Int = 0, end? : Int, ) -> Unit { let array_length = self.length()
+          #|  guard array_length > 0 else { return }
+          #|  guard start >= 0 && start < array_length
+          #|  let length = match end {
+          #|    None => array_length
+          #|    Some(e) => {
+          #|      guard e >= start && e <= array_length
+          #|      e
+          #|    }
+          #|  }
+          #|  self.buf.unchecked_fill(start, value, length - start) }
+        ),
+      ),
       "new": build(
         (
-          #|pub fn Hasher::new(seed~ : Int = 0) -> Hasher { { acc: seed.reinterpret_as_uint() + GPRIME5 } }
+          #|pub fn Hasher::new(seed? : Int = 0) -> Hasher { { acc: seed.reinterpret_as_uint() + GPRIME5 } }
         ),
       ),
       "combine": build(
@@ -5296,7 +5339,7 @@ let moonbitlang_core_builtin_module : RuntimeModule = RuntimeModule::new(
       ),
       "new": build(
         (
-          #|pub fn[T] Array::new(capacity~ : Int = 0) -> Array[T] { ignore(capacity)
+          #|pub fn[T] Array::new(capacity? : Int = 0) -> Array[T] { ignore(capacity)
           #|  [] }
         ),
       ),
@@ -5387,6 +5430,21 @@ let moonbitlang_core_builtin_module : RuntimeModule = RuntimeModule::new(
           #|  JSArray::ofAnyArray(self).set_length(new_len) }
         ),
       ),
+      "fill": build(
+        (
+          #|pub fn[A] Array::fill( self : Array[A], value : A, start? : Int = 0, end? : Int, ) -> Unit { let array_length = self.length()
+          #|  guard array_length > 0 else { return }
+          #|  guard start >= 0 && start < array_length
+          #|  let end = match end {
+          #|    None => array_length
+          #|    Some(e) => {
+          #|      guard e >= 0 && e <= array_length
+          #|      e
+          #|    }
+          #|  }
+          #|  JSArray::ofAnyArray(self).fill(JSValue::ofAny(value), start, end) }
+        ),
+      ),
       "length": build(
         (
           #|pub fn[T] ArrayView::length(self : ArrayView[T]) -> Int { self.len() }
@@ -5431,7 +5489,7 @@ let moonbitlang_core_builtin_module : RuntimeModule = RuntimeModule::new(
       ),
       "op_as_view": build(
         (
-          #|pub fn[T] Array::op_as_view( self : Array[T], start~ : Int = 0, end? : Int, ) -> ArrayView[T] { let len = self.length()
+          #|pub fn[T] Array::op_as_view( self : Array[T], start? : Int = 0, end? : Int, ) -> ArrayView[T] { let len = self.length()
           #|  let end = match end {
           #|    None => len
           #|    Some(end) => if end < 0 { len + end } else { end }
@@ -5445,7 +5503,7 @@ let moonbitlang_core_builtin_module : RuntimeModule = RuntimeModule::new(
       ),
       "op_as_view": build(
         (
-          #|pub fn[T] ArrayView::op_as_view( self : ArrayView[T], start~ : Int = 0, end? : Int, ) -> ArrayView[T] { let len = self.length()
+          #|pub fn[T] ArrayView::op_as_view( self : ArrayView[T], start? : Int = 0, end? : Int, ) -> ArrayView[T] { let len = self.length()
           #|  let end = match end {
           #|    None => len
           #|    Some(end) => if end < 0 { len + end } else { end }
@@ -5459,7 +5517,7 @@ let moonbitlang_core_builtin_module : RuntimeModule = RuntimeModule::new(
       ),
       "upto": build(
         (
-          #|pub fn Int::upto(self : Int, end : Int, inclusive~ : Bool = false) -> Iter[Int] { yield_ => {
+          #|pub fn Int::upto(self : Int, end : Int, inclusive? : Bool = false) -> Iter[Int] { yield_ => {
           #|    let mut i = self
           #|    while i < end || (inclusive && i == end) {
           #|      if yield_(i) == IterEnd {
@@ -5477,7 +5535,7 @@ let moonbitlang_core_builtin_module : RuntimeModule = RuntimeModule::new(
       ),
       "upto": build(
         (
-          #|pub fn UInt::upto( self : UInt, end : UInt, inclusive~ : Bool = false, ) -> Iter[UInt] { yield_ => {
+          #|pub fn UInt::upto( self : UInt, end : UInt, inclusive? : Bool = false, ) -> Iter[UInt] { yield_ => {
           #|    let mut i = self
           #|    while i < end || (inclusive && i == end) {
           #|      if yield_(i) == IterEnd {
@@ -5495,7 +5553,7 @@ let moonbitlang_core_builtin_module : RuntimeModule = RuntimeModule::new(
       ),
       "upto": build(
         (
-          #|pub fn UInt64::upto( self : UInt64, end : UInt64, inclusive~ : Bool = false, ) -> Iter[UInt64] { yield_ => {
+          #|pub fn UInt64::upto( self : UInt64, end : UInt64, inclusive? : Bool = false, ) -> Iter[UInt64] { yield_ => {
           #|    let mut i = self
           #|    while i < end || (inclusive && i == end) {
           #|      if yield_(i) == IterEnd {
@@ -5513,7 +5571,7 @@ let moonbitlang_core_builtin_module : RuntimeModule = RuntimeModule::new(
       ),
       "upto": build(
         (
-          #|pub fn Int64::upto( self : Int64, end : Int64, inclusive~ : Bool = false, ) -> Iter[Int64] { yield_ => {
+          #|pub fn Int64::upto( self : Int64, end : Int64, inclusive? : Bool = false, ) -> Iter[Int64] { yield_ => {
           #|    let mut i = self
           #|    while i < end || (inclusive && i == end) {
           #|      if yield_(i) == IterEnd {
@@ -5531,7 +5589,7 @@ let moonbitlang_core_builtin_module : RuntimeModule = RuntimeModule::new(
       ),
       "upto": build(
         (
-          #|pub fn Float::upto( self : Float, end : Float, inclusive~ : Bool = false, ) -> Iter[Float] { yield_ => {
+          #|pub fn Float::upto( self : Float, end : Float, inclusive? : Bool = false, ) -> Iter[Float] { yield_ => {
           #|    let mut i = self
           #|    while i < end || (inclusive && i == end) {
           #|      if yield_(i) == IterEnd {
@@ -5549,7 +5607,7 @@ let moonbitlang_core_builtin_module : RuntimeModule = RuntimeModule::new(
       ),
       "upto": build(
         (
-          #|pub fn Double::upto( self : Double, end : Double, inclusive~ : Bool = false, ) -> Iter[Double] { yield_ => {
+          #|pub fn Double::upto( self : Double, end : Double, inclusive? : Bool = false, ) -> Iter[Double] { yield_ => {
           #|    let mut i = self
           #|    while i < end || (inclusive && i == end) {
           #|      if yield_(i) == IterEnd {
@@ -5663,7 +5721,7 @@ let moonbitlang_core_builtin_module : RuntimeModule = RuntimeModule::new(
       ),
       "codepoint_length": build(
         (
-          #|pub fn String::codepoint_length( self : String, start_offset~ : Int = 0, end_offset? : Int, ) -> Int { self.char_length(start_offset~, end_offset?) }
+          #|pub fn String::codepoint_length( self : String, start_offset? : Int = 0, end_offset? : Int, ) -> Int { self.char_length(start_offset~, end_offset?) }
         ),
       ),
       "charcode_at": build(
@@ -5684,7 +5742,7 @@ let moonbitlang_core_builtin_module : RuntimeModule = RuntimeModule::new(
       ),
       "new": build(
         (
-          #|pub fn[K, V] Map::new(capacity~ : Int = 8) -> Map[K, V] { let capacity = capacity.next_power_of_two()
+          #|pub fn[K, V] Map::new(capacity? : Int = 8) -> Map[K, V] { let capacity = capacity.next_power_of_two()
           #|  {
           #|    size: 0,
           #|    capacity,
@@ -5705,10 +5763,14 @@ let moonbitlang_core_builtin_module : RuntimeModule = RuntimeModule::new(
       ),
       "set": build(
         (
-          #|pub fn[K : Hash + Eq, V] Map::set(self : Map[K, V], key : K, value : V) -> Unit { if self.size >= self.grow_at {
+          #|pub fn[K : Hash + Eq, V] Map::set(self : Map[K, V], key : K, value : V) -> Unit { self.set_with_hash(key, value, key.hash()) }
+        ),
+      ),
+      "set_with_hash": build(
+        (
+          #|fn[K : Eq, V] set_with_hash( self : Map[K, V], key : K, value : V, hash : Int, ) -> Unit { if self.size >= self.grow_at {
           #|    self.grow()
           #|  }
-          #|  let hash = key.hash()
           #|  let (idx, psl) = for psl = 0, idx = hash & self.capacity_mask {
           #|    match self.entries[idx] {
           #|      None => break (idx, psl)
@@ -5783,7 +5845,15 @@ let moonbitlang_core_builtin_module : RuntimeModule = RuntimeModule::new(
       ),
       "op_get": build(
         (
-          #|pub fn[K : Hash + Eq, V] Map::op_get(self : Map[K, V], key : K) -> V? { self.get(key) }
+          #|pub fn[K : Hash + Eq, V] Map::op_get(self : Map[K, V], key : K) -> V { let hash = key.hash()
+          #|  for i = 0, idx = hash & self.capacity_mask {
+          #|    guard self.entries[idx] is Some(entry)
+          #|    if entry.hash == hash && entry.key == key {
+          #|      return entry.value
+          #|    }
+          #|    guard i <= entry.psl
+          #|    continue i + 1, (idx + 1) & self.capacity_mask
+          #|  } }
         ),
       ),
       "get_or_default": build(
@@ -5807,14 +5877,46 @@ let moonbitlang_core_builtin_module : RuntimeModule = RuntimeModule::new(
       ),
       "get_or_init": build(
         (
-          #|pub fn[K : Hash + Eq, V] Map::get_or_init( self : Map[K, V], key : K, default : () -> V, ) -> V { match self.get(key) {
-          #|    Some(v) => v
-          #|    None => {
-          #|      let v = default()
-          #|      self.set(key, v)
-          #|      v
+          #|pub fn[K : Hash + Eq, V] Map::get_or_init( self : Map[K, V], key : K, default : () -> V, ) -> V { let hash = key.hash()
+          #|  let (idx, psl, new_value, push_away) = for psl = 0, idx = hash &
+          #|                                               self.capacity_mask {
+          #|    match self.entries[idx] {
+          #|      Some(entry) => {
+          #|        if entry.hash == hash && entry.key == key {
+          #|          return entry.value
+          #|        }
+          #|        if psl > entry.psl {
+          #|          let new_value = default()
+          #|          self.push_away(idx, entry)
+          #|          break (idx, psl, new_value, Some(entry))
+          #|        }
+          #|        continue psl + 1, (idx + 1) & self.capacity_mask
+          #|      }
+          #|      None => {
+          #|        let new_value = default()
+          #|        break (idx, psl, new_value, None)
+          #|      }
           #|    }
-          #|  } }
+          #|  }
+          #|  if self.size >= self.grow_at {
+          #|    // Slow path, we need to resize
+          #|    self.grow()
+          #|    self.set_with_hash(key, new_value, hash)
+          #|  } else {
+          #|    if push_away is Some(entry) {
+          #|      self.push_away(idx, entry)
+          #|    }
+          #|    let entry = {
+          #|      prev: self.tail,
+          #|      next: None,
+          #|      psl,
+          #|      hash,
+          #|      key,
+          #|      value: new_value,
+          #|    }
+          #|    self.add_entry_to_tail(idx, entry)
+          #|  }
+          #|  new_value }
         ),
       ),
       "contains": build(
@@ -5905,7 +6007,7 @@ let moonbitlang_core_builtin_module : RuntimeModule = RuntimeModule::new(
       ),
       "grow": build(
         (
-          #|fn[K : Hash + Eq, V] Map::grow(self : Map[K, V]) -> Unit { let old_head = self.head
+          #|fn[K : Eq, V] Map::grow(self : Map[K, V]) -> Unit { let old_head = self.head
           #|  let new_capacity = self.capacity << 1
           #|  self.entries = FixedArray::make(new_capacity, None)
           #|  self.capacity = new_capacity
@@ -5915,8 +6017,8 @@ let moonbitlang_core_builtin_module : RuntimeModule = RuntimeModule::new(
           #|  self.head = None
           #|  self.tail = -1
           #|  loop old_head {
-          #|    Some({ next, key, value, .. }) => {
-          #|      self.set(key, value)
+          #|    Some({ next, key, value, hash, .. }) => {
+          #|      self.set_with_hash(key, value, hash)
           #|      continue next
           #|    }
           #|    None => break
@@ -6117,7 +6219,8 @@ let moonbitlang_core_builtin_module : RuntimeModule = RuntimeModule::new(
       "update": build(
         (
           #|pub fn[K : Hash + Eq, V] Map::update( self : Map[K, V], key : K, f : (V?) -> V?, ) -> Unit { let hash = key.hash()
-          #|  let (idx, psl, new_value) = for psl = 0, idx = hash & self.capacity_mask {
+          #|  let (idx, psl, new_value, push_away) = for psl = 0, idx = hash &
+          #|                                               self.capacity_mask {
           #|    match self.entries[idx] {
           #|      Some(entry) => {
           #|        if entry.hash == hash && entry.key == key {
@@ -6134,14 +6237,13 @@ let moonbitlang_core_builtin_module : RuntimeModule = RuntimeModule::new(
           #|        }
           #|        if psl > entry.psl {
           #|          guard f(None) is Some(new_value) else { return }
-          #|          self.push_away(idx, entry)
-          #|          break (idx, psl, new_value)
+          #|          break (idx, psl, new_value, Some(entry))
           #|        }
           #|        continue psl + 1, (idx + 1) & self.capacity_mask
           #|      }
           #|      None => {
           #|        guard f(None) is Some(new_value) else { return }
-          #|        break (idx, psl, new_value)
+          #|        break (idx, psl, new_value, None)
           #|      }
           #|    }
           #|  }
@@ -6150,6 +6252,9 @@ let moonbitlang_core_builtin_module : RuntimeModule = RuntimeModule::new(
           #|    self.grow()
           #|    self.set(key, new_value)
           #|  } else {
+          #|    if push_away is Some(entry) {
+          #|      self.push_away(idx, entry)
+          #|    }
           #|    let entry = {
           #|      prev: self.tail,
           #|      next: None,
@@ -6164,7 +6269,7 @@ let moonbitlang_core_builtin_module : RuntimeModule = RuntimeModule::new(
       ),
       "new": build(
         (
-          #|pub fn StringBuilder::new(size_hint~ : Int = 0) -> StringBuilder { ignore(size_hint)
+          #|pub fn StringBuilder::new(size_hint? : Int = 0) -> StringBuilder { ignore(size_hint)
           #|  { val: \"\" } }
         ),
       ),
@@ -6215,7 +6320,7 @@ let moonbitlang_core_builtin_module : RuntimeModule = RuntimeModule::new(
       ),
       "new": build(
         (
-          #|pub fn StringBuilder::new(size_hint~ : Int = 0) -> StringBuilder { let initial = if size_hint < 1 { 1 } else { size_hint }
+          #|pub fn StringBuilder::new(size_hint? : Int = 0) -> StringBuilder { let initial = if size_hint < 1 { 1 } else { size_hint }
           #|  let data : FixedArray[Byte] = FixedArray::make(initial, 0)
           #|  { data, len: 0 } }
         ),
@@ -6280,7 +6385,7 @@ let moonbitlang_core_builtin_module : RuntimeModule = RuntimeModule::new(
       ),
       "char_length": build(
         (
-          #|pub fn String::char_length( self : String, start_offset~ : Int = 0, end_offset? : Int, ) -> Int { let end_offset = if end_offset is Some(o) { o } else { self.length() }
+          #|pub fn String::char_length( self : String, start_offset? : Int = 0, end_offset? : Int, ) -> Int { let end_offset = if end_offset is Some(o) { o } else { self.length() }
           #|  guard start_offset >= 0 &&
           #|    start_offset <= end_offset &&
           #|    end_offset <= self.length() else {
@@ -6313,7 +6418,7 @@ let moonbitlang_core_builtin_module : RuntimeModule = RuntimeModule::new(
       ),
       "substring": build(
         (
-          #|pub fn String::substring(self : String, start~ : Int = 0, end? : Int) -> String { let len = self.length()
+          #|pub fn String::substring(self : String, start? : Int = 0, end? : Int) -> String { let len = self.length()
           #|  let end = match end {
           #|    Some(end) => end
           #|    None => len
@@ -6374,7 +6479,7 @@ let moonbitlang_core_builtin_module : RuntimeModule = RuntimeModule::new(
       ),
       "output": build(
         (
-          #|fn Int64::output(self : Int64, logger : &Logger, radix~ : Int = 10) -> Unit { fn abs(n : Int64) -> Int64 {
+          #|fn Int64::output(self : Int64, logger : &Logger, radix? : Int = 10) -> Unit { fn abs(n : Int64) -> Int64 {
           #|    if n < 0L {
           #|      0L - n
           #|    } else {
@@ -6399,7 +6504,7 @@ let moonbitlang_core_builtin_module : RuntimeModule = RuntimeModule::new(
       ),
       "output": build(
         (
-          #|fn Int::output(self : Int, logger : &Logger, radix~ : Int = 10) -> Unit { fn abs(n : Int) -> Int {
+          #|fn Int::output(self : Int, logger : &Logger, radix? : Int = 10) -> Unit { fn abs(n : Int) -> Int {
           #|    if n < 0 {
           #|      0 - n
           #|    } else {
@@ -6421,7 +6526,7 @@ let moonbitlang_core_builtin_module : RuntimeModule = RuntimeModule::new(
       ),
       "output": build(
         (
-          #|fn UInt::output(self : UInt, logger : &Logger, radix~ : Int = 10) -> Unit { let radix : UInt = radix.reinterpret_as_uint()
+          #|fn UInt::output(self : UInt, logger : &Logger, radix? : Int = 10) -> Unit { let radix : UInt = radix.reinterpret_as_uint()
           #|  fn write_digits(num : UInt) {
           #|    let num2 = num / radix
           #|    if num2 != 0U {
@@ -6436,7 +6541,7 @@ let moonbitlang_core_builtin_module : RuntimeModule = RuntimeModule::new(
       ),
       "output": build(
         (
-          #|fn UInt64::output(self : UInt64, logger : &Logger, radix~ : Int = 10) -> Unit { let radix : UInt64 = radix.to_uint64()
+          #|fn UInt64::output(self : UInt64, logger : &Logger, radix? : Int = 10) -> Unit { let radix : UInt64 = radix.to_uint64()
           #|  fn write_digits(num : UInt64) {
           #|    let num2 = num / radix
           #|    if num2 != 0UL {
@@ -6451,7 +6556,7 @@ let moonbitlang_core_builtin_module : RuntimeModule = RuntimeModule::new(
       ),
       "output_size_hint": build(
         (
-          #|fn Int64::output_size_hint(radix~ : Int = 10) -> Int { match radix {
+          #|fn Int64::output_size_hint(radix? : Int = 10) -> Int { match radix {
           #|    2..<7 => 70 // max length is 64, 70 is enough
           #|    8..<15 => 30 // max length is 23, 30 is enough
           #|    16..=36 => 20 // max length is 17, 20 is enough
@@ -6461,7 +6566,7 @@ let moonbitlang_core_builtin_module : RuntimeModule = RuntimeModule::new(
       ),
       "output_size_hint": build(
         (
-          #|fn Int::output_size_hint(radix~ : Int = 10) -> Int { match radix {
+          #|fn Int::output_size_hint(radix? : Int = 10) -> Int { match radix {
           #|    2..<7 => 36 // max length is 32, 36 is enough
           #|    8..<15 => 18 // max length is 12, 18 is enough
           #|    16..=36 => 10 // max length is 8, 10 is enough
@@ -6471,12 +6576,12 @@ let moonbitlang_core_builtin_module : RuntimeModule = RuntimeModule::new(
       ),
       "output_size_hint": build(
         (
-          #|fn UInt::output_size_hint(radix~ : Int = 10) -> Int { Int::output_size_hint(radix~) }
+          #|fn UInt::output_size_hint(radix? : Int = 10) -> Int { Int::output_size_hint(radix~) }
         ),
       ),
       "output_size_hint": build(
         (
-          #|fn UInt64::output_size_hint(radix~ : Int = 10) -> Int { Int64::output_size_hint(radix~) }
+          #|fn UInt64::output_size_hint(radix? : Int = 10) -> Int { Int64::output_size_hint(radix~) }
         ),
       ),
       "to_int": build(
@@ -6523,7 +6628,7 @@ let moonbitlang_core_builtin_module : RuntimeModule = RuntimeModule::new(
       ),
       "to_unchecked_string": build(
         (
-          #|pub fn Bytes::to_unchecked_string( self : Bytes, offset~ : Int = 0, length? : Int, ) -> String { let len = self.length()
+          #|pub fn Bytes::to_unchecked_string( self : Bytes, offset? : Int = 0, length? : Int, ) -> String { let len = self.length()
           #|  let length = if length is Some(l) { l } else { len - offset }
           #|  guard offset >= 0 && length >= 0 && offset + length <= len
           #|  unsafe_sub_string(self, offset, length) }
@@ -6769,7 +6874,7 @@ let moonbitlang_core_builtin_module : RuntimeModule = RuntimeModule::new(
       ),
       "inspect": build(
         (
-          #|pub fn inspect( obj : &Show, content~ : String = \"\", loc~ : SourceLoc, args_loc~ : ArgsLoc, ) -> Unit raise InspectError { let actual = obj.to_string()
+          #|pub fn inspect( obj : &Show, content? : String = \"\", loc~ : SourceLoc, args_loc~ : ArgsLoc, ) -> Unit raise InspectError { let actual = obj.to_string()
           #|  if actual != content {
           #|    let loc = loc.to_string().escape()
           #|    let args_loc = args_loc.to_json().escape()
@@ -6909,6 +7014,257 @@ let moonbitlang_core_bytes_module : RuntimeModule = RuntimeModule::new(
   deps={ "moonbitlang/core/builtin": moonbitlang_core_builtin_module },
   fn(_env, build) {
     {
+      "unsafe_extract_bit": build(
+        (
+          #|pub fn View::unsafe_extract_bit(bs : View, offset : Int, _len : Int) -> UInt { let byte_index = offset >> 3
+          #|  let bit_mask = (1 << (7 - (offset & 7))).to_byte()
+          #|  // TODO: branchless for performance
+          #|  if (bs.unsafe_get(byte_index) & bit_mask) != 0 {
+          #|    1
+          #|  } else {
+          #|    0
+          #|  } }
+        ),
+      ),
+      "unsafe_extract_byte": build(
+        (
+          #|pub fn View::unsafe_extract_byte(bs : View, offset : Int, len : Int) -> UInt { let byte_index = offset >> 3
+          #|  if (offset & 7) == 0 {
+          #|    // byte-aligned case
+          #|    let byte = bs.unsafe_get(byte_index)
+          #|    (byte >> (8 - len)).to_uint()
+          #|  } else if (offset & 7) + len <= 8 {
+          #|    // All bits are within the same byte - no need to read next byte
+          #|    let byte = bs.unsafe_get(byte_index).to_uint()
+          #|    let shift = 8 - ((offset & 7) + len)
+          #|    let mask = (1U << len) - 1
+          #|    (byte >> shift) & mask
+          #|  } else {
+          #|    // extract 16 bits at [byte_index, byte_index + 1]
+          #|    let b0 = bs.unsafe_get(byte_index).to_uint()
+          #|    let b1 = bs.unsafe_get(byte_index + 1).to_uint()
+          #|    let data = (b0 << 8) | b1
+          #|    // mask off the top bits
+          #|    let bit_mask = (1U << (16 - (offset & 7))) - 1
+          #|    let data = data & bit_mask
+          #|    let shift = 16 - ((offset & 7) + len)
+          #|    data >> shift
+          #|  } }
+        ),
+      ),
+      "unsafe_extract_uint_le": build(
+        (
+          #|pub fn View::unsafe_extract_uint_le(bs : View, offset : Int, len : Int) -> UInt { let bytes_needed = (len + 7) / 8
+          #|  // TODO: add fast path for aligned case
+          #|  // non-aligned case: extract bytes using unsafe_extract_byte
+          #|  let b0 = bs.unsafe_extract_byte(offset, 8)
+          #|  match bytes_needed {
+          #|    2 => {
+          #|      let b1 = bs.unsafe_extract_byte(offset + 8, len - 8)
+          #|      (b1 << 8) | b0
+          #|    }
+          #|    3 => {
+          #|      let b1 = bs.unsafe_extract_byte(offset + 8, 8)
+          #|      let b2 = bs.unsafe_extract_byte(offset + 16, len - 16)
+          #|      (b2 << 16) | (b1 << 8) | b0
+          #|    }
+          #|    4 => {
+          #|      let b1 = bs.unsafe_extract_byte(offset + 8, 8)
+          #|      let b2 = bs.unsafe_extract_byte(offset + 16, 8)
+          #|      let b3 = bs.unsafe_extract_byte(offset + 24, len - 24)
+          #|      (b3 << 24) | (b2 << 16) | (b1 << 8) | b0
+          #|    }
+          #|    _ => abort(\"Invalid byte count for int32 extraction\")
+          #|  } }
+        ),
+      ),
+      "unsafe_extract_uint_be": build(
+        (
+          #|pub fn View::unsafe_extract_uint_be(bs : View, offset : Int, len : Int) -> UInt { let bytes_needed = (len + 7) / 8
+          #|  // TODO: add fast path for aligned case
+          #|  // non-aligned case: extract bytes using unsafe_extract_byte
+          #|  let b0 = bs.unsafe_extract_byte(offset, 8)
+          #|  match bytes_needed {
+          #|    2 => {
+          #|      let b1 = bs.unsafe_extract_byte(offset + 8, len - 8)
+          #|      let shift = 16 - len
+          #|      let data = (b0 << 8) | (b1 << shift)
+          #|      data >> shift
+          #|    }
+          #|    3 => {
+          #|      let b1 = bs.unsafe_extract_byte(offset + 8, 8)
+          #|      let b2 = bs.unsafe_extract_byte(offset + 16, len - 16)
+          #|      let shift = 24 - len
+          #|      let data = (b0 << 16) | (b1 << 8) | (b2 << shift)
+          #|      data >> shift
+          #|    }
+          #|    4 => {
+          #|      let b1 = bs.unsafe_extract_byte(offset + 8, 8)
+          #|      let b2 = bs.unsafe_extract_byte(offset + 16, 8)
+          #|      let b3 = bs.unsafe_extract_byte(offset + 24, len - 24)
+          #|      let shift = 32 - len
+          #|      let data = (b0 << 24) | (b1 << 16) | (b2 << 8) | (b3 << shift)
+          #|      data >> shift
+          #|    }
+          #|    _ => abort(\"Invalid byte count for int32 extraction\")
+          #|  } }
+        ),
+      ),
+      "unsafe_extract_uint64_le": build(
+        (
+          #|pub fn View::unsafe_extract_uint64_le( bs : View, offset : Int, len : Int, ) -> UInt64 { let bytes_needed = (len + 7) / 8
+          #|  // TODO: add fast path for aligned case
+          #|  // non-aligned case: extract bytes using unsafe_extract_byte
+          #|  let b0 = bs.unsafe_extract_byte(offset, 8).to_uint64()
+          #|  let b1 = bs.unsafe_extract_byte(offset + 8, 8).to_uint64()
+          #|  let b2 = bs.unsafe_extract_byte(offset + 16, 8).to_uint64()
+          #|  let b3 = bs.unsafe_extract_byte(offset + 24, 8).to_uint64()
+          #|  match bytes_needed {
+          #|    5 => {
+          #|      let b4 = bs.unsafe_extract_byte(offset + 32, len - 32).to_uint64()
+          #|      (b4 << 32) | (b3 << 24) | (b2 << 16) | (b1 << 8) | b0
+          #|    }
+          #|    6 => {
+          #|      let b4 = bs.unsafe_extract_byte(offset + 32, 8).to_uint64()
+          #|      let b5 = bs.unsafe_extract_byte(offset + 40, len - 40).to_uint64()
+          #|      (b5 << 40) | (b4 << 32) | (b3 << 24) | (b2 << 16) | (b1 << 8) | b0
+          #|    }
+          #|    7 => {
+          #|      let b4 = bs.unsafe_extract_byte(offset + 32, 8).to_uint64()
+          #|      let b5 = bs.unsafe_extract_byte(offset + 40, 8).to_uint64()
+          #|      let b6 = bs.unsafe_extract_byte(offset + 48, len - 48).to_uint64()
+          #|      (b6 << 48) |
+          #|      (b5 << 40) |
+          #|      (b4 << 32) |
+          #|      (b3 << 24) |
+          #|      (b2 << 16) |
+          #|      (b1 << 8) |
+          #|      b0
+          #|    }
+          #|    8 => {
+          #|      let b4 = bs.unsafe_extract_byte(offset + 32, 8).to_uint64()
+          #|      let b5 = bs.unsafe_extract_byte(offset + 40, 8).to_uint64()
+          #|      let b6 = bs.unsafe_extract_byte(offset + 48, 8).to_uint64()
+          #|      let b7 = bs.unsafe_extract_byte(offset + 56, len - 56).to_uint64()
+          #|      (b7 << 56) |
+          #|      (b6 << 48) |
+          #|      (b5 << 40) |
+          #|      (b4 << 32) |
+          #|      (b3 << 24) |
+          #|      (b2 << 16) |
+          #|      (b1 << 8) |
+          #|      b0
+          #|    }
+          #|    _ => abort(\"Invalid byte count for int64 extraction\")
+          #|  } }
+        ),
+      ),
+      "unsafe_extract_uint64_be": build(
+        (
+          #|pub fn View::unsafe_extract_uint64_be( bs : View, offset : Int, len : Int, ) -> UInt64 { let bytes_needed = (len + 7) / 8
+          #|  // TODO: add fast path for aligned case
+          #|  // non-aligned case: extract bytes using unsafe_extract_byte
+          #|  let b0 = bs.unsafe_extract_byte(offset, 8).to_uint64()
+          #|  let b1 = bs.unsafe_extract_byte(offset + 8, 8).to_uint64()
+          #|  let b2 = bs.unsafe_extract_byte(offset + 16, 8).to_uint64()
+          #|  let b3 = bs.unsafe_extract_byte(offset + 24, 8).to_uint64()
+          #|  match bytes_needed {
+          #|    5 => {
+          #|      let b4 = bs.unsafe_extract_byte(offset + 32, len - 32).to_uint64()
+          #|      let shift = 40 - len
+          #|      let data = (b0 << 32) |
+          #|        (b1 << 24) |
+          #|        (b2 << 16) |
+          #|        (b3 << 8) |
+          #|        (b4 << shift)
+          #|      data >> shift
+          #|    }
+          #|    6 => {
+          #|      let b4 = bs.unsafe_extract_byte(offset + 32, 8).to_uint64()
+          #|      let b5 = bs.unsafe_extract_byte(offset + 40, len - 40).to_uint64()
+          #|      let shift = 48 - len
+          #|      let data = (b0 << 40) |
+          #|        (b1 << 32) |
+          #|        (b2 << 24) |
+          #|        (b3 << 16) |
+          #|        (b4 << 8) |
+          #|        (b5 << shift)
+          #|      data >> shift
+          #|    }
+          #|    7 => {
+          #|      let b4 = bs.unsafe_extract_byte(offset + 32, 8).to_uint64()
+          #|      let b5 = bs.unsafe_extract_byte(offset + 40, 8).to_uint64()
+          #|      let b6 = bs.unsafe_extract_byte(offset + 48, len - 48).to_uint64()
+          #|      let shift = 56 - len
+          #|      let data = (b0 << 48) |
+          #|        (b1 << 40) |
+          #|        (b2 << 32) |
+          #|        (b3 << 24) |
+          #|        (b4 << 16) |
+          #|        (b5 << 8) |
+          #|        (b6 << shift)
+          #|      data >> shift
+          #|    }
+          #|    8 => {
+          #|      let b4 = bs.unsafe_extract_byte(offset + 32, 8).to_uint64()
+          #|      let b5 = bs.unsafe_extract_byte(offset + 40, 8).to_uint64()
+          #|      let b6 = bs.unsafe_extract_byte(offset + 48, 8).to_uint64()
+          #|      let b7 = bs.unsafe_extract_byte(offset + 56, len - 56).to_uint64()
+          #|      let shift = 64 - len
+          #|      let data = (b0 << 56) |
+          #|        (b1 << 48) |
+          #|        (b2 << 40) |
+          #|        (b3 << 32) |
+          #|        (b4 << 24) |
+          #|        (b5 << 16) |
+          #|        (b6 << 8) |
+          #|        (b7 << shift)
+          #|      data >> shift
+          #|    }
+          #|    _ => abort(\"Invalid byte count for int64 extraction\")
+          #|  } }
+        ),
+      ),
+      "unsafe_extract_bytesview": build(
+        (
+          #|pub fn View::unsafe_extract_bytesview( bs : View, offset : Int, len : Int, ) -> View { View::make(bs.bytes(), bs.start() + (offset >> 3), len >> 3) }
+        ),
+      ),
+      "unsafe_extract_bit": build(
+        (
+          #|pub fn Bytes::unsafe_extract_bit(bs : Bytes, offset : Int, len : Int) -> UInt { bs[:].unsafe_extract_bit(offset, len) }
+        ),
+      ),
+      "unsafe_extract_byte": build(
+        (
+          #|pub fn Bytes::unsafe_extract_byte(bs : Bytes, offset : Int, len : Int) -> UInt { bs[:].unsafe_extract_byte(offset, len) }
+        ),
+      ),
+      "unsafe_extract_uint_le": build(
+        (
+          #|pub fn Bytes::unsafe_extract_uint_le( bs : Bytes, offset : Int, len : Int, ) -> UInt { bs[:].unsafe_extract_uint_le(offset, len) }
+        ),
+      ),
+      "unsafe_extract_uint_be": build(
+        (
+          #|pub fn Bytes::unsafe_extract_uint_be( bs : Bytes, offset : Int, len : Int, ) -> UInt { bs[:].unsafe_extract_uint_be(offset, len) }
+        ),
+      ),
+      "unsafe_extract_uint64_le": build(
+        (
+          #|pub fn Bytes::unsafe_extract_uint64_le( bs : Bytes, offset : Int, len : Int, ) -> UInt64 { bs[:].unsafe_extract_uint64_le(offset, len) }
+        ),
+      ),
+      "unsafe_extract_uint64_be": build(
+        (
+          #|pub fn Bytes::unsafe_extract_uint64_be( bs : Bytes, offset : Int, len : Int, ) -> UInt64 { bs[:].unsafe_extract_uint64_be(offset, len) }
+        ),
+      ),
+      "unsafe_extract_bytesview": build(
+        (
+          #|pub fn Bytes::unsafe_extract_bytesview( bs : Bytes, offset : Int, len : Int, ) -> View { bs[:].unsafe_extract_bytesview(offset, len) }
+        ),
+      ),
       "gPRIME1": (None, String("0x9E3779B1")),
       "gPRIME2": (None, String("0x85EBCA77")),
       "gPRIME3": (None, String("0xC2B2AE3D")),
@@ -6916,14 +7272,13 @@ let moonbitlang_core_bytes_module : RuntimeModule = RuntimeModule::new(
       "gPRIME5": (None, String("0x165667B1")),
       "xxhash32": build(
         (
-          #|fn xxhash32(input : Bytes, seed : Int) -> Int { let len = input.length()
-          #|  let h = (if len >= 16 {
-          #|      h16bytes(input, 0, len, seed)
+          #|fn xxhash32( input : Bytes, offset? : Int = 0, len? : Int = input.length(), seed : Int, ) -> Int { let h = (if len >= 16 {
+          #|      h16bytes(input, offset, len, seed)
           #|    } else {
           #|      seed + gPRIME5
           #|    }) +
           #|    len
-          #|  finalize(h, input, len & -16, len & 0xF) }
+          #|  finalize(h, input, offset + (len & -16), len & 0xF) }
         ),
       ),
       "rotl": build(
@@ -7015,6 +7370,48 @@ let moonbitlang_core_bytes_module : RuntimeModule = RuntimeModule::new(
           #|  ) }
         ),
       ),
+      "find": build(
+        (
+          #|pub fn View::find(target : View, pattern : View) -> Int? { // TODO: more efficient algorithm
+          #|  let target_len = target.length()
+          #|  let pattern_len = pattern.length()
+          #|  for i in 0..=(target_len - pattern_len) {
+          #|    for j in 0..<pattern_len {
+          #|      guard target.unsafe_get(i + j) == pattern.unsafe_get(j) else { break }
+          #|    } else {
+          #|      return Some(i)
+          #|    }
+          #|  } else {
+          #|    None
+          #|  } }
+        ),
+      ),
+      "find": build(
+        (
+          #|pub fn Bytes::find(target : Bytes, pattern : View) -> Int? { target[:].find(pattern) }
+        ),
+      ),
+      "rev_find": build(
+        (
+          #|pub fn View::rev_find(target : View, pattern : View) -> Int? { // TODO: more efficient algorithm
+          #|  let target_len = target.length()
+          #|  let pattern_len = pattern.length()
+          #|  for i = target_len - pattern_len; i >= 0; i = i - 1 {
+          #|    for j in 0..<pattern_len {
+          #|      guard target.unsafe_get(i + j) == pattern.unsafe_get(j) else { break }
+          #|    } else {
+          #|      return Some(i)
+          #|    }
+          #|  } else {
+          #|    None
+          #|  } }
+        ),
+      ),
+      "rev_find": build(
+        (
+          #|pub fn Bytes::rev_find(target : Bytes, pattern : View) -> Int? { target[:].rev_find(pattern) }
+        ),
+      ),
       "length": build(
         (
           #|pub fn View::length(self : View) -> Int { self.len() }
@@ -7022,9 +7419,9 @@ let moonbitlang_core_bytes_module : RuntimeModule = RuntimeModule::new(
       ),
       "op_get": build(
         (
-          #|pub fn View::op_get(self : View, index : Int) -> Byte { guard index >= 0 && index < self.len() else {
+          #|pub fn View::op_get(self : View, index : Int) -> Byte { guard index >= 0 && index < self.length() else {
           #|    abort(
-          #|      \"index out of bounds: the len is from 0 to \\{self.len()} but the index is \\{index}\",
+          #|      \"index out of bounds: the len is from 0 to \\{self.length()} but the index is \\{index}\",
           #|    )
           #|  }
           #|  self.bytes()[self.start() + index] }
@@ -7032,7 +7429,7 @@ let moonbitlang_core_bytes_module : RuntimeModule = RuntimeModule::new(
       ),
       "get": build(
         (
-          #|pub fn View::get(self : View, index : Int) -> Byte? { guard index >= 0 && index < self.len() else { None }
+          #|pub fn View::get(self : View, index : Int) -> Byte? { guard index >= 0 && index < self.length() else { None }
           #|  Some(self.bytes().unsafe_get(self.start() + index)) }
         ),
       ),
@@ -7043,7 +7440,7 @@ let moonbitlang_core_bytes_module : RuntimeModule = RuntimeModule::new(
       ),
       "op_as_view": build(
         (
-          #|pub fn Bytes::op_as_view(self : Bytes, start~ : Int = 0, end? : Int) -> View { let len = self.length()
+          #|pub fn Bytes::op_as_view(self : Bytes, start? : Int = 0, end? : Int) -> View { let len = self.length()
           #|  let end = match end {
           #|    None => len
           #|    Some(end) => if end < 0 { len + end } else { end }
@@ -7057,7 +7454,7 @@ let moonbitlang_core_bytes_module : RuntimeModule = RuntimeModule::new(
       ),
       "op_as_view": build(
         (
-          #|pub fn View::op_as_view(self : View, start~ : Int = 0, end? : Int) -> View { let len = self.length()
+          #|pub fn View::op_as_view(self : View, start? : Int = 0, end? : Int) -> View { let len = self.length()
           #|  let end = match end {
           #|    None => len
           #|    Some(end) => if end < 0 { len + end } else { end }
@@ -7071,7 +7468,7 @@ let moonbitlang_core_bytes_module : RuntimeModule = RuntimeModule::new(
       ),
       "iter": build(
         (
-          #|pub fn View::iter(self : View) -> Iter[Byte] { Iter::new(yield_ => for i in 0..<self.len() {
+          #|pub fn View::iter(self : View) -> Iter[Byte] { Iter::new(yield_ => for i in 0..<self.length() {
           #|    guard yield_(self[i]) is IterContinue else { break IterEnd }
           #|  } else {
           #|    IterContinue
@@ -7170,11 +7567,11 @@ let moonbitlang_core_bytes_module : RuntimeModule = RuntimeModule::new(
       ),
       "to_bytes": build(
         (
-          #|pub fn View::to_bytes(self : View) -> Bytes { if self.len() == 0 && self.len() == self.bytes().length() {
+          #|pub fn View::to_bytes(self : View) -> Bytes { if self.length() == 0 && self.length() == self.bytes().length() {
           #|    return self.bytes()
           #|  }
-          #|  let bytes = FixedArray::make(self.len(), (0 : Byte))
-          #|  bytes.blit_from_bytes(0, self.bytes(), self.start_offset(), self.len())
+          #|  let bytes = FixedArray::make(self.length(), (0 : Byte))
+          #|  bytes.blit_from_bytes(0, self.bytes(), self.start_offset(), self.length())
           #|  unsafe_to_bytes(bytes) }
         ),
       ),
@@ -7726,7 +8123,7 @@ let moonbitlang_core_deque_module : RuntimeModule = RuntimeModule::new(
       ),
       "new": build(
         (
-          #|pub fn[A] new(capacity~ : Int = 0) -> T[A] { T::{ buf: UninitializedArray::make(capacity), len: 0, head: 0, tail: 0 } }
+          #|pub fn[A] new(capacity? : Int = 0) -> T[A] { T::{ buf: UninitializedArray::make(capacity), len: 0, head: 0, tail: 0 } }
         ),
       ),
       "from_array": build(
@@ -8381,7 +8778,7 @@ let moonbitlang_core_double_module : RuntimeModule = RuntimeModule::new(
           #|    return h * abs_x.exp()
           #|  }
           #|  if abs_x.reinterpret_as_uint64() < 0x408633ce8fb9f87d {
-          #|    let w = exp(0.5 * abs_x)
+          #|    let w = Double::exp(0.5 * abs_x)
           #|    let t = h * w
           #|    return t * w
           #|  }
@@ -8414,7 +8811,7 @@ let moonbitlang_core_double_module : RuntimeModule = RuntimeModule::new(
           #|  }
           #|  let lx = get_low_word(self).reinterpret_as_int()
           #|  if ix < 0x408633ce || (ix == 0x408633ce && lx <= 0x8fb9f87d) {
-          #|    let w = exp(0.5 * self.abs())
+          #|    let w = Double::exp(0.5 * self.abs())
           #|    let t = 0.5 * w
           #|    return t * w
           #|  }
@@ -9802,7 +10199,7 @@ let moonbitlang_core_double_module : RuntimeModule = RuntimeModule::new(
       ),
       "is_close": build(
         (
-          #|pub fn Double::is_close( self : Self, other : Self, relative_tolerance~ : Self = 1.0e-09, absolute_tolerance~ : Self = 0.0, ) -> Bool { if relative_tolerance < 0.0 || absolute_tolerance < 0.0 {
+          #|pub fn Double::is_close( self : Self, other : Self, relative_tolerance? : Self = 1.0e-09, absolute_tolerance? : Self = 0.0, ) -> Bool { if relative_tolerance < 0.0 || absolute_tolerance < 0.0 {
           #|    abort(\"Tolerances must be non-negative\")
           #|  }
           #|  if self == other {
@@ -10199,7 +10596,7 @@ let moonbitlang_core_double_module : RuntimeModule = RuntimeModule::new(
           #|  if f == 0.5 {
           #|    return e.to_double() - 1.0
           #|  }
-          #|  ln(f) / ln2 + e.to_double() }
+          #|  Double::ln(f) / ln2 + e.to_double() }
         ),
       ),
       "log10": build(
@@ -11213,7 +11610,7 @@ let moonbitlang_core_float_module : RuntimeModule = RuntimeModule::new(
       ),
       "is_close": build(
         (
-          #|pub fn Float::is_close( self : Self, other : Self, relative_tolerance~ : Self = 1.0e-09, absolute_tolerance~ : Self = 0.0, ) -> Bool { if relative_tolerance < 0.0 || absolute_tolerance < 0.0 {
+          #|pub fn Float::is_close( self : Self, other : Self, relative_tolerance? : Self = 1.0e-09, absolute_tolerance? : Self = 0.0, ) -> Bool { if relative_tolerance < 0.0 || absolute_tolerance < 0.0 {
           #|    abort(\"Tolerances must be non-negative\")
           #|  }
           #|  if self == other {
@@ -12149,11 +12546,6 @@ let moonbitlang_core_hashmap_module : RuntimeModule = RuntimeModule::new(
   },
   fn(_env, build) {
     {
-      "op_get": build(
-        (
-          #|pub fn[K : Hash + Eq, V] op_get(self : T[K, V], key : K) -> V? { self.get(key) }
-        ),
-      ),
       "debug_entries": build(
         (
           #|fn[K : Show, V : Show] debug_entries(self : T[K, V]) -> String { for s = \"\", i = 0; i < self.entries.length(); {
@@ -12245,7 +12637,7 @@ let moonbitlang_core_hashmap_module : RuntimeModule = RuntimeModule::new(
       ),
       "each": build(
         (
-          #|pub fn[K, V] each(self : T[K, V], f : (K, V) -> Unit) -> Unit { for i in 0..<self.capacity {
+          #|pub fn[K, V] each(self : T[K, V], f : (K, V) -> Unit raise?) -> Unit raise? { for i in 0..<self.capacity {
           #|    if self.entries[i] is Some({ key, value, .. }) {
           #|      f(key, value)
           #|    }
@@ -12254,7 +12646,7 @@ let moonbitlang_core_hashmap_module : RuntimeModule = RuntimeModule::new(
       ),
       "eachi": build(
         (
-          #|pub fn[K, V] eachi(self : T[K, V], f : (Int, K, V) -> Unit) -> Unit { for i = 0, idx = 0; i < self.capacity; {
+          #|pub fn[K, V] eachi( self : T[K, V], f : (Int, K, V) -> Unit raise?, ) -> Unit raise? { for i = 0, idx = 0; i < self.capacity; {
           #|    match self.entries[i] {
           #|      Some({ key, value, .. }) => {
           #|        f(idx, key, value)
@@ -12265,9 +12657,31 @@ let moonbitlang_core_hashmap_module : RuntimeModule = RuntimeModule::new(
           #|  } }
         ),
       ),
+      "keys": build(
+        (
+          #|pub fn[K, V] T::keys(self : T[K, V]) -> Iter[K] { Iter::new(yield_ => for entry in self.entries {
+          #|    if entry is Some({ key, .. }) {
+          #|      guard yield_(key) is IterContinue else { break IterEnd }
+          #|    }
+          #|  } else {
+          #|    IterContinue
+          #|  }) }
+        ),
+      ),
+      "values": build(
+        (
+          #|pub fn[K, V] T::values(self : T[K, V]) -> Iter[V] { Iter::new(yield_ => for entry in self.entries {
+          #|    if entry is Some({ value, .. }) {
+          #|      guard yield_(value) is IterContinue else { break IterEnd }
+          #|    }
+          #|  } else {
+          #|    IterContinue
+          #|  }) }
+        ),
+      ),
       "new": build(
         (
-          #|pub fn[K, V] new(capacity~ : Int = 8) -> T[K, V] { let capacity = capacity.next_power_of_two()
+          #|pub fn[K, V] new(capacity? : Int = 8) -> T[K, V] { let capacity = capacity.next_power_of_two()
           #|  {
           #|    size: 0,
           #|    capacity,
@@ -12293,27 +12707,46 @@ let moonbitlang_core_hashmap_module : RuntimeModule = RuntimeModule::new(
           #|fn[K : Eq, V] set_with_hash( self : T[K, V], key : K, value : V, hash : Int, ) -> Unit { if self.size >= self.capacity / 2 {
           #|    self.grow()
           #|  }
-          #|  for idx = hash & self.capacity_mask, entry = { psl: 0, hash, key, value } {
+          #|  let (idx, psl) = for psl = 0, idx = hash & self.capacity_mask {
+          #|    match self.entries[idx] {
+          #|      None => break (idx, psl)
+          #|      Some(curr_entry) => {
+          #|        if curr_entry.hash == hash && curr_entry.key == key {
+          #|          curr_entry.value = value
+          #|          return
+          #|        }
+          #|        if psl > curr_entry.psl {
+          #|          self.push_away(idx, curr_entry)
+          #|          break (idx, psl)
+          #|        }
+          #|        continue psl + 1, (idx + 1) & self.capacity_mask
+          #|      }
+          #|    }
+          #|  }
+          #|  let entry = { psl, key, value, hash }
+          #|  self.entries[idx] = Some(entry)
+          #|  self.size += 1 }
+        ),
+      ),
+      "push_away": build(
+        (
+          #|fn[K, V] T::push_away(self : T[K, V], idx : Int, entry : Entry[K, V]) -> Unit { for psl = entry.psl + 1, idx = (idx + 1) & self.capacity_mask, entry = entry {
           #|    match self.entries[idx] {
           #|      None => {
+          #|        entry.psl = psl
           #|        self.entries[idx] = Some(entry)
-          #|        self.size += 1
           #|        break
           #|      }
-          #|      Some(curr_entry) => {
-          #|        if curr_entry.hash == entry.hash && curr_entry.key == entry.key {
-          #|          curr_entry.value = entry.value
-          #|          break
-          #|        }
-          #|        let curr_entry = if entry.psl > curr_entry.psl {
+          #|      Some(curr_entry) =>
+          #|        if psl > curr_entry.psl {
+          #|          entry.psl = psl
           #|          self.entries[idx] = Some(entry)
-          #|          curr_entry
+          #|          continue curr_entry.psl + 1,
+          #|            (idx + 1) & self.capacity_mask,
+          #|            curr_entry
           #|        } else {
-          #|          entry
+          #|          continue psl + 1, (idx + 1) & self.capacity_mask, entry
           #|        }
-          #|        curr_entry.psl += 1
-          #|        continue (idx + 1) & self.capacity_mask, curr_entry
-          #|      }
           #|    }
           #|  } }
         ),
@@ -12339,16 +12772,15 @@ let moonbitlang_core_hashmap_module : RuntimeModule = RuntimeModule::new(
           #|  } }
         ),
       ),
-      "get_with_hash": build(
+      "op_get": build(
         (
-          #|fn[K : Eq, V] get_with_hash(self : T[K, V], key : K, hash : Int) -> V? { for i = 0, idx = hash & self.capacity_mask {
-          #|    guard self.entries[idx] is Some(entry) else { break None }
+          #|pub fn[K : Hash + Eq, V] op_get(self : T[K, V], key : K) -> V { let hash = key.hash()
+          #|  for i = 0, idx = hash & self.capacity_mask {
+          #|    guard self.entries[idx] is Some(entry)
           #|    if entry.hash == hash && entry.key == key {
-          #|      break Some(entry.value)
+          #|      break entry.value
           #|    }
-          #|    if i > entry.psl {
-          #|      break None
-          #|    }
+          #|    guard entry.psl <= i
           #|    continue i + 1, (idx + 1) & self.capacity_mask
           #|  } }
         ),
@@ -12356,14 +12788,38 @@ let moonbitlang_core_hashmap_module : RuntimeModule = RuntimeModule::new(
       "get_or_init": build(
         (
           #|pub fn[K : Hash + Eq, V] get_or_init( self : T[K, V], key : K, init : () -> V, ) -> V { let hash = key.hash()
-          #|  match self.get_with_hash(key, hash) {
-          #|    Some(v) => v
-          #|    None => {
-          #|      let v = init()
-          #|      self.set_with_hash(key, v, hash)
-          #|      v
+          #|  let (idx, psl, new_value, push_away) = for psl = 0, idx = hash &
+          #|                                               self.capacity_mask {
+          #|    match self.entries[idx] {
+          #|      Some(entry) => {
+          #|        if entry.hash == hash && entry.key == key {
+          #|          return entry.value
+          #|        }
+          #|        if psl > entry.psl {
+          #|          let new_value = init()
+          #|          break (idx, psl, new_value, Some(entry))
+          #|        }
+          #|        continue psl + 1, (idx + 1) & self.capacity_mask
+          #|      }
+          #|      None => {
+          #|        let new_value = init()
+          #|        break (idx, psl, new_value, None)
+          #|      }
           #|    }
-          #|  } }
+          #|  }
+          #|  if self.size >= self.capacity / 2 {
+          #|    // Slow path, we need to resize
+          #|    self.grow()
+          #|    self.set_with_hash(key, new_value, hash)
+          #|  } else {
+          #|    if push_away is Some(entry) {
+          #|      self.push_away(idx, entry)
+          #|    }
+          #|    let entry = { psl, hash, key, value: new_value }
+          #|    self.entries[idx] = Some(entry)
+          #|    self.size += 1
+          #|  }
+          #|  new_value }
         ),
       ),
       "get_or_default": build(
@@ -12418,7 +12874,6 @@ let moonbitlang_core_hashmap_module : RuntimeModule = RuntimeModule::new(
           #|    match self.entries[idx] {
           #|      Some(entry) => {
           #|        if entry.hash == hash && entry.key == key {
-          #|          self.entries[idx] = None
           #|          self.shift_back(idx)
           #|          self.size -= 1
           #|          break
@@ -12435,17 +12890,13 @@ let moonbitlang_core_hashmap_module : RuntimeModule = RuntimeModule::new(
       ),
       "shift_back": build(
         (
-          #|fn[K, V] shift_back(self : T[K, V], start_index : Int) -> Unit { for prev = start_index, curr = (start_index + 1) & self.capacity_mask {
-          #|    match self.entries[curr] {
-          #|      Some({ psl, hash, key, value }) => {
-          #|        if psl == 0 {
-          #|          break
-          #|        }
-          #|        self.entries[prev] = Some({ psl: psl - 1, hash, key, value })
-          #|        self.entries[curr] = None
-          #|        continue curr, (curr + 1) & self.capacity_mask
-          #|      }
-          #|      None => break
+          #|fn[K, V] shift_back(self : T[K, V], idx : Int) -> Unit { let next = (idx + 1) & self.capacity_mask
+          #|  match self.entries[next] {
+          #|    None | Some({ psl: 0, .. }) => self.entries[idx] = None
+          #|    Some(entry) => {
+          #|      entry.psl -= 1
+          #|      self.entries[idx] = Some(entry)
+          #|      self.shift_back(next)
           #|    }
           #|  } }
         ),
@@ -12472,6 +12923,44 @@ let moonbitlang_core_hashmap_module : RuntimeModule = RuntimeModule::new(
           #|  m }
         ),
       ),
+      "map": build(
+        (
+          #|pub fn[K, V, V2] T::map(self : T[K, V], f : (K, V) -> V2) -> T[K, V2] { let other = {
+          #|    capacity: self.capacity,
+          #|    entries: FixedArray::make(self.capacity, None),
+          #|    size: self.size,
+          #|    capacity_mask: self.capacity_mask,
+          #|  }
+          #|  if self.size == 0 {
+          #|    return other
+          #|  }
+          #|  for i in 0..<self.capacity {
+          #|    if self.entries[i] is Some({ key, value, hash, psl }) {
+          #|      other.entries[i] = Some({ psl, key, value: f(key, value), hash })
+          #|    }
+          #|  }
+          #|  other }
+        ),
+      ),
+      "copy": build(
+        (
+          #|pub fn[K, V] T::copy(self : T[K, V]) -> T[K, V] { let other = {
+          #|    capacity: self.capacity,
+          #|    entries: FixedArray::make(self.capacity, None),
+          #|    size: self.size,
+          #|    capacity_mask: self.capacity_mask,
+          #|  }
+          #|  if self.size == 0 {
+          #|    return other
+          #|  }
+          #|  for i in 0..<self.capacity {
+          #|    if self.entries[i] is Some({ key, value, hash, psl }) {
+          #|      other.entries[i] = Some({ psl, key, value, hash })
+          #|    }
+          #|  }
+          #|  other }
+        ),
+      ),
     }
   },
 )
@@ -12490,9 +12979,10 @@ let moonbitlang_core_hashset_module : RuntimeModule = RuntimeModule::new(
       "default_init_capacity": (None, Int(8)),
       "new": build(
         (
-          #|pub fn[K] new(capacity~ : Int = default_init_capacity) -> T[K] { {
+          #|pub fn[K] T::new(capacity? : Int = default_init_capacity) -> T[K] { {
           #|    size: 0,
           #|    capacity,
+          #|    capacity_mask: capacity - 1,
           #|    grow_at: calc_grow_threshold(capacity),
           #|    entries: FixedArray::make(capacity, None),
           #|  } }
@@ -12500,88 +12990,142 @@ let moonbitlang_core_hashset_module : RuntimeModule = RuntimeModule::new(
       ),
       "from_array": build(
         (
-          #|pub fn[K : Hash + Eq] from_array(arr : Array[K]) -> T[K] { let m = new()
+          #|pub fn[K : Hash + Eq] T::from_array(arr : Array[K]) -> T[K] { let m = new()
           #|  arr.each(e => m.add(e))
           #|  m }
         ),
       ),
       "of": build(
         (
-          #|pub fn[K : Hash + Eq] of(arr : FixedArray[K]) -> T[K] { let m = new()
+          #|pub fn[K : Hash + Eq] T::of(arr : FixedArray[K]) -> T[K] { let m = new()
           #|  arr.each(e => m.add(e))
           #|  m }
         ),
       ),
       "add": build(
         (
-          #|pub fn[K : Hash + Eq] add(self : T[K], key : K) -> Unit { if self.capacity == 0 || self.size >= self.grow_at {
+          #|pub fn[K : Hash + Eq] add(self : T[K], key : K) -> Unit { self.add_with_hash(key, key.hash()) }
+        ),
+      ),
+      "add_with_hash": build(
+        (
+          #|fn[K : Eq] add_with_hash(self : T[K], key : K, hash : Int) -> Unit { if self.size >= self.grow_at {
           #|    self.grow()
           #|  }
-          #|  let hash = key.hash()
-          #|  let entry = { psl: 0, hash, key }
-          #|  loop (0, self.index(hash), entry) {
-          #|    (i, idx, entry) => {
-          #|      if i == self.capacity {
-          #|        panic()
-          #|      }
-          #|      match self.entries[idx] {
-          #|        None => {
-          #|          self.entries[idx] = Some(entry)
-          #|          self.size += 1
-          #|          break
+          #|  let (idx, psl) = for psl = 0, idx = abs(hash) & self.capacity_mask {
+          #|    match self.entries[idx] {
+          #|      None => break (idx, psl)
+          #|      Some(curr_entry) => {
+          #|        if curr_entry.hash == hash && curr_entry.key == key {
+          #|          return
           #|        }
-          #|        Some(curr_entry) => {
-          #|          if curr_entry.hash == entry.hash && curr_entry.key == entry.key {
-          #|            self.entries[idx] = Some(entry)
-          #|            break
-          #|          }
-          #|          if entry.psl > curr_entry.psl {
-          #|            self.entries[idx] = Some(entry)
-          #|            curr_entry.psl += 1
-          #|            continue (i + 1, self.next_index(idx), curr_entry)
-          #|          }
-          #|          entry.psl += 1
-          #|          continue (i + 1, self.next_index(idx), entry)
+          #|        if psl > curr_entry.psl {
+          #|          self.push_away(idx, curr_entry)
+          #|          break (idx, psl)
           #|        }
+          #|        continue psl + 1, (idx + 1) & self.capacity_mask
           #|      }
+          #|    }
+          #|  }
+          #|  let entry = { psl, key, hash }
+          #|  self.set_entry(entry, idx)
+          #|  self.size += 1 }
+        ),
+      ),
+      "push_away": build(
+        (
+          #|fn[K] push_away(self : T[K], idx : Int, entry : Entry[K]) -> Unit { for psl = entry.psl + 1, idx = (idx + 1) & self.capacity_mask, entry = entry {
+          #|    match self.entries[idx] {
+          #|      None => {
+          #|        entry.psl = psl
+          #|        self.set_entry(entry, idx)
+          #|        break
+          #|      }
+          #|      Some(curr_entry) =>
+          #|        if psl > curr_entry.psl {
+          #|          entry.psl = psl
+          #|          self.set_entry(entry, idx)
+          #|          continue curr_entry.psl + 1,
+          #|            (idx + 1) & self.capacity_mask,
+          #|            curr_entry
+          #|        } else {
+          #|          continue psl + 1, (idx + 1) & self.capacity_mask, entry
+          #|        }
           #|    }
           #|  } }
         ),
       ),
+      "set_entry": build(
+        (
+          #|fn[K] set_entry(self : T[K], entry : Entry[K], new_idx : Int) -> Unit { self.entries[new_idx] = Some(entry) }
+        ),
+      ),
       "contains": build(
         (
-          #|pub fn[K : Hash + Eq] contains(self : T[K], key : K) -> Bool { let hash = key.hash()
-          #|  for i = 0, idx = self.index(hash)
-          #|      i < self.capacity
-          #|      i = i + 1, idx = self.next_index(idx) {
-          #|    match self.entries[idx] {
-          #|      Some(entry) => {
-          #|        if entry.hash == hash && entry.key == key {
-          #|          return true
-          #|        }
-          #|        if i > entry.psl {
-          #|          return false
-          #|        }
-          #|      }
-          #|      None => return false
+          #|pub fn[K : Hash + Eq] contains(self : T[K], key : K) -> Bool { // inline lookup to avoid unnecessary allocations
+          #|  let hash = key.hash()
+          #|  for i = 0, idx = abs(hash) & self.capacity_mask {
+          #|    guard self.entries[idx] is Some(entry) else { break false }
+          #|    if entry.hash == hash && entry.key == key {
+          #|      break true
           #|    }
-          #|  }
-          #|  false }
+          #|    if i > entry.psl {
+          #|      break false
+          #|    }
+          #|    continue i + 1, (idx + 1) & self.capacity_mask
+          #|  } }
         ),
       ),
       "remove": build(
         (
           #|pub fn[K : Hash + Eq] remove(self : T[K], key : K) -> Unit { let hash = key.hash()
-          #|  for i = 0, idx = self.index(hash)
-          #|      i < self.capacity
-          #|      i = i + 1, idx = self.next_index(idx) {
-          #|    if self.entries[idx] is Some(entry) &&
-          #|      entry.hash == hash &&
-          #|      entry.key == key {
-          #|      self.entries[idx] = None
+          #|  for i = 0, idx = abs(hash) & self.capacity_mask {
+          #|    guard self.entries[idx] is Some(entry) else { break }
+          #|    if entry.hash == hash && entry.key == key {
           #|      self.shift_back(idx)
           #|      self.size -= 1
           #|      break
+          #|    }
+          #|    if i > entry.psl {
+          #|      break
+          #|    }
+          #|    continue i + 1, (idx + 1) & self.capacity_mask
+          #|  } }
+        ),
+      ),
+      "shift_back": build(
+        (
+          #|fn[K] shift_back(self : T[K], idx : Int) -> Unit { let next = (idx + 1) & self.capacity_mask
+          #|  match self.entries[next] {
+          #|    None | Some({ psl: 0, .. }) => self.entries[idx] = None
+          #|    Some(entry) => {
+          #|      entry.psl -= 1
+          #|      self.set_entry(entry, idx)
+          #|      self.shift_back(next)
+          #|    }
+          #|  } }
+        ),
+      ),
+      "grow": build(
+        (
+          #|fn[K : Eq] grow(self : T[K]) -> Unit { // handle zero capacity
+          #|  if self.capacity == 0 {
+          #|    self.capacity = default_init_capacity
+          #|    self.capacity_mask = self.capacity - 1
+          #|    self.grow_at = calc_grow_threshold(self.capacity)
+          #|    self.size = 0
+          #|    self.entries = FixedArray::make(self.capacity, None)
+          #|    return
+          #|  }
+          #|  let old_entries = self.entries
+          #|  self.entries = FixedArray::make(self.capacity * 2, None)
+          #|  self.capacity = self.capacity * 2
+          #|  self.capacity_mask = self.capacity - 1
+          #|  self.grow_at = calc_grow_threshold(self.capacity)
+          #|  self.size = 0
+          #|  for i in 0..<old_entries.length() {
+          #|    if old_entries[i] is Some({ key, hash, .. }) {
+          #|      self.add_with_hash(key, hash)
           #|    }
           #|  } }
         ),
@@ -12603,12 +13147,16 @@ let moonbitlang_core_hashset_module : RuntimeModule = RuntimeModule::new(
       ),
       "each": build(
         (
-          #|pub fn[K] each(self : T[K], f : (K) -> Unit) -> Unit { self.eachi((_i, k) => f(k)) }
+          #|pub fn[K] each(self : T[K], f : (K) -> Unit raise?) -> Unit raise? { for entry in self.entries {
+          #|    if entry is Some({ key, .. }) {
+          #|      f(key)
+          #|    }
+          #|  } }
         ),
       ),
       "eachi": build(
         (
-          #|pub fn[K] eachi(self : T[K], f : (Int, K) -> Unit) -> Unit { let mut idx = 0
+          #|pub fn[K] eachi(self : T[K], f : (Int, K) -> Unit raise?) -> Unit raise? { let mut idx = 0
           #|  for i in 0..<self.capacity {
           #|    if self.entries[i] is Some({ key, .. }) {
           #|      f(idx, key)
@@ -12619,10 +13167,37 @@ let moonbitlang_core_hashset_module : RuntimeModule = RuntimeModule::new(
       ),
       "clear": build(
         (
-          #|pub fn[K] clear(self : T[K]) -> Unit { for i in 0..<self.capacity {
-          #|    self.entries[i] = None
-          #|  }
+          #|pub fn[K] clear(self : T[K]) -> Unit { self.entries.fill(None)
           #|  self.size = 0 }
+        ),
+      ),
+      "iter": build(
+        (
+          #|pub fn[K] iter(self : T[K]) -> Iter[K] { Iter::new(yield_ => for entry in self.entries {
+          #|    if entry is Some({ key, .. }) {
+          #|      guard yield_(key) is IterContinue else { break IterEnd }
+          #|    }
+          #|  } else {
+          #|    IterContinue
+          #|  }) }
+        ),
+      ),
+      "to_array": build(
+        (
+          #|pub fn[K] to_array(self : T[K]) -> Array[K] { let arr = Array::new(capacity=self.size)
+          #|  for entry in self.entries {
+          #|    if entry is Some({ key, .. }) {
+          #|      arr.push(key)
+          #|    }
+          #|  }
+          #|  arr }
+        ),
+      ),
+      "from_iter": build(
+        (
+          #|pub fn[K : Hash + Eq] T::from_iter(iter : Iter[K]) -> T[K] { let s = new()
+          #|  iter.each(e => s.add(e))
+          #|  s }
         ),
       ),
       "union": build(
@@ -12678,70 +13253,6 @@ let moonbitlang_core_hashset_module : RuntimeModule = RuntimeModule::new(
           #|pub fn[K : Hash + Eq] is_superset(self : T[K], other : T[K]) -> Bool { other.is_subset(self) }
         ),
       ),
-      "iter": build(
-        (
-          #|pub fn[K] iter(self : T[K]) -> Iter[K] { Iter::new(yield_ => for entry in self.entries {
-          #|    if entry is Some({ key, .. }) {
-          #|      guard yield_(key) is IterContinue else { break IterEnd }
-          #|    }
-          #|  } else {
-          #|    IterContinue
-          #|  }) }
-        ),
-      ),
-      "from_iter": build(
-        (
-          #|pub fn[K : Hash + Eq] from_iter(iter : Iter[K]) -> T[K] { let s = new()
-          #|  iter.each(e => s.add(e))
-          #|  s }
-        ),
-      ),
-      "shift_back": build(
-        (
-          #|fn[K] shift_back(self : T[K], start_index : Int) -> Unit { for i = 0, prev = start_index, curr = self.next_index(start_index)
-          #|      i < self.entries.length()
-          #|      i = i + 1, prev = curr, curr = self.next_index(curr) {
-          #|    match self.entries[curr] {
-          #|      Some(entry) => {
-          #|        if entry.psl == 0 {
-          #|          break
-          #|        }
-          #|        entry.psl -= 1
-          #|        self.entries[prev] = Some(entry)
-          #|        self.entries[curr] = None
-          #|      }
-          #|      None => break
-          #|    }
-          #|  } }
-        ),
-      ),
-      "grow": build(
-        (
-          #|fn[K : Hash + Eq] grow(self : T[K]) -> Unit { // handle zero capacity
-          #|  if self.capacity == 0 {
-          #|    self.capacity = default_init_capacity
-          #|    self.grow_at = calc_grow_threshold(self.capacity)
-          #|    self.size = 0
-          #|    self.entries = FixedArray::make(self.capacity, None)
-          #|    return
-          #|  }
-          #|  let old_entries = self.entries
-          #|  self.entries = FixedArray::make(self.capacity * 2, None)
-          #|  self.capacity = self.capacity * 2
-          #|  self.grow_at = calc_grow_threshold(self.capacity)
-          #|  self.size = 0
-          #|  for i in 0..<old_entries.length() {
-          #|    if old_entries[i] is Some({ key, .. }) {
-          #|      self.add(key)
-          #|    }
-          #|  } }
-        ),
-      ),
-      "index": build(
-        (
-          #|fn[K] index(self : T[K], hash : Int) -> Int { abs(hash) & (self.capacity - 1) }
-        ),
-      ),
       "abs": build(
         (
           #|fn abs(n : Int) -> Int { if n < 0 {
@@ -12749,11 +13260,6 @@ let moonbitlang_core_hashset_module : RuntimeModule = RuntimeModule::new(
           #|  } else {
           #|    n
           #|  } }
-        ),
-      ),
-      "next_index": build(
-        (
-          #|fn[K] next_index(self : T[K], index : Int) -> Int { (index + 1) & (self.capacity - 1) }
         ),
       ),
       "calc_grow_threshold": build(
@@ -12776,29 +13282,33 @@ let moonbitlang_core_hashset_module : RuntimeModule = RuntimeModule::new(
           #|  s }
         ),
       ),
-      "to_array": build(
+      "add_and_check": build(
         (
-          #|pub fn[K] to_array(self : T[K]) -> Array[K] { let mut i = 0
-          #|  let res = while i < self.capacity {
-          #|    if self.entries[i] is Some({ key, .. }) {
-          #|      i += 1
-          #|      break Array::make(self.size, key)
-          #|    }
-          #|    i += 1
-          #|  } else {
-          #|    []
+          #|pub fn[K : Hash + Eq] add_and_check(self : T[K], key : K) -> Bool { let old_size = self.size
+          #|  self.add(key)
+          #|  self.size > old_size }
+        ),
+      ),
+      "remove_and_check": build(
+        (
+          #|pub fn[K : Hash + Eq] remove_and_check(self : T[K], key : K) -> Bool { let old_size = self.size
+          #|  self.remove(key)
+          #|  self.size < old_size }
+        ),
+      ),
+      "copy": build(
+        (
+          #|pub fn[K] copy(self : T[K]) -> T[K] { let other = {
+          #|    capacity: self.capacity,
+          #|    entries: FixedArray::make(self.capacity, None),
+          #|    size: self.size,
+          #|    capacity_mask: self.capacity_mask,
+          #|    grow_at: self.grow_at,
           #|  }
-          #|  if !res.is_empty() {
-          #|    let mut res_idx = 1
-          #|    while res_idx < res.length() && i < self.capacity {
-          #|      if self.entries[i] is Some({ key, .. }) {
-          #|        res[res_idx] = key
-          #|        res_idx += 1
-          #|      }
-          #|      i += 1
-          #|    }
+          #|  for i in 0..<self.capacity {
+          #|    other.entries[i] = self.entries[i]
           #|  }
-          #|  res }
+          #|  other }
         ),
       ),
       "insert": build(
@@ -16196,7 +16706,19 @@ let moonbitlang_core_immut_sorted_map_module : RuntimeModule = RuntimeModule::ne
       ),
       "op_get": build(
         (
-          #|pub fn[K : Compare, V] op_get(self : T[K, V], key : K) -> V? { self.get(key) }
+          #|pub fn[K : Compare, V] op_get(self : T[K, V], key : K) -> V { loop self {
+          #|    Empty => panic()
+          #|    Tree(k, value~, l, r, ..) => {
+          #|      let c = key.compare(k)
+          #|      if c == 0 {
+          #|        value
+          #|      } else if c < 0 {
+          #|        continue l
+          #|      } else {
+          #|        continue r
+          #|      }
+          #|    }
+          #|  } }
         ),
       ),
       "each": build(
@@ -16341,6 +16863,11 @@ let moonbitlang_core_immut_sorted_map_module : RuntimeModule = RuntimeModule::ne
       "keys": build(
         (
           #|pub fn[K, V] keys(self : T[K, V]) -> Array[K] { self.iter().map(p => p.0).collect() }
+        ),
+      ),
+      "keys_as_iter": build(
+        (
+          #|pub fn[K, V] keys_as_iter(self : T[K, V]) -> Iter[K] { self.iter().map(p => p.0) }
         ),
       ),
       "values": build(
@@ -17434,7 +17961,7 @@ let moonbitlang_core_json_module : RuntimeModule = RuntimeModule::new(
       ),
       "from_json": build(
         (
-          #|pub fn[T : FromJson] from_json( json : Json, path~ : JsonPath = Root, ) -> T raise JsonDecodeError { FromJson::from_json(json, path) }
+          #|pub fn[T : FromJson] from_json( json : Json, path? : JsonPath = Root, ) -> T raise JsonDecodeError { FromJson::from_json(json, path) }
         ),
       ),
       "decode_error": build(
@@ -17444,13 +17971,13 @@ let moonbitlang_core_json_module : RuntimeModule = RuntimeModule::new(
       ),
       "as_null": build(
         (
-          #|pub fn as_null(self : JsonValue) -> Unit? { guard self is Null else { return None }
+          #|pub fn as_null(self : Json) -> Unit? { guard self is Null else { return None }
           #|  Some(()) }
         ),
       ),
       "as_bool": build(
         (
-          #|pub fn as_bool(self : JsonValue) -> Bool? { match self {
+          #|pub fn as_bool(self : Json) -> Bool? { match self {
           #|    True => Some(true)
           #|    False => Some(false)
           #|    _ => None
@@ -17459,25 +17986,25 @@ let moonbitlang_core_json_module : RuntimeModule = RuntimeModule::new(
       ),
       "as_number": build(
         (
-          #|pub fn as_number(self : JsonValue) -> Double? { guard self is Number(n, ..) else { return None }
+          #|pub fn as_number(self : Json) -> Double? { guard self is Number(n, ..) else { return None }
           #|  Some(n) }
         ),
       ),
       "as_string": build(
         (
-          #|pub fn as_string(self : JsonValue) -> String? { guard self is String(s) else { return None }
+          #|pub fn as_string(self : Json) -> String? { guard self is String(s) else { return None }
           #|  Some(s) }
         ),
       ),
       "as_array": build(
         (
-          #|pub fn as_array(self : JsonValue) -> Array[JsonValue]? { guard self is Array(arr) else { return None }
+          #|pub fn as_array(self : Json) -> Array[Json]? { guard self is Array(arr) else { return None }
           #|  Some(arr) }
         ),
       ),
       "item": build(
         (
-          #|pub fn item(self : JsonValue, index : Int) -> JsonValue? { match self.as_array() {
+          #|pub fn item(self : Json, index : Int) -> Json? { match self.as_array() {
           #|    Some(arr) => arr.get(index)
           #|    None => None
           #|  } }
@@ -17485,13 +18012,13 @@ let moonbitlang_core_json_module : RuntimeModule = RuntimeModule::new(
       ),
       "as_object": build(
         (
-          #|pub fn as_object(self : JsonValue) -> Map[String, JsonValue]? { guard self is Object(obj) else { return None }
+          #|pub fn as_object(self : Json) -> Map[String, Json]? { guard self is Object(obj) else { return None }
           #|  Some(obj) }
         ),
       ),
       "value": build(
         (
-          #|pub fn value(self : JsonValue, key : String) -> JsonValue? { match self.as_object() {
+          #|pub fn value(self : Json, key : String) -> Json? { match self.as_object() {
           #|    Some(obj) => obj.get(key)
           #|    None => None
           #|  } }
@@ -17508,8 +18035,8 @@ let moonbitlang_core_json_module : RuntimeModule = RuntimeModule::new(
       ),
       "stringify": build(
         (
-          #|pub fn stringify( self : JsonValue, escape_slash~ : Bool = false, indent~ : Int = 0, ) -> String { let buf = StringBuilder::new(size_hint=0)
-          #|  fn stringify_inner(value : JsonValue, level : Int) -> Unit {
+          #|pub fn stringify( self : Json, escape_slash? : Bool = false, indent? : Int = 0, ) -> String { let buf = StringBuilder::new(size_hint=0)
+          #|  fn stringify_inner(value : Json, level : Int) -> Unit {
           #|    match value {
           #|      Object(members) => {
           #|        if members.is_empty() {
@@ -17729,7 +18256,7 @@ let moonbitlang_core_json_module : RuntimeModule = RuntimeModule::new(
       ),
       "parse": build(
         (
-          #|pub fn parse(input : String) -> JsonValue raise ParseError { let ctx = ParseContext::make(input)
+          #|pub fn parse(input : String) -> Json raise ParseError { let ctx = ParseContext::make(input)
           #|  let val = ctx.parse_value()
           #|  ctx.lex_skip_whitespace()
           #|  if ctx.offset >= ctx.end_offset {
@@ -17741,14 +18268,14 @@ let moonbitlang_core_json_module : RuntimeModule = RuntimeModule::new(
       ),
       "parse_value": build(
         (
-          #|fn ParseContext::parse_value(ctx : ParseContext) -> JsonValue raise ParseError { let tok = ctx.lex_value(allow_rbracket=false)
+          #|fn ParseContext::parse_value(ctx : ParseContext) -> Json raise ParseError { let tok = ctx.lex_value(allow_rbracket=false)
           #|  ctx.parse_value2(tok) }
         ),
       ),
       "parse_value2": build(
         (
-          #|fn ParseContext::parse_value2( ctx : ParseContext, tok : Token, ) -> JsonValue raise ParseError { match tok {
-          #|    Null => Json::null()
+          #|fn ParseContext::parse_value2( ctx : ParseContext, tok : Token, ) -> Json raise ParseError { match tok {
+          #|    Null => null
           #|    True => Json::boolean(true)
           #|    False => Json::boolean(false)
           #|    Number(n, repr) => Json::number(n, repr?)
@@ -17761,7 +18288,7 @@ let moonbitlang_core_json_module : RuntimeModule = RuntimeModule::new(
       ),
       "parse_object": build(
         (
-          #|fn ParseContext::parse_object(ctx : ParseContext) -> JsonValue raise ParseError { let map = Map::new()
+          #|fn ParseContext::parse_object(ctx : ParseContext) -> Json raise ParseError { let map = Map::new()
           #|  loop ctx.lex_property_name() {
           #|    RBrace => Json::object(map)
           #|    String(name) => {
@@ -17779,7 +18306,7 @@ let moonbitlang_core_json_module : RuntimeModule = RuntimeModule::new(
       ),
       "parse_array": build(
         (
-          #|fn ParseContext::parse_array(ctx : ParseContext) -> JsonValue raise ParseError { let vec = []
+          #|fn ParseContext::parse_array(ctx : ParseContext) -> Json raise ParseError { let vec = []
           #|  loop ctx.lex_value(allow_rbracket=true) {
           #|    RBracket => Json::array(vec)
           #|    tok => {
@@ -17811,7 +18338,7 @@ let moonbitlang_core_json_module : RuntimeModule = RuntimeModule::new(
       ),
       "invalid_char": build(
         (
-          #|fn[T] ParseContext::invalid_char( ctx : ParseContext, shift~ : Int = 0, ) -> T raise ParseError { let offset = ctx.offset + shift
+          #|fn[T] ParseContext::invalid_char( ctx : ParseContext, shift? : Int = 0, ) -> T raise ParseError { let offset = ctx.offset + shift
           #|  let replacement_char : Char = '\\u{fffd}'
           #|  raise InvalidChar(
           #|    offset_to_position(ctx.input, offset),
@@ -19840,7 +20367,7 @@ let moonbitlang_core_math_module : RuntimeModule = RuntimeModule::new(
       ),
       "is_probable_prime": build(
         (
-          #|pub fn is_probable_prime( number : @bigint.BigInt, rand : @random.Rand, iters~ : Int = DEFAULT_PRIME_TEST_ITERS, ) -> Bool { if iters <= 0 {
+          #|pub fn is_probable_prime( number : @bigint.BigInt, rand : @random.Rand, iters? : Int = DEFAULT_PRIME_TEST_ITERS, ) -> Bool { if iters <= 0 {
           #|    abort(\"non-positive iters for probably prime\")
           #|  }
           #|  // simple tests
@@ -22634,12 +23161,12 @@ let moonbitlang_core_quickcheck_splitmix_module : RuntimeModule = RuntimeModule:
     {
       "new": build(
         (
-          #|pub fn RandomState::new(seed~ : UInt64 = 37) -> RandomState { new(seed~) }
+          #|pub fn RandomState::new(seed? : UInt64 = 37) -> RandomState { new(seed~) }
         ),
       ),
       "new": build(
         (
-          #|pub fn new(seed~ : UInt64 = 37) -> RandomState { { seed: mix64(seed), gamma: mix_gamma(seed + golden_gamma) } }
+          #|pub fn new(seed? : UInt64 = 37) -> RandomState { { seed: mix64(seed), gamma: mix_gamma(seed + golden_gamma) } }
         ),
       ),
       "clone": build(
@@ -22762,7 +23289,7 @@ let moonbitlang_core_random_module : RuntimeModule = RuntimeModule::new(
     {
       "new": build(
         (
-          #|pub fn new(seed~ : Bytes = b\"ABCDEFGHIJKLMNOPQRSTUVWXYZ123456\") -> Rand { if seed.length() != 32 {
+          #|pub fn new(seed? : Bytes = b\"ABCDEFGHIJKLMNOPQRSTUVWXYZ123456\") -> Rand { if seed.length() != 32 {
           #|    abort(\"seed must be 32 bytes long\")
           #|  }
           #|  @random_source.ChaCha8::new(seed) as &Source }
@@ -22770,7 +23297,7 @@ let moonbitlang_core_random_module : RuntimeModule = RuntimeModule::new(
       ),
       "chacha8": build(
         (
-          #|pub fn Rand::chacha8( seed~ : Bytes = b\"ABCDEFGHIJKLMNOPQRSTUVWXYZ123456\", ) -> Rand { if seed.length() != 32 {
+          #|pub fn Rand::chacha8( seed? : Bytes = b\"ABCDEFGHIJKLMNOPQRSTUVWXYZ123456\", ) -> Rand { if seed.length() != 32 {
           #|    abort(\"seed must be 32 bytes long\")
           #|  }
           #|  Rand(@random_source.ChaCha8::new(seed) as &Source) }
@@ -22778,7 +23305,7 @@ let moonbitlang_core_random_module : RuntimeModule = RuntimeModule::new(
       ),
       "chacha8": build(
         (
-          #|pub fn chacha8(seed~ : Bytes = b\"ABCDEFGHIJKLMNOPQRSTUVWXYZ123456\") -> &Source { @random_source.ChaCha8::new(seed) }
+          #|pub fn chacha8(seed? : Bytes = b\"ABCDEFGHIJKLMNOPQRSTUVWXYZ123456\") -> &Source { @random_source.ChaCha8::new(seed) }
         ),
       ),
       "new": build(
@@ -22797,7 +23324,7 @@ let moonbitlang_core_random_module : RuntimeModule = RuntimeModule::new(
       ),
       "int": build(
         (
-          #|pub fn int(self : Rand, limit~ : Int = 0) -> Int { if limit == 0 {
+          #|pub fn int(self : Rand, limit? : Int = 0) -> Int { if limit == 0 {
           #|    // Range [0, 2^31)
           #|    (self.next() >> 33).to_int()
           #|  } else {
@@ -22807,7 +23334,7 @@ let moonbitlang_core_random_module : RuntimeModule = RuntimeModule::new(
       ),
       "int64": build(
         (
-          #|pub fn int64(self : Rand, limit~ : Int64 = 0) -> Int64 { if limit == 0 {
+          #|pub fn int64(self : Rand, limit? : Int64 = 0) -> Int64 { if limit == 0 {
           #|    // range [0, 2^63)
           #|    // Create a mask that keeps the lower 63 bits
           #|    let mask : UInt64 = (1UL << 63) - 1UL
@@ -22819,7 +23346,7 @@ let moonbitlang_core_random_module : RuntimeModule = RuntimeModule::new(
       ),
       "uint": build(
         (
-          #|pub fn uint(self : Rand, limit~ : UInt = 0) -> UInt { if limit == 0 {
+          #|pub fn uint(self : Rand, limit? : UInt = 0) -> UInt { if limit == 0 {
           #|    // Range: [0, 2^32)
           #|    return self.next().to_uint()
           #|  }
@@ -22828,7 +23355,7 @@ let moonbitlang_core_random_module : RuntimeModule = RuntimeModule::new(
       ),
       "uint64": build(
         (
-          #|pub fn uint64(self : Rand, limit~ : UInt64 = 0) -> UInt64 { if limit == 0 {
+          #|pub fn uint64(self : Rand, limit? : UInt64 = 0) -> UInt64 { if limit == 0 {
           #|    // Range: [0, 2^64)
           #|    return self.next()
           #|  } else if (limit & (limit - 1)) == 0 {
@@ -23535,16 +24062,15 @@ let moonbitlang_core_set_module : RuntimeModule = RuntimeModule::new(
       ),
       "new": build(
         (
-          #|pub fn[K] Set::new(capacity~ : Int = 8) -> Set[K] { let capacity = capacity.next_power_of_two()
+          #|pub fn[K] Set::new(capacity? : Int = 8) -> Set[K] { let capacity = capacity.next_power_of_two()
           #|  {
           #|    size: 0,
           #|    capacity,
           #|    capacity_mask: capacity - 1,
           #|    grow_at: calc_grow_threshold(capacity),
           #|    entries: FixedArray::make(capacity, None),
-          #|    list: FixedArray::make(capacity, { prev: None, next: None }),
           #|    head: None,
-          #|    tail: None,
+          #|    tail: -1,
           #|  } }
         ),
       ),
@@ -23555,98 +24081,108 @@ let moonbitlang_core_set_module : RuntimeModule = RuntimeModule::new(
           #|  m }
         ),
       ),
+      "add": build(
+        (
+          #|pub fn[K : Hash + Eq] add(self : Set[K], key : K) -> Unit { self.add_with_hash(key, key.hash()) }
+        ),
+      ),
+      "add_with_hash": build(
+        (
+          #|fn[K : Eq] add_with_hash(self : Set[K], key : K, hash : Int) -> Unit { if self.size >= self.grow_at {
+          #|    self.grow()
+          #|  }
+          #|  let (idx, psl) = for psl = 0, idx = hash & self.capacity_mask {
+          #|    match self.entries[idx] {
+          #|      None => break (idx, psl)
+          #|      Some(curr_entry) => {
+          #|        if curr_entry.hash == hash && curr_entry.key == key {
+          #|          return
+          #|        }
+          #|        if psl > curr_entry.psl {
+          #|          self.push_away(idx, curr_entry)
+          #|          break (idx, psl)
+          #|        }
+          #|        continue psl + 1, (idx + 1) & self.capacity_mask
+          #|      }
+          #|    }
+          #|  }
+          #|  let entry = { prev: self.tail, next: None, psl, key, hash }
+          #|  self.add_entry_to_tail(idx, entry) }
+        ),
+      ),
+      "push_away": build(
+        (
+          #|fn[K] push_away(self : Set[K], idx : Int, entry : Entry[K]) -> Unit { for psl = entry.psl + 1, idx = (idx + 1) & self.capacity_mask, entry = entry {
+          #|    match self.entries[idx] {
+          #|      None => {
+          #|        entry.psl = psl
+          #|        self.set_entry(entry, idx)
+          #|        break
+          #|      }
+          #|      Some(curr_entry) =>
+          #|        if psl > curr_entry.psl {
+          #|          entry.psl = psl
+          #|          self.set_entry(entry, idx)
+          #|          continue curr_entry.psl + 1,
+          #|            (idx + 1) & self.capacity_mask,
+          #|            curr_entry
+          #|        } else {
+          #|          continue psl + 1, (idx + 1) & self.capacity_mask, entry
+          #|        }
+          #|    }
+          #|  } }
+        ),
+      ),
+      "set_entry": build(
+        (
+          #|fn[K] set_entry(self : Set[K], entry : Entry[K], new_idx : Int) -> Unit { self.entries[new_idx] = Some(entry)
+          #|  match entry.next {
+          #|    None => self.tail = new_idx
+          #|    Some(next) => next.prev = new_idx
+          #|  } }
+        ),
+      ),
       "add_and_check": build(
         (
           #|pub fn[K : Hash + Eq] add_and_check(self : Set[K], key : K) -> Bool { if self.size >= self.grow_at {
           #|    self.grow()
           #|  }
           #|  let hash = key.hash()
-          #|  let insert_entry = { idx: -1, psl: 0, hash, key }
-          #|  let list_node : SListNode[K] = { prev: None, next: None }
-          #|  for i = 0, idx = hash & self.capacity_mask, entry = insert_entry, node = list_node {
+          #|  let (idx, psl, added) = for psl = 0, idx = hash & self.capacity_mask {
           #|    match self.entries[idx] {
-          #|      None => {
-          #|        self.entries[idx] = Some(entry)
-          #|        self.list[idx] = node
-          #|        entry.idx = idx
-          #|        self.add_entry_to_tail(insert_entry)
-          #|        self.size += 1
-          #|        break true
-          #|      }
+          #|      None => break (idx, psl, true)
           #|      Some(curr_entry) => {
-          #|        let curr_node = self.list[curr_entry.idx]
-          #|        if curr_entry.hash == entry.hash && curr_entry.key == entry.key {
-          #|          break false
+          #|        if curr_entry.hash == hash && curr_entry.key == key {
+          #|          break (idx, psl, false)
           #|        }
-          #|        if entry.psl > curr_entry.psl {
-          #|          self.entries[idx] = Some(entry)
-          #|          self.list[idx] = node
-          #|          entry.idx = idx
-          #|          curr_entry.psl += 1
-          #|          continue i + 1, (idx + 1) & self.capacity_mask, curr_entry, curr_node
-          #|        } else {
-          #|          entry.psl += 1
-          #|          continue i + 1, (idx + 1) & self.capacity_mask, entry, node
+          #|        if psl > curr_entry.psl {
+          #|          self.push_away(idx, curr_entry)
+          #|          break (idx, psl, true)
           #|        }
+          #|        continue psl + 1, (idx + 1) & self.capacity_mask
           #|      }
           #|    }
-          #|  } }
-        ),
-      ),
-      "add": build(
-        (
-          #|pub fn[K : Hash + Eq] add(self : Set[K], key : K) -> Unit { if self.size >= self.grow_at {
-          #|    self.grow()
           #|  }
-          #|  let hash = key.hash()
-          #|  let insert_entry = { idx: -1, psl: 0, hash, key }
-          #|  let list_node : SListNode[K] = { prev: None, next: None }
-          #|  for i = 0, idx = hash & self.capacity_mask, entry = insert_entry, node = list_node {
-          #|    match self.entries[idx] {
-          #|      None => {
-          #|        self.entries[idx] = Some(entry)
-          #|        self.list[idx] = node
-          #|        entry.idx = idx
-          #|        self.add_entry_to_tail(insert_entry)
-          #|        self.size += 1
-          #|        break
-          #|      }
-          #|      Some(curr_entry) => {
-          #|        let curr_node = self.list[curr_entry.idx]
-          #|        if curr_entry.hash == entry.hash && curr_entry.key == entry.key {
-          #|          break
-          #|        }
-          #|        if entry.psl > curr_entry.psl {
-          #|          self.entries[idx] = Some(entry)
-          #|          self.list[idx] = node
-          #|          entry.idx = idx
-          #|          curr_entry.psl += 1
-          #|          continue i + 1, (idx + 1) & self.capacity_mask, curr_entry, curr_node
-          #|        } else {
-          #|          entry.psl += 1
-          #|          continue i + 1, (idx + 1) & self.capacity_mask, entry, node
-          #|        }
-          #|      }
-          #|    }
-          #|  } }
+          #|  if added {
+          #|    let entry = { prev: self.tail, next: None, psl, key, hash }
+          #|    self.add_entry_to_tail(idx, entry)
+          #|  }
+          #|  added }
         ),
       ),
       "contains": build(
         (
-          #|pub fn[K : Hash + Eq] contains(self : Set[K], key : K) -> Bool { let hash = key.hash()
+          #|pub fn[K : Hash + Eq] Set::contains(self : Set[K], key : K) -> Bool { // inline lookup to avoid unnecessary allocations
+          #|  let hash = key.hash()
           #|  for i = 0, idx = hash & self.capacity_mask {
-          #|    match self.entries[idx] {
-          #|      Some(entry) => {
-          #|        if entry.hash == hash && entry.key == key {
-          #|          break true
-          #|        }
-          #|        if i > entry.psl {
-          #|          break false
-          #|        }
-          #|        continue i + 1, (idx + 1) & self.capacity_mask
-          #|      }
-          #|      None => break false
+          #|    guard self.entries[idx] is Some(entry) else { break false }
+          #|    if entry.hash == hash && entry.key == key {
+          #|      break true
           #|    }
+          #|    if i > entry.psl {
+          #|      break false
+          #|    }
+          #|    continue i + 1, (idx + 1) & self.capacity_mask
           #|  } }
         ),
       ),
@@ -23654,22 +24190,17 @@ let moonbitlang_core_set_module : RuntimeModule = RuntimeModule::new(
         (
           #|pub fn[K : Hash + Eq] remove(self : Set[K], key : K) -> Unit { let hash = key.hash()
           #|  for i = 0, idx = hash & self.capacity_mask {
-          #|    match self.entries[idx] {
-          #|      Some(entry) => {
-          #|        if entry.hash == hash && entry.key == key {
-          #|          self.entries[idx] = None
-          #|          self.remove_entry(entry)
-          #|          self.shift_back(idx)
-          #|          self.size -= 1
-          #|          break
-          #|        }
-          #|        if i > entry.psl {
-          #|          break
-          #|        }
-          #|        continue i + 1, (idx + 1) & self.capacity_mask
-          #|      }
-          #|      None => break
+          #|    guard self.entries[idx] is Some(entry) else { break }
+          #|    if entry.hash == hash && entry.key == key {
+          #|      self.remove_entry(entry)
+          #|      self.shift_back(idx)
+          #|      self.size -= 1
+          #|      break
           #|    }
+          #|    if i > entry.psl {
+          #|      break
+          #|    }
+          #|    continue i + 1, (idx + 1) & self.capacity_mask
           #|  } }
         ),
       ),
@@ -23677,104 +24208,71 @@ let moonbitlang_core_set_module : RuntimeModule = RuntimeModule::new(
         (
           #|pub fn[K : Hash + Eq] remove_and_check(self : Set[K], key : K) -> Bool { let hash = key.hash()
           #|  for i = 0, idx = hash & self.capacity_mask {
-          #|    match self.entries[idx] {
-          #|      Some(entry) => {
-          #|        if entry.hash == hash && entry.key == key {
-          #|          self.entries[idx] = None
-          #|          self.remove_entry(entry)
-          #|          self.shift_back(idx)
-          #|          self.size -= 1
-          #|          break true
-          #|        }
-          #|        if i > entry.psl {
-          #|          break false
-          #|        }
-          #|        continue i + 1, (idx + 1) & self.capacity_mask
-          #|      }
-          #|      None => break false
+          #|    guard self.entries[idx] is Some(entry) else { break false }
+          #|    if entry.hash == hash && entry.key == key {
+          #|      self.remove_entry(entry)
+          #|      self.shift_back(idx)
+          #|      self.size -= 1
+          #|      break true
           #|    }
+          #|    if i > entry.psl {
+          #|      break false
+          #|    }
+          #|    continue i + 1, (idx + 1) & self.capacity_mask
           #|  } }
         ),
       ),
       "add_entry_to_tail": build(
         (
-          #|fn[K] add_entry_to_tail(self : Set[K], entry : SEntry[K]) -> Unit { match self.tail {
-          #|    None => {
-          #|      self.head = Some(entry)
-          #|      self.tail = Some(entry)
-          #|    }
-          #|    Some(tail) => {
-          #|      self.list[tail.idx].next = Some(entry)
-          #|      self.list[entry.idx].prev = Some(tail)
-          #|      self.tail = Some(entry)
-          #|    }
-          #|  } }
+          #|fn[K] add_entry_to_tail(self : Set[K], idx : Int, entry : Entry[K]) -> Unit { match self.tail {
+          #|    -1 => self.head = Some(entry)
+          #|    tail => self.entries[tail].unwrap().next = Some(entry)
+          #|  }
+          #|  self.tail = idx
+          #|  self.entries[idx] = Some(entry)
+          #|  self.size += 1 }
         ),
       ),
       "remove_entry": build(
         (
-          #|fn[K : Eq] remove_entry(self : Set[K], entry : SEntry[K]) -> Unit { let node = self.list[entry.idx]
-          #|  if self.is_empty() {
-          #|    self.head = None
-          #|    self.tail = None
-          #|  } else {
-          #|    if self.head.unwrap() == entry {
-          #|      self.head = node.next
-          #|    }
-          #|    if self.tail.unwrap() == entry {
-          #|      self.tail = node.prev
-          #|    }
-          #|    if node.prev is Some(prev) {
-          #|      self.list[prev.idx].next = node.next
-          #|    }
-          #|    if node.next is Some(next) {
-          #|      self.list[next.idx].prev = node.prev
-          #|    }
+          #|fn[K] remove_entry(self : Set[K], entry : Entry[K]) -> Unit { match entry.prev {
+          #|    -1 => self.head = entry.next
+          #|    idx => self.entries[idx].unwrap().next = entry.next
           #|  }
-          #|  node.prev = None
-          #|  node.next = None }
+          #|  match entry.next {
+          #|    None => self.tail = entry.prev
+          #|    Some(next) => next.prev = entry.prev
+          #|  } }
         ),
       ),
       "shift_back": build(
         (
-          #|fn[K] shift_back(self : Set[K], start_index : Int) -> Unit { for prev = start_index, curr = (start_index + 1) & self.capacity_mask {
-          #|    match (self.entries[curr], self.list[curr]) {
-          #|      (Some(entry), currNode) => {
-          #|        if entry.psl == 0 {
-          #|          break
-          #|        }
-          #|        entry.psl -= 1
-          #|        entry.idx = prev
-          #|        self.entries[prev] = Some(entry)
-          #|        self.entries[curr] = None
-          #|        self.list[prev].prev = currNode.prev
-          #|        self.list[prev].next = currNode.next
-          #|        currNode.prev = None
-          #|        currNode.next = None
-          #|        continue curr, (curr + 1) & self.capacity_mask
-          #|      }
-          #|      (None, _) => break
+          #|fn[K] shift_back(self : Set[K], idx : Int) -> Unit { let next = (idx + 1) & self.capacity_mask
+          #|  match self.entries[next] {
+          #|    None | Some({ psl: 0, .. }) => self.entries[idx] = None
+          #|    Some(entry) => {
+          #|      entry.psl -= 1
+          #|      self.set_entry(entry, idx)
+          #|      self.shift_back(next)
           #|    }
           #|  } }
         ),
       ),
       "grow": build(
         (
-          #|fn[K : Hash + Eq] grow(self : Set[K]) -> Unit { let old_head = self.head
-          #|  let old_list = self.list
+          #|fn[K : Eq] grow(self : Set[K]) -> Unit { let old_head = self.head
           #|  let new_capacity = self.capacity << 1
           #|  self.entries = FixedArray::make(new_capacity, None)
-          #|  self.list = FixedArray::make(new_capacity, { prev: None, next: None })
           #|  self.capacity = new_capacity
           #|  self.capacity_mask = new_capacity - 1
           #|  self.grow_at = calc_grow_threshold(self.capacity)
           #|  self.size = 0
           #|  self.head = None
-          #|  self.tail = None
+          #|  self.tail = -1
           #|  loop old_head {
-          #|    Some({ idx, key, .. }) => {
-          #|      self.add(key)
-          #|      continue old_list[idx].next
+          #|    Some({ next, key, hash, .. }) => {
+          #|      self.add_with_hash(key, hash)
+          #|      continue next
           #|    }
           #|    None => break
           #|  } }
@@ -23798,9 +24296,9 @@ let moonbitlang_core_set_module : RuntimeModule = RuntimeModule::new(
       "each": build(
         (
           #|pub fn[K] each(self : Set[K], f : (K) -> Unit raise?) -> Unit raise? { loop self.head {
-          #|    Some({ key, idx, .. }) => {
+          #|    Some({ key, next, .. }) => {
           #|      f(key)
-          #|      continue self.list[idx].next
+          #|      continue next
           #|    }
           #|    None => break
           #|  } }
@@ -23809,9 +24307,9 @@ let moonbitlang_core_set_module : RuntimeModule = RuntimeModule::new(
       "eachi": build(
         (
           #|pub fn[K] eachi(self : Set[K], f : (Int, K) -> Unit raise?) -> Unit raise? { loop (0, self.head) {
-          #|    (i, Some({ key, idx, .. })) => {
+          #|    (i, Some({ key, next, .. })) => {
           #|      f(i, key)
-          #|      continue (i + 1, self.list[idx].next)
+          #|      continue (i + 1, next)
           #|    }
           #|    (_, None) => break
           #|  } }
@@ -23822,17 +24320,15 @@ let moonbitlang_core_set_module : RuntimeModule = RuntimeModule::new(
           #|pub fn[K] clear(self : Set[K]) -> Unit { self.entries.fill(None)
           #|  self.size = 0
           #|  self.head = None
-          #|  self.tail = None }
+          #|  self.tail = -1 }
         ),
       ),
       "iter": build(
         (
           #|pub fn[K] iter(self : Set[K]) -> Iter[K] { Iter::new(yield_ => loop self.head {
-          #|    Some({ key, idx, .. }) => {
-          #|      if yield_(key) == IterEnd {
-          #|        break IterEnd
-          #|      }
-          #|      continue self.list[idx].next
+          #|    Some({ key, next, .. }) => {
+          #|      guard yield_(key) is IterContinue else { break IterEnd }
+          #|      continue next
           #|    }
           #|    None => break IterContinue
           #|  }) }
@@ -23840,22 +24336,21 @@ let moonbitlang_core_set_module : RuntimeModule = RuntimeModule::new(
       ),
       "to_array": build(
         (
-          #|pub fn[K] to_array(self : Set[K]) -> Array[K] { let res = Array::new(capacity=self.size)
+          #|pub fn[K] to_array(self : Set[K]) -> Array[K] { let arr = Array::new(capacity=self.size)
           #|  loop self.head {
-          #|    Some({ key, idx, .. }) => {
-          #|      res.push(key)
-          #|      continue self.list[idx].next
+          #|    Some({ key, next, .. }) => {
+          #|      arr.push(key)
+          #|      continue next
           #|    }
           #|    None => break
           #|  }
-          #|  res }
+          #|  arr }
         ),
       ),
       "of": build(
         (
           #|pub fn[K : Hash + Eq] Set::of(arr : FixedArray[K]) -> Set[K] { let length = arr.length()
           #|  let m = Set::new(capacity=length)
-          #|  // arr.iter((e) => { m.set(e.0, e.1) })
           #|  for i in 0..<length {
           #|    let e = arr[i]
           #|    m.add(e)
@@ -23866,8 +24361,40 @@ let moonbitlang_core_set_module : RuntimeModule = RuntimeModule::new(
       "from_iter": build(
         (
           #|pub fn[K : Hash + Eq] Set::from_iter(iter : Iter[K]) -> Set[K] { let m = Set::new()
-          #|  iter.each(e => m.add(e))
+          #|  for e in iter {
+          #|    m.add(e)
+          #|  }
           #|  m }
+        ),
+      ),
+      "copy": build(
+        (
+          #|pub fn[K] copy(self : Set[K]) -> Set[K] { // copy structure
+          #|  let other = {
+          #|    capacity: self.capacity,
+          #|    entries: FixedArray::make(self.capacity, None),
+          #|    size: self.size,
+          #|    capacity_mask: self.capacity_mask,
+          #|    grow_at: self.grow_at,
+          #|    head: None,
+          #|    tail: self.tail,
+          #|  }
+          #|  if self.size == 0 {
+          #|    return other
+          #|  }
+          #|  guard self.entries[self.tail] is Some(last)
+          #|  loop (last, self.tail, None) {
+          #|    ({ prev, psl, hash, key, .. }, idx, next) => {
+          #|      let new_entry = { prev, next, psl, hash, key }
+          #|      other.entries[idx] = Some(new_entry)
+          #|      if prev != -1 {
+          #|        continue (self.entries[prev].unwrap(), prev, Some(new_entry))
+          #|      } else {
+          #|        other.head = Some(new_entry)
+          #|      }
+          #|    }
+          #|  }
+          #|  other }
         ),
       ),
       "difference": build(
@@ -23898,6 +24425,43 @@ let moonbitlang_core_set_module : RuntimeModule = RuntimeModule::new(
           #|pub fn[K : Hash + Eq] intersection(self : Set[K], other : Set[K]) -> Set[K] { let m = Set::new()
           #|  self.each(k => if other.contains(k) { m.add(k) })
           #|  m }
+        ),
+      ),
+      "is_disjoint": build(
+        (
+          #|pub fn[K : Hash + Eq] is_disjoint(self : Set[K], other : Set[K]) -> Bool { if self.size() <= other.size() {
+          #|    for k in self {
+          #|      if other.contains(k) {
+          #|        return false
+          #|      }
+          #|    }
+          #|  } else {
+          #|    for k in other {
+          #|      if self.contains(k) {
+          #|        return false
+          #|      }
+          #|    }
+          #|  }
+          #|  true }
+        ),
+      ),
+      "is_subset": build(
+        (
+          #|pub fn[K : Hash + Eq] is_subset(self : Set[K], other : Set[K]) -> Bool { if self.size() <= other.size() {
+          #|    for k in self {
+          #|      if !other.contains(k) {
+          #|        return false
+          #|      }
+          #|    }
+          #|    true
+          #|  } else {
+          #|    false
+          #|  } }
+        ),
+      ),
+      "is_superset": build(
+        (
+          #|pub fn[K : Hash + Eq] is_superset(self : Set[K], other : Set[K]) -> Bool { other.is_subset(self) }
         ),
       ),
       "insert": build(
@@ -23978,6 +24542,23 @@ let moonbitlang_core_sorted_map_module : RuntimeModule = RuntimeModule::new(
           #|  } }
         ),
       ),
+      "op_get": build(
+        (
+          #|pub fn[K : Compare, V] op_get(self : T[K, V], key : K) -> V { loop self.root {
+          #|    Some(node) => {
+          #|      let cmp = key.compare(node.key)
+          #|      if cmp == 0 {
+          #|        break node.value
+          #|      } else if cmp > 0 {
+          #|        continue node.right
+          #|      } else {
+          #|        continue node.left
+          #|      }
+          #|    }
+          #|    None => panic()
+          #|  } }
+        ),
+      ),
       "contains": build(
         (
           #|pub fn[K : Compare, V] contains(self : T[K, V], key : K) -> Bool { match self.get(key) {
@@ -24023,18 +24604,44 @@ let moonbitlang_core_sorted_map_module : RuntimeModule = RuntimeModule::new(
           #|  }) }
         ),
       ),
-      "keys": build(
+      "keys_as_iter": build(
         (
-          #|pub fn[K, V] keys(self : T[K, V]) -> Array[K] { let keys = Array::new(capacity=self.size)
-          #|  self.each((k, _v) => keys.push(k))
-          #|  keys }
+          #|pub fn[K, V] keys_as_iter(self : T[K, V]) -> Iter[K] { Iter::new(fn(yield_) {
+          #|    fn go(x : Node[K, V]?) {
+          #|      match x {
+          #|        None => IterContinue
+          #|        Some({ left, right, key, .. }) =>
+          #|          if go(left) is IterEnd {
+          #|            IterEnd
+          #|          } else if yield_(key) is IterEnd {
+          #|            IterEnd
+          #|          } else {
+          #|            go(right)
+          #|          }
+          #|      }
+          #|    }
+          #|    go(self.root)
+          #|  }) }
         ),
       ),
-      "values": build(
+      "values_as_iter": build(
         (
-          #|pub fn[K, V] values(self : T[K, V]) -> Array[V] { let values = Array::new(capacity=self.size)
-          #|  self.each((_k, v) => values.push(v))
-          #|  values }
+          #|pub fn[K, V] values_as_iter(self : T[K, V]) -> Iter[V] { Iter::new(fn(yield_) {
+          #|    fn go(x : Node[K, V]?) {
+          #|      match x {
+          #|        None => IterContinue
+          #|        Some({ left, right, value, .. }) =>
+          #|          if go(left) is IterEnd {
+          #|            IterEnd
+          #|          } else if yield_(value) is IterEnd {
+          #|            IterEnd
+          #|          } else {
+          #|            go(right)
+          #|          }
+          #|      }
+          #|    }
+          #|    go(self.root)
+          #|  }) }
         ),
       ),
       "to_array": build(
@@ -24269,16 +24876,25 @@ let moonbitlang_core_sorted_map_module : RuntimeModule = RuntimeModule::new(
           #|  } }
         ),
       ),
-      "op_get": build(
-        (
-          #|pub fn[K : Compare, V] op_get(self : T[K, V], key : K) -> V? { self.get(key) }
-        ),
-      ),
       "of": build(
         (
           #|pub fn[K : Compare, V] of(entries : Array[(K, V)]) -> T[K, V] { let map = { root: None, size: 0 }
           #|  entries.each(e => map.add(e.0, e.1))
           #|  map }
+        ),
+      ),
+      "keys": build(
+        (
+          #|pub fn[K, V] keys(self : T[K, V]) -> Array[K] { let keys = Array::new(capacity=self.size)
+          #|  self.each(fn(k, _v) { keys.push(k) })
+          #|  keys }
+        ),
+      ),
+      "values": build(
+        (
+          #|pub fn[K, V] values(self : T[K, V]) -> Array[V] { let values = Array::new(capacity=self.size)
+          #|  self.each(fn(_k, v) { values.push(v) })
+          #|  values }
         ),
       ),
       "new_node": build(
@@ -24451,7 +25067,7 @@ let moonbitlang_core_sorted_set_module : RuntimeModule = RuntimeModule::new(
       ),
       "new_node": build(
         (
-          #|fn[V] new_node( value : V, left~ : Node[V]? = None, right~ : Node[V]? = None, height~ : Int = 1, ) -> Node[V] { { value, left, right, height } }
+          #|fn[V] new_node( value : V, left? : Node[V]? = None, right? : Node[V]? = None, height? : Int = 1, ) -> Node[V] { { value, left, right, height } }
         ),
       ),
       "new_node_update_height": build(
@@ -24925,7 +25541,7 @@ let moonbitlang_core_strconv_module : RuntimeModule = RuntimeModule::new(
     {
       "parse_uint64": build(
         (
-          #|pub fn parse_uint64( str : @string.View, base~ : Int = 0, ) -> UInt64 raise StrConvError { guard str != \"\" else { syntax_err() }
+          #|pub fn parse_uint64( str : @string.View, base? : Int = 0, ) -> UInt64 raise StrConvError { guard str != \"\" else { syntax_err() }
           #|  if str is ['+' | '-', ..] {
           #|    syntax_err()
           #|  }
@@ -24967,7 +25583,7 @@ let moonbitlang_core_strconv_module : RuntimeModule = RuntimeModule::new(
       ),
       "parse_uint": build(
         (
-          #|pub fn parse_uint( str : @string.View, base~ : Int = 0, ) -> UInt raise StrConvError { let n = parse_uint64(str, base~)
+          #|pub fn parse_uint( str : @string.View, base? : Int = 0, ) -> UInt raise StrConvError { let n = parse_uint64(str, base~)
           #|  if n > UINT_MAX.to_uint64() {
           #|    range_err()
           #|  }
@@ -25739,7 +26355,7 @@ let moonbitlang_core_strconv_module : RuntimeModule = RuntimeModule::new(
       ),
       "parse_int64": build(
         (
-          #|pub fn parse_int64( str : @string.View, base~ : Int = 0, ) -> Int64 raise StrConvError { guard str != \"\" else { syntax_err() }
+          #|pub fn parse_int64( str : @string.View, base? : Int = 0, ) -> Int64 raise StrConvError { guard str != \"\" else { syntax_err() }
           #|  let (neg, rest) = match str.view() {
           #|    ['+', .. rest] => (false, rest)
           #|    ['-', .. rest] => (true, rest)
@@ -25787,7 +26403,7 @@ let moonbitlang_core_strconv_module : RuntimeModule = RuntimeModule::new(
       ),
       "parse_int": build(
         (
-          #|pub fn parse_int(str : @string.View, base~ : Int = 0) -> Int raise StrConvError { let n = parse_int64(str, base~)
+          #|pub fn parse_int(str : @string.View, base? : Int = 0) -> Int raise StrConvError { let n = parse_int64(str, base~)
           #|  if n < INT_MIN.to_int64() || n > INT_MAX.to_int64() {
           #|    range_err()
           #|  }
@@ -25884,12 +26500,12 @@ let moonbitlang_core_string_module : RuntimeModule = RuntimeModule::new(
     {
       "concat": build(
         (
-          #|pub fn String::concat(self : Array[String], separator~ : String = \"\") -> String { concat(self, separator~) }
+          #|pub fn String::concat(self : Array[String], separator? : String = \"\") -> String { concat(self, separator~) }
         ),
       ),
       "concat": build(
         (
-          #|pub fn concat(strings : Array[String], separator~ : String = \"\") -> String { match strings {
+          #|pub fn concat(strings : Array[String], separator? : String = \"\") -> String { match strings {
           #|    [] => \"\"
           #|    [hd, .. tl] => {
           #|      let mut size_hint = hd.length()
@@ -25916,7 +26532,7 @@ let moonbitlang_core_string_module : RuntimeModule = RuntimeModule::new(
       ),
       "index_of": build(
         (
-          #|pub fn index_of(self : String, str : String, from~ : Int = 0) -> Int { if from <= 0 {
+          #|pub fn index_of(self : String, str : String, from? : Int = 0) -> Int { if from <= 0 {
           #|    if self.find(str.view()) is Some(idx) {
           #|      idx
           #|    } else {
@@ -26869,7 +27485,7 @@ let moonbitlang_core_string_module : RuntimeModule = RuntimeModule::new(
       ),
       "offset_of_nth_char": build(
         (
-          #|pub fn String::offset_of_nth_char( self : String, i : Int, start_offset~ : Int = 0, end_offset? : Int, ) -> Int? { let end_offset = if end_offset is Some(o) { o } else { self.length() }
+          #|pub fn String::offset_of_nth_char( self : String, i : Int, start_offset? : Int = 0, end_offset? : Int, ) -> Int? { let end_offset = if end_offset is Some(o) { o } else { self.length() }
           #|  if i >= 0 {
           #|    // forward case
           #|    self.offset_of_nth_char_forward(i, start_offset~, end_offset~)
@@ -26881,7 +27497,7 @@ let moonbitlang_core_string_module : RuntimeModule = RuntimeModule::new(
       ),
       "char_length_eq": build(
         (
-          #|pub fn String::char_length_eq( self : String, len : Int, start_offset~ : Int = 0, end_offset? : Int, ) -> Bool { let end_offset = if end_offset is Some(o) { o } else { self.length() }
+          #|pub fn String::char_length_eq( self : String, len : Int, start_offset? : Int = 0, end_offset? : Int, ) -> Bool { let end_offset = if end_offset is Some(o) { o } else { self.length() }
           #|  for index = start_offset, count = 0
           #|      index < end_offset && count < len
           #|      index = index + 1, count = count + 1 {
@@ -26901,7 +27517,7 @@ let moonbitlang_core_string_module : RuntimeModule = RuntimeModule::new(
       ),
       "char_length_ge": build(
         (
-          #|pub fn String::char_length_ge( self : String, len : Int, start_offset~ : Int = 0, end_offset? : Int, ) -> Bool { let end_offset = if end_offset is Some(o) { o } else { self.length() }
+          #|pub fn String::char_length_ge( self : String, len : Int, start_offset? : Int = 0, end_offset? : Int, ) -> Bool { let end_offset = if end_offset is Some(o) { o } else { self.length() }
           #|  for index = start_offset, count = 0
           #|      index < end_offset && count < len
           #|      index = index + 1, count = count + 1 {
@@ -26944,7 +27560,7 @@ let moonbitlang_core_string_module : RuntimeModule = RuntimeModule::new(
       ),
       "view": build(
         (
-          #|pub fn String::view( self : String, start_offset~ : Int = 0, end_offset? : Int, ) -> View { let end_offset = if end_offset is Some(o) { o } else { self.length() }
+          #|pub fn String::view( self : String, start_offset? : Int = 0, end_offset? : Int, ) -> View { let end_offset = if end_offset is Some(o) { o } else { self.length() }
           #|  guard start_offset >= 0 &&
           #|    start_offset <= end_offset &&
           #|    end_offset <= self.length() else {
@@ -26955,7 +27571,7 @@ let moonbitlang_core_string_module : RuntimeModule = RuntimeModule::new(
       ),
       "view": build(
         (
-          #|pub fn View::view( self : View, start_offset~ : Int = 0, end_offset? : Int, ) -> View { let end_offset = if end_offset is Some(o) { o } else { self.length() }
+          #|pub fn View::view( self : View, start_offset? : Int = 0, end_offset? : Int, ) -> View { let end_offset = if end_offset is Some(o) { o } else { self.length() }
           #|  guard start_offset >= 0 &&
           #|    start_offset <= end_offset &&
           #|    end_offset <= self.length() else {
@@ -26970,12 +27586,12 @@ let moonbitlang_core_string_module : RuntimeModule = RuntimeModule::new(
       ),
       "charcodes": build(
         (
-          #|pub fn String::charcodes(self : String, start~ : Int = 0, end? : Int) -> View { self.view(start_offset=start, end_offset?=end) }
+          #|pub fn String::charcodes(self : String, start? : Int = 0, end? : Int) -> View { self.view(start_offset=start, end_offset?=end) }
         ),
       ),
       "charcodes": build(
         (
-          #|pub fn View::charcodes(self : View, start~ : Int = 0, end? : Int) -> View { self.view(start_offset=start, end_offset?=end) }
+          #|pub fn View::charcodes(self : View, start? : Int = 0, end? : Int) -> View { self.view(start_offset=start, end_offset?=end) }
         ),
       ),
       "offset_of_nth_char": build(
@@ -27077,14 +27693,14 @@ let moonbitlang_core_string_module : RuntimeModule = RuntimeModule::new(
       ),
       "from_array": build(
         (
-          #|pub fn View::from_array(chars : Array[Char]) -> View { // todo: remove .view() in new version
-          #|  String::from_array(chars).view() }
+          #|pub fn View::from_array(chars : Array[Char]) -> View { let s = String::from_array(chars)
+          #|  View::make_view(s, 0, s.length()) }
         ),
       ),
       "from_iter": build(
         (
-          #|pub fn View::from_iter(iter : Iter[Char]) -> View { // todo: remove .view() in new version
-          #|  String::from_iter(iter).view() }
+          #|pub fn View::from_iter(iter : Iter[Char]) -> View { let s = String::from_iter(iter)
+          #|  View::make_view(s, 0, s.length()) }
         ),
       ),
       "make": build(
@@ -27095,7 +27711,7 @@ let moonbitlang_core_string_module : RuntimeModule = RuntimeModule::new(
       ),
       "op_as_view": build(
         (
-          #|pub fn String::op_as_view( self : String, start~ : Int = 0, end? : Int, ) -> View raise CreatingViewError { let len = self.length()
+          #|pub fn String::op_as_view( self : String, start? : Int = 0, end? : Int, ) -> View raise CreatingViewError { let len = self.length()
           #|  let end = match end {
           #|    None => len
           #|    Some(end) => if end < 0 { len + end } else { end }
@@ -27113,7 +27729,7 @@ let moonbitlang_core_string_module : RuntimeModule = RuntimeModule::new(
       ),
       "op_as_view": build(
         (
-          #|pub fn View::op_as_view( self : View, start~ : Int = 0, end? : Int, ) -> View raise CreatingViewError { let str_len = self.str().length()
+          #|pub fn View::op_as_view( self : View, start? : Int = 0, end? : Int, ) -> View raise CreatingViewError { let str_len = self.str().length()
           #|  // Calculate absolute positions in the original string
           #|  let abs_end = match end {
           #|    None => self.end()
@@ -27192,7 +27808,7 @@ let moonbitlang_core_test_module : RuntimeModule = RuntimeModule::new(
       ),
       "bench": build(
         (
-          #|pub fn bench( self : T, f : () -> Unit, count~ : UInt = 10, ) -> Unit raise BenchError { ignore(self)
+          #|pub fn bench( self : T, f : () -> Unit, count? : UInt = 10, ) -> Unit raise BenchError { ignore(self)
           #|  let summary = @bench.single_bench(f, count~)
           #|  raise BenchError(\"@BENCH \\{summary.to_json().stringify()}\\n\") }
         ),

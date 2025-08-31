@@ -135,14 +135,14 @@ let string_contains_char_fn : RuntimeFunction = ctx => Bool(
 ///|
 let string_find_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: String(str), .. }, { val: StringView(view), .. }] =>
-    ctx.mod.env.from_option(str.find(view).map(Int(_)))
-  _ => ctx.mod.env.from_option(None)
+    RuntimeValue::from_option(str.find(view).map(Int(_)))
+  _ => RuntimeValue::from_option(None)
 }
 
 ///|
 let string_find_by_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: String(s), .. }, { val: Closure(func, env), .. }] =>
-    ctx.mod.env.from_option(
+    RuntimeValue::from_option(
       s
       .find_by(char => {
         let res = ctx.context.call(
@@ -160,7 +160,7 @@ let string_find_by_fn : RuntimeFunction = ctx => match ctx.args {
       })
       .map(Int(_)),
     )
-  _ => ctx.mod.env.from_option(None)
+  _ => RuntimeValue::from_option(None)
 }
 
 ///|
@@ -269,8 +269,8 @@ let string_rev_fn : RuntimeFunction = ctx => match ctx.args {
 ///|
 let string_rev_find_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: String(s), .. }, { val: String(substr), .. }] =>
-    ctx.mod.env.from_option(s.rev_find(substr).map(Int(_)))
-  _ => ctx.mod.env.from_option(None)
+    RuntimeValue::from_option(s.rev_find(substr).map(Int(_)))
+  _ => RuntimeValue::from_option(None)
 }
 
 ///|
@@ -313,14 +313,14 @@ let string_split_fn : RuntimeFunction = ctx => match ctx.args {
 ///|
 let string_strip_prefix_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: String(s), .. }, { val: String(prefix), .. }] =>
-    ctx.mod.env.from_option(s.strip_prefix(prefix).map(StringView(_)))
+    RuntimeValue::from_option(s.strip_prefix(prefix).map(StringView(_)))
   _ => StringView("")
 }
 
 ///|
 let string_strip_suffix_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: String(s), .. }, { val: String(suffix), .. }] =>
-    ctx.mod.env.from_option(s.strip_prefix(suffix).map(StringView(_)))
+    RuntimeValue::from_option(s.strip_prefix(suffix).map(StringView(_)))
   _ => StringView("")
 }
 

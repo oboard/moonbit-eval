@@ -1,6 +1,6 @@
 ///|
 pub let iter_methods : Map[String, RuntimeFunction] = {
-  "new": iter_new_fn,
+  // "new": iter_new_fn,
   "all": iter_all_fn,
   "any": iter_any_fn,
   "append": iter_append_fn,
@@ -48,11 +48,11 @@ pub let iter_methods : Map[String, RuntimeFunction] = {
 
 // Basic constructor functions
 
-///|
-let iter_new_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val, .. }] => Iter(Iter::new(f => f(val)))
-  _ => Unit
-}
+// ///|
+// let iter_new_fn : RuntimeFunction = ctx => match ctx.args {
+//   [{ val, .. }] => Iter(Iter::new(f => f(val)))
+//   _ => Unit
+// }
 
 ///|
 let iter_empty_fn : RuntimeFunction = _ctx => Iter(Iter::empty())
@@ -93,26 +93,26 @@ let iter_count_fn : RuntimeFunction = ctx => match ctx.args {
 
 ///|
 let iter_head_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Iter(iter), .. }] => ctx.mod.env.from_option(iter.head())
+  [{ val: Iter(iter), .. }] => RuntimeValue::from_option(iter.head())
   _ => Unit
 }
 
 ///|
 let iter_last_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Iter(iter), .. }] => ctx.mod.env.from_option(iter.last())
+  [{ val: Iter(iter), .. }] => RuntimeValue::from_option(iter.last())
   _ => Unit
 }
 
 ///|
 let iter_nth_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Iter(iter), .. }, { val: Int(n), .. }] =>
-    ctx.mod.env.from_option(iter.nth(n))
+    RuntimeValue::from_option(iter.nth(n))
   _ => Unit
 }
 
 ///|
 let iter_peek_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Iter(iter), .. }] => ctx.mod.env.from_option(iter.peek())
+  [{ val: Iter(iter), .. }] => RuntimeValue::from_option(iter.peek())
   _ => Unit
 }
 
@@ -176,13 +176,13 @@ let iter_contains_fn : RuntimeFunction = ctx => match ctx.args {
 
 ///|
 let iter_maximum_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Iter(iter), .. }] => ctx.mod.env.from_option(iter.maximum())
+  [{ val: Iter(iter), .. }] => RuntimeValue::from_option(iter.maximum())
   _ => Unit
 }
 
 ///|
 let iter_minimum_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Iter(iter), .. }] => ctx.mod.env.from_option(iter.minimum())
+  [{ val: Iter(iter), .. }] => RuntimeValue::from_option(iter.minimum())
   _ => Unit
 }
 
@@ -334,7 +334,7 @@ let iter_find_first_fn : RuntimeFunction = ctx => match ctx.args {
         _ => false
       }
     })
-    ctx.mod.env.from_option(result)
+    RuntimeValue::from_option(result)
   }
   _ => Unit
 }

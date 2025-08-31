@@ -8,36 +8,24 @@ fn RuntimeEnvironment::infer_struct_type_from_fields(
   self : RuntimeEnvironment,
   current_fields : Array[String],
 ) -> String {
-  let mut result = "Struct"
   self.type_definitions
   .iter()
-  .each(fn(entry) {
+  .fold(init="Any", fn(result, entry) {
     let (type_name, type_def) = entry
     match type_def.components {
-      Record(struct_fields) =>
-        if struct_fields.length() == current_fields.length() {
-          let mut all_match = true
-          for struct_field in struct_fields {
-            let mut found = false
-            for current_field in current_fields {
-              if struct_field.name.label == current_field {
-                found = true
-                break
-              }
-            }
-            if not(found) {
-              all_match = false
-              break
-            }
-          }
-          if all_match {
-            result = type_name
-          }
+      Record(struct_fields) => {
+        let all_matched = struct_fields.all(sf => current_fields
+          .iter()
+          .any(cf => sf.name.label == cf))
+        if struct_fields.length() == current_fields.length() && all_matched {
+          type_name
+        } else {
+          result
         }
-      _ => ()
+      }
+      _ => result
     }
   })
-  result
 }
 
 ///|
@@ -72,7 +60,7 @@ fn RuntimeModule::find_static_type(
         name: if self.env.type_definitions.get(name) is Some(decl) {
           decl.tycon
         } else {
-          "Any"
+          name
         },
         env: self.env,
       }
@@ -103,6 +91,7 @@ fn RuntimeEnvironment::type_of(
     StringView(_) => RuntimeType::string()
     Tuple(_) => RuntimeType::tuple()
     Array(_) => RuntimeType::array()
+    FixedArray(_) => RuntimeType::array()
     ArrayView(_) => RuntimeType::array_view()
     UninitializedArray(_) => RuntimeType::uninitialized_array()
     Map(_) => RuntimeType::map()
@@ -115,6 +104,7 @@ fn RuntimeEnvironment::type_of(
         _ => type_info
       }
     Iter(_) => RuntimeType::iter()
+    Iter2(_) => RuntimeType::iter()
     Json(_) => RuntimeType::json()
   }
 }

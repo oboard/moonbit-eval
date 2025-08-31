@@ -36,6 +36,8 @@ fn eval_uint_op(UInt, UInt, String) -> @syntax.Constant
 
 fn extract_type_name(@syntax.Type) -> String
 
+let fixedarray_methods : Map[String, (RuntimeFunctionContext) -> RuntimeValue raise ControlFlow]
+
 fn get_expected_runtime_type(String) -> String?
 
 let int_embedded_code : Map[String, (RuntimeFunctionContext) -> RuntimeValue raise ControlFlow]
@@ -43,6 +45,8 @@ let int_embedded_code : Map[String, (RuntimeFunctionContext) -> RuntimeValue rai
 let int_methods : Map[String, (RuntimeFunctionContext) -> RuntimeValue raise ControlFlow]
 
 fn is_comparison_op(String) -> Bool
+
+let iter2_methods : Map[String, (RuntimeFunctionContext) -> RuntimeValue raise ControlFlow]
 
 let iter_methods : Map[String, (RuntimeFunctionContext) -> RuntimeValue raise ControlFlow]
 
@@ -130,7 +134,7 @@ pub(all) enum InterpreterState {
   Stopped
 }
 
-pub struct ModuleMeta {
+pub(all) struct ModuleMeta {
   name : String
   version : String?
   deps : Map[String, String]?
@@ -173,7 +177,6 @@ fn RuntimeEnvironment::create_closure_env(Self) -> Self
 fn RuntimeEnvironment::define_struct_method(Self, String, String, @syntax.Func) -> Unit
 fn RuntimeEnvironment::find(Self, String) -> RuntimeValue?
 fn RuntimeEnvironment::find_fn_alias(Self, String) -> String
-fn RuntimeEnvironment::from_option(Self, RuntimeValue?) -> RuntimeValue
 fn RuntimeEnvironment::new(parent? : Self, values? : Map[String, RuntimeValue], struct_methods? : Map[String, Map[String, RuntimeValue]]) -> Self
 fn RuntimeEnvironment::set(Self, String, RuntimeValue) -> Unit
 fn RuntimeEnvironment::set_mutable_variable(Self, String, RuntimeValue) -> Unit
@@ -227,6 +230,7 @@ fn RuntimeType::iter() -> Self
 fn RuntimeType::json() -> Self
 fn RuntimeType::map() -> Self
 fn RuntimeType::option() -> Self
+fn RuntimeType::result() -> Self
 fn RuntimeType::string() -> Self
 fn RuntimeType::to_string(Self) -> String
 fn RuntimeType::tuple() -> Self
@@ -253,6 +257,7 @@ pub(all) enum RuntimeValue {
   StringView(@string.View)
   Tuple(Array[RuntimeValue])
   Array(Array[RuntimeValue])
+  FixedArray(FixedArray[RuntimeValue])
   ArrayView(ArrayView[RuntimeValue])
   UninitializedArray(UninitializedArray[RuntimeValue])
   Map(Map[RuntimeValue, RuntimeValue])
@@ -261,10 +266,13 @@ pub(all) enum RuntimeValue {
   Constructor(WithType[ConstructorValue])
   Exception(String)
   Iter(Iter[RuntimeValue])
+  Iter2(Iter2[RuntimeValue, RuntimeValue])
   Json(Json)
 }
 fn RuntimeValue::from_constant_with_type(@syntax.Constant, String?) -> Self
 fn RuntimeValue::from_expr(@syntax.Expr) -> Self
+fn RuntimeValue::from_option(Self?) -> Self
+fn RuntimeValue::from_result(Result[Self, Self]) -> Self
 fn RuntimeValue::is_mutable(Self) -> Bool
 fn RuntimeValue::is_reference(Self) -> Bool
 fn RuntimeValue::iter(Self) -> Self

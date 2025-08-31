@@ -7,7 +7,7 @@ pub(all) struct RuntimeModule {
 
 ///|
 /// 模块元数据
-pub struct ModuleMeta {
+pub(all) struct ModuleMeta {
   name : String
   version : String?
   deps : Map[String, String]?

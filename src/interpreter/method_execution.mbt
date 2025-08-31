@@ -199,8 +199,7 @@ fn ClosureInterpreter::execute_static_method_call(
           )
         _ => Unit
       }
-    None =>
-      self.error("Method \{method_name} not found for type \{type_info.name}")
+    None => self.error("Method \{type_info.name}::\{method_name} not found")
   }
 }
 

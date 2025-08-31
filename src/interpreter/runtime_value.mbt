@@ -36,6 +36,7 @@ pub(all) enum RuntimeValue {
   // 复合值类型
   Tuple(Array[RuntimeValue])
   Array(Array[RuntimeValue])
+  FixedArray(FixedArray[RuntimeValue])
   ArrayView(@array.View[RuntimeValue])
   UninitializedArray(UninitializedArray[RuntimeValue])
   Map(Map[RuntimeValue, RuntimeValue])
@@ -54,6 +55,9 @@ pub(all) enum RuntimeValue {
 
   // 迭代器类型 - 用于实现内部迭代器
   Iter(Iter[RuntimeValue])
+
+  // 双参数迭代器类型 - 用于实现带索引的迭代器
+  Iter2(Iter2[RuntimeValue, RuntimeValue])
 
   // JSON 类型 - 用于 JSON 数据处理
   Json(Json)
@@ -168,6 +172,7 @@ pub impl ToJson for RuntimeValue with to_json(self : RuntimeValue) -> Json {
     StringView(sv) => sv.to_string().to_json()
     Tuple(t) => t.to_json()
     Array(a) => a.to_json()
+    FixedArray(a) => a.to_json()
     ArrayView(a) => a.to_json()
     Struct(s) => s.val.to_json()
     Closure(f, _) => f.to_json()
@@ -177,6 +182,7 @@ pub impl ToJson for RuntimeValue with to_json(self : RuntimeValue) -> Json {
     }
     Exception(msg) => ["exception", msg.to_json()]
     Iter(_) => ["iterator", Json::null()]
+    Iter2(_) => ["iter2", Json::null()]
     UninitializedArray(_) => ["uninitialized_array", Json::null()]
     Json(j) => j
   }
@@ -667,7 +673,24 @@ pub impl Show for RuntimeValue with to_string(self) -> String {
         .join(", ")
       "[\{parts}]"
     }
-    ArrayView(values) => values.to_string()
+    FixedArray(values) => {
+      let parts = values
+        .map(val => match val {
+          String(s) => "\"\{s}\""
+          _ => val.to_string()
+        })
+        .join(", ")
+      "[\{parts}]"
+    }
+    ArrayView(values) => {
+      let parts = values
+        .map(val => match val {
+          String(s) => "\"\{s}\""
+          _ => val.to_string()
+        })
+        .join(", ")
+      "[\{parts}]"
+    }
     UninitializedArray(_) => "<uninitialized_array>"
     Map(entities) => {
       let parts = entities
@@ -707,6 +730,7 @@ pub impl Show for RuntimeValue with to_string(self) -> String {
         name + "(" + arg_strs.join(", ") + ")"
       }
     Iter(_) => "<iterator>"
+    Iter2(_) => "<iter2>"
     // 从函数中提取参数和返回类型信息
     Closure(func, _env) => {
       fn infer_func_type(func : @syntax.Func) -> String {
@@ -860,6 +884,10 @@ pub fn RuntimeValue::to_expr(self : RuntimeValue) -> @syntax.Expr {
       let exprs = values.map(fn(v) { v.to_expr() })
       Array(exprs=@list.from_array(exprs), loc=_dummy_loc)
     }
+    FixedArray(values) => {
+      let exprs = Array::from_fixed_array(values.map(fn(v) { v.to_expr() }))
+      Array(exprs=@list.from_array(exprs), loc=_dummy_loc)
+    }
     ArrayView(values) => {
       let exprs = values.map(fn(v) { v.to_expr() })
       Array(exprs=@list.from_array(exprs), loc=_dummy_loc)
@@ -871,6 +899,7 @@ pub fn RuntimeValue::to_expr(self : RuntimeValue) -> @syntax.Expr {
     Constructor(_) => Unit(loc=_dummy_loc, faked=true)
     Exception(_) => Unit(loc=_dummy_loc, faked=true)
     Iter(_) => Unit(loc=_dummy_loc, faked=true)
+    Iter2(_) => Unit(loc=_dummy_loc, faked=true)
     Json(_) => Unit(loc=_dummy_loc, faked=true)
   }
 }
@@ -911,7 +940,7 @@ pub fn RuntimeValue::from_expr(expr : @syntax.Expr) -> RuntimeValue {
       }
       Struct({
         val: struct_data,
-        type_info: { pkg: "", name: "Struct", env: RuntimeEnvironment::new() },
+        type_info: { pkg: "", name: "Any", env: RuntimeEnvironment::new() },
       })
     }
     Ident(..) => Unit // Ident表达式需要通过环境查找，这里返回Unit作为占位符
@@ -1052,10 +1081,7 @@ pub fn runtime_value_infix(
 }
 
 ///|
-pub fn RuntimeEnvironment::from_option(
-  self : RuntimeEnvironment,
-  val : RuntimeValue?,
-) -> RuntimeValue {
+pub fn RuntimeValue::from_option(val : RuntimeValue?) -> RuntimeValue {
   match val {
     Some(x) =>
       Constructor({
@@ -1063,12 +1089,30 @@ pub fn RuntimeEnvironment::from_option(
           name: "Some",
           fields: [{ name: None, value: x, mutable: false }],
         },
-        type_info: { pkg: "", name: "Option", env: self },
+        type_info: RuntimeType::option(),
       })
     None =>
       Constructor({
         val: { name: "None", fields: [] },
-        type_info: { pkg: "", name: "Option", env: self },
+        type_info: RuntimeType::option(),
+      })
+  }
+}
+
+///|
+pub fn RuntimeValue::from_result(
+  val : Result[RuntimeValue, RuntimeValue],
+) -> RuntimeValue {
+  match val {
+    Ok(x) =>
+      Constructor({
+        val: { name: "Ok", fields: [{ name: None, value: x, mutable: false }] },
+        type_info: RuntimeType::result(),
+      })
+    Err(x) =>
+      Constructor({
+        val: { name: "Err", fields: [{ name: None, value: x, mutable: false }] },
+        type_info: RuntimeType::result(),
       })
   }
 }

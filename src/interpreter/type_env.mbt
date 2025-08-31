@@ -192,6 +192,15 @@ pub fn RuntimeType::option() -> RuntimeType {
 }
 
 ///|
+pub fn RuntimeType::result() -> RuntimeType {
+  {
+    pkg: moonbitlang_core_result_module.meta.name,
+    name: "Result",
+    env: moonbitlang_core_result_module.env,
+  }
+}
+
+///|
 pub fn RuntimeType::iter() -> RuntimeType {
   {
     pkg: moonbitlang_core_builtin_module.meta.name,
