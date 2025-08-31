@@ -179,4 +179,4 @@ We welcome contributions to the MoonBit Eval project! Whether it's bug fixes, fe
 Join our community for discussions and support:
 - QQ Group: **949886784**
 
-![QQ群](qrcode.jpg)
+![QQ 群](qrcode.jpg)
