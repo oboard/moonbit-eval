@@ -96,27 +96,29 @@ fn ClosureInterpreter::execute_method_call(
   args : @list.List[@syntax.Argument],
 ) -> RuntimeValue raise ControlFlow {
   let self_type = self_value.get_type()
-  // match self.embedded_methods.get(self_type.name) {
-  //   Some(type_methods) =>
-  //     match type_methods.get(method_name) {
-  //       Some(embedded_method) => {
-  //         // Prepare args: actual_self_value + evaluated args
-  //         let evaluated_args = @list.construct(
-  //           self_value,
-  //           args.map(fn(arg) { self.visit(arg.value) }),
-  //         )
-  //         return embedded_method(RuntimeFunctionContext::{
-  //           context: self,
-  //           mod: self.current_module,
-  //           args: evaluated_args
-  //           .map(arg => { val: arg, kind: Positional })
-  //           .to_array(),
-  //         })
-  //       }
-  //       None => () // Continue to try regular methods
-  //     }
-  //   None => () // Continue to try regular methods
-  // }
+  if self_type is (Object(name~, ..) | Name(name~, ..)) {
+    match self.embedded_methods.get(name) {
+      Some(type_methods) =>
+        match type_methods.get(method_name) {
+          Some(embedded_method) => {
+            // Prepare args: actual_self_value + evaluated args
+            let evaluated_args = @list.construct(
+              self_value,
+              args.map(fn(arg) { self.visit(arg.value) }),
+            )
+            return embedded_method(RuntimeFunctionContext::{
+              context: self,
+              mod: self.current_module,
+              args: evaluated_args
+              .map(arg => { val: arg, kind: Positional })
+              .to_array(),
+            })
+          }
+          None => () // Continue to try regular methods
+        }
+      None => () // Continue to try regular methods
+    }
+  }
   match self_type.find_method(method_name) {
     Some((pkg, func)) => {
       let old_mod = self.current_module
@@ -165,26 +167,28 @@ fn ClosureInterpreter::execute_static_method_call(
   method_name : String,
   args : @list.List[@syntax.Argument],
 ) -> RuntimeValue raise ControlFlow {
-  // match self.embedded_methods.get(type_info.name) {
-  //   Some(methods) =>
-  //     match methods.get(method_name) {
-  //       Some(embedded_func) => {
-  //         let evaluated_args = args
-  //           .map(arg => {
-  //             val: self.visit(arg.value),
-  //             kind: RuntimeArgumentKind::from_syntax(arg.kind),
-  //           })
-  //           .to_array()
-  //         return embedded_func(RuntimeFunctionContext::{
-  //           mod: self.current_module,
-  //           context: self,
-  //           args: evaluated_args,
-  //         })
-  //       }
-  //       None => ()
-  //     }
-  //   None => ()
-  // }
+  if type_info is Object(name~, ..) {
+    match self.embedded_methods.get(name) {
+      Some(methods) =>
+        match methods.get(method_name) {
+          Some(embedded_func) => {
+            let evaluated_args = args
+              .map(arg => {
+                val: self.visit(arg.value),
+                kind: RuntimeArgumentKind::from_syntax(arg.kind),
+              })
+              .to_array()
+            return embedded_func(RuntimeFunctionContext::{
+              mod: self.current_module,
+              context: self,
+              args: evaluated_args,
+            })
+          }
+          None => ()
+        }
+      None => ()
+    }
+  }
 
   // If no embedded method found, try user-defined struct methods
   match type_info.find_method(method_name) {

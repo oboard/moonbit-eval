@@ -27,27 +27,17 @@ pub fn RuntimeEnvironment::find(
 }
 
 ///|
-fn ClosureInterpreter::check_init(
-  self : ClosureInterpreter,
-  mod : RuntimePackage,
-) -> Unit {
-  if !mod.loaded {
-    self.load_module(mod)
-  }
-}
-
-///|
 pub fn ClosureInterpreter::find_pkg(
   self : ClosureInterpreter,
   pkg : String,
 ) -> RuntimePackage {
   let current_module = self.current_module
   if current_module.deps.get(pkg) is Some(mod) {
-    self.check_init(mod)
+    self.load_module(mod)
     mod
     // 检查 main 模块的 deps (core_modules) 中是否有这个包
   } else if self.main.deps.get(pkg) is Some(mod) {
-    self.check_init(mod)
+    self.load_module(mod)
     mod
   } else {
     current_module
@@ -77,11 +67,11 @@ pub fn[T] ClosureInterpreter::with_ident(
     }
     Dot(pkg~, id~) =>
       if current_module.deps.get(pkg) is Some(mod) {
-        self.check_init(mod)
+        self.load_module(mod)
         func(mod, id)
         // 检查 main 模块的 deps (core_modules) 中是否有这个包
       } else if self.main.deps.get(pkg) is Some(mod) {
-        self.check_init(mod)
+        self.load_module(mod)
         func(mod, id)
       } else {
         func(current_module, id)
@@ -98,6 +88,15 @@ pub fn RuntimeEnvironment::set(
 ) -> Unit {
   self.values.set(name, value)
   self.mutable_vars.set(name, false)
+}
+
+///|
+pub fn RuntimePackage::set(
+  self : RuntimePackage,
+  name : String,
+  value : RuntimeValue,
+) -> Unit {
+  self.values.set(name, value)
 }
 
 ///|

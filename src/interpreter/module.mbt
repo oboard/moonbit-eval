@@ -10,6 +10,7 @@ pub(all) struct RuntimePackage {
   // 类型定义
   type_definitions : Map[String, @syntax.TypeDecl]
   struct_methods : Map[String, Map[String, RuntimeValue]]
+  values : Map[String, RuntimeValue]
   mut env : RuntimeEnvironment
   deps : Map[String, RuntimePackage]
   files : Map[String, String]
@@ -81,10 +82,22 @@ pub fn RuntimePackage::new(
     struct_methods: Map::new(),
     type_aliases: Map::new(),
     fn_aliases: Map::new(),
+    values: Map::new(),
     env,
     deps: deps.unwrap_or(Map::new()),
     files: files.unwrap_or(Map::new()),
     loaded: false,
+  }
+}
+
+///|
+pub fn RuntimePackage::find(
+  self : RuntimePackage,
+  name : String,
+) -> RuntimeValue? {
+  match self.values.get(name) {
+    None => self.env.find(name)
+    v => v
   }
 }
 

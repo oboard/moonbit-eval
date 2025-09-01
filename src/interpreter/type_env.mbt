@@ -82,9 +82,11 @@ pub impl Show for RuntimeType with output(self : RuntimeType, logger : &Logger) 
       logger.write_char(')')
     }
     Name(pkg~, name~, tys~) => {
-      logger.write_char('@')
-      logger.write_string(pkg.meta.name)
-      logger.write_char('.')
+      if pkg.meta.name != "main" {
+        logger.write_char('@')
+        logger.write_string(pkg.meta.name)
+        logger.write_char('.')
+      }
       logger.write_string(name)
       logger.write_char('(')
       let mut first = true
@@ -102,9 +104,11 @@ pub impl Show for RuntimeType with output(self : RuntimeType, logger : &Logger) 
       logger.write_char('?')
     }
     Object(pkg~, name~) => {
-      logger.write_char('@')
-      logger.write_string(pkg.meta.name)
-      logger.write_char('.')
+      if pkg.meta.name != "main" {
+        logger.write_char('@')
+        logger.write_string(pkg.meta.name)
+        logger.write_char('.')
+      }
       logger.write_string(name)
     }
   }

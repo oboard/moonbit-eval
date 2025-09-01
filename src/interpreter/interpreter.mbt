@@ -14,7 +14,11 @@ pub(all) struct ClosureInterpreter {
 
 ///|
 pub fn ClosureInterpreter::new() -> ClosureInterpreter {
-  let main = RuntimePackage::new("main", deps=core_modules)
+  let main = RuntimePackage::new(
+    "main",
+    deps=core_modules,
+    files=moonbitlang_core_prelude_module.files,
+  )
   let self = {
     extern_fns: {},
     embedded_fns: core_embedded_code,
@@ -23,7 +27,7 @@ pub fn ClosureInterpreter::new() -> ClosureInterpreter {
     current_module: main,
     call_stack: [],
   }
-  self.load_module(moonbitlang_core_prelude_module)
+  self.load_module(main)
   self
 }
 
@@ -183,7 +187,7 @@ pub fn ClosureInterpreter::top_visit(
     // 处理顶层常量定义（如 const Zero = 0）
     TopLetDef(binder~, expr~, ..) => {
       let value = self.visit(expr) catch { _ => Unit }
-      self.current_module.env.set(binder.name, value)
+      self.current_module.values.set(binder.name, value)
       value
     }
     TopTypeDef(def) => {
@@ -352,9 +356,9 @@ pub fn ClosureInterpreter::visit(
 
     // 处理变量标识符
     Ident(id={ name, .. }, ..) =>
-      self.with_ident(name, (mod, name) => match mod.env.find(name) {
+      self.with_ident(name, (pkg, name) => match pkg.find(name) {
         Some(v) => v
-        None => self.error("variable @\{mod.meta.name}.\{name} not found")
+        None => self.error("variable @\{pkg.meta.name}.\{name} not found")
       })
 
     // 处理中缀表达式（如 1+1）
@@ -743,9 +747,9 @@ pub fn ClosureInterpreter::visit(
             match methods.get(method_name.name) {
               Some(func) => func
               None =>
-                self.error("Method:\{ty_name}:\{method_name.name} not found")
+                self.error("method \{ty_name}:\{method_name.name} not found")
             }
-          None => self.error("Method:\{ty_name} not found")
+          None => self.error("type \{ty_name} not found")
         }
       })
     Map(elems~, ..) => {

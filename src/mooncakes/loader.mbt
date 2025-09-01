@@ -41,6 +41,7 @@ pub async fn load_package(
       type_definitions: Map::new(),
       struct_methods: Map::new(),
       traits: Map::new(),
+      values: Map::new(),
       fn_aliases: Map::new(),
       type_aliases: Map::new(),
       env: @interpreter.RuntimeEnvironment::new(),
