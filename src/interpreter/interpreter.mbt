@@ -256,15 +256,6 @@ pub fn[A] ClosureInterpreter::error(
 }
 
 ///|
-/// 访问语法树节点，返回运行时值
-pub fn ClosureInterpreter::visit(
-  self : ClosureInterpreter,
-  node : @syntax.Expr,
-) -> RuntimeValue raise ControlFlow {
-  self.visit_with_type(node, None)
-}
-
-///|
 /// 从模式中推导类型
 pub fn ClosureInterpreter::infer_pattern_type(
   _ : ClosureInterpreter,
@@ -298,10 +289,10 @@ pub fn ClosureInterpreter::infer_pattern_type(
 
 ///|
 /// 带期望类型的访问语法树节点
-pub fn ClosureInterpreter::visit_with_type(
+pub fn ClosureInterpreter::visit(
   self : ClosureInterpreter,
   node : @syntax.Expr,
-  expected_type : String?,
+  expected_type? : String,
 ) -> RuntimeValue raise ControlFlow {
   if self.state is InterpreterState::Stopped {
     return Unit
