@@ -238,6 +238,7 @@ fn RuntimeType::byte() -> Self
 fn RuntimeType::bytes() -> Self
 fn RuntimeType::char() -> Self
 fn RuntimeType::double() -> Self
+fn RuntimeType::fixed_array() -> Self
 fn RuntimeType::float() -> Self
 fn RuntimeType::int() -> Self
 fn RuntimeType::int64() -> Self

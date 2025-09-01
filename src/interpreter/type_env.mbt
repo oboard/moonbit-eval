@@ -249,6 +249,11 @@ pub fn RuntimeType::array_view() -> RuntimeType {
 }
 
 ///|
+pub fn RuntimeType::fixed_array() -> RuntimeType {
+  Object(pkg=moonbitlang_core_builtin_module, name="FixedArray")
+}
+
+///|
 pub fn RuntimeType::uninitialized_array() -> RuntimeType {
   Object(pkg=moonbitlang_core_builtin_module, name="UninitializedArray")
 }

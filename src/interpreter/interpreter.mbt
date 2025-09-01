@@ -89,7 +89,7 @@ pub fn ClosureInterpreter::load_module(
     return
   }
   pkg.loaded = true
-  // 先加载 deps
+  // load dependencies
   for dep in pkg.deps.values() {
     self.load_module(dep)
   }

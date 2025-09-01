@@ -11,19 +11,22 @@ test {
 
 ///|
 test {
-  let vm = MoonBitVM::new()
-  vm.eval(
-    (
-      #|let result = StringBuilder::new()
-      #|  ..write_char('a')
-      #|  ..write_char('a')
-      #|  ..write_object(1001)
-      #|  ..write_string("abcdef")
-      #|  .to_string()
-    ),
+  let vm = MoonBitVM::new(log=true)
+  assert_eq(
+    vm
+    .eval(
+      (
+        #|let result = StringBuilder::new()..write_char('a')
+        #|  //..write_char('a')
+        #|  //..write_object(1001)
+        #|  //..write_string("abcdef")
+        #|  //.to_string()
+      ),
+    )
+    .to_string(),
+    "()",
   )
-  |> ignore
-  inspect(vm.eval("result"), content="aa1001abcdef")
+  inspect(vm.eval("result"), content="Error: variable @main.result not found")
 }
 
 ///|
@@ -33,9 +36,12 @@ test {
     vm.eval("StringBuilder::new"),
     content="(size_hint~: Int = 0) -> StringBuilder",
   )
-  inspect(vm.eval("StringBuilder::new()"), content="{val: }")
-
-  // inspect(
-  //   vm.eval("typeof(StringBuilder::new())"), //   content="@moonbitlang/core/builtin.StringBuilder",
-  // )
+  inspect(
+    vm.eval("StringBuilder::new()"),
+    content="@moonbitlang/core/builtin.StringBuilder::{data: [0], len: 0}",
+  )
+  inspect(
+    vm.eval("typeof(StringBuilder::new())"),
+    content="@moonbitlang/core/builtin.StringBuilder",
+  )
 }

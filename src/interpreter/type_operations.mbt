@@ -50,6 +50,7 @@ fn RuntimePackage::find_static_type(
     "Tuple" => RuntimeType::tuple()
     "Array" => RuntimeType::array()
     "ArrayView" | "View" => RuntimeType::array_view()
+    "FixedArray" => RuntimeType::fixed_array()
     "UninitializedArray" => RuntimeType::uninitialized_array()
     "Map" => RuntimeType::map()
     "Iter" => RuntimeType::iter()

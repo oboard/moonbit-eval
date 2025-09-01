@@ -58,8 +58,8 @@ pub fn ClosureInterpreter::call(
       // 执行函数体
       let result = self.visit(body)
       match (result, return_type) {
-        (Struct({ val, .. }), Some(ty)) =>
-          Struct({ val, ty: self.parse_type(ty) })
+        (Struct({ val, .. }), Some(Arrow(res~, ..))) =>
+          Struct({ val, ty: self.parse_type(res) })
         _ => result
       }
     }
