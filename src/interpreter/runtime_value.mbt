@@ -717,10 +717,10 @@ pub impl Show for RuntimeValue with to_string(self) -> String {
       })
       "\{self.get_type()}::{" + parts.join(", ") + "}"
     }
-    Constructor({ val: { name, fields }, .. }) =>
+    Constructor({ val: { name, fields }, ty }) =>
       // Format constructor call with field names if present
       if fields.length() == 0 {
-        name
+        "\{ty}::\{name}"
       } else {
         let arg_strs = fields.map(fn(field) {
           match field.name {

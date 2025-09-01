@@ -16,7 +16,10 @@ test "array_get_set_methods" {
   let vm = MoonBitVM::new()
   // Test get method
   inspect(vm.eval("let arr = [1, 2, 3]; arr.get(1)"), content="Some(2)")
-  inspect(vm.eval("let arr = [1, 2, 3]; arr.get(5)"), content="None")
+  inspect(
+    vm.eval("let arr = [1, 2, 3]; arr.get(5)"),
+    content="@moonbitlang/core/option.Option::None",
+  )
 }
 
 ///|
@@ -25,7 +28,10 @@ test "array_push_pop_methods" {
   // Test push and pop
   inspect(vm.eval("let arr = [1, 2]; arr.push(3); arr.length()"), content="3")
   inspect(vm.eval("let arr = [1, 2, 3]; arr.pop()"), content="Some(3)")
-  inspect(vm.eval("let arr = []; arr.pop()"), content="None")
+  inspect(
+    vm.eval("let arr = []; arr.pop()"),
+    content="@moonbitlang/core/option.Option::None",
+  )
 }
 
 ///|

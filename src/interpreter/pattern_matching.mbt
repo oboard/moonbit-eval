@@ -15,8 +15,8 @@ pub fn ClosureInterpreter::execute_match_runtime(
       return self.visit_scoped(case.body, ControlFlow("case \{i}"))
     }
   }
-  error(
-    "\{self.lookup_current_function()} No match found for value: " +
+  self.error(
+    "no match found for value: " +
     value.to_string() +
     " in patterns: [" +
     self.format_patterns(cases) +
