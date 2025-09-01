@@ -137,8 +137,7 @@ let map_from_iter_fn : RuntimeFunction = ctx => match ctx.args {
       Map::from_iter(
         iter.map(item => match item {
           Tuple([key, val]) => (key, val)
-          // TODO: error handle
-          _ => (Unit, Unit)
+          _ => panic()
         }),
       ),
     )

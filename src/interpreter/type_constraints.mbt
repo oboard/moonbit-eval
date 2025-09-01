@@ -9,78 +9,190 @@ pub fn RuntimePackage::check_type_constraint(
 ) -> Bool {
   match (value, constraint) {
     // 基本类型检查
-    (Bool(_), Name(constr_id={ id: Ident(name="Bool"), .. }, ..))
-    | (Bool(_), Name(constr_id={ id: Dot(id="Bool", ..), .. }, ..)) => true
-    (Int(_), Name(constr_id={ id: Ident(name="Int"), .. }, ..))
-    | (Int(_), Name(constr_id={ id: Dot(id="Int", ..), .. }, ..)) => true
-    (UInt(_), Name(constr_id={ id: Ident(name="UInt"), .. }, ..))
-    | (UInt(_), Name(constr_id={ id: Dot(id="UInt", ..), .. }, ..)) => true
-    (Int64(_), Name(constr_id={ id: Ident(name="Int64"), .. }, ..))
-    | (Int64(_), Name(constr_id={ id: Dot(id="Int64", ..), .. }, ..)) => true
-    (UInt16(_), Name(constr_id={ id: Ident(name="UInt16"), .. }, ..))
-    | (UInt16(_), Name(constr_id={ id: Dot(id="UInt16", ..), .. }, ..)) => true
-    (UInt64(_), Name(constr_id={ id: Ident(name="UInt64"), .. }, ..))
-    | (UInt64(_), Name(constr_id={ id: Dot(id="UInt64", ..), .. }, ..)) => true
-    (Float(_), Name(constr_id={ id: Ident(name="Float"), .. }, ..))
-    | (Float(_), Name(constr_id={ id: Dot(id="Float", ..), .. }, ..)) => true
-    (Double(_), Name(constr_id={ id: Ident(name="Double"), .. }, ..))
-    | (Double(_), Name(constr_id={ id: Dot(id="Double", ..), .. }, ..)) => true
-    (String(_), Name(constr_id={ id: Ident(name="String"), .. }, ..))
-    | (String(_), Name(constr_id={ id: Dot(id="String", ..), .. }, ..)) => true
-    (Char(_), Name(constr_id={ id: Ident(name="Char"), .. }, ..))
-    | (Char(_), Name(constr_id={ id: Dot(id="Char", ..), .. }, ..)) => true
-    (Byte(_), Name(constr_id={ id: Ident(name="Byte"), .. }, ..))
-    | (Byte(_), Name(constr_id={ id: Dot(id="Byte", ..), .. }, ..)) => true
-    (BigInt(_), Name(constr_id={ id: Ident(name="BigInt"), .. }, ..))
-    | (BigInt(_), Name(constr_id={ id: Dot(id="BigInt", ..), .. }, ..)) => true
+    (
+      Bool(_),
+      Name(constr_id={ id: Ident(name="Bool") | Dot(id="Bool", ..), .. }, ..),
+    )
+    | (
+      Int(_),
+      Name(constr_id={ id: Ident(name="Int") | Dot(id="Int", ..), .. }, ..),
+    )
+    | (
+      UInt(_),
+      Name(constr_id={ id: Ident(name="UInt") | Dot(id="UInt", ..), .. }, ..),
+    )
+    | (
+      Int64(_),
+      Name(constr_id={ id: Ident(name="Int64") | Dot(id="Int64", ..), .. }, ..),
+    )
+    | (
+      UInt16(_),
+      Name(
+        constr_id={ id: Ident(name="UInt16") | Dot(id="UInt16", ..), .. },
+        ..
+      ),
+    )
+    | (
+      UInt64(_),
+      Name(
+        constr_id={ id: Ident(name="UInt64") | Dot(id="UInt64", ..), .. },
+        ..
+      ),
+    )
+    | (
+      Float(_),
+      Name(constr_id={ id: Ident(name="Float") | Dot(id="Float", ..), .. }, ..),
+    )
+    | (
+      Double(_),
+      Name(
+        constr_id={ id: Ident(name="Double") | Dot(id="Double", ..), .. },
+        ..
+      ),
+    )
+    | (
+      String(_),
+      Name(
+        constr_id={ id: Ident(name="String") | Dot(id="String", ..), .. },
+        ..
+      ),
+    )
+    | (
+      Char(_),
+      Name(constr_id={ id: Ident(name="Char") | Dot(id="Char", ..), .. }, ..),
+    )
+    | (
+      Byte(_),
+      Name(constr_id={ id: Ident(name="Byte") | Dot(id="Byte", ..), .. }, ..),
+    )
+    | (
+      BigInt(_),
+      Name(
+        constr_id={ id: Ident(name="BigInt") | Dot(id="BigInt", ..), .. },
+        ..
+      ),
+    )
 
     // 复合类型检查
-    (Array(_), Name(constr_id={ id: Ident(name="Array"), .. }, ..))
-    | (Array(_), Name(constr_id={ id: Dot(id="Array", ..), .. }, ..)) => true
-    (Tuple(_), Tuple(..))
-    | (Tuple(_), Name(constr_id={ id: Ident(name="Tuple"), .. }, ..))
-    | (Tuple(_), Name(constr_id={ id: Dot(id="Tuple", ..), .. }, ..)) => true
-    (Map(_), Name(constr_id={ id: Ident(name="Map"), .. }, ..))
-    | (Map(_), Name(constr_id={ id: Dot(id="Map", ..), .. }, ..)) => true
+    | (
+      Array(_),
+      Name(constr_id={ id: Ident(name="Array") | Dot(id="Array", ..), .. }, ..),
+    )
+    | (
+      Tuple(_),
+      Name(constr_id={ id: Ident(name="Tuple") | Dot(id="Tuple", ..), .. }, ..),
+    )
+    | (
+      Map(_),
+      Name(constr_id={ id: Ident(name="Map") | Dot(id="Map", ..), .. }, ..),
+    )
 
     // Unit 类型
-    (Unit, Name(constr_id={ id: Ident(name="Unit"), .. }, ..))
-    | (Unit, Name(constr_id={ id: Dot(id="Unit", ..), .. }, ..)) => true
+    | (
+      Unit,
+      Name(constr_id={ id: Ident(name="Unit") | Dot(id="Unit", ..), .. }, ..),
+    )
 
     // Json 类型检查
-    (Json(_), Name(constr_id={ id: Ident(name="Json"), .. }, ..))
-    | (Json(_), Name(constr_id={ id: Dot(id="Json", ..), .. }, ..)) => true
+    | (
+      Json(_),
+      Name(constr_id={ id: Ident(name="Json") | Dot(id="Json", ..), .. }, ..),
+    )
 
     // Any 类型总是匹配
-    (_, Any(..))
-    | (_, Name(constr_id={ id: Ident(name="Any"), .. }, ..))
-    | (_, Name(constr_id={ id: Dot(id="Any", ..), .. }, ..)) => true
+    | (_, Any(..))
+    | (_, Name(constr_id={ id: Ident(name="Any") | Dot(id="Any", ..), .. }, ..))
 
     // Option 类型检查
-    (_, Option(..))
-    | (_, Name(constr_id={ id: Ident(name="Option"), .. }, ..))
-    | (_, Name(constr_id={ id: Dot(id="Option", ..), .. }, ..)) => true
+    | (_, Option(..))
+    | (
+      _,
+      Name(
+        constr_id={ id: Ident(name="Option") | Dot(id="Option", ..), .. },
+        ..
+      ),
+    ) => true
 
     // TODO: call op_equal
-    // // 自定义结构体类型检查
-    // (Struct({ ty: type_info, .. }), Name(constr_id={ id: Ident(name~), .. }, ..)
-    // ) => type_info.mod.meta.name == self.meta.name && type_info.name == name
-    // (
-    //   Struct({ ty: type_info, .. }),
-    //   Name(constr_id={ id: Dot(pkg~, id~), .. }, ..),
-    // ) => type_info.mod.meta.name == pkg && type_info.name == id
-
     // 构造函数类型检查
-    // (
-    //   Constructor({ ty: Name(name=name1), .. }),
-    //   Name(constr_id={ id: Ident(name=name2), .. }, ..),
-    // )
-    // | (
-    //   Constructor({ ty: type_info, .. }),
-    //   Name(constr_id={ id: Dot(id=name, ..), .. }, ..),
-    // ) => type_info.name == name
+    (
+      Constructor({ ty: Name(name=name1, ..), val: { fields, .. } }),
+      Name(constr_id={ id: Ident(name=name2), .. }, tys~, ..),
+    ) =>
+      name1 == name2 &&
+      fields.length() == tys.length() &&
+      (for idx, ty in tys {
+        if !check_type_constraint2(fields[idx].value.get_type(), ty) {
+          break false
+        }
+      } else {
+        true
+      })
+    (
+      Struct(
+        { ty: Object(pkg={ meta: { name: pkg1, .. }, .. }, name=name1), .. }
+      ),
+      Object({ id: Dot(pkg=pkg2, id=name2), .. }),
+    ) => name1 == name2 && pkg1 == pkg2
+    (
+      Struct({ ty: Object(name=name1, ..), .. }),
+      Object({ id: Ident(name=name2), .. }),
+    ) => name1 == name2
 
     // 默认情况：类型不匹配
+    _ => false
+  }
+}
+
+///|
+pub fn check_type_constraint2(
+  value : RuntimeType,
+  constraint : @syntax.Type,
+) -> Bool {
+  match (value, constraint) {
+    (Arrow(_), Arrow(_)) => true
+    (Tuple(tys1), Tuple(tys=tys2, ..)) =>
+      tys1.length() == tys2.length() &&
+      {
+        let tys2 = tys2.to_array()
+        for idx, ty in tys1 {
+          if !check_type_constraint2(ty, tys2[idx]) {
+            break false
+          }
+        } else {
+          true
+        }
+      }
+    (
+      Name(name=name1, tys=tys1, ..),
+      Name(constr_id={ id: Ident(name=name2), .. }, tys=tys2, ..),
+    ) =>
+      name1 == name2 &&
+      tys1.length() == tys2.length() &&
+      {
+        let tys2 = tys2.to_array()
+        for idx, ty in tys1 {
+          if !check_type_constraint2(ty, tys2[idx]) {
+            break false
+          }
+        } else {
+          true
+        }
+      }
+    (
+      Object(pkg={ meta: { name: pkg1, .. }, .. }, name=name1),
+      Object({ id: Dot(pkg=pkg2, id=name2), .. }),
+    ) => name1 == name2 && pkg1 == pkg2
+    (Object(name=name1, ..), Object({ id: Ident(name=name2), .. })) =>
+      name1 == name2
+    (Option(ty1), Option(ty=ty2, ..)) => check_type_constraint2(ty1, ty2)
+    (
+      Option(ty),
+      Name(
+        constr_id={ id: Ident(name="Option") | Dot(id="Option", ..), .. },
+        ..
+      ),
+    ) => check_type_constraint2(ty, constraint)
     _ => false
   }
 }

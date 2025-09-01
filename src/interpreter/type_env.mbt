@@ -17,6 +17,42 @@ pub(all) enum RuntimeType {
 } derive(ToJson(style="flat"))
 
 ///|
+pub impl Eq for RuntimeErrorType with op_equal(
+  self : RuntimeErrorType,
+  other : RuntimeErrorType,
+) -> Bool {
+  match (self, other) {
+    (ErrorType(ty1), ErrorType(ty2)) => ty1 == ty2
+    (DefaultErrorType, DefaultErrorType) => true
+    (NoErrorType, NoErrorType) => true
+    (Noraise, Noraise) => true
+    (MaybeError(ty1), MaybeError(ty2)) => ty1 == ty2
+    _ => false
+  }
+}
+
+///|
+pub impl Eq for RuntimeType with op_equal(
+  self : RuntimeType,
+  other : RuntimeType,
+) -> Bool {
+  match (self, other) {
+    (Any, Any) => true
+    (
+      Arrow(args=args1, res=res1, err=err1, is_async=async1),
+      Arrow(args=args2, res=res2, err=err2, is_async=async2),
+    ) => args1 == args2 && res1 == res2 && err1 == err2 && async1 == async2
+    (Tuple(tys1), Tuple(tys2)) => tys1 == tys2
+    (Name(pkg=pkg1, name=name1, tys=tys1), Name(pkg=pkg2, name=name2, tys=tys2)) =>
+      pkg1.meta.name == pkg2.meta.name && name1 == name2 && tys1 == tys2
+    (Option(ty1), Option(ty2)) => ty1 == ty2
+    (Object(pkg=pkg1, name=name1), Object(pkg=pkg2, name=name2)) =>
+      pkg1.meta.name == pkg2.meta.name && name1 == name2
+    _ => false
+  }
+}
+
+///|
 pub(all) enum RuntimeErrorType {
   ErrorType(RuntimeType)
   DefaultErrorType

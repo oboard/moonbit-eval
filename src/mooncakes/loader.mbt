@@ -27,7 +27,7 @@ pub async fn load_package(
       load_package(name).each(deps.set(_, _))
     }
     let meta_info = @json.from_json(meta_info) catch {
-      _ => @interpreter.ModuleMeta::new("")
+      _ => @interpreter.PackageMeta::new("")
     }
     while source_files.pop() is Some(String(name)) {
       let source = @mio.get("https://mooncakes.io/assets/\{pkg}/\{name}").text() catch {

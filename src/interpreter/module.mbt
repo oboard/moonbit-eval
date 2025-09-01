@@ -1,6 +1,6 @@
 ///|
 pub(all) struct RuntimePackage {
-  meta : ModuleMeta
+  meta : PackageMeta
   traits : Map[String, @syntax.TraitDecl]
   // 函数别名存储 - 存储函数名到其实际实现的映射
   fn_aliases : Map[String, WithType[RuntimeValue]]
@@ -17,19 +17,9 @@ pub(all) struct RuntimePackage {
   mut loaded : Bool
 } derive(ToJson)
 
-// TODO: reflactor package struct
-// pub(all) struct MoonBitPackage {
-//   name: String
-//   traits: Map[String, @syntax.TraitDecl]
-//   errors: Map[String, String]
-//   types: Map[String, RuntimeType]
-//   typealiases: Map[String, String]
-//   values: Map[String, RuntimeValue]
-// }
-
 ///|
-/// 模块元数据
-pub(all) struct ModuleMeta {
+/// 包元数据
+pub(all) struct PackageMeta {
   name : String
   version : String?
   deps : Map[String, String]?
@@ -43,7 +33,7 @@ pub(all) struct ModuleMeta {
 
 ///|
 /// 模块元数据构造函数
-pub fn ModuleMeta::new(
+pub fn PackageMeta::new(
   name : String,
   version? : String,
   readme? : String,
@@ -53,7 +43,7 @@ pub fn ModuleMeta::new(
   description? : String,
   source? : String,
   deps? : Map[String, String],
-) -> ModuleMeta {
+) -> PackageMeta {
   {
     name,
     version,
@@ -75,7 +65,7 @@ pub fn RuntimePackage::new(
 ) -> RuntimePackage {
   let env = RuntimeEnvironment::new()
   {
-    meta: ModuleMeta::new(pkg),
+    meta: PackageMeta::new(pkg),
     traits: Map::new(),
     stubs: core_stubs,
     type_definitions: Map::new(),

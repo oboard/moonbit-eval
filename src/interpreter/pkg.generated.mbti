@@ -15,6 +15,8 @@ let array_methods : Map[String, (RuntimeFunctionContext) -> RuntimeValue raise C
 
 let array_view_methods : Map[String, (RuntimeFunctionContext) -> RuntimeValue raise ControlFlow]
 
+fn check_type_constraint2(RuntimeType, @syntax.Type) -> Bool
+
 fn[T : Compare] compare(T, T, String) -> @syntax.Constant
 
 fn constant_infix(String, @syntax.Constant, @syntax.Constant) -> @syntax.Constant
@@ -131,7 +133,7 @@ pub(all) struct ConstructorValue {
   fields : Array[ConstructorField]
 }
 
-pub(all) struct ModuleMeta {
+pub(all) struct PackageMeta {
   name : String
   version : String?
   deps : Map[String, String]?
@@ -142,10 +144,10 @@ pub(all) struct ModuleMeta {
   description : String?
   source : String?
 }
-fn ModuleMeta::new(String, version? : String, readme? : String, repository? : String, license? : String, keywords? : Array[String], description? : String, source? : String, deps? : Map[String, String]) -> Self
-impl Show for ModuleMeta
-impl ToJson for ModuleMeta
-impl @json.FromJson for ModuleMeta
+fn PackageMeta::new(String, version? : String, readme? : String, repository? : String, license? : String, keywords? : Array[String], description? : String, source? : String, deps? : Map[String, String]) -> Self
+impl Show for PackageMeta
+impl ToJson for PackageMeta
+impl @json.FromJson for PackageMeta
 
 pub(all) struct RuntimeArgument {
   val : RuntimeValue
@@ -181,6 +183,7 @@ pub(all) enum RuntimeErrorType {
   Noraise
   MaybeError(RuntimeType)
 }
+impl Eq for RuntimeErrorType
 impl Show for RuntimeErrorType
 impl ToJson for RuntimeErrorType
 
@@ -198,7 +201,7 @@ pub enum RuntimeLocation {
 impl Show for RuntimeLocation
 
 pub(all) struct RuntimePackage {
-  meta : ModuleMeta
+  meta : PackageMeta
   traits : Map[String, @syntax.TraitDecl]
   fn_aliases : Map[String, WithType[RuntimeValue]]
   type_aliases : Map[String, WithType[@syntax.TypeDecl]]
@@ -254,6 +257,7 @@ fn RuntimeType::uint() -> Self
 fn RuntimeType::uint16() -> Self
 fn RuntimeType::uint64() -> Self
 fn RuntimeType::uninitialized_array() -> Self
+impl Eq for RuntimeType
 impl Show for RuntimeType
 impl ToJson for RuntimeType
 
