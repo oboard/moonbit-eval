@@ -25,9 +25,9 @@ fn ClosureInterpreter::execute_function_by_name(
       kind: RuntimeArgumentKind::from_syntax(arg.kind),
     })
     .to_array()
-  self.current_module.with_ident(long_ident, fn(mod, _pkg, name) {
+  self.with_ident(long_ident, fn(mod, pkg, name) {
     let env = mod.env
-    let name = env.find_fn_alias(name)
+    let name = mod.find_fn_alias(name)
 
     // 按优先级查找：用户函数 -> Lambda变量 -> 外部函数 -> embedded函数
     let func = match
@@ -81,7 +81,8 @@ fn ClosureInterpreter::execute_function_by_name(
           context: self,
           args: evaluated_args,
         })
-      FunctionLookupResult::NotFound => self.error("method \{name} not found")
+      FunctionLookupResult::NotFound =>
+        self.error("method \{pkg}.\{name} not found")
     }
   })
 }
@@ -94,7 +95,7 @@ fn ClosureInterpreter::execute_method_call(
   method_name : String,
   args : @list.List[@syntax.Argument],
 ) -> RuntimeValue raise ControlFlow {
-  let self_type = self.current_module.env.type_of(self_value)
+  let self_type = self_value.get_type()
   match self.embedded_methods.get(self_type.name) {
     Some(type_methods) =>
       match type_methods.get(method_name) {
@@ -116,18 +117,18 @@ fn ClosureInterpreter::execute_method_call(
       }
     None => () // Continue to try regular methods
   }
-  match self_type.find_method(method_name) {
+  match self_type.mod.find_method(self_type.name, method_name) {
     Some(func) => {
-      let old_env = self.current_module.env
+      let old_mod = self.current_module
       let args = args.map(arg => {
         val: self.visit(arg.value),
         kind: RuntimeArgumentKind::from_syntax(arg.kind),
       })
-      self.current_module.env = self_type.env
+      self.current_module = self_type.mod
       self.push_scope(RuntimeLocation::FunctionCall(method_name))
       defer {
         self.pop_scope()
-        self.current_module.env = old_env
+        self.current_module = old_mod
       }
       // Bind self parameter and other args
       match func {
@@ -186,7 +187,7 @@ fn ClosureInterpreter::execute_static_method_call(
   }
 
   // If no embedded method found, try user-defined struct methods
-  match type_info.find_method(method_name) {
+  match self.current_module.find_method(type_info.name, method_name) {
     Some(func) =>
       match func {
         Closure(func, env) =>
@@ -205,13 +206,14 @@ fn ClosureInterpreter::execute_static_method_call(
 
 ///|
 /// 查找类型的方法
-fn RuntimeType::find_method(
-  self : RuntimeType,
+fn RuntimeModule::find_method(
+  self : RuntimeModule,
+  type_name : String,
   method_name : String,
 ) -> RuntimeValue? {
   let mut current_env = Some(self.env)
   while current_env is Some(env) {
-    if env.struct_methods.get(self.name) is Some(methods) {
+    if self.struct_methods.get(type_name) is Some(methods) {
       if methods.get(method_name) is Some(func) {
         return Some(func)
       }

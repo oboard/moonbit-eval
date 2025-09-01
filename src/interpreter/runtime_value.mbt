@@ -338,6 +338,7 @@ fn RuntimeValue::from_constant(c : @syntax.Constant) -> RuntimeValue {
     }
     Char(s) => Char(s.get_char(0).unwrap_or(' '))
     String(s) => String(s)
+    BigInt(bigint) => BigInt(@bigint.BigInt::from_string(bigint))
     _ => abort("Constant: not implemented")
   }
 }
@@ -940,7 +941,7 @@ pub fn RuntimeValue::from_expr(expr : @syntax.Expr) -> RuntimeValue {
       }
       Struct({
         val: struct_data,
-        type_info: { path: "", name: "Any", env: RuntimeEnvironment::new() },
+        type_info: { path: "", name: "Any", mod: RuntimeModule::new("main") },
       })
     }
     Ident(..) => Unit // Ident表达式需要通过环境查找，这里返回Unit作为占位符

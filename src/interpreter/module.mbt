@@ -1,8 +1,15 @@
 ///|
 pub(all) struct RuntimeModule {
   meta : ModuleMeta
+  traits : Map[String, @syntax.TraitDecl]
+  // 函数别名存储 - 存储函数名到其实际实现的映射
+  fn_aliases : Map[String, String]
+  // 类型定义
+  type_definitions : Map[String, @syntax.TypeDecl]
+  struct_methods : Map[String, Map[String, RuntimeValue]]
   mut env : RuntimeEnvironment
   deps : Map[String, RuntimeModule]
+  mut code : String
 } derive(ToJson)
 
 // TODO: reflactor package struct
@@ -58,101 +65,20 @@ pub fn ModuleMeta::new(
 ///|
 pub fn RuntimeModule::new(
   pkg : String,
-  deps~ : Map[String, RuntimeModule],
-  builder : (RuntimeEnvironment, (String) -> (String?, RuntimeValue)) -> Map[
-    String,
-    (String?, RuntimeValue),
-  ],
+  deps? : Map[String, RuntimeModule],
+  code? : String,
 ) -> RuntimeModule {
-  let values = {}
-  let struct_methods = {}
-  let env = RuntimeEnvironment::new(values~, struct_methods~)
-  ///|
-  fn build(code : String) -> (String?, RuntimeValue) {
-    if code.has_prefix("pub") ||
-      code.has_prefix("fn") ||
-      code.has_prefix("enum") {
-      let impl_ = parse_code_to_impl(code)
-      if impl_ is Ok(impl_) {
-        if impl_ is TopFuncDef(_) {
-          return env.top_func_def_to_closure(impl_)
-        }
-        if impl_ is TopTypeDef(def) {
-          match def {
-            { tycon, params, components, .. } => {
-              env.type_definitions.set(tycon, def)
-              env.struct_methods.set(tycon, Map::new())
-
-              // 处理泛型类型参数
-              let type_params = []
-              for param in params {
-                match param {
-                  { name, .. } => type_params.push(name)
-                }
-              } else {
-                ()
-              }
-
-              // 注册枚举构造函数到运行时环境
-              match components {
-                Variant(constructors) =>
-                  for constr in constructors {
-                    let constr_name = constr.name.name
-                    env.type_definitions.set(constr_name, def)
-                  } else {
-                    ()
-                  }
-                _ => () // Record类型不需要注册构造函数
-              }
-            }
-          }
-          return (None, Unit)
-        }
-      }
-    }
-    let expr = parse_code_to_expr(code)
-    (
-      None,
-      match expr {
-        Ok(expr) =>
-          match expr {
-            Function(func~, ..) => Closure(func, env.create_closure_env())
-            _ =>
-              Closure(
-                @syntax.Func::Lambda(
-                  parameters=@list.of([
-                    Positional(
-                      binder={ name: "self", loc: dummy_loc() },
-                      ty=None,
-                    ),
-                  ]),
-                  params_loc=dummy_loc(),
-                  body=expr,
-                  return_type=None,
-                  error_type=NoErrorType,
-                  kind=Arrow,
-                  has_error=None,
-                  is_async=false,
-                  loc=dummy_loc(),
-                ),
-                RuntimeEnvironment::new(),
-              )
-          }
-        Err(_) => Unit
-      },
-    )
+  let env = RuntimeEnvironment::new()
+  {
+    meta: ModuleMeta::new(pkg),
+    traits: Map::new(),
+    fn_aliases: core_fn_aliases,
+    type_definitions: Map::new(),
+    struct_methods: Map::new(),
+    env,
+    deps: deps.unwrap_or(Map::new()),
+    code: code.unwrap_or(""),
   }
-
-  builder(env, build).each(fn(key, value) {
-    if value.0 is Some(name) {
-      if !struct_methods.contains(name) {
-        struct_methods.set(name, {})
-      }
-      struct_methods.get(name).unwrap().set(key, value.1)
-    }
-    values.set(key, value.1)
-  })
-  { meta: ModuleMeta::new(pkg), env, deps }
 }
 
 ///|

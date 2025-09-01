@@ -27,18 +27,38 @@ pub fn RuntimeEnvironment::find(
 }
 
 ///|
-pub fn[T] RuntimeModule::with_ident(
-  self : RuntimeModule,
+pub fn[T] ClosureInterpreter::with_ident(
+  self : ClosureInterpreter,
   long_ident : @syntax.LongIdent,
   func : (RuntimeModule, String, String) -> T raise?,
 ) -> T raise? {
+  let currrent_module = self.current_module
+  fn check_init(mod : RuntimeModule) -> Unit {
+    if !mod.code.is_empty() {
+      let code = mod.code
+      mod.code = ""
+      let old_module = self.current_module
+      self.current_module = mod
+      defer {
+        self.current_module = old_module
+      }
+      let (impls, _diagnostics) = @moonbitlang/parser.parse_string(code)
+      impls.each(node => self.top_visit(node) |> ignore)
+    }
+  }
+
   match long_ident {
-    Ident(name~) => func(self, self.meta.name, name)
+    Ident(name~) => func(currrent_module, currrent_module.meta.name, name)
     Dot(pkg~, id~) =>
-      if self.deps.get(pkg) is Some(mod) {
+      if currrent_module.deps.get(pkg) is Some(mod) {
+        check_init(mod)
+        func(mod, pkg, id)
+        // 检查 main 模块的 deps (core_modules) 中是否有这个包
+      } else if self.main.deps.get(pkg) is Some(mod) {
+        check_init(mod)
         func(mod, pkg, id)
       } else {
-        func(self, pkg, id)
+        func(currrent_module, pkg, id)
       }
   }
 }

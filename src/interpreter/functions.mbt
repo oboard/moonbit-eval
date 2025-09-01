@@ -187,17 +187,19 @@ fn ClosureInterpreter::bind_runtime_parameters(
 
 ///|
 /// 处理函数定义
-pub fn RuntimeEnvironment::define_struct_method(
-  self : RuntimeEnvironment,
+pub fn RuntimeModule::define_struct_method(
+  self : RuntimeModule,
   type_name : String,
   method_name : String,
   func : @syntax.Func,
 ) -> Unit {
-  if !self.struct_methods.contains(type_name) {
-    self.struct_methods.set(type_name, Map::new())
+  let methods = match self.struct_methods.get(type_name) {
+    Some(methods) => methods
+    None => {
+      let methods = Map::new()
+      self.struct_methods.set(type_name, methods)
+      methods
+    }
   }
-  self.struct_methods
-  .get(type_name)
-  .unwrap()
-  .set(method_name, RuntimeValue::Closure(func, self))
+  methods.set(method_name, RuntimeValue::Closure(func, self.env))
 }

@@ -110,13 +110,14 @@ fn ClosureInterpreter::push_scope(Self, RuntimeLocation) -> Unit
 fn ClosureInterpreter::runtime_value_in_range(Self, RuntimeValue, @syntax.Pattern, @syntax.Pattern, Bool) -> Bool
 fn ClosureInterpreter::start(Self) -> Unit
 fn ClosureInterpreter::stop(Self) -> Unit
-fn ClosureInterpreter::top_visit(Self, @syntax.Impl) -> RuntimeValue raise ControlFlow
+fn ClosureInterpreter::top_visit(Self, @syntax.Impl) -> RuntimeValue
 fn ClosureInterpreter::value_in_range(Self, @syntax.Expr, @syntax.Pattern, @syntax.Pattern, Bool) -> Bool
 fn ClosureInterpreter::visit(Self, @syntax.Expr) -> RuntimeValue raise ControlFlow
 fn ClosureInterpreter::visit_interp(Self, @list.List[@syntax.InterpElem]) -> RuntimeValue raise ControlFlow
 fn ClosureInterpreter::visit_multiline_string(Self, @list.List[@syntax.MultilineStringElem]) -> RuntimeValue raise ControlFlow
 fn ClosureInterpreter::visit_scoped(Self, @syntax.Expr, RuntimeLocation) -> RuntimeValue raise ControlFlow
 fn ClosureInterpreter::visit_with_type(Self, @syntax.Expr, String?) -> RuntimeValue raise ControlFlow
+fn[T] ClosureInterpreter::with_ident(Self, @syntax.LongIdent, (RuntimeModule, String, String) -> T raise?) -> T raise?
 
 pub(all) struct ConstructorField {
   name : String?
@@ -163,20 +164,14 @@ pub(all) enum RuntimeArgumentKind {
 fn RuntimeArgumentKind::from_syntax(@syntax.ArgumentKind) -> Self
 
 pub(all) struct RuntimeEnvironment {
-  traits : Map[String, @syntax.TraitDecl]
-  fn_aliases : Map[String, String]
-  type_definitions : Map[String, @syntax.TypeDecl]
-  struct_methods : Map[String, Map[String, RuntimeValue]]
   values : Map[String, RuntimeValue]
   mutable_vars : Map[String, Bool]
   parent : RuntimeEnvironment?
 }
 fn RuntimeEnvironment::copy(Self) -> Self
 fn RuntimeEnvironment::create_closure_env(Self) -> Self
-fn RuntimeEnvironment::define_struct_method(Self, String, String, @syntax.Func) -> Unit
 fn RuntimeEnvironment::find(Self, String) -> RuntimeValue?
-fn RuntimeEnvironment::find_fn_alias(Self, String) -> String
-fn RuntimeEnvironment::new(parent? : Self, values? : Map[String, RuntimeValue], struct_methods? : Map[String, Map[String, RuntimeValue]]) -> Self
+fn RuntimeEnvironment::new(parent? : Self, values? : Map[String, RuntimeValue]) -> Self
 fn RuntimeEnvironment::set(Self, String, RuntimeValue) -> Unit
 fn RuntimeEnvironment::set_mutable_variable(Self, String, RuntimeValue) -> Unit
 fn RuntimeEnvironment::top_func_def_to_closure(Self, @syntax.Impl) -> (String?, RuntimeValue)
@@ -198,20 +193,26 @@ impl Show for RuntimeLocation
 
 pub(all) struct RuntimeModule {
   meta : ModuleMeta
+  traits : Map[String, @syntax.TraitDecl]
+  fn_aliases : Map[String, String]
+  type_definitions : Map[String, @syntax.TypeDecl]
+  struct_methods : Map[String, Map[String, RuntimeValue]]
   mut env : RuntimeEnvironment
   deps : Map[String, RuntimeModule]
+  mut code : String
 }
 fn RuntimeModule::check_type_constraint(Self, RuntimeValue, @syntax.Type) -> Bool
 fn RuntimeModule::cons(Self, String, Array[RuntimeValue]) -> RuntimeValue
 fn RuntimeModule::cons_with_labels(Self, String, Array[(String?, RuntimeValue, Bool)]) -> RuntimeValue
-fn RuntimeModule::new(String, deps~ : Map[String, Self], (RuntimeEnvironment, (String) -> (String?, RuntimeValue)) -> Map[String, (String?, RuntimeValue)]) -> Self
-fn[T] RuntimeModule::with_ident(Self, @syntax.LongIdent, (Self, String, String) -> T raise?) -> T raise?
+fn RuntimeModule::define_struct_method(Self, String, String, @syntax.Func) -> Unit
+fn RuntimeModule::find_fn_alias(Self, String) -> String
+fn RuntimeModule::new(String, deps? : Map[String, Self], code? : String) -> Self
 impl ToJson for RuntimeModule
 
 pub struct RuntimeType {
   name : String
   path : String
-  env : RuntimeEnvironment
+  mod : RuntimeModule
 }
 fn RuntimeType::any() -> Self
 fn RuntimeType::array() -> Self
@@ -227,6 +228,7 @@ fn RuntimeType::int() -> Self
 fn RuntimeType::int64() -> Self
 fn RuntimeType::iter() -> Self
 fn RuntimeType::json() -> Self
+fn RuntimeType::list() -> Self
 fn RuntimeType::map() -> Self
 fn RuntimeType::option() -> Self
 fn RuntimeType::result() -> Self

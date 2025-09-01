@@ -1,12 +1,5 @@
 ///|
 pub(all) struct RuntimeEnvironment {
-  traits : Map[String, @syntax.TraitDecl]
-  // 函数别名存储 - 存储函数名到其实际实现的映射
-  fn_aliases : Map[String, String]
-  // 类型定义
-  type_definitions : Map[String, @syntax.TypeDecl]
-  // 结构体方法定义 - 按类型名组织方法
-  struct_methods : Map[String, Map[String, RuntimeValue]]
   values : Map[String, RuntimeValue]
   // 跟踪哪些变量是可变的
   mutable_vars : Map[String, Bool]
@@ -17,26 +10,16 @@ pub(all) struct RuntimeEnvironment {
 pub fn RuntimeEnvironment::new(
   parent? : RuntimeEnvironment,
   values? : Map[String, RuntimeValue],
-  struct_methods? : Map[String, Map[String, RuntimeValue]],
 ) -> RuntimeEnvironment {
   if parent is Some(parent) {
     {
       ..parent,
       values: values.unwrap_or({}),
       mutable_vars: Map::new(),
-      struct_methods: struct_methods.unwrap_or({}),
       parent: Some(parent),
     }
   } else {
-    {
-      traits: Map::new(),
-      fn_aliases: core_fn_aliases.copy(),
-      type_definitions: Map::new(),
-      struct_methods: struct_methods.unwrap_or({}),
-      values: values.unwrap_or({}),
-      mutable_vars: Map::new(),
-      parent: None,
-    }
+    { values: values.unwrap_or({}), mutable_vars: Map::new(), parent: None }
   }
 }
 

@@ -2,7 +2,6 @@
 pub async fn load_package(
   pkg : String,
 ) -> Map[String, @interpreter.RuntimeModule] noraise {
-  let interpreter = @interpreter.ClosureInterpreter::new()
   let url = "https://mooncakes.io/assets/\{pkg}/module_index.json"
   let module_index = @mio.get(url).json() catch { _ => {} }
   let deps = if module_index is { "childs": Array(childs), .. } {
@@ -35,17 +34,17 @@ pub async fn load_package(
         _ => ""
       }
       sources.push(source)
-      let (impls, _diagnostics) = @moonbitlang/parser.parse_string(source)
-      impls.each(node => {
-        interpreter.start()
-        interpreter.top_visit(node) |> ignore
-        interpreter.stop()
-      }) catch {
-        _ => println("error loading source file: \{name}")
-      }
     }
-    let env = interpreter.current_module.env
-    deps.set(pkg, @interpreter.RuntimeModule::{ meta: meta_info, env, deps })
+    deps.set(pkg, @interpreter.RuntimeModule::{
+      meta: meta_info,
+      fn_aliases: Map::new(),
+      type_definitions: Map::new(),
+      struct_methods: Map::new(),
+      traits: Map::new(),
+      env: @interpreter.RuntimeEnvironment::new(),
+      deps,
+      code: sources.join("\n"),
+    })
     return deps
   }
   return {}

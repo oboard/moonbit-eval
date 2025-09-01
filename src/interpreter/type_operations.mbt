@@ -4,8 +4,8 @@
 
 ///|
 /// 根据字段名推导结构体类型
-fn RuntimeEnvironment::infer_struct_type_from_fields(
-  self : RuntimeEnvironment,
+fn RuntimeModule::infer_struct_type_from_fields(
+  self : RuntimeModule,
   current_fields : Array[String],
 ) -> String {
   self.type_definitions
@@ -57,24 +57,21 @@ fn RuntimeModule::find_static_type(
     _ =>
       {
         path: self.meta.name,
-        name: if self.env.type_definitions.get(name) is Some(decl) {
+        name: if self.type_definitions.get(name) is Some(decl) {
           decl.tycon
         } else {
           name
         },
-        env: self.env,
+        mod: self,
       }
   }
 }
 
 ///|
 /// 根据运行时值推断类型
-fn RuntimeEnvironment::type_of(
-  self : RuntimeEnvironment,
-  runtime_value : RuntimeValue,
-) -> RuntimeType {
-  match runtime_value {
-    Unit => { path: "std", name: "Unit", env: self }
+fn RuntimeValue::get_type(self : RuntimeValue) -> RuntimeType {
+  match self {
+    Unit => { path: "main", name: "Unit", mod: RuntimeModule::new("main") }
     Bool(_) => RuntimeType::bool()
     Int(_) => RuntimeType::int()
     UInt(_) => RuntimeType::uint()
@@ -96,11 +93,14 @@ fn RuntimeEnvironment::type_of(
     UninitializedArray(_) => RuntimeType::uninitialized_array()
     Map(_) => RuntimeType::map()
     Struct(data) => data.type_info
-    Closure(_) => { path: "main", name: runtime_value.to_string(), env: self }
-    Exception(_) => { path: "std", name: "Exception", env: self }
+    Closure(_) =>
+      { path: "main", name: self.to_string(), mod: RuntimeModule::new("main") }
+    Exception(_) =>
+      { path: "main", name: "Exception", mod: RuntimeModule::new("main") }
     Constructor({ val: { name, .. }, type_info }) =>
       match name {
         "Some" | "None" => RuntimeType::option()
+        "More" | "Empty" => RuntimeType::list()
         _ => type_info
       }
     Iter(_) => RuntimeType::iter()
@@ -120,9 +120,10 @@ fn ClosureInterpreter::infer_return_type_from_expr(
     Apply(func~, ..) =>
       match func {
         @syntax.Expr::Ident(id={ name: ident, .. }, ..) =>
-          self.current_module.with_ident(ident, (mod, _pkg, name) => mod.env.type_of(
-            mod.env.find(name).unwrap_or(Unit),
-          ))
+          self.with_ident(ident, (mod, _pkg, name) => mod.env
+            .find(name)
+            .unwrap_or(Unit)
+            .get_type())
         _ => RuntimeType::any()
       }
     // 处理 match 表达式

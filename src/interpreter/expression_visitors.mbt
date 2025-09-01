@@ -61,29 +61,21 @@ fn ClosureInterpreter::visit_record_creation(
     let field_value = self.visit(field.expr)
     evaluated_fields.set(field.label.name, field_value)
   }
-  fn alloc(
-    env : RuntimeEnvironment,
-    pkg : String,
-    name : String,
-  ) -> RuntimeValue {
-    Struct({ val: evaluated_fields, type_info: { path: pkg, name, env } })
+  fn alloc(mod : RuntimeModule, pkg : String, name : String) -> RuntimeValue {
+    Struct({ val: evaluated_fields, type_info: { path: pkg, name, mod } })
   }
 
   if type_name is Some(type_name) {
-    self.current_module.with_ident(type_name.name, (mod, pkg, name) => alloc(
-      mod.env,
-      pkg,
-      name,
-    ))
+    self.with_ident(type_name.name, (mod, pkg, name) => alloc(mod, pkg, name))
   } else {
     let field_names = []
     for field in fields {
       field_names.push(field.label.name)
     }
-    let type_name = self.current_module.env.infer_struct_type_from_fields(
+    let type_name = self.current_module.infer_struct_type_from_fields(
       field_names,
     )
-    alloc(self.current_module.env, "main", type_name)
+    alloc(self.current_module, "main", type_name)
   }
 }
 
@@ -198,7 +190,7 @@ fn ClosureInterpreter::visit_apply(
       }
       // 处理静态方法调用，如 Bool::default()
       Method(type_name~, method_name~, ..) =>
-        self.current_module.with_ident(type_name.name, (mod, _pkg, name) => self.execute_static_method_call(
+        self.with_ident(type_name.name, (mod, _pkg, name) => self.execute_static_method_call(
           mod.find_static_type(name),
           method_name.name,
           args,
