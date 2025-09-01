@@ -26,14 +26,11 @@ fn ClosureInterpreter::execute_function_by_name(
     })
     .to_array()
   self.with_ident(long_ident, fn(mod, name) {
-    let env = mod.env
     let name = mod.find_stub(name)
 
     // 按优先级查找：用户函数 -> Lambda变量 -> 外部函数 -> embedded函数
     let func = match
-      env
-      .find(name)
-      .unwrap_or(self.current_module.env.find(name).unwrap_or(Unit)) {
+      mod.find(name).unwrap_or(self.current_module.find(name).unwrap_or(Unit)) {
       Closure(func, env) =>
         // 检查是否是embedded函数的标记函数
         match func {
@@ -82,7 +79,9 @@ fn ClosureInterpreter::execute_function_by_name(
           args: evaluated_args,
         })
       FunctionLookupResult::NotFound =>
-        self.error("method \{mod.meta.name}.\{name} not found")
+        self.error(
+          "execute_function_by_name method @\{mod.meta.name}.\{name} not found",
+        )
     }
   })
 }

@@ -20,6 +20,7 @@ test "module" {
 test "math" {
   let vm = MoonBitVM::new()
   // vm.interpreter.env.deps["math"].unwrap().env.values["abs"]
+  assert_eq(vm.eval("@math.pi").to_string(), "1")
   assert_eq(vm.eval("@math.abs(-1.0)").to_string(), "1")
   assert_eq(vm.eval("@math.abs").to_string(), "(x: Double) -> Double")
 }

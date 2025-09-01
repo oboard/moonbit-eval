@@ -140,7 +140,9 @@ pub fn ClosureInterpreter::pattern_to_value(
     Constant(c~, loc~) => Some(Constant(c~, loc~))
     Constr(constr~, ..) => {
       // 查找构造函数的值
-      let runtime_value = self.main.env.find(constr.name.name).unwrap_or(Unit)
+      let runtime_value = self.current_module
+        .find(constr.name.name)
+        .unwrap_or(Unit)
       Some(runtime_value.to_expr())
     }
     Any(..) => None // 通配符表示开放边界

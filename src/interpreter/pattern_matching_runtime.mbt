@@ -323,7 +323,7 @@ pub fn ClosureInterpreter::pattern_to_runtime_value(
       }
     Constr(constr~, ..) =>
       // 查找构造函数的值
-      Some(self.current_module.env.find(constr.name.name).unwrap_or(Unit))
+      Some(self.current_module.find(constr.name.name).unwrap_or(Unit))
     Any(..) => None // 通配符表示开放边界
     _ => None
   }

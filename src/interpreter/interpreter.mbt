@@ -171,14 +171,14 @@ pub fn ClosureInterpreter::top_visit(
           (Some(pkg), None) => self.find_pkg(pkg)
           (None, None) => self.current_module
         }
-        let target_value = mod.env.find(binder_name)
+        let target_value = mod.find(binder_name)
         // 将别名映射到目标函数
         if target_value is Some(target_value) {
           self.current_module.fn_aliases.set(target_name, {
             val: target_value,
             ty: Object(pkg=mod, name=binder_name),
           })
-          self.current_module.env.set(binder_name, target_value)
+          self.current_module.set(binder_name, target_value)
         }
       }
       Unit
@@ -268,7 +268,7 @@ pub fn ClosureInterpreter::top_visit(
           if type_name is Some(type_name) {
             self.current_module.define_struct_method(type_name, func_name, func)
           }
-          self.current_module.env.set(
+          self.current_module.set(
             func_name,
             Closure(func, self.current_module.env),
           )
@@ -308,7 +308,7 @@ pub fn[A] ClosureInterpreter::error(
   self : ClosureInterpreter,
   msg : String,
 ) -> A raise ControlFlow {
-  error("\{self.lookup_current_function()}\{msg}")
+  raise Error("\{self.lookup_current_function()}\{msg}")
 }
 
 ///|
@@ -510,11 +510,10 @@ pub fn ClosureInterpreter::visit(
 
     // 处理赋值操作
     Assign(var_={ name, .. }, expr~, augmented_by~, ..) =>
-      self.with_ident(name, fn(mod, name) {
-        let env = mod.env
+      self.with_ident(name, fn(pkg, name) {
         let new_value = match augmented_by {
           Some(op) => {
-            let current_value = env.find(name).unwrap_or(Unit)
+            let current_value = pkg.find(name).unwrap_or(Unit)
             match op.name {
               Ident(name=op_name) => {
                 let rhs_value = self.visit(expr)
@@ -525,7 +524,7 @@ pub fn ClosureInterpreter::visit(
           }
           None => self.visit(expr)
         }
-        mod.env.update(name, new_value)
+        pkg.env.update(name, new_value)
         Unit
       })
 
@@ -904,7 +903,7 @@ pub fn ClosureInterpreter::is_known_function(
   }
 
   // 检查用户定义函数
-  if self.current_module.env.find(actual_name).unwrap_or(Unit) is Closure(_) {
+  if self.current_module.find(actual_name).unwrap_or(Unit) is Closure(_) {
     return true
   }
   false
