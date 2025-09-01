@@ -91,10 +91,10 @@ fn RuntimeValue::get_type(self : RuntimeValue) -> RuntimeType {
     ArrayView(_) => RuntimeType::array_view()
     UninitializedArray(_) => RuntimeType::uninitialized_array()
     Map(_) => RuntimeType::map()
-    Struct(data) => data.type_info
+    Struct(data) => data.ty
     Closure(_) => { name: self.to_string(), mod: RuntimePackage::new("main") }
     Exception(_) => { name: "Exception", mod: RuntimePackage::new("main") }
-    Constructor({ val: { name, .. }, type_info }) =>
+    Constructor({ val: { name, .. }, ty: type_info }) =>
       match name {
         "Some" | "None" => RuntimeType::option()
         "More" | "Empty" => RuntimeType::list()

@@ -73,7 +73,7 @@ pub fn[T] ClosureInterpreter::with_ident(
     Ident(name~) => {
       let f = current_module.type_aliases.get(name)
       let mod = match f {
-        Some(f) => f.type_info.mod
+        Some(f) => f.ty.mod
         None => current_module
       }
       func(mod, name)

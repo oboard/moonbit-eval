@@ -121,7 +121,7 @@ pub fn ClosureInterpreter::top_visit(
         if target_value is Some(target_value) {
           self.current_module.fn_aliases.set(target_name, {
             val: target_value,
-            type_info: { name: binder_name, mod },
+            ty: { name: binder_name, mod },
           })
         }
       }

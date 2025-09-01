@@ -139,5 +139,5 @@ pub fn RuntimeType::any() -> RuntimeType {
 /// 带类型信息的值包装器
 pub struct WithType[T] {
   val : T
-  type_info : RuntimeType
+  ty : RuntimeType
 } derive(ToJson)

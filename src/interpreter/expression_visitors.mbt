@@ -62,7 +62,7 @@ fn ClosureInterpreter::visit_record_creation(
     evaluated_fields.set(field.label.name, field_value)
   }
   fn alloc(mod : RuntimePackage, name : String) -> RuntimeValue {
-    Struct({ val: evaluated_fields, type_info: { name, mod } })
+    Struct({ val: evaluated_fields, ty: { name, mod } })
   }
 
   if type_name is Some(type_name) {
@@ -185,7 +185,7 @@ fn ClosureInterpreter::visit_apply(
         let constr_name = constr.name.name
         Constructor({
           val: { name: constr_name, fields },
-          type_info: self.current_module.find_static_type(constr_name),
+          ty: self.current_module.find_static_type(constr_name),
         })
       }
       // 处理静态方法调用，如 Bool::default()

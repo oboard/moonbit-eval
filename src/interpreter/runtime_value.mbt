@@ -941,7 +941,7 @@ pub fn RuntimeValue::from_expr(expr : @syntax.Expr) -> RuntimeValue {
       }
       Struct({
         val: struct_data,
-        type_info: { name: "Any", mod: RuntimePackage::new("main") },
+        ty: { name: "Any", mod: RuntimePackage::new("main") },
       })
     }
     Ident(..) => Unit // Ident表达式需要通过环境查找，这里返回Unit作为占位符
@@ -1090,12 +1090,12 @@ pub fn RuntimeValue::from_option(val : RuntimeValue?) -> RuntimeValue {
           name: "Some",
           fields: [{ name: None, value: x, mutable: false }],
         },
-        type_info: RuntimeType::option(),
+        ty: RuntimeType::option(),
       })
     None =>
       Constructor({
         val: { name: "None", fields: [] },
-        type_info: RuntimeType::option(),
+        ty: RuntimeType::option(),
       })
   }
 }
@@ -1108,12 +1108,12 @@ pub fn RuntimeValue::from_result(
     Ok(x) =>
       Constructor({
         val: { name: "Ok", fields: [{ name: None, value: x, mutable: false }] },
-        type_info: RuntimeType::result(),
+        ty: RuntimeType::result(),
       })
     Err(x) =>
       Constructor({
         val: { name: "Err", fields: [{ name: None, value: x, mutable: false }] },
-        type_info: RuntimeType::result(),
+        ty: RuntimeType::result(),
       })
   }
 }

@@ -94,7 +94,7 @@ pub fn RuntimePackage::cons(
   args : Array[RuntimeValue],
 ) -> RuntimeValue {
   let fields = args.map(value => { name: None, value, mutable: false })
-  Constructor({ val: { name, fields }, type_info: self.find_static_type(name) })
+  Constructor({ val: { name, fields }, ty: self.find_static_type(name) })
 }
 
 ///|
@@ -108,5 +108,5 @@ pub fn RuntimePackage::cons_with_labels(
     let (label, value, mutable) = arg
     { name: label, value, mutable }
   })
-  Constructor({ val: { name, fields }, type_info: self.find_static_type(name) })
+  Constructor({ val: { name, fields }, ty: self.find_static_type(name) })
 }
