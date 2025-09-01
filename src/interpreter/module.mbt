@@ -12,7 +12,8 @@ pub(all) struct RuntimePackage {
   struct_methods : Map[String, Map[String, RuntimeValue]]
   mut env : RuntimeEnvironment
   deps : Map[String, RuntimePackage]
-  mut code : String
+  files : Map[String, String]
+  mut loaded : Bool
 } derive(ToJson)
 
 // TODO: reflactor package struct
@@ -69,7 +70,7 @@ pub fn ModuleMeta::new(
 pub fn RuntimePackage::new(
   pkg : String,
   deps? : Map[String, RuntimePackage],
-  code? : String,
+  files? : Map[String, String],
 ) -> RuntimePackage {
   let env = RuntimeEnvironment::new()
   {
@@ -82,7 +83,8 @@ pub fn RuntimePackage::new(
     fn_aliases: Map::new(),
     env,
     deps: deps.unwrap_or(Map::new()),
-    code: code.unwrap_or(""),
+    files: files.unwrap_or(Map::new()),
+    loaded: false,
   }
 }
 

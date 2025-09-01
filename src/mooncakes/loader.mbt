@@ -15,7 +15,7 @@ pub async fn load_package(
   }
   let url = "https://mooncakes.io/assets/\{pkg}/resource.json"
   let info = @mio.get(url).json() catch { _ => {} }
-  let sources = []
+  let sources = {}
   if info
     is {
       "meta_info": meta_info,
@@ -33,7 +33,7 @@ pub async fn load_package(
       let source = @mio.get("https://mooncakes.io/assets/\{pkg}/\{name}").text() catch {
         _ => ""
       }
-      sources.push(source)
+      sources.set(name, source)
     }
     deps.set(pkg, @interpreter.RuntimePackage::{
       meta: meta_info,
@@ -45,7 +45,8 @@ pub async fn load_package(
       type_aliases: Map::new(),
       env: @interpreter.RuntimeEnvironment::new(),
       deps,
-      code: sources.join("\n"),
+      files: sources,
+      loaded: false,
     })
     return deps
   }

@@ -96,35 +96,35 @@ fn ClosureInterpreter::execute_method_call(
   args : @list.List[@syntax.Argument],
 ) -> RuntimeValue raise ControlFlow {
   let self_type = self_value.get_type()
-  match self.embedded_methods.get(self_type.name) {
-    Some(type_methods) =>
-      match type_methods.get(method_name) {
-        Some(embedded_method) => {
-          // Prepare args: actual_self_value + evaluated args
-          let evaluated_args = @list.construct(
-            self_value,
-            args.map(fn(arg) { self.visit(arg.value) }),
-          )
-          return embedded_method(RuntimeFunctionContext::{
-            context: self,
-            mod: self.current_module,
-            args: evaluated_args
-            .map(arg => { val: arg, kind: Positional })
-            .to_array(),
-          })
-        }
-        None => () // Continue to try regular methods
-      }
-    None => () // Continue to try regular methods
-  }
-  match self_type.mod.find_method(self_type.name, method_name) {
-    Some(func) => {
+  // match self.embedded_methods.get(self_type.name) {
+  //   Some(type_methods) =>
+  //     match type_methods.get(method_name) {
+  //       Some(embedded_method) => {
+  //         // Prepare args: actual_self_value + evaluated args
+  //         let evaluated_args = @list.construct(
+  //           self_value,
+  //           args.map(fn(arg) { self.visit(arg.value) }),
+  //         )
+  //         return embedded_method(RuntimeFunctionContext::{
+  //           context: self,
+  //           mod: self.current_module,
+  //           args: evaluated_args
+  //           .map(arg => { val: arg, kind: Positional })
+  //           .to_array(),
+  //         })
+  //       }
+  //       None => () // Continue to try regular methods
+  //     }
+  //   None => () // Continue to try regular methods
+  // }
+  match self_type.find_method(method_name) {
+    Some((pkg, func)) => {
       let old_mod = self.current_module
       let args = args.map(arg => {
         val: self.visit(arg.value),
         kind: RuntimeArgumentKind::from_syntax(arg.kind),
       })
-      self.current_module = self_type.mod
+      self.current_module = pkg
       self.push_scope(RuntimeLocation::FunctionCall(method_name))
       defer {
         self.pop_scope()
@@ -165,60 +165,53 @@ fn ClosureInterpreter::execute_static_method_call(
   method_name : String,
   args : @list.List[@syntax.Argument],
 ) -> RuntimeValue raise ControlFlow {
-  match self.embedded_methods.get(type_info.name) {
-    Some(methods) =>
-      match methods.get(method_name) {
-        Some(embedded_func) => {
-          let evaluated_args = args
-            .map(arg => {
-              val: self.visit(arg.value),
-              kind: RuntimeArgumentKind::from_syntax(arg.kind),
-            })
-            .to_array()
-          return embedded_func(RuntimeFunctionContext::{
-            mod: self.current_module,
-            context: self,
-            args: evaluated_args,
-          })
-        }
-        None => ()
-      }
-    None => ()
-  }
+  // match self.embedded_methods.get(type_info.name) {
+  //   Some(methods) =>
+  //     match methods.get(method_name) {
+  //       Some(embedded_func) => {
+  //         let evaluated_args = args
+  //           .map(arg => {
+  //             val: self.visit(arg.value),
+  //             kind: RuntimeArgumentKind::from_syntax(arg.kind),
+  //           })
+  //           .to_array()
+  //         return embedded_func(RuntimeFunctionContext::{
+  //           mod: self.current_module,
+  //           context: self,
+  //           args: evaluated_args,
+  //         })
+  //       }
+  //       None => ()
+  //     }
+  //   None => ()
+  // }
 
   // If no embedded method found, try user-defined struct methods
-  match self.current_module.find_method(type_info.name, method_name) {
-    Some(func) =>
+  match type_info.find_method(method_name) {
+    Some((pkg, func)) =>
       match func {
         Closure(func, env) =>
-          self.call_closure(
-            func,
-            self.current_module,
-            env,
-            args,
-            name=method_name,
-          )
+          self.call_closure(func, pkg, env, args, name=method_name)
         _ => Unit
       }
-    None => self.error("Method \{type_info.name}::\{method_name} not found")
+    None => self.error("Method \{type_info}::\{method_name} not found")
   }
 }
 
 ///|
 /// 查找类型的方法
-fn RuntimePackage::find_method(
-  self : RuntimePackage,
-  type_name : String,
+fn RuntimeType::find_method(
+  self : RuntimeType,
   method_name : String,
-) -> RuntimeValue? {
-  let mut current_env = Some(self.env)
-  while current_env is Some(env) {
-    if self.struct_methods.get(type_name) is Some(methods) {
-      if methods.get(method_name) is Some(func) {
-        return Some(func)
+) -> (RuntimePackage, RuntimeValue)? {
+  match self {
+    Object(pkg~, name~) =>
+      if pkg.struct_methods.get(name).map(x => x.get(method_name))
+        is Some(Some(func)) {
+        Some((pkg, func))
+      } else {
+        None
       }
-    }
-    current_env = env.parent
+    _ => None
   }
-  None
 }

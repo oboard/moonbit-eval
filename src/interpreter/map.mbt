@@ -184,7 +184,7 @@ let map_get_or_init_fn : RuntimeFunction = ctx => match ctx.args {
 let map_iter_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Map(map), .. }] => {
     // 简化实现，返回键值对数组
-    let arr = Array::new()
+    let arr : Array[RuntimeValue] = Array::new()
     map.each(fn(key, val) { arr.push(Tuple([key, val])) })
     Array(arr)
   }
@@ -196,7 +196,7 @@ let map_iter_fn : RuntimeFunction = ctx => match ctx.args {
 let map_iter2_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Map(map), .. }] => {
     // 简化实现，返回键值对数组
-    let arr = Array::new()
+    let arr : Array[RuntimeValue] = Array::new()
     map.each(fn(key, val) { arr.push(Tuple([key, val])) })
     Array(arr)
   }
@@ -287,7 +287,7 @@ let map_size_fn : RuntimeFunction = ctx => match ctx.args {
 /// Map to_array操作
 let map_to_array_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Map(map), .. }] => {
-    let arr = Array::new()
+    let arr : Array[RuntimeValue] = Array::new()
     map.each(fn(key, val) { arr.push(Tuple([key, val])) })
     Array(arr)
   }

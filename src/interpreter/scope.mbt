@@ -31,15 +31,8 @@ fn ClosureInterpreter::check_init(
   self : ClosureInterpreter,
   mod : RuntimePackage,
 ) -> Unit {
-  if !mod.code.is_empty() {
-    let code = mod.code
-    mod.code = ""
-    let old_module = self.current_module
-    self.current_module = mod
-    defer {
-      self.current_module = old_module
-    }
-    self.top_eval(code)
+  if !mod.loaded {
+    self.load_module(mod)
   }
 }
 
@@ -72,7 +65,12 @@ pub fn[T] ClosureInterpreter::with_ident(
     Ident(name~) => {
       let f = current_module.type_aliases.get(name)
       let mod = match f {
-        Some(f) => f.ty.mod
+        Some(f) =>
+          match f.ty {
+            Object(pkg~, ..) => pkg
+            Option(_) => moonbitlang_core_option_module
+            _ => current_module
+          }
         None => current_module
       }
       func(mod, name)

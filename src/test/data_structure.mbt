@@ -137,7 +137,7 @@ test "mutable_structs" {
   inspect(vm.eval("p.y = 4"), content="()")
   inspect(vm.eval("p.x"), content="3")
   inspect(vm.eval("p.y"), content="4")
-  inspect(vm.eval("p"), content="{x: 3, y: 4}")
+  inspect(vm.eval("p"), content="Point::{x: 3, y: 4}")
 }
 
 ///|
@@ -281,7 +281,7 @@ test "references" {
     ),
     content="()",
   )
-  inspect(vm.eval("a"), content="{value: 2}")
+  inspect(vm.eval("a"), content="RefInt::{value: 2}")
   inspect(vm.eval("a.value"), content="2")
 }
 
@@ -306,5 +306,5 @@ test "nested_struct_reference" {
   inspect(vm.eval("let a = { a: 1 }"), content="()")
   inspect(vm.eval("let b = { a: a }"), content="()")
   inspect(vm.eval("b.a.a = 2"), content="()")
-  inspect(vm.eval("a"), content="{a: 2}")
+  inspect(vm.eval("a"), content="T::{a: 2}")
 }

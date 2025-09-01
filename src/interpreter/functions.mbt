@@ -33,7 +33,7 @@ pub fn ClosureInterpreter::call(
   name? : String,
 ) -> RuntimeValue raise ControlFlow {
   match function {
-    @syntax.Func::Lambda(parameters~, body~, ..) => {
+    @syntax.Func::Lambda(parameters~, body~, return_type~, ..) => {
       // 切换到闭包捕获的环境
       let old_mod = self.current_module
       let old_env = mod.env
@@ -56,7 +56,12 @@ pub fn ClosureInterpreter::call(
         self.current_module = old_mod
       }
       // 执行函数体
-      self.visit(body)
+      let result = self.visit(body)
+      match (result, return_type) {
+        (Struct({ val, .. }), Some(ty)) =>
+          Struct({ val, ty: self.parse_type(ty) })
+        _ => result
+      }
     }
     _ => RuntimeValue::Unit
   }

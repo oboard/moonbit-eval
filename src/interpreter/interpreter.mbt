@@ -27,7 +27,7 @@ pub fn ClosureInterpreter::new() -> ClosureInterpreter {
     current_module: main,
     call_stack: [],
   }
-  self.top_eval(moonbitlang_core_prelude_module.code)
+  self.load_module(moonbitlang_core_prelude_module)
   self
 }
 
@@ -80,6 +80,46 @@ pub fn ClosureInterpreter::top_eval(
 }
 
 ///|
+pub fn ClosureInterpreter::load_module(
+  self : ClosureInterpreter,
+  pkg : RuntimePackage,
+  target? : String = "js",
+) -> Unit {
+  if pkg.loaded {
+    return
+  }
+  // filter target source file
+  if pkg.files.get("moon.pkg.json") is Some(pkg_file) {
+    if (try? @json.parse(pkg_file))
+      is Ok({ "targets": Object(targets_map), .. }) {
+      for file_name, option_json in targets_map {
+        let option_list = if option_json is Array(arr) {
+          arr.map(i => i.as_string().unwrap_or(""))
+        } else {
+          continue
+        }
+        match (option_list, option_list.contains(target)) {
+          (["not", ..], true) => pkg.files.remove(file_name)
+          (_, false) => pkg.files.remove(file_name)
+          _ => ()
+        }
+      }
+    }
+  }
+  pkg.loaded = true
+  let old_module = self.current_module
+  self.current_module = pkg
+  defer {
+    self.current_module = old_module
+  }
+  for file_name, code in pkg.files {
+    if file_name.has_suffix(".mbt") {
+      self.top_eval(code)
+    }
+  }
+}
+
+///|
 pub fn ClosureInterpreter::top_visit(
   self : ClosureInterpreter,
   node : @syntax.Impl,
@@ -103,7 +143,7 @@ pub fn ClosureInterpreter::top_visit(
         if target_value is Some(target_value) {
           self.current_module.type_aliases.set(target_name, {
             val: target_value,
-            ty: { name: binder_name, mod },
+            ty: Object(pkg=mod, name=binder_name),
           })
         }
       }
@@ -132,7 +172,7 @@ pub fn ClosureInterpreter::top_visit(
         if target_value is Some(target_value) {
           self.current_module.fn_aliases.set(target_name, {
             val: target_value,
-            ty: { name: binder_name, mod },
+            ty: Object(pkg=mod, name=binder_name),
           })
           self.current_module.env.set(binder_name, target_value)
         }
@@ -349,11 +389,11 @@ pub fn ClosureInterpreter::visit(
         // 调用op_as_view
         _ => {
           let ty = self_value.get_type()
-          match self.current_module.find_method(ty.name, "op_as_view") {
-            Some(Closure(func, env)) =>
+          match ty.find_method("op_as_view") {
+            Some((pkg, Closure(func, env))) =>
               self.call(
                 func,
-                self.current_module,
+                pkg,
                 env,
                 @list.of([
                   { val: self_value, kind: Positional },
@@ -647,7 +687,9 @@ pub fn ClosureInterpreter::visit(
 
     // 处理 Loop 表达式
     Loop(args~, body~, ..) => {
-      let mut arg = Tuple(args.map(arg => self.visit(arg)).to_array())
+      let mut arg : RuntimeValue = Tuple(
+        args.map(arg => self.visit(arg)).to_array(),
+      )
       let cases = body.map(case => @syntax.Case::{
         pattern: Tuple(pats=case.patterns, loc=dummy_loc()),
         body: case.body,

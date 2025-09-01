@@ -42,27 +42,38 @@ def read_module_info(module_dir: Path) -> Dict:
     mbt_files = [f for f in module_dir.glob("*.mbt") 
                  if not f.name.endswith('_test.mbt') and not f.name.endswith('_wbtest.mbt')]
     
-    # Concatenate all .mbt file contents
-    all_code_content = []
+    # Collect file contents with their names
+    file_contents = {}
+    
+    # Add moon.pkg.json if it exists
+    if pkg_json_path.exists():
+        try:
+            with open(pkg_json_path, 'r', encoding='utf-8') as f:
+                content = f.read().strip()
+                if content:
+                    file_contents['moon.pkg.json'] = content
+        except (UnicodeDecodeError, FileNotFoundError):
+            pass
     
     for mbt_file in sorted(mbt_files):  # Sort for consistent ordering
         try:
             with open(mbt_file, 'r', encoding='utf-8') as f:
                 content = f.read().strip()
                 if content:  # Only add non-empty content
-                    all_code_content.append(content)
+                    file_contents[mbt_file.name] = content
         except (UnicodeDecodeError, FileNotFoundError):
             continue
     
-    # Join all content with double newlines
-    concatenated_code = '\n\n'.join(all_code_content)
+    # Join all content with double newlines for backward compatibility
+    concatenated_code = '\n\n'.join(file_contents.values())
     
     return {
         'alias': alias,
         'pkg': pkg,
         'name': module_name,
         'dependencies': dependencies,
-        'code': concatenated_code
+        'code': concatenated_code,
+        'files': file_contents
     }
 
 # Removed has_non_self_parameters function - no longer needed with new format
@@ -75,6 +86,7 @@ def generate_module_code(module_info: Dict) -> str:
     module_name = module_info['name']
     code = module_info['code']
     dependencies = module_info['dependencies']
+    files = module_info['files']
     
     if not code.strip():
         return ""
@@ -91,27 +103,36 @@ def generate_module_code(module_info: Dict) -> str:
             dependencies_map_entries.append(f'"{dep["alias"]}": {name}_module')
     dependencies_map_str = ", ".join(dependencies_map_entries)
     
-    # Format the code with #| prefix for each line, filtering out comments and empty lines
-    code_lines = code.split('\n')
-    formatted_code_lines = []
-    for line in code_lines:
-        # Skip comment lines and empty lines to reduce file size
-        stripped_line = line.strip()
-        if not stripped_line or stripped_line.startswith('//') or stripped_line.startswith('///') or stripped_line.startswith('///'):
-            continue
-        # Escape quotes and backslashes for the string literal
-        escaped_line = line.replace('\\', '\\\\').replace('"', '\\"')
-        formatted_code_lines.append(f'  #|{escaped_line}')
+    # Generate files map
+    files_map_entries = []
+    for filename, content in files.items():
+        # Format the code with #| prefix for each line, filtering out comments and empty lines
+        code_lines = content.split('\n')
+        formatted_code_lines = []
+        for line in code_lines:
+            # Skip comment lines and empty lines to reduce file size
+            stripped_line = line.strip()
+            if not stripped_line or stripped_line.startswith('//') or stripped_line.startswith('///') or stripped_line.startswith('///'):
+                continue
+            # Escape quotes and backslashes for the string literal
+            formatted_code_lines.append(f'    #|{line}')
+        
+        if formatted_code_lines:
+            formatted_content = '\n'.join(formatted_code_lines)
+            files_map_entries.append(f'  "{filename}": (\n{formatted_content}\n  )')
+        else:
+            # For empty files, generate empty string
+            files_map_entries.append(f'  "{filename}": ""')
     
-    formatted_code = '\n'.join(formatted_code_lines)
+    files_map_str = ',\n'.join(files_map_entries)
     
     module_code = f'''///|
 let {module_name}_module : RuntimePackage = RuntimePackage::new(
   "{pkg}",
   deps={{ {dependencies_map_str} }},
-  code=(
-{formatted_code}
-  )
+  files={{
+{files_map_str}
+  }}
 )'''
     
     return module_code

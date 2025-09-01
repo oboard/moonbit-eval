@@ -100,8 +100,11 @@ fn ClosureInterpreter::get_function_type_string(Self, RuntimeValue) -> String
 fn ClosureInterpreter::infer_pattern_type(Self, @syntax.Pattern) -> String?
 fn ClosureInterpreter::interp_string(Self, @list.List[@syntax.InterpElem]) -> String raise ControlFlow
 fn ClosureInterpreter::is_known_function(Self, String) -> Bool
+fn ClosureInterpreter::load_module(Self, RuntimePackage, target? : String) -> Unit
 fn ClosureInterpreter::lookup_current_function(Self) -> String
 fn ClosureInterpreter::new() -> Self
+fn ClosureInterpreter::parse_error_type(Self, @syntax.ErrorType) -> RuntimeErrorType
+fn ClosureInterpreter::parse_type(Self, @syntax.Type) -> RuntimeType
 fn ClosureInterpreter::pattern_matches_runtime(Self, RuntimeValue, @syntax.Pattern) -> Bool
 fn ClosureInterpreter::pattern_to_runtime_value(Self, @syntax.Pattern) -> RuntimeValue?
 fn ClosureInterpreter::pattern_to_value(Self, @syntax.Pattern) -> @syntax.Expr?
@@ -171,6 +174,16 @@ fn RuntimeEnvironment::top_func_def_to_closure(Self, @syntax.Impl) -> (String?, 
 fn RuntimeEnvironment::update(Self, String, RuntimeValue) -> Unit
 impl ToJson for RuntimeEnvironment
 
+pub(all) enum RuntimeErrorType {
+  ErrorType(RuntimeType)
+  DefaultErrorType
+  NoErrorType
+  Noraise
+  MaybeError(RuntimeType)
+}
+impl Show for RuntimeErrorType
+impl ToJson for RuntimeErrorType
+
 pub(all) struct RuntimeFunctionContext {
   context : ClosureInterpreter
   mod : RuntimePackage
@@ -194,19 +207,24 @@ pub(all) struct RuntimePackage {
   struct_methods : Map[String, Map[String, RuntimeValue]]
   mut env : RuntimeEnvironment
   deps : Map[String, RuntimePackage]
-  mut code : String
+  files : Map[String, String]
+  mut loaded : Bool
 }
 fn RuntimePackage::check_type_constraint(Self, RuntimeValue, @syntax.Type) -> Bool
 fn RuntimePackage::cons(Self, String, Array[RuntimeValue]) -> RuntimeValue
 fn RuntimePackage::cons_with_labels(Self, String, Array[(String?, RuntimeValue, Bool)]) -> RuntimeValue
 fn RuntimePackage::define_struct_method(Self, String, String, @syntax.Func) -> Unit
 fn RuntimePackage::find_stub(Self, String) -> String
-fn RuntimePackage::new(String, deps? : Map[String, Self], code? : String) -> Self
+fn RuntimePackage::new(String, deps? : Map[String, Self], files? : Map[String, String]) -> Self
 impl ToJson for RuntimePackage
 
-pub struct RuntimeType {
-  name : String
-  mod : RuntimePackage
+pub(all) enum RuntimeType {
+  Any
+  Arrow(args~ : @list.List[RuntimeType], res~ : RuntimeType, err~ : RuntimeErrorType, is_async~ : Bool)
+  Tuple(@list.List[RuntimeType])
+  Name(pkg~ : RuntimePackage, name~ : String, tys~ : @list.List[RuntimeType])
+  Option(RuntimeType)
+  Object(pkg~ : RuntimePackage, name~ : String)
 }
 fn RuntimeType::any() -> Self
 fn RuntimeType::array() -> Self
@@ -227,12 +245,12 @@ fn RuntimeType::map() -> Self
 fn RuntimeType::option() -> Self
 fn RuntimeType::result() -> Self
 fn RuntimeType::string() -> Self
-fn RuntimeType::to_string(Self) -> String
 fn RuntimeType::tuple() -> Self
 fn RuntimeType::uint() -> Self
 fn RuntimeType::uint16() -> Self
 fn RuntimeType::uint64() -> Self
 fn RuntimeType::uninitialized_array() -> Self
+impl Show for RuntimeType
 impl ToJson for RuntimeType
 
 pub(all) enum RuntimeValue {

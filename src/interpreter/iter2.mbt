@@ -64,7 +64,9 @@ let iter2_each_fn : RuntimeFunction = ctx => match ctx.args {
 let iter2_iter_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Iter2(iter2), .. }] => {
     // 将 Iter2 转换为 Iter，每个元素是一个包含两个值的元组
-    let iter_impl = iter2.iter().map(fn(pair) { Tuple([pair.0, pair.1]) })
+    let iter_impl : Iter[RuntimeValue] = iter2
+      .iter()
+      .map(fn(pair) { Tuple([pair.0, pair.1]) })
     Iter(iter_impl)
   }
   _ => Unit
@@ -79,7 +81,9 @@ let iter2_iter2_fn : RuntimeFunction = ctx => match ctx.args {
 ///|
 let iter2_to_array_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Iter2(iter2), .. }] => {
-    let result = iter2.to_array().map(fn(pair) { Tuple([pair.0, pair.1]) })
+    let result : Array[RuntimeValue] = iter2
+      .to_array()
+      .map(fn(pair) { Tuple([pair.0, pair.1]) })
     Array(result)
   }
   _ => Unit

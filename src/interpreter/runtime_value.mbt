@@ -715,7 +715,7 @@ pub impl Show for RuntimeValue with to_string(self) -> String {
       fields.val.each(fn(field_name, field_value) {
         parts.push(field_name + ": " + field_value.to_string())
       })
-      "{" + parts.join(", ") + "}"
+      "\{self.get_type()}::{" + parts.join(", ") + "}"
     }
     Constructor({ val: { name, fields }, .. }) =>
       // Format constructor call with field names if present
@@ -939,10 +939,7 @@ pub fn RuntimeValue::from_expr(expr : @syntax.Expr) -> RuntimeValue {
         let field_value = RuntimeValue::from_expr(field.expr)
         struct_data.set(field_name, field_value)
       }
-      Struct({
-        val: struct_data,
-        ty: { name: "Any", mod: RuntimePackage::new("main") },
-      })
+      Struct({ val: struct_data, ty: Any })
     }
     Ident(..) => Unit // Ident表达式需要通过环境查找，这里返回Unit作为占位符
     Sequence(last_expr~, ..) =>

@@ -458,7 +458,9 @@ let iter_group_by_fn : RuntimeFunction = ctx => match ctx.args {
 let iter_iter2_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Iter(iter), .. }] => {
     // iter2 converts an iterator to an indexed iterator
-    let result = iter.mapi(fn(index, val) { Tuple([Int(index), val]) })
+    let result : Iter[RuntimeValue] = iter.mapi(fn(index, val) {
+      Tuple([Int(index), val])
+    })
     Iter(result)
   }
   _ => Unit

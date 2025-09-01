@@ -62,7 +62,7 @@ fn ClosureInterpreter::visit_record_creation(
     evaluated_fields.set(field.label.name, field_value)
   }
   fn alloc(mod : RuntimePackage, name : String) -> RuntimeValue {
-    Struct({ val: evaluated_fields, ty: { name, mod } })
+    Struct({ val: evaluated_fields, ty: Object(pkg=mod, name~) })
   }
 
   if type_name is Some(type_name) {

@@ -54,15 +54,8 @@ fn RuntimePackage::find_static_type(
     "Map" => RuntimeType::map()
     "Iter" => RuntimeType::iter()
     "Option" => RuntimeType::option()
-    _ =>
-      {
-        name: if self.type_definitions.get(name) is Some(decl) {
-          decl.tycon
-        } else {
-          name
-        },
-        mod: self,
-      }
+    // TODO: infer type
+    _ => Any
   }
 }
 
@@ -70,7 +63,7 @@ fn RuntimePackage::find_static_type(
 /// 根据运行时值推断类型
 fn RuntimeValue::get_type(self : RuntimeValue) -> RuntimeType {
   match self {
-    Unit => { name: "Unit", mod: RuntimePackage::new("main") }
+    Unit => Any
     Bool(_) => RuntimeType::bool()
     Int(_) => RuntimeType::int()
     UInt(_) => RuntimeType::uint()
@@ -92,8 +85,10 @@ fn RuntimeValue::get_type(self : RuntimeValue) -> RuntimeType {
     UninitializedArray(_) => RuntimeType::uninitialized_array()
     Map(_) => RuntimeType::map()
     Struct(data) => data.ty
-    Closure(_) => { name: self.to_string(), mod: RuntimePackage::new("main") }
-    Exception(_) => { name: "Exception", mod: RuntimePackage::new("main") }
+    // Closure(Lambda(parameters~,return_type~,error_type~,is_async~,..),_) => Arrow
+    // TODO: 闭包类型
+    Closure(_) => Any
+    Exception(_) => Any
     Constructor({ val: { name, .. }, ty: type_info }) =>
       match name {
         "Some" | "None" => RuntimeType::option()
