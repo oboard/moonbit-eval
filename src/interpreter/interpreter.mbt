@@ -103,9 +103,10 @@ pub fn ClosureInterpreter::load_module(
         } else {
           continue
         }
-        match (option_list, option_list.contains(target)) {
-          (["not", ..], true) => pkg.files.remove(file_name)
-          (_, false) => pkg.files.remove(file_name)
+        match
+          (option_list.get(0) is Some("not"), option_list.contains(target)) {
+          (true, true) => pkg.files.remove(file_name)
+          (false, false) => pkg.files.remove(file_name)
           _ => ()
         }
       }

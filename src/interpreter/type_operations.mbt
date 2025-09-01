@@ -55,7 +55,12 @@ fn RuntimePackage::find_static_type(
     "Iter" => RuntimeType::iter()
     "Option" => RuntimeType::option()
     // TODO: infer type
-    _ => Any
+    _ =>
+      if self.type_definitions.get(name) is Some(_) {
+        Object(pkg=self, name~)
+      } else {
+        Any
+      }
   }
 }
 

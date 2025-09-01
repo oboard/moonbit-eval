@@ -197,7 +197,7 @@ fn ClosureInterpreter::execute_static_method_call(
           self.call_closure(func, pkg, env, args, name=method_name)
         _ => Unit
       }
-    None => self.error("Method \{type_info}::\{method_name} not found")
+    None => self.error("static method \{type_info}::\{method_name} not found")
   }
 }
 

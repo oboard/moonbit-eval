@@ -3,7 +3,7 @@
 ///|
 /// 检查运行时值是否满足类型约束
 pub fn RuntimePackage::check_type_constraint(
-  self : RuntimePackage,
+  _self : RuntimePackage,
   value : RuntimeValue,
   constraint : @syntax.Type,
 ) -> Bool {
