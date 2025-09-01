@@ -5,10 +5,14 @@
 
 ///|
 test "module" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM::new(log=true)
   assert_eq(vm.eval("let max_value = 1").to_string(), "()")
   assert_eq(vm.eval("max_value").to_string(), "1")
   assert_eq(vm.eval("@int.max_value").to_string(), "2147483647")
+  // println(vm.interpreter.current_module.deps["int"].env.values["max_value"])
+  // println(vm.interpreter.current_module.deps["int"].env.struct_methods)
+  // println(vm.interpreter.current_module.deps["int"].env.struct_methods["Int"])
+  // println(vm.interpreter.current_module.deps["int"].env.struct_methods["Int"]["abs"])
   assert_eq(vm.eval("@int.abs(-1)").to_string(), "1")
 }
 

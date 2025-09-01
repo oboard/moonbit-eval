@@ -941,7 +941,7 @@ pub fn RuntimeValue::from_expr(expr : @syntax.Expr) -> RuntimeValue {
       }
       Struct({
         val: struct_data,
-        type_info: { path: "", name: "Any", mod: RuntimeModule::new("main") },
+        type_info: { name: "Any", mod: RuntimePackage::new("main") },
       })
     }
     Ident(..) => Unit // Ident表达式需要通过环境查找，这里返回Unit作为占位符

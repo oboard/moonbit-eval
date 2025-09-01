@@ -6,7 +6,7 @@ import(
 )
 
 // Values
-async fn load_package(String) -> Map[String, @interpreter.RuntimeModule]
+async fn load_package(String) -> Map[String, @interpreter.RuntimePackage]
 
 // Errors
 

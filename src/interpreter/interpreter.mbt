@@ -6,8 +6,8 @@ pub(all) struct ClosureInterpreter {
   embedded_fns : Map[String, RuntimeFunction]
   // embedded方法存储 - 按类型组织的embedded方法定义
   embedded_methods : Map[String, Map[String, RuntimeFunction]]
-  main : RuntimeModule
-  mut current_module : RuntimeModule
+  main : RuntimePackage
+  mut current_module : RuntimePackage
   // 解释器状态
   mut state : InterpreterState
   // 调用栈跟踪
@@ -71,11 +71,11 @@ pub fn ClosureInterpreter::add_embedded_method(
 }
 
 ///|
-pub fn RuntimeModule::find_fn_alias(
-  self : RuntimeModule,
+pub fn RuntimePackage::find_fn_alias(
+  self : RuntimePackage,
   name : String,
 ) -> String {
-  self.fn_aliases.get(name).unwrap_or(name)
+  self.stubs.get(name).unwrap_or(name)
 }
 
 ///|
@@ -100,32 +100,33 @@ pub fn ClosureInterpreter::top_visit(
     TopBatchTypeAlias(_) => Unit
     TopTest(_) => Unit
     TopImplRelation(_) => Unit
-    // 处理函数别名定义（如 alias add = @int.add）
+    // 处理函数别名定义（如 fnalias @int.abs）
     TopFuncAlias(pkg~, type_name~, targets~, ..) => {
-      // 构建基础前缀
-      let base_prefix = match (pkg, type_name) {
-        (Some(pkg_label), Some(type_label)) => pkg_label.name + "." + type_label.name + "."
-        (Some(pkg_label), None) => pkg_label.name + "."
-        (None, Some(type_label)) => type_label.name + "."
-        (None, None) => ""
-      }
-      
+      let pkg = pkg.map(l => l.name)
+      let type_name = type_name.map(l => l.name)
       // 处理每个别名目标
       for target in targets {
-        let alias_name = target.binder.name
-        let target_name = match target.target {
-          Some(target_label) => target_label.name
-          None => alias_name // 如果没有指定目标，使用别名名称作为目标
+        let binder_name = target.binder.name
+        let target_name = target.target.map(l => l.name).unwrap_or(binder_name)
+        let mod = match (pkg, type_name) {
+          (Some(pkg), Some(id)) =>
+            self.with_ident(@syntax.LongIdent::Dot(pkg~, id~), (mod, _name) => mod)
+          (None, Some(name)) =>
+            self.with_ident(@syntax.LongIdent::Ident(name~), (mod, _name) => mod)
+          (Some(pkg), None) => self.find_pkg(pkg)
+          (None, None) => self.current_module
         }
-        let alias_full_name = base_prefix + alias_name
-        
-        // 将别名映射存储到模块的函数别名表中
-        // target_name 应该保持原始形式，因为它可能包含包名前缀
-        self.current_module.fn_aliases.set(alias_full_name, target_name)
+        let target_value = mod.env.find(binder_name)
+        // 将别名映射到目标函数
+        if target_value is Some(target_value) {
+          self.current_module.fn_aliases.set(target_name, {
+            val: target_value,
+            type_info: { name: binder_name, mod },
+          })
+        }
       }
       Unit
     }
-    
 
     // 处理顶层常量定义（如 const Zero = 0）
     TopLetDef(binder~, expr~, ..) => {
@@ -311,9 +312,9 @@ pub fn ClosureInterpreter::visit_with_type(
 
     // 处理变量标识符
     Ident(id={ name, .. }, ..) =>
-      self.with_ident(name, (mod, pkg, name) => match mod.env.find(name) {
+      self.with_ident(name, (mod, name) => match mod.env.find(name) {
         Some(v) => v
-        None => self.error("variable @\{pkg}.\{name} not found")
+        None => self.error("variable @\{mod.meta.name}.\{name} not found")
       })
 
     // 处理中缀表达式（如 1+1）
@@ -465,7 +466,7 @@ pub fn ClosureInterpreter::visit_with_type(
 
     // 处理赋值操作
     Assign(var_={ name, .. }, expr~, augmented_by~, ..) =>
-      self.with_ident(name, fn(mod, _pkg, name) {
+      self.with_ident(name, fn(mod, name) {
         let env = mod.env
         let new_value = match augmented_by {
           Some(op) => {
@@ -549,7 +550,6 @@ pub fn ClosureInterpreter::visit_with_type(
             Method(type_name~, method_name~, ..) =>
               self.with_ident(type_name.name, fn(
                 mod,
-                _pkg,
                 type_name,
               ) raise ControlFlow {
                 // 将左侧值添加到参数列表前面
@@ -619,7 +619,7 @@ pub fn ClosureInterpreter::visit_with_type(
     Constr(constr~, ..) =>
       match constr.extra_info {
         TypeName(ty_name) =>
-          self.with_ident(ty_name.name, fn(_env, _pkg, _name) {
+          self.with_ident(ty_name.name, fn(_env, _name) {
             self.current_module.cons(constr.name.name, [])
           })
         Package(_pkg) => self.current_module.cons(constr.name.name, [])
@@ -686,7 +686,7 @@ pub fn ClosureInterpreter::visit_with_type(
     // 处理 As 表达式 (trait casting)
     As(expr~, trait_~, ..) => {
       let value = self.visit(expr)
-      self.with_ident(trait_.name, fn(_env, _pkg, name) {
+      self.with_ident(trait_.name, fn(_env, name) {
         // 使用重载字面量函数进行类型转换
         value.overload_literal(name)
       })
@@ -694,7 +694,7 @@ pub fn ClosureInterpreter::visit_with_type(
     RecordUpdate(record~, fields~, ..) =>
       self.visit_record_update(record, fields)
     Method(type_name~, method_name~, ..) =>
-      self.with_ident(type_name.name, fn(mod, _pkg, ty_name) {
+      self.with_ident(type_name.name, fn(mod, ty_name) {
         // 查找用户定义的静态方法
         match mod.struct_methods.get(ty_name) {
           Some(methods) =>

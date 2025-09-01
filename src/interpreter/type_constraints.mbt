@@ -2,8 +2,8 @@
 
 ///|
 /// 检查运行时值是否满足类型约束
-pub fn RuntimeModule::check_type_constraint(
-  self : RuntimeModule,
+pub fn RuntimePackage::check_type_constraint(
+  self : RuntimePackage,
   value : RuntimeValue,
   constraint : @syntax.Type,
 ) -> Bool {
@@ -63,9 +63,9 @@ pub fn RuntimeModule::check_type_constraint(
 
     // 自定义结构体类型检查
     (Struct({ type_info, .. }), Name(constr_id={ id: Ident(name~), .. }, ..)) =>
-      type_info.path == self.meta.name && type_info.name == name
+      type_info.mod.meta.name == self.meta.name && type_info.name == name
     (Struct({ type_info, .. }), Name(constr_id={ id: Dot(pkg~, id~), .. }, ..)) =>
-      type_info.path == pkg && type_info.name == id
+      type_info.mod.meta.name == pkg && type_info.name == id
 
     // 构造函数类型检查
     (

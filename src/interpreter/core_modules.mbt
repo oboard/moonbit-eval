@@ -1,9 +1,9 @@
 ///|
 /// Auto-generated core modules for moonbit-eval interpreter
-/// This file contains embedded RuntimeModule definitions for all moonbitlang/core modules
+/// This file contains embedded RuntimePackage definitions for all moonbitlang/core modules
 
 ///|
-let core_modules : Map[String, RuntimeModule] = {
+let core_modules : Map[String, RuntimePackage] = {
   "abort": moonbitlang_core_abort_module,
   "moonbitlang/core/abort": moonbitlang_core_abort_module,
   "array": moonbitlang_core_array_module,
@@ -127,7 +127,7 @@ fn dummy_loc() -> @basic.Location {
 }
 
 ///|
-let moonbitlang_core_abort_module : RuntimeModule = RuntimeModule::new(
+let moonbitlang_core_abort_module : RuntimePackage = RuntimePackage::new(
   "moonbitlang/core/abort",
   deps={},
   code=(
@@ -140,7 +140,7 @@ let moonbitlang_core_abort_module : RuntimeModule = RuntimeModule::new(
 )
 
 ///|
-let moonbitlang_core_array_module : RuntimeModule = RuntimeModule::new(
+let moonbitlang_core_array_module : RuntimePackage = RuntimePackage::new(
   "moonbitlang/core/array",
   deps={
     "moonbitlang/core/builtin": moonbitlang_core_builtin_module,
@@ -2583,7 +2583,7 @@ let moonbitlang_core_array_module : RuntimeModule = RuntimeModule::new(
 )
 
 ///|
-let moonbitlang_core_bench_module : RuntimeModule = RuntimeModule::new(
+let moonbitlang_core_bench_module : RuntimePackage = RuntimePackage::new(
   "moonbitlang/core/bench",
   deps={
     "moonbitlang/core/builtin": moonbitlang_core_builtin_module,
@@ -2947,7 +2947,7 @@ let moonbitlang_core_bench_module : RuntimeModule = RuntimeModule::new(
 )
 
 ///|
-let moonbitlang_core_bigint_module : RuntimeModule = RuntimeModule::new(
+let moonbitlang_core_bigint_module : RuntimePackage = RuntimePackage::new(
   "moonbitlang/core/bigint",
   deps={
     "moonbitlang/core/builtin": moonbitlang_core_builtin_module,
@@ -4297,7 +4297,7 @@ let moonbitlang_core_bigint_module : RuntimeModule = RuntimeModule::new(
 )
 
 ///|
-let moonbitlang_core_bool_module : RuntimeModule = RuntimeModule::new(
+let moonbitlang_core_bool_module : RuntimePackage = RuntimePackage::new(
   "moonbitlang/core/bool",
   deps={ "moonbitlang/core/builtin": moonbitlang_core_builtin_module },
   code=(
@@ -4353,7 +4353,7 @@ let moonbitlang_core_bool_module : RuntimeModule = RuntimeModule::new(
 )
 
 ///|
-let moonbitlang_core_buffer_module : RuntimeModule = RuntimeModule::new(
+let moonbitlang_core_buffer_module : RuntimePackage = RuntimePackage::new(
   "moonbitlang/core/buffer",
   deps={
     "moonbitlang/core/builtin": moonbitlang_core_builtin_module,
@@ -4556,7 +4556,7 @@ let moonbitlang_core_buffer_module : RuntimeModule = RuntimeModule::new(
 )
 
 ///|
-let moonbitlang_core_builtin_module : RuntimeModule = RuntimeModule::new(
+let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
   "moonbitlang/core/builtin",
   deps={ "moonbitlang/core/abort": moonbitlang_core_abort_module },
   code=(
@@ -11407,7 +11407,7 @@ let moonbitlang_core_builtin_module : RuntimeModule = RuntimeModule::new(
 )
 
 ///|
-let moonbitlang_core_byte_module : RuntimeModule = RuntimeModule::new(
+let moonbitlang_core_byte_module : RuntimePackage = RuntimePackage::new(
   "moonbitlang/core/byte",
   deps={ "moonbitlang/core/builtin": moonbitlang_core_builtin_module },
   code=(
@@ -11427,7 +11427,7 @@ let moonbitlang_core_byte_module : RuntimeModule = RuntimeModule::new(
 )
 
 ///|
-let moonbitlang_core_bytes_module : RuntimeModule = RuntimeModule::new(
+let moonbitlang_core_bytes_module : RuntimePackage = RuntimePackage::new(
   "moonbitlang/core/bytes",
   deps={ "moonbitlang/core/builtin": moonbitlang_core_builtin_module },
   code=(
@@ -12093,7 +12093,7 @@ let moonbitlang_core_bytes_module : RuntimeModule = RuntimeModule::new(
 )
 
 ///|
-let moonbitlang_core_char_module : RuntimeModule = RuntimeModule::new(
+let moonbitlang_core_char_module : RuntimePackage = RuntimePackage::new(
   "moonbitlang/core/char",
   deps={ "moonbitlang/core/builtin": moonbitlang_core_builtin_module },
   code=(
@@ -12466,7 +12466,7 @@ let moonbitlang_core_char_module : RuntimeModule = RuntimeModule::new(
 )
 
 ///|
-let moonbitlang_core_cmp_module : RuntimeModule = RuntimeModule::new(
+let moonbitlang_core_cmp_module : RuntimePackage = RuntimePackage::new(
   "moonbitlang/core/cmp",
   deps={ "moonbitlang/core/builtin": moonbitlang_core_builtin_module },
   code=(
@@ -12502,7 +12502,7 @@ let moonbitlang_core_cmp_module : RuntimeModule = RuntimeModule::new(
 )
 
 ///|
-let moonbitlang_core_deque_module : RuntimeModule = RuntimeModule::new(
+let moonbitlang_core_deque_module : RuntimePackage = RuntimePackage::new(
   "moonbitlang/core/deque",
   deps={
     "moonbitlang/core/builtin": moonbitlang_core_builtin_module,
@@ -13248,7 +13248,7 @@ let moonbitlang_core_deque_module : RuntimeModule = RuntimeModule::new(
 )
 
 ///|
-let moonbitlang_core_double_module : RuntimeModule = RuntimeModule::new(
+let moonbitlang_core_double_module : RuntimePackage = RuntimePackage::new(
   "moonbitlang/core/double",
   deps={
     "moonbitlang/core/builtin": moonbitlang_core_builtin_module,
@@ -15440,7 +15440,7 @@ let moonbitlang_core_double_module : RuntimeModule = RuntimeModule::new(
 )
 
 ///|
-let moonbitlang_core_double_internal_ryu_module : RuntimeModule = RuntimeModule::new(
+let moonbitlang_core_double_internal_ryu_module : RuntimePackage = RuntimePackage::new(
   "moonbitlang/core/double/internal/ryu",
   deps={
     "moonbitlang/core/builtin": moonbitlang_core_builtin_module,
@@ -16051,7 +16051,7 @@ let moonbitlang_core_double_internal_ryu_module : RuntimeModule = RuntimeModule:
 )
 
 ///|
-let moonbitlang_core_env_module : RuntimeModule = RuntimeModule::new(
+let moonbitlang_core_env_module : RuntimePackage = RuntimePackage::new(
   "moonbitlang/core/env",
   deps={ "moonbitlang/core/builtin": moonbitlang_core_builtin_module },
   code=(
@@ -16215,7 +16215,7 @@ let moonbitlang_core_env_module : RuntimeModule = RuntimeModule::new(
 )
 
 ///|
-let moonbitlang_core_error_module : RuntimeModule = RuntimeModule::new(
+let moonbitlang_core_error_module : RuntimePackage = RuntimePackage::new(
   "moonbitlang/core/error",
   deps={ "moonbitlang/core/builtin": moonbitlang_core_builtin_module },
   code=(
@@ -16231,7 +16231,7 @@ let moonbitlang_core_error_module : RuntimeModule = RuntimeModule::new(
 )
 
 ///|
-let moonbitlang_core_float_module : RuntimeModule = RuntimeModule::new(
+let moonbitlang_core_float_module : RuntimePackage = RuntimePackage::new(
   "moonbitlang/core/float",
   deps={
     "moonbitlang/core/builtin": moonbitlang_core_builtin_module,
@@ -17250,7 +17250,7 @@ let moonbitlang_core_float_module : RuntimeModule = RuntimeModule::new(
 )
 
 ///|
-let moonbitlang_core_hashmap_module : RuntimeModule = RuntimeModule::new(
+let moonbitlang_core_hashmap_module : RuntimePackage = RuntimePackage::new(
   "moonbitlang/core/hashmap",
   deps={
     "moonbitlang/core/builtin": moonbitlang_core_builtin_module,
@@ -17809,7 +17809,7 @@ let moonbitlang_core_hashmap_module : RuntimeModule = RuntimeModule::new(
 )
 
 ///|
-let moonbitlang_core_hashset_module : RuntimeModule = RuntimeModule::new(
+let moonbitlang_core_hashset_module : RuntimePackage = RuntimePackage::new(
   "moonbitlang/core/hashset",
   deps={
     "moonbitlang/core/builtin": moonbitlang_core_builtin_module,
@@ -18236,7 +18236,7 @@ let moonbitlang_core_hashset_module : RuntimeModule = RuntimeModule::new(
 )
 
 ///|
-let moonbitlang_core_immut_array_module : RuntimeModule = RuntimeModule::new(
+let moonbitlang_core_immut_array_module : RuntimePackage = RuntimePackage::new(
   "moonbitlang/core/immut/array",
   deps={
     "moonbitlang/core/builtin": moonbitlang_core_builtin_module,
@@ -19280,7 +19280,7 @@ let moonbitlang_core_immut_array_module : RuntimeModule = RuntimeModule::new(
 )
 
 ///|
-let moonbitlang_core_immut_hashmap_module : RuntimeModule = RuntimeModule::new(
+let moonbitlang_core_immut_hashmap_module : RuntimePackage = RuntimePackage::new(
   "moonbitlang/core/immut/hashmap",
   deps={
     "moonbitlang/core/builtin": moonbitlang_core_builtin_module,
@@ -19879,7 +19879,7 @@ let moonbitlang_core_immut_hashmap_module : RuntimeModule = RuntimeModule::new(
 )
 
 ///|
-let moonbitlang_core_immut_hashset_module : RuntimeModule = RuntimeModule::new(
+let moonbitlang_core_immut_hashset_module : RuntimePackage = RuntimePackage::new(
   "moonbitlang/core/immut/hashset",
   deps={
     "moonbitlang/core/builtin": moonbitlang_core_builtin_module,
@@ -20214,7 +20214,7 @@ let moonbitlang_core_immut_hashset_module : RuntimeModule = RuntimeModule::new(
 )
 
 ///|
-let moonbitlang_core_immut_internal_path_module : RuntimeModule = RuntimeModule::new(
+let moonbitlang_core_immut_internal_path_module : RuntimePackage = RuntimePackage::new(
   "moonbitlang/core/immut/internal/path",
   deps={ "moonbitlang/core/builtin": moonbitlang_core_builtin_module },
   code=(
@@ -20247,7 +20247,7 @@ let moonbitlang_core_immut_internal_path_module : RuntimeModule = RuntimeModule:
 )
 
 ///|
-let moonbitlang_core_immut_internal_sparse_array_module : RuntimeModule = RuntimeModule::new(
+let moonbitlang_core_immut_internal_sparse_array_module : RuntimePackage = RuntimePackage::new(
   "moonbitlang/core/immut/internal/sparse_array",
   deps={
     "moonbitlang/core/builtin": moonbitlang_core_builtin_module,
@@ -20569,7 +20569,7 @@ let moonbitlang_core_immut_internal_sparse_array_module : RuntimeModule = Runtim
 )
 
 ///|
-let moonbitlang_core_immut_list_module : RuntimeModule = RuntimeModule::new(
+let moonbitlang_core_immut_list_module : RuntimePackage = RuntimePackage::new(
   "moonbitlang/core/immut/list",
   deps={
     "moonbitlang/core/builtin": moonbitlang_core_builtin_module,
@@ -21333,7 +21333,7 @@ let moonbitlang_core_immut_list_module : RuntimeModule = RuntimeModule::new(
 )
 
 ///|
-let moonbitlang_core_immut_priority_queue_module : RuntimeModule = RuntimeModule::new(
+let moonbitlang_core_immut_priority_queue_module : RuntimePackage = RuntimePackage::new(
   "moonbitlang/core/immut/priority_queue",
   deps={
     "moonbitlang/core/builtin": moonbitlang_core_builtin_module,
@@ -21562,7 +21562,7 @@ let moonbitlang_core_immut_priority_queue_module : RuntimeModule = RuntimeModule
 )
 
 ///|
-let moonbitlang_core_immut_sorted_map_module : RuntimeModule = RuntimeModule::new(
+let moonbitlang_core_immut_sorted_map_module : RuntimePackage = RuntimePackage::new(
   "moonbitlang/core/immut/sorted_map",
   deps={
     "moonbitlang/core/builtin": moonbitlang_core_builtin_module,
@@ -22240,7 +22240,7 @@ let moonbitlang_core_immut_sorted_map_module : RuntimeModule = RuntimeModule::ne
 )
 
 ///|
-let moonbitlang_core_immut_sorted_set_module : RuntimeModule = RuntimeModule::new(
+let moonbitlang_core_immut_sorted_set_module : RuntimePackage = RuntimePackage::new(
   "moonbitlang/core/immut/sorted_set",
   deps={
     "moonbitlang/core/builtin": moonbitlang_core_builtin_module,
@@ -22911,7 +22911,7 @@ let moonbitlang_core_immut_sorted_set_module : RuntimeModule = RuntimeModule::ne
 )
 
 ///|
-let moonbitlang_core_int_module : RuntimeModule = RuntimeModule::new(
+let moonbitlang_core_int_module : RuntimePackage = RuntimePackage::new(
   "moonbitlang/core/int",
   deps={
     "moonbitlang/core/builtin": moonbitlang_core_builtin_module,
@@ -22938,7 +22938,7 @@ let moonbitlang_core_int_module : RuntimeModule = RuntimeModule::new(
 )
 
 ///|
-let moonbitlang_core_int16_module : RuntimeModule = RuntimeModule::new(
+let moonbitlang_core_int16_module : RuntimePackage = RuntimePackage::new(
   "moonbitlang/core/int16",
   deps={
     "moonbitlang/core/builtin": moonbitlang_core_builtin_module,
@@ -23012,7 +23012,7 @@ let moonbitlang_core_int16_module : RuntimeModule = RuntimeModule::new(
 )
 
 ///|
-let moonbitlang_core_int64_module : RuntimeModule = RuntimeModule::new(
+let moonbitlang_core_int64_module : RuntimePackage = RuntimePackage::new(
   "moonbitlang/core/int64",
   deps={
     "moonbitlang/core/builtin": moonbitlang_core_builtin_module,
@@ -23102,7 +23102,7 @@ let moonbitlang_core_int64_module : RuntimeModule = RuntimeModule::new(
 )
 
 ///|
-let moonbitlang_core_json_module : RuntimeModule = RuntimeModule::new(
+let moonbitlang_core_json_module : RuntimePackage = RuntimePackage::new(
   "moonbitlang/core/json",
   deps={
     "moonbitlang/core/builtin": moonbitlang_core_builtin_module,
@@ -24627,7 +24627,7 @@ let moonbitlang_core_json_module : RuntimeModule = RuntimeModule::new(
 )
 
 ///|
-let moonbitlang_core_list_module : RuntimeModule = RuntimeModule::new(
+let moonbitlang_core_list_module : RuntimePackage = RuntimePackage::new(
   "moonbitlang/core/list",
   deps={
     "moonbitlang/core/builtin": moonbitlang_core_builtin_module,
@@ -25447,7 +25447,7 @@ let moonbitlang_core_list_module : RuntimeModule = RuntimeModule::new(
 )
 
 ///|
-let moonbitlang_core_math_module : RuntimeModule = RuntimeModule::new(
+let moonbitlang_core_math_module : RuntimePackage = RuntimePackage::new(
   "moonbitlang/core/math",
   deps={
     "moonbitlang/core/builtin": moonbitlang_core_builtin_module,
@@ -28615,7 +28615,7 @@ let moonbitlang_core_math_module : RuntimeModule = RuntimeModule::new(
 )
 
 ///|
-let moonbitlang_core_option_module : RuntimeModule = RuntimeModule::new(
+let moonbitlang_core_option_module : RuntimePackage = RuntimePackage::new(
   "moonbitlang/core/option",
   deps={
     "moonbitlang/core/builtin": moonbitlang_core_builtin_module,
@@ -28886,7 +28886,7 @@ let moonbitlang_core_option_module : RuntimeModule = RuntimeModule::new(
 )
 
 ///|
-let moonbitlang_core_prelude_module : RuntimeModule = RuntimeModule::new(
+let moonbitlang_core_prelude_module : RuntimePackage = RuntimePackage::new(
   "moonbitlang/core/prelude",
   deps={
     "moonbitlang/core/builtin": moonbitlang_core_builtin_module,
@@ -28963,7 +28963,7 @@ let moonbitlang_core_prelude_module : RuntimeModule = RuntimeModule::new(
 )
 
 ///|
-let moonbitlang_core_priority_queue_module : RuntimeModule = RuntimeModule::new(
+let moonbitlang_core_priority_queue_module : RuntimePackage = RuntimePackage::new(
   "moonbitlang/core/priority_queue",
   deps={
     "moonbitlang/core/builtin": moonbitlang_core_builtin_module,
@@ -29169,7 +29169,7 @@ let moonbitlang_core_priority_queue_module : RuntimeModule = RuntimeModule::new(
 )
 
 ///|
-let moonbitlang_core_queue_module : RuntimeModule = RuntimeModule::new(
+let moonbitlang_core_queue_module : RuntimePackage = RuntimePackage::new(
   "moonbitlang/core/queue",
   deps={
     "moonbitlang/core/builtin": moonbitlang_core_builtin_module,
@@ -29427,7 +29427,7 @@ let moonbitlang_core_queue_module : RuntimeModule = RuntimeModule::new(
 )
 
 ///|
-let moonbitlang_core_quickcheck_module : RuntimeModule = RuntimeModule::new(
+let moonbitlang_core_quickcheck_module : RuntimePackage = RuntimePackage::new(
   "moonbitlang/core/quickcheck",
   deps={
     "moonbitlang/core/quickcheck/splitmix": moonbitlang_core_quickcheck_splitmix_module,
@@ -29534,7 +29534,7 @@ let moonbitlang_core_quickcheck_module : RuntimeModule = RuntimeModule::new(
 )
 
 ///|
-let moonbitlang_core_quickcheck_splitmix_module : RuntimeModule = RuntimeModule::new(
+let moonbitlang_core_quickcheck_splitmix_module : RuntimePackage = RuntimePackage::new(
   "moonbitlang/core/quickcheck/splitmix",
   deps={ "moonbitlang/core/builtin": moonbitlang_core_builtin_module },
   code=(
@@ -29627,7 +29627,7 @@ let moonbitlang_core_quickcheck_splitmix_module : RuntimeModule = RuntimeModule:
 )
 
 ///|
-let moonbitlang_core_random_module : RuntimeModule = RuntimeModule::new(
+let moonbitlang_core_random_module : RuntimePackage = RuntimePackage::new(
   "moonbitlang/core/random",
   deps={
     "moonbitlang/core/builtin": moonbitlang_core_builtin_module,
@@ -29834,7 +29834,7 @@ let moonbitlang_core_random_module : RuntimeModule = RuntimeModule::new(
 )
 
 ///|
-let moonbitlang_core_random_internal_random_source_module : RuntimeModule = RuntimeModule::new(
+let moonbitlang_core_random_internal_random_source_module : RuntimePackage = RuntimePackage::new(
   "moonbitlang/core/random/internal/random_source",
   deps={
     "moonbitlang/core/builtin": moonbitlang_core_builtin_module,
@@ -30186,7 +30186,7 @@ let moonbitlang_core_random_internal_random_source_module : RuntimeModule = Runt
 )
 
 ///|
-let moonbitlang_core_rational_module : RuntimeModule = RuntimeModule::new(
+let moonbitlang_core_rational_module : RuntimePackage = RuntimePackage::new(
   "moonbitlang/core/rational",
   deps={
     "moonbitlang/core/builtin": moonbitlang_core_builtin_module,
@@ -30456,7 +30456,7 @@ let moonbitlang_core_rational_module : RuntimeModule = RuntimeModule::new(
 )
 
 ///|
-let moonbitlang_core_ref_module : RuntimeModule = RuntimeModule::new(
+let moonbitlang_core_ref_module : RuntimePackage = RuntimePackage::new(
   "moonbitlang/core/ref",
   deps={
     "moonbitlang/core/builtin": moonbitlang_core_builtin_module,
@@ -30530,7 +30530,7 @@ let moonbitlang_core_ref_module : RuntimeModule = RuntimeModule::new(
 )
 
 ///|
-let moonbitlang_core_result_module : RuntimeModule = RuntimeModule::new(
+let moonbitlang_core_result_module : RuntimePackage = RuntimePackage::new(
   "moonbitlang/core/result",
   deps={
     "moonbitlang/core/builtin": moonbitlang_core_builtin_module,
@@ -30792,7 +30792,7 @@ let moonbitlang_core_result_module : RuntimeModule = RuntimeModule::new(
 )
 
 ///|
-let moonbitlang_core_set_module : RuntimeModule = RuntimeModule::new(
+let moonbitlang_core_set_module : RuntimePackage = RuntimePackage::new(
   "moonbitlang/core/set",
   deps={
     "moonbitlang/core/builtin": moonbitlang_core_builtin_module,
@@ -31214,7 +31214,7 @@ let moonbitlang_core_set_module : RuntimeModule = RuntimeModule::new(
 )
 
 ///|
-let moonbitlang_core_sorted_map_module : RuntimeModule = RuntimeModule::new(
+let moonbitlang_core_sorted_map_module : RuntimePackage = RuntimePackage::new(
   "moonbitlang/core/sorted_map",
   deps={
     "moonbitlang/core/builtin": moonbitlang_core_builtin_module,
@@ -31786,7 +31786,7 @@ let moonbitlang_core_sorted_map_module : RuntimeModule = RuntimeModule::new(
 )
 
 ///|
-let moonbitlang_core_sorted_set_module : RuntimeModule = RuntimeModule::new(
+let moonbitlang_core_sorted_set_module : RuntimePackage = RuntimePackage::new(
   "moonbitlang/core/sorted_set",
   deps={
     "moonbitlang/core/builtin": moonbitlang_core_builtin_module,
@@ -32659,7 +32659,7 @@ let moonbitlang_core_sorted_set_module : RuntimeModule = RuntimeModule::new(
 )
 
 ///|
-let moonbitlang_core_strconv_module : RuntimeModule = RuntimeModule::new(
+let moonbitlang_core_strconv_module : RuntimePackage = RuntimePackage::new(
   "moonbitlang/core/strconv",
   deps={
     "moonbitlang/core/builtin": moonbitlang_core_builtin_module,
@@ -34284,7 +34284,7 @@ let moonbitlang_core_strconv_module : RuntimeModule = RuntimeModule::new(
 )
 
 ///|
-let moonbitlang_core_string_module : RuntimeModule = RuntimeModule::new(
+let moonbitlang_core_string_module : RuntimePackage = RuntimePackage::new(
   "moonbitlang/core/string",
   deps={
     "moonbitlang/core/builtin": moonbitlang_core_builtin_module,
@@ -35991,7 +35991,7 @@ let moonbitlang_core_string_module : RuntimeModule = RuntimeModule::new(
 )
 
 ///|
-let moonbitlang_core_test_module : RuntimeModule = RuntimeModule::new(
+let moonbitlang_core_test_module : RuntimePackage = RuntimePackage::new(
   "moonbitlang/core/test",
   deps={
     "moonbitlang/core/builtin": moonbitlang_core_builtin_module,
@@ -36106,7 +36106,7 @@ let moonbitlang_core_test_module : RuntimeModule = RuntimeModule::new(
 )
 
 ///|
-let moonbitlang_core_tuple_module : RuntimeModule = RuntimeModule::new(
+let moonbitlang_core_tuple_module : RuntimePackage = RuntimePackage::new(
   "moonbitlang/core/tuple",
   deps={
     "moonbitlang/core/builtin": moonbitlang_core_builtin_module,
@@ -36560,7 +36560,7 @@ let moonbitlang_core_tuple_module : RuntimeModule = RuntimeModule::new(
 )
 
 ///|
-let moonbitlang_core_uint_module : RuntimeModule = RuntimeModule::new(
+let moonbitlang_core_uint_module : RuntimePackage = RuntimePackage::new(
   "moonbitlang/core/uint",
   deps={ "moonbitlang/core/builtin": moonbitlang_core_builtin_module },
   code=(
@@ -36595,7 +36595,7 @@ let moonbitlang_core_uint_module : RuntimeModule = RuntimeModule::new(
 )
 
 ///|
-let moonbitlang_core_uint16_module : RuntimeModule = RuntimeModule::new(
+let moonbitlang_core_uint16_module : RuntimePackage = RuntimePackage::new(
   "moonbitlang/core/uint16",
   deps={
     "moonbitlang/core/builtin": moonbitlang_core_builtin_module,
@@ -36662,7 +36662,7 @@ let moonbitlang_core_uint16_module : RuntimeModule = RuntimeModule::new(
 )
 
 ///|
-let moonbitlang_core_uint64_module : RuntimeModule = RuntimeModule::new(
+let moonbitlang_core_uint64_module : RuntimePackage = RuntimePackage::new(
   "moonbitlang/core/uint64",
   deps={ "moonbitlang/core/builtin": moonbitlang_core_builtin_module },
   code=(
@@ -36736,7 +36736,7 @@ let moonbitlang_core_uint64_module : RuntimeModule = RuntimeModule::new(
 )
 
 ///|
-let moonbitlang_core_unit_module : RuntimeModule = RuntimeModule::new(
+let moonbitlang_core_unit_module : RuntimePackage = RuntimePackage::new(
   "moonbitlang/core/unit",
   deps={ "moonbitlang/core/builtin": moonbitlang_core_builtin_module },
   code=(

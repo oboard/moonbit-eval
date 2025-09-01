@@ -4,8 +4,8 @@
 
 ///|
 /// 根据字段名推导结构体类型
-fn RuntimeModule::infer_struct_type_from_fields(
-  self : RuntimeModule,
+fn RuntimePackage::infer_struct_type_from_fields(
+  self : RuntimePackage,
   current_fields : Array[String],
 ) -> String {
   self.type_definitions
@@ -30,8 +30,8 @@ fn RuntimeModule::infer_struct_type_from_fields(
 
 ///|
 /// 查找静态类型定义
-fn RuntimeModule::find_static_type(
-  self : RuntimeModule,
+fn RuntimePackage::find_static_type(
+  self : RuntimePackage,
   name : String,
 ) -> RuntimeType {
   match name {
@@ -56,7 +56,6 @@ fn RuntimeModule::find_static_type(
     "Option" => RuntimeType::option()
     _ =>
       {
-        path: self.meta.name,
         name: if self.type_definitions.get(name) is Some(decl) {
           decl.tycon
         } else {
@@ -71,7 +70,7 @@ fn RuntimeModule::find_static_type(
 /// 根据运行时值推断类型
 fn RuntimeValue::get_type(self : RuntimeValue) -> RuntimeType {
   match self {
-    Unit => { path: "main", name: "Unit", mod: RuntimeModule::new("main") }
+    Unit => { name: "Unit", mod: RuntimePackage::new("main") }
     Bool(_) => RuntimeType::bool()
     Int(_) => RuntimeType::int()
     UInt(_) => RuntimeType::uint()
@@ -93,10 +92,8 @@ fn RuntimeValue::get_type(self : RuntimeValue) -> RuntimeType {
     UninitializedArray(_) => RuntimeType::uninitialized_array()
     Map(_) => RuntimeType::map()
     Struct(data) => data.type_info
-    Closure(_) =>
-      { path: "main", name: self.to_string(), mod: RuntimeModule::new("main") }
-    Exception(_) =>
-      { path: "main", name: "Exception", mod: RuntimeModule::new("main") }
+    Closure(_) => { name: self.to_string(), mod: RuntimePackage::new("main") }
+    Exception(_) => { name: "Exception", mod: RuntimePackage::new("main") }
     Constructor({ val: { name, .. }, type_info }) =>
       match name {
         "Some" | "None" => RuntimeType::option()
@@ -120,7 +117,7 @@ fn ClosureInterpreter::infer_return_type_from_expr(
     Apply(func~, ..) =>
       match func {
         @syntax.Expr::Ident(id={ name: ident, .. }, ..) =>
-          self.with_ident(ident, (mod, _pkg, name) => mod.env
+          self.with_ident(ident, (mod, name) => mod.env
             .find(name)
             .unwrap_or(Unit)
             .get_type())

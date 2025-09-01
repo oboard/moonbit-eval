@@ -80,8 +80,8 @@ pub(all) struct ClosureInterpreter {
   extern_fns : Map[String, (RuntimeFunctionContext) -> RuntimeValue raise ControlFlow]
   embedded_fns : Map[String, (RuntimeFunctionContext) -> RuntimeValue raise ControlFlow]
   embedded_methods : Map[String, Map[String, (RuntimeFunctionContext) -> RuntimeValue raise ControlFlow]]
-  main : RuntimeModule
-  mut current_module : RuntimeModule
+  main : RuntimePackage
+  mut current_module : RuntimePackage
   mut state : InterpreterState
   call_stack : Array[RuntimeLocation]
 }
@@ -89,8 +89,8 @@ fn ClosureInterpreter::add_embedded_fn(Self, String, (RuntimeFunctionContext) ->
 fn ClosureInterpreter::add_embedded_method(Self, String, String, (RuntimeFunctionContext) -> RuntimeValue raise ControlFlow) -> Unit
 fn ClosureInterpreter::add_extern_fn(Self, String, (RuntimeFunctionContext) -> RuntimeValue raise ControlFlow) -> Unit
 fn ClosureInterpreter::bind_function_parameters(Self, @list.List[@syntax.Parameter], @list.List[RuntimeArgument]) -> Unit raise ControlFlow
-fn ClosureInterpreter::call(Self, @syntax.Func, RuntimeModule, RuntimeEnvironment, @list.List[RuntimeArgument], name? : String) -> RuntimeValue raise ControlFlow
-fn ClosureInterpreter::call_closure(Self, @syntax.Func, RuntimeModule, RuntimeEnvironment, @list.List[@syntax.Argument], name? : String) -> RuntimeValue raise ControlFlow
+fn ClosureInterpreter::call(Self, @syntax.Func, RuntimePackage, RuntimeEnvironment, @list.List[RuntimeArgument], name? : String) -> RuntimeValue raise ControlFlow
+fn ClosureInterpreter::call_closure(Self, @syntax.Func, RuntimePackage, RuntimeEnvironment, @list.List[@syntax.Argument], name? : String) -> RuntimeValue raise ControlFlow
 fn ClosureInterpreter::constants_equal(Self, @syntax.Constant, @syntax.Constant) -> Bool
 fn ClosureInterpreter::constants_equal_expr(Self, @syntax.Expr, @syntax.Expr) -> Bool
 fn[A] ClosureInterpreter::error(Self, String) -> A raise ControlFlow
@@ -117,7 +117,7 @@ fn ClosureInterpreter::visit_interp(Self, @list.List[@syntax.InterpElem]) -> Run
 fn ClosureInterpreter::visit_multiline_string(Self, @list.List[@syntax.MultilineStringElem]) -> RuntimeValue raise ControlFlow
 fn ClosureInterpreter::visit_scoped(Self, @syntax.Expr, RuntimeLocation) -> RuntimeValue raise ControlFlow
 fn ClosureInterpreter::visit_with_type(Self, @syntax.Expr, String?) -> RuntimeValue raise ControlFlow
-fn[T] ClosureInterpreter::with_ident(Self, @syntax.LongIdent, (RuntimeModule, String, String) -> T raise?) -> T raise?
+fn[T] ClosureInterpreter::with_ident(Self, @syntax.LongIdent, (RuntimePackage, String, String) -> T raise?) -> T raise?
 
 pub(all) struct ConstructorField {
   name : String?
@@ -180,7 +180,7 @@ impl ToJson for RuntimeEnvironment
 
 pub(all) struct RuntimeFunctionContext {
   context : ClosureInterpreter
-  mod : RuntimeModule
+  mod : RuntimePackage
   args : Array[RuntimeArgument]
 }
 
@@ -191,28 +191,28 @@ pub enum RuntimeLocation {
 }
 impl Show for RuntimeLocation
 
-pub(all) struct RuntimeModule {
+pub(all) struct RuntimePackage {
   meta : ModuleMeta
   traits : Map[String, @syntax.TraitDecl]
   fn_aliases : Map[String, String]
   type_definitions : Map[String, @syntax.TypeDecl]
   struct_methods : Map[String, Map[String, RuntimeValue]]
   mut env : RuntimeEnvironment
-  deps : Map[String, RuntimeModule]
+  deps : Map[String, RuntimePackage]
   mut code : String
 }
-fn RuntimeModule::check_type_constraint(Self, RuntimeValue, @syntax.Type) -> Bool
-fn RuntimeModule::cons(Self, String, Array[RuntimeValue]) -> RuntimeValue
-fn RuntimeModule::cons_with_labels(Self, String, Array[(String?, RuntimeValue, Bool)]) -> RuntimeValue
-fn RuntimeModule::define_struct_method(Self, String, String, @syntax.Func) -> Unit
-fn RuntimeModule::find_fn_alias(Self, String) -> String
-fn RuntimeModule::new(String, deps? : Map[String, Self], code? : String) -> Self
-impl ToJson for RuntimeModule
+fn RuntimePackage::check_type_constraint(Self, RuntimeValue, @syntax.Type) -> Bool
+fn RuntimePackage::cons(Self, String, Array[RuntimeValue]) -> RuntimeValue
+fn RuntimePackage::cons_with_labels(Self, String, Array[(String?, RuntimeValue, Bool)]) -> RuntimeValue
+fn RuntimePackage::define_struct_method(Self, String, String, @syntax.Func) -> Unit
+fn RuntimePackage::find_fn_alias(Self, String) -> String
+fn RuntimePackage::new(String, deps? : Map[String, Self], code? : String) -> Self
+impl ToJson for RuntimePackage
 
 pub struct RuntimeType {
   name : String
   path : String
-  mod : RuntimeModule
+  mod : RuntimePackage
 }
 fn RuntimeType::any() -> Self
 fn RuntimeType::array() -> Self

@@ -25,7 +25,7 @@ fn ClosureInterpreter::execute_function_by_name(
       kind: RuntimeArgumentKind::from_syntax(arg.kind),
     })
     .to_array()
-  self.with_ident(long_ident, fn(mod, pkg, name) {
+  self.with_ident(long_ident, fn(mod, name) {
     let env = mod.env
     let name = mod.find_fn_alias(name)
 
@@ -82,7 +82,7 @@ fn ClosureInterpreter::execute_function_by_name(
           args: evaluated_args,
         })
       FunctionLookupResult::NotFound =>
-        self.error("method \{pkg}.\{name} not found")
+        self.error("method \{mod.meta.name}.\{name} not found")
     }
   })
 }
@@ -206,8 +206,8 @@ fn ClosureInterpreter::execute_static_method_call(
 
 ///|
 /// 查找类型的方法
-fn RuntimeModule::find_method(
-  self : RuntimeModule,
+fn RuntimePackage::find_method(
+  self : RuntimePackage,
   type_name : String,
   method_name : String,
 ) -> RuntimeValue? {

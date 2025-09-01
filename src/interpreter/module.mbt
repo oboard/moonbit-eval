@@ -1,14 +1,16 @@
 ///|
-pub(all) struct RuntimeModule {
+pub(all) struct RuntimePackage {
   meta : ModuleMeta
   traits : Map[String, @syntax.TraitDecl]
   // 函数别名存储 - 存储函数名到其实际实现的映射
-  fn_aliases : Map[String, String]
+  fn_aliases : Map[String, WithType[RuntimeValue]]
+  // 存根 - 存储函数名到其实际实现的映射
+  stubs : Map[String, String]
   // 类型定义
   type_definitions : Map[String, @syntax.TypeDecl]
   struct_methods : Map[String, Map[String, RuntimeValue]]
   mut env : RuntimeEnvironment
-  deps : Map[String, RuntimeModule]
+  deps : Map[String, RuntimePackage]
   mut code : String
 } derive(ToJson)
 
@@ -63,18 +65,19 @@ pub fn ModuleMeta::new(
 }
 
 ///|
-pub fn RuntimeModule::new(
+pub fn RuntimePackage::new(
   pkg : String,
-  deps? : Map[String, RuntimeModule],
+  deps? : Map[String, RuntimePackage],
   code? : String,
-) -> RuntimeModule {
+) -> RuntimePackage {
   let env = RuntimeEnvironment::new()
   {
     meta: ModuleMeta::new(pkg),
     traits: Map::new(),
-    fn_aliases: core_fn_aliases,
+    stubs: core_stubs,
     type_definitions: Map::new(),
     struct_methods: Map::new(),
+    fn_aliases: Map::new(),
     env,
     deps: deps.unwrap_or(Map::new()),
     code: code.unwrap_or(""),
@@ -83,8 +86,8 @@ pub fn RuntimeModule::new(
 
 ///|
 /// 构造 Constructor
-pub fn RuntimeModule::cons(
-  self : RuntimeModule,
+pub fn RuntimePackage::cons(
+  self : RuntimePackage,
   name : String,
   args : Array[RuntimeValue],
 ) -> RuntimeValue {
@@ -94,8 +97,8 @@ pub fn RuntimeModule::cons(
 
 ///|
 /// 构造带标签参数的 Constructor
-pub fn RuntimeModule::cons_with_labels(
-  self : RuntimeModule,
+pub fn RuntimePackage::cons_with_labels(
+  self : RuntimePackage,
   name : String,
   labeled_args : Array[(String?, RuntimeValue, Bool)], // (label, value, mutable)
 ) -> RuntimeValue {

@@ -70,7 +70,7 @@ fn ClosureInterpreter::visit_variable_augmented_assignment(
     Ident(name~) => name
     _ => "Any"
   }
-  let current_val = self.with_ident(var_name, fn(mod, _pkg, name) {
+  let current_val = self.with_ident(var_name, fn(mod, name) {
     mod.env.find(name).unwrap_or(Unit)
   })
   let right_val = self.visit(rhs)

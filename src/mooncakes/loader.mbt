@@ -1,11 +1,11 @@
 ///|
 pub async fn load_package(
   pkg : String,
-) -> Map[String, @interpreter.RuntimeModule] noraise {
+) -> Map[String, @interpreter.RuntimePackage] noraise {
   let url = "https://mooncakes.io/assets/\{pkg}/module_index.json"
   let module_index = @mio.get(url).json() catch { _ => {} }
   let deps = if module_index is { "childs": Array(childs), .. } {
-    let deps : Map[String, @interpreter.RuntimeModule] = {}
+    let deps : Map[String, @interpreter.RuntimePackage] = {}
     while childs.pop() is Some(String(name)) {
       load_package(name).each(deps.set(_, _))
     }
@@ -35,12 +35,13 @@ pub async fn load_package(
       }
       sources.push(source)
     }
-    deps.set(pkg, @interpreter.RuntimeModule::{
+    deps.set(pkg, @interpreter.RuntimePackage::{
       meta: meta_info,
-      fn_aliases: Map::new(),
+      stubs: Map::new(),
       type_definitions: Map::new(),
       struct_methods: Map::new(),
       traits: Map::new(),
+      fn_aliases: Map::new(),
       env: @interpreter.RuntimeEnvironment::new(),
       deps,
       code: sources.join("\n"),

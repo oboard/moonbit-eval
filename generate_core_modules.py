@@ -2,7 +2,7 @@
 """
 Generate embedded core modules for moonbit-eval interpreter.
 This script reads all modules from moonbitlang/core and generates
-RuntimeModule definitions in the format expected by core_modules.mbt.
+RuntimePackage definitions in the format expected by core_modules.mbt.
 """
 
 from ast import alias
@@ -69,7 +69,7 @@ def read_module_info(module_dir: Path) -> Dict:
 
 def generate_module_code(module_info: Dict) -> str:
     """
-    Generate RuntimeModule code for a single module.
+    Generate RuntimePackage code for a single module.
     """
     pkg = module_info['pkg']
     module_name = module_info['name']
@@ -106,7 +106,7 @@ def generate_module_code(module_info: Dict) -> str:
     formatted_code = '\n'.join(formatted_code_lines)
     
     module_code = f'''///|
-let {module_name}_module : RuntimeModule = RuntimeModule::new(
+let {module_name}_module : RuntimePackage = RuntimePackage::new(
   "{pkg}",
   deps={{ {dependencies_map_str} }},
   code=(
@@ -127,7 +127,7 @@ def generate_core_modules_map(modules: List[dict]) -> str:
     map_content = ", ".join(entries)
     
     return f'''///|
-let core_modules : Map[String, RuntimeModule] = {{ {map_content} }}'''
+let core_modules : Map[String, RuntimePackage] = {{ {map_content} }}'''
 
 def main():
     """
@@ -170,7 +170,7 @@ def main():
     # Generate the complete file content
     header = '''///|
 /// Auto-generated core modules for moonbit-eval interpreter
-/// This file contains embedded RuntimeModule definitions for all moonbitlang/core modules
+/// This file contains embedded RuntimePackage definitions for all moonbitlang/core modules
 '''
     
     dummy_loc = '''///|

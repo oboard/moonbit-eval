@@ -5,7 +5,7 @@
 pub fn ClosureInterpreter::call_closure(
   self : ClosureInterpreter,
   function : @syntax.Func,
-  mod : RuntimeModule,
+  mod : RuntimePackage,
   env : RuntimeEnvironment,
   args : @list.List[@syntax.Argument],
   name? : String,
@@ -27,7 +27,7 @@ pub fn ClosureInterpreter::call_closure(
 pub fn ClosureInterpreter::call(
   self : ClosureInterpreter,
   function : @syntax.Func,
-  mod : RuntimeModule,
+  mod : RuntimePackage,
   env : RuntimeEnvironment,
   args : @list.List[RuntimeArgument],
   name? : String,
@@ -187,8 +187,8 @@ fn ClosureInterpreter::bind_runtime_parameters(
 
 ///|
 /// 处理函数定义
-pub fn RuntimeModule::define_struct_method(
-  self : RuntimeModule,
+pub fn RuntimePackage::define_struct_method(
+  self : RuntimePackage,
   type_name : String,
   method_name : String,
   func : @syntax.Func,

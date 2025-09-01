@@ -1,5 +1,5 @@
 ///|
-let core_fn_aliases : Map[String, String] = {
+let core_stubs : Map[String, String] = {
   "not": "%bool_not",
   "ignore": "%ignore",
   "println_mono": "%println",

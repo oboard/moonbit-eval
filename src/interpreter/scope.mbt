@@ -27,38 +27,60 @@ pub fn RuntimeEnvironment::find(
 }
 
 ///|
+fn ClosureInterpreter::check_init(
+  self : ClosureInterpreter,
+  mod : RuntimePackage,
+) -> Unit {
+  if !mod.code.is_empty() {
+    let code = mod.code
+    mod.code = ""
+    let old_module = self.current_module
+    self.current_module = mod
+    defer {
+      self.current_module = old_module
+    }
+    let (impls, _diagnostics) = @moonbitlang/parser.parse_string(code)
+    impls.each(node => self.top_visit(node) |> ignore)
+  }
+}
+
+///|
+pub fn ClosureInterpreter::find_pkg(
+  self : ClosureInterpreter,
+  pkg : String,
+) -> RuntimePackage {
+  let current_module = self.current_module
+  if current_module.deps.get(pkg) is Some(mod) {
+    self.check_init(mod)
+    mod
+    // 检查 main 模块的 deps (core_modules) 中是否有这个包
+  } else if self.main.deps.get(pkg) is Some(mod) {
+    self.check_init(mod)
+    mod
+  } else {
+    current_module
+  }
+}
+
+///|
 pub fn[T] ClosureInterpreter::with_ident(
   self : ClosureInterpreter,
   long_ident : @syntax.LongIdent,
-  func : (RuntimeModule, String, String) -> T raise?,
+  func : (RuntimePackage, String) -> T raise?,
 ) -> T raise? {
-  let currrent_module = self.current_module
-  fn check_init(mod : RuntimeModule) -> Unit {
-    if !mod.code.is_empty() {
-      let code = mod.code
-      mod.code = ""
-      let old_module = self.current_module
-      self.current_module = mod
-      defer {
-        self.current_module = old_module
-      }
-      let (impls, _diagnostics) = @moonbitlang/parser.parse_string(code)
-      impls.each(node => self.top_visit(node) |> ignore)
-    }
-  }
-
+  let current_module = self.current_module
   match long_ident {
-    Ident(name~) => func(currrent_module, currrent_module.meta.name, name)
+    Ident(name~) => func(current_module, name)
     Dot(pkg~, id~) =>
-      if currrent_module.deps.get(pkg) is Some(mod) {
-        check_init(mod)
-        func(mod, pkg, id)
+      if current_module.deps.get(pkg) is Some(mod) {
+        self.check_init(mod)
+        func(mod, id)
         // 检查 main 模块的 deps (core_modules) 中是否有这个包
       } else if self.main.deps.get(pkg) is Some(mod) {
-        check_init(mod)
-        func(mod, pkg, id)
+        self.check_init(mod)
+        func(mod, id)
       } else {
-        func(currrent_module, pkg, id)
+        func(current_module, id)
       }
   }
 }
