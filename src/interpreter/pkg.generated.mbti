@@ -82,7 +82,6 @@ pub(all) struct ClosureInterpreter {
   embedded_methods : Map[String, Map[String, (RuntimeFunctionContext) -> RuntimeValue raise ControlFlow]]
   main : RuntimePackage
   mut current_module : RuntimePackage
-  mut state : InterpreterState
   call_stack : Array[RuntimeLocation]
 }
 fn ClosureInterpreter::add_embedded_fn(Self, String, (RuntimeFunctionContext) -> RuntimeValue raise ControlFlow) -> Unit
@@ -95,6 +94,7 @@ fn ClosureInterpreter::constants_equal(Self, @syntax.Constant, @syntax.Constant)
 fn ClosureInterpreter::constants_equal_expr(Self, @syntax.Expr, @syntax.Expr) -> Bool
 fn[A] ClosureInterpreter::error(Self, String) -> A raise ControlFlow
 fn ClosureInterpreter::execute_match_runtime(Self, RuntimeValue, @list.List[@syntax.Case]) -> RuntimeValue raise ControlFlow
+fn ClosureInterpreter::find_pkg(Self, String) -> RuntimePackage
 fn ClosureInterpreter::format_patterns(Self, @list.List[@syntax.Case]) -> String
 fn ClosureInterpreter::get_function_type_string(Self, RuntimeValue) -> String
 fn ClosureInterpreter::infer_pattern_type(Self, @syntax.Pattern) -> String?
@@ -108,16 +108,14 @@ fn ClosureInterpreter::pattern_to_value(Self, @syntax.Pattern) -> @syntax.Expr?
 fn ClosureInterpreter::pop_scope(Self) -> Unit
 fn ClosureInterpreter::push_scope(Self, RuntimeLocation) -> Unit
 fn ClosureInterpreter::runtime_value_in_range(Self, RuntimeValue, @syntax.Pattern, @syntax.Pattern, Bool) -> Bool
-fn ClosureInterpreter::start(Self) -> Unit
-fn ClosureInterpreter::stop(Self) -> Unit
+fn ClosureInterpreter::top_eval(Self, String) -> Unit
 fn ClosureInterpreter::top_visit(Self, @syntax.Impl) -> RuntimeValue
 fn ClosureInterpreter::value_in_range(Self, @syntax.Expr, @syntax.Pattern, @syntax.Pattern, Bool) -> Bool
-fn ClosureInterpreter::visit(Self, @syntax.Expr) -> RuntimeValue raise ControlFlow
+fn ClosureInterpreter::visit(Self, @syntax.Expr, expected_type? : String) -> RuntimeValue raise ControlFlow
 fn ClosureInterpreter::visit_interp(Self, @list.List[@syntax.InterpElem]) -> RuntimeValue raise ControlFlow
 fn ClosureInterpreter::visit_multiline_string(Self, @list.List[@syntax.MultilineStringElem]) -> RuntimeValue raise ControlFlow
 fn ClosureInterpreter::visit_scoped(Self, @syntax.Expr, RuntimeLocation) -> RuntimeValue raise ControlFlow
-fn ClosureInterpreter::visit_with_type(Self, @syntax.Expr, String?) -> RuntimeValue raise ControlFlow
-fn[T] ClosureInterpreter::with_ident(Self, @syntax.LongIdent, (RuntimePackage, String, String) -> T raise?) -> T raise?
+fn[T] ClosureInterpreter::with_ident(Self, @syntax.LongIdent, (RuntimePackage, String) -> T raise?) -> T raise?
 
 pub(all) struct ConstructorField {
   name : String?
@@ -128,11 +126,6 @@ pub(all) struct ConstructorField {
 pub(all) struct ConstructorValue {
   name : String
   fields : Array[ConstructorField]
-}
-
-pub(all) enum InterpreterState {
-  Running
-  Stopped
 }
 
 pub(all) struct ModuleMeta {
@@ -194,7 +187,9 @@ impl Show for RuntimeLocation
 pub(all) struct RuntimePackage {
   meta : ModuleMeta
   traits : Map[String, @syntax.TraitDecl]
-  fn_aliases : Map[String, String]
+  fn_aliases : Map[String, WithType[RuntimeValue]]
+  type_aliases : Map[String, WithType[@syntax.TypeDecl]]
+  stubs : Map[String, String]
   type_definitions : Map[String, @syntax.TypeDecl]
   struct_methods : Map[String, Map[String, RuntimeValue]]
   mut env : RuntimeEnvironment
@@ -205,13 +200,12 @@ fn RuntimePackage::check_type_constraint(Self, RuntimeValue, @syntax.Type) -> Bo
 fn RuntimePackage::cons(Self, String, Array[RuntimeValue]) -> RuntimeValue
 fn RuntimePackage::cons_with_labels(Self, String, Array[(String?, RuntimeValue, Bool)]) -> RuntimeValue
 fn RuntimePackage::define_struct_method(Self, String, String, @syntax.Func) -> Unit
-fn RuntimePackage::find_fn_alias(Self, String) -> String
+fn RuntimePackage::find_stub(Self, String) -> String
 fn RuntimePackage::new(String, deps? : Map[String, Self], code? : String) -> Self
 impl ToJson for RuntimePackage
 
 pub struct RuntimeType {
   name : String
-  path : String
   mod : RuntimePackage
 }
 fn RuntimeType::any() -> Self
@@ -239,6 +233,7 @@ fn RuntimeType::uint() -> Self
 fn RuntimeType::uint16() -> Self
 fn RuntimeType::uint64() -> Self
 fn RuntimeType::uninitialized_array() -> Self
+impl ToJson for RuntimeType
 
 pub(all) enum RuntimeValue {
   Unit
@@ -289,8 +284,9 @@ impl ToJson for RuntimeValue
 
 pub struct WithType[T] {
   val : T
-  type_info : RuntimeType
+  ty : RuntimeType
 }
+impl[T : ToJson] ToJson for WithType[T]
 
 // Type aliases
 pub typealias (RuntimeFunctionContext) -> RuntimeValue raise ControlFlow as RuntimeFunction

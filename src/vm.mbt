@@ -235,18 +235,14 @@ pub fn MoonBitVM::eval(
         if log.unwrap_or(self.log) {
           println(node.to_json().stringify())
         }
-        self.interpreter.start()
         let result = self.interpreter.top_visit(node)
         last_result = result
-        self.interpreter.stop()
       })
       return Success(last_result, self.interpreter)
     }
     match @interpreter.parse_code_to_expr(code) {
       Ok(expr) => {
-        self.interpreter.start()
         let result_value = self.interpreter.visit(expr)
-        self.interpreter.stop()
         if log.unwrap_or(self.log) {
           println(expr.to_json().stringify())
         }

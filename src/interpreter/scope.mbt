@@ -39,8 +39,7 @@ fn ClosureInterpreter::check_init(
     defer {
       self.current_module = old_module
     }
-    let (impls, _diagnostics) = @moonbitlang/parser.parse_string(code)
-    impls.each(node => self.top_visit(node) |> ignore)
+    self.top_eval(code)
   }
 }
 

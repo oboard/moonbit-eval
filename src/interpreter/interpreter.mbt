@@ -8,17 +8,8 @@ pub(all) struct ClosureInterpreter {
   embedded_methods : Map[String, Map[String, RuntimeFunction]]
   main : RuntimePackage
   mut current_module : RuntimePackage
-  // 解释器状态
-  mut state : InterpreterState
   // 调用栈跟踪
   call_stack : Array[RuntimeLocation]
-}
-
-///|
-/// 解释器状态
-pub(all) enum InterpreterState {
-  Running
-  Stopped
 }
 
 ///|
@@ -28,15 +19,16 @@ pub fn ClosureInterpreter::new() -> ClosureInterpreter {
     meta: ModuleMeta::new("main"),
     deps: core_modules,
   }
-  {
+  let self = {
     extern_fns: {},
     embedded_fns: core_embedded_code,
     embedded_methods: core_embedded_methods,
     main,
     current_module: main,
-    state: InterpreterState::Stopped,
     call_stack: [],
   }
+  self.top_eval(moonbitlang_core_prelude_module.code)
+  self
 }
 
 ///|
@@ -79,13 +71,12 @@ pub fn RuntimePackage::find_stub(
 }
 
 ///|
-pub fn ClosureInterpreter::start(self : ClosureInterpreter) -> Unit {
-  self.state = InterpreterState::Running
-}
-
-///|
-pub fn ClosureInterpreter::stop(self : ClosureInterpreter) -> Unit {
-  self.state = InterpreterState::Stopped
+pub fn ClosureInterpreter::top_eval(
+  self : ClosureInterpreter,
+  code : String,
+) -> Unit {
+  let (impls, _diagnostics) = @moonbitlang/parser.parse_string(code)
+  impls.each(node => self.top_visit(node) |> ignore)
 }
 
 ///|
@@ -97,7 +88,27 @@ pub fn ClosureInterpreter::top_visit(
     TopView(_) => Unit
     TopImpl(_) => Unit
     TopBatchTraitAlias(_) => Unit
-    TopBatchTypeAlias(_) => Unit
+    TopBatchTypeAlias(pkg~, targets~, ..) => {
+      let pkg = pkg.map(l => l.name)
+      // 处理每个类型别名目标
+      for target in targets {
+        let binder_name = target.binder.name
+        let target_name = target.target.map(l => l.name).unwrap_or(binder_name)
+        let mod = match pkg {
+          Some(pkg) => self.find_pkg(pkg)
+          None => self.current_module
+        }
+        let target_value = mod.type_definitions.get(binder_name)
+        // 将别名映射到目标函数
+        if target_value is Some(target_value) {
+          self.current_module.type_aliases.set(target_name, {
+            val: target_value,
+            ty: { name: binder_name, mod },
+          })
+        }
+      }
+      Unit
+    }
     TopTest(_) => Unit
     TopImplRelation(_) => Unit
     // 处理函数别名定义（如 fnalias @int.abs）
@@ -123,6 +134,7 @@ pub fn ClosureInterpreter::top_visit(
             val: target_value,
             ty: { name: binder_name, mod },
           })
+          self.current_module.env.set(binder_name, target_value)
         }
       }
       Unit
@@ -294,9 +306,6 @@ pub fn ClosureInterpreter::visit(
   node : @syntax.Expr,
   expected_type? : String,
 ) -> RuntimeValue raise ControlFlow {
-  if self.state is InterpreterState::Stopped {
-    return Unit
-  }
   match node {
     // 处理常量 - 支持重载字面量
     Constant(c~, ..) => RuntimeValue::from_constant_with_type(c, expected_type)

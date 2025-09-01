@@ -62,10 +62,12 @@ pub fn RuntimePackage::check_type_constraint(
     | (_, Name(constr_id={ id: Dot(id="Option", ..), .. }, ..)) => true
 
     // 自定义结构体类型检查
-    (Struct({ ty: type_info, .. }), Name(constr_id={ id: Ident(name~), .. }, ..)) =>
-      type_info.mod.meta.name == self.meta.name && type_info.name == name
-    (Struct({ ty: type_info, .. }), Name(constr_id={ id: Dot(pkg~, id~), .. }, ..)) =>
-      type_info.mod.meta.name == pkg && type_info.name == id
+    (Struct({ ty: type_info, .. }), Name(constr_id={ id: Ident(name~), .. }, ..)
+    ) => type_info.mod.meta.name == self.meta.name && type_info.name == name
+    (
+      Struct({ ty: type_info, .. }),
+      Name(constr_id={ id: Dot(pkg~, id~), .. }, ..),
+    ) => type_info.mod.meta.name == pkg && type_info.name == id
 
     // 构造函数类型检查
     (

@@ -14,8 +14,7 @@
         "add_embedded_fn",
         "add_embedded_method",
         "value_to_json",
-        "value_to_string",
-        "stop"
+        "value_to_string"
       ]
     }
   }

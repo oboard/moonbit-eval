@@ -17,8 +17,6 @@ fn eval_result_to_string(EvalResult) -> String
 
 fn expr_to_string(@syntax.Expr) -> String
 
-fn stop(MoonBitVM) -> Unit
-
 fn value_to_json(@interpreter.RuntimeValue) -> String
 
 fn value_to_string(@interpreter.RuntimeValue) -> String

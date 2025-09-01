@@ -45,8 +45,3 @@ pub fn add_embedded_method(
 ) -> Unit {
   vm.interpreter.add_embedded_method(name, method_name, func)
 }
-
-///|
-pub fn stop(vm : MoonBitVM) -> Unit {
-  vm.interpreter.stop()
-}
