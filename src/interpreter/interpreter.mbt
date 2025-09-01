@@ -71,7 +71,7 @@ pub fn ClosureInterpreter::add_embedded_method(
 }
 
 ///|
-pub fn RuntimePackage::find_fn_alias(
+pub fn RuntimePackage::find_stub(
   self : RuntimePackage,
   name : String,
 ) -> String {
@@ -845,7 +845,7 @@ pub fn ClosureInterpreter::is_known_function(
   self : ClosureInterpreter,
   name : String,
 ) -> Bool {
-  let actual_name = self.current_module.find_fn_alias(name)
+  let actual_name = self.current_module.find_stub(name)
 
   // 检查外部函数
   if self.extern_fns.contains(actual_name) {

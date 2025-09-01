@@ -27,7 +27,7 @@ fn ClosureInterpreter::execute_function_by_name(
     .to_array()
   self.with_ident(long_ident, fn(mod, name) {
     let env = mod.env
-    let name = mod.find_fn_alias(name)
+    let name = mod.find_stub(name)
 
     // 按优先级查找：用户函数 -> Lambda变量 -> 外部函数 -> embedded函数
     let func = match

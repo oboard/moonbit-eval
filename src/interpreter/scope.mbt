@@ -70,7 +70,14 @@ pub fn[T] ClosureInterpreter::with_ident(
 ) -> T raise? {
   let current_module = self.current_module
   match long_ident {
-    Ident(name~) => func(current_module, name)
+    Ident(name~) => {
+      let f = current_module.type_aliases.get(name)
+      let mod = match f {
+        Some(f) => f.type_info.mod
+        None => current_module
+      }
+      func(mod, name)
+    }
     Dot(pkg~, id~) =>
       if current_module.deps.get(pkg) is Some(mod) {
         self.check_init(mod)

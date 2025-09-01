@@ -4,6 +4,7 @@ pub(all) struct RuntimePackage {
   traits : Map[String, @syntax.TraitDecl]
   // 函数别名存储 - 存储函数名到其实际实现的映射
   fn_aliases : Map[String, WithType[RuntimeValue]]
+  type_aliases : Map[String, WithType[@syntax.TypeDecl]]
   // 存根 - 存储函数名到其实际实现的映射
   stubs : Map[String, String]
   // 类型定义
@@ -77,6 +78,7 @@ pub fn RuntimePackage::new(
     stubs: core_stubs,
     type_definitions: Map::new(),
     struct_methods: Map::new(),
+    type_aliases: Map::new(),
     fn_aliases: Map::new(),
     env,
     deps: deps.unwrap_or(Map::new()),
