@@ -14,11 +14,7 @@ pub(all) struct ClosureInterpreter {
 
 ///|
 pub fn ClosureInterpreter::new() -> ClosureInterpreter {
-  let main = {
-    ..moonbitlang_core_builtin_module,
-    meta: ModuleMeta::new("main"),
-    deps: core_modules,
-  }
+  let main = RuntimePackage::new("main", deps=core_modules)
   let self = {
     extern_fns: {},
     embedded_fns: core_embedded_code,
@@ -83,10 +79,15 @@ pub fn ClosureInterpreter::top_eval(
 pub fn ClosureInterpreter::load_module(
   self : ClosureInterpreter,
   pkg : RuntimePackage,
-  target? : String = "js",
+  target? : String = "wasm",
 ) -> Unit {
   if pkg.loaded {
     return
+  }
+  pkg.loaded = true
+  // 先加载 deps
+  for dep in pkg.deps.values() {
+    self.load_module(dep)
   }
   // filter target source file
   if pkg.files.get("moon.pkg.json") is Some(pkg_file) {
@@ -106,7 +107,6 @@ pub fn ClosureInterpreter::load_module(
       }
     }
   }
-  pkg.loaded = true
   let old_module = self.current_module
   self.current_module = pkg
   defer {
