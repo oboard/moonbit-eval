@@ -27,7 +27,7 @@ pub fn ClosureInterpreter::new() -> ClosureInterpreter {
     current_module: main,
     call_stack: [],
   }
-  self.load_module(main)
+  self.load_package(main)
   self
 }
 
@@ -82,6 +82,14 @@ pub fn ClosureInterpreter::top_eval(
 ///|
 pub fn ClosureInterpreter::load_module(
   self : ClosureInterpreter,
+  mod : RuntimeModule,
+) -> Unit {
+  mod.pkgs.values().each(pkg => self.load_package(pkg))
+}
+
+///|
+pub fn ClosureInterpreter::load_package(
+  self : ClosureInterpreter,
   pkg : RuntimePackage,
   target? : String = "wasm",
 ) -> Unit {
@@ -91,7 +99,7 @@ pub fn ClosureInterpreter::load_module(
   pkg.loaded = true
   // load dependencies
   for dep in pkg.deps.values() {
-    self.load_module(dep)
+    self.load_package(dep)
   }
   // filter target source file
   if pkg.files.get("moon.pkg.json") is Some(pkg_file) {
@@ -616,7 +624,7 @@ pub fn ClosureInterpreter::visit(
     // 处理方法调用 (DotApply)
     DotApply(self=self_expr, method_name~, args~, return_self~, ..) => {
       let self_value = self.visit(self_expr)
-      let res = self.execute_method_call(self_value, method_name.name, args)
+      let res = self.method_call(self_value, method_name.name, args)
       if return_self {
         self_value
       } else {
@@ -841,22 +849,8 @@ pub fn ClosureInterpreter::visit(
     ForEach(binders~, expr~, body~, ..) => {
       let iterable_value = self.visit(expr)
 
-      // 根据绑定变量数量选择合适的迭代器
-      let get_iterator = fn(value, binder_count) {
-        match value {
-          Iter(_) => value // 已经是迭代器，直接使用
-          _ =>
-            // 如果有多个绑定变量，使用 iter2()，否则使用 iter()
-            if binder_count > 1 {
-              value.iter2() // 返回 (index, value) 元组
-            } else {
-              value.iter() // 返回单个值
-            }
-        }
-      }
-
       // 检查是否为范围表达式，否则使用默认迭代器
-      let iterator : RuntimeValue? = match expr {
+      let range_iterator : RuntimeValue? = match expr {
         Infix(op~, lhs~, rhs~, ..) =>
           match op.name {
             Ident(name="..<") => {
@@ -905,14 +899,35 @@ pub fn ClosureInterpreter::visit(
           }
         _ => None
       }
-
+      let binder_count = binders.length()
       // 如果不是范围表达式，使用默认迭代器逻辑
-      let final_iterator = match iterator {
+      let final_iterator = match range_iterator {
         Some(iter) => iter
-        None => {
-          let binder_count = binders.length()
-          get_iterator(iterable_value, binder_count)
-        }
+        None =>
+          match iterable_value {
+            Iter(_) => iterable_value // 已经是迭代器，直接使用
+            _ =>
+              // 如果有多个绑定变量，使用 iter2()，否则使用 iter()
+              if binder_count > 1 {
+                let iter2 = self.method_call(
+                  iterable_value,
+                  "iter2",
+                  @list.new(),
+                )
+                if iter2 is Iter2(_) {
+                  iter2
+                } else {
+                  self.error("iter2 method not found")
+                }
+              } else {
+                let iter = self.method_call(iterable_value, "iter", @list.new())
+                if iter is Iter(_) {
+                  iter
+                } else {
+                  self.error("iter method not found")
+                }
+              }
+          }
       }
 
       // 使用迭代器进行迭代
@@ -927,15 +942,6 @@ pub fn ClosureInterpreter::visit(
               More(Some(binder), tail=Empty) =>
                 // 单个绑定变量：直接绑定值
                 self.current_module.env.set(binder.name, value)
-              More(Some(binder1), tail=More(Some(binder2), ..)) =>
-                // 多个绑定变量：解构元组
-                match value {
-                  Tuple([first, second]) => {
-                    self.current_module.env.set(binder1.name, first)
-                    self.current_module.env.set(binder2.name, second)
-                  }
-                  _ => self.error("for iter bind failed")
-                }
               _ => ()
             }
             try {
@@ -947,7 +953,29 @@ pub fn ClosureInterpreter::visit(
               e => raise e
             }
           }
-        _ => () // 如果不是迭代器，什么都不做
+        Iter2(iter2_impl) =>
+          for first, second in iter2_impl {
+            // 创建新作用域来隔离循环变量
+            self.push_scope(RuntimeLocation::ControlFlow("foreach"))
+            defer self.pop_scope()
+            // 绑定循环变量
+            match binders {
+              More(Some(binder1), tail=More(Some(binder2), ..)) => {
+                self.current_module.env.set(binder1.name, first)
+                self.current_module.env.set(binder2.name, second)
+              }
+              _ => self.error("foreach: invalid binders")
+            }
+            try {
+              self.visit(body) |> ignore
+              continue
+            } catch {
+              Break(_) => break
+              Continue(_) => continue
+              e => raise e
+            }
+          }
+        _ => self.error("foreach: invalid iterator")
       }
       Unit
     }

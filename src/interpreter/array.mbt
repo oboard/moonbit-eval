@@ -31,6 +31,7 @@ pub let array_methods : Map[String, RuntimeFunction] = {
   "fold": array_fold_fn,
   "make": array_make_fn,
   "iter": array_iter_fn,
+  "iter2": array_iter2_fn,
   "sort": array_sort_fn,
   "zip": array_zip_fn,
 }
@@ -371,5 +372,18 @@ let array_search_by_fn : RuntimeFunction = ctx => match ctx.args {
 /// 数组iter操作
 let array_iter_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Array(arr), .. }] => Iter(arr.iter())
+  _ => Unit
+}
+
+///|
+let array_iter2_fn : RuntimeFunction = ctx => match ctx.args {
+  [{ val: Array(arr), .. }] =>
+    Iter2(
+      Iter2::new(yield_ => for i, v in arr {
+        guard yield_(Int(i), v) is IterContinue else { break IterEnd }
+      } else {
+        IterContinue
+      }),
+    )
   _ => Unit
 }

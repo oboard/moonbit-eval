@@ -102,7 +102,8 @@ fn ClosureInterpreter::get_function_type_string(Self, RuntimeValue) -> String
 fn ClosureInterpreter::infer_pattern_type(Self, @syntax.Pattern) -> String?
 fn ClosureInterpreter::interp_string(Self, @list.List[@syntax.InterpElem]) -> String raise ControlFlow
 fn ClosureInterpreter::is_known_function(Self, String) -> Bool
-fn ClosureInterpreter::load_module(Self, RuntimePackage, target? : String) -> Unit
+fn ClosureInterpreter::load_module(Self, RuntimeModule) -> Unit
+fn ClosureInterpreter::load_package(Self, RuntimePackage, target? : String) -> Unit
 fn ClosureInterpreter::lookup_current_function(Self) -> String
 fn ClosureInterpreter::new() -> Self
 fn ClosureInterpreter::parse_error_type(Self, @syntax.ErrorType) -> RuntimeErrorType
@@ -205,6 +206,7 @@ pub(all) struct RuntimeModule {
   meta : ModuleInfo
   pkgs : Map[String, RuntimePackage]
 }
+impl ToJson for RuntimeModule
 
 pub(all) struct RuntimePackage {
   name : String
@@ -306,7 +308,6 @@ fn RuntimeValue::from_option(Self?) -> Self
 fn RuntimeValue::from_result(Result[Self, Self]) -> Self
 fn RuntimeValue::is_mutable(Self) -> Bool
 fn RuntimeValue::is_reference(Self) -> Bool
-fn RuntimeValue::iter(Self) -> Self
 fn RuntimeValue::iter2(Self) -> Self
 fn RuntimeValue::overload_array_literal(Self, String) -> Self
 fn RuntimeValue::overload_literal(Self, String) -> Self

@@ -88,7 +88,7 @@ fn ClosureInterpreter::execute_function_by_name(
 
 ///|
 /// 执行结构体方法调用（返回 RuntimeValue）
-fn ClosureInterpreter::execute_method_call(
+fn ClosureInterpreter::method_call(
   self : ClosureInterpreter,
   self_value : RuntimeValue,
   method_name : String,

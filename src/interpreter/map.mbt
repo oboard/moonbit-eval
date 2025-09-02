@@ -181,24 +181,21 @@ let map_get_or_init_fn : RuntimeFunction = ctx => match ctx.args {
 ///|
 /// Map iter操作
 let map_iter_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Map(map), .. }] => {
-    // 简化实现，返回键值对数组
-    let arr : Array[RuntimeValue] = Array::new()
-    map.each(fn(key, val) { arr.push(Tuple([key, val])) })
-    Array(arr)
-  }
+  [{ val: Map(self), .. }] =>
+    Iter(
+      self
+      .iter()
+      .map(item => match item {
+        (key, val) => Tuple([key, val])
+      }),
+    )
   _ => Unit
 }
 
 ///|
 /// Map iter2操作
 let map_iter2_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Map(map), .. }] => {
-    // 简化实现，返回键值对数组
-    let arr : Array[RuntimeValue] = Array::new()
-    map.each(fn(key, val) { arr.push(Tuple([key, val])) })
-    Array(arr)
-  }
+  [{ val: Map(self), .. }] => Iter2(self.iter2())
   _ => Unit
 }
 

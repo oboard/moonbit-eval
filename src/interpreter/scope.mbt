@@ -33,11 +33,11 @@ pub fn ClosureInterpreter::find_pkg(
 ) -> RuntimePackage {
   let current_module = self.current_module
   if current_module.deps.get(pkg) is Some(mod) {
-    self.load_module(mod)
+    self.load_package(mod)
     mod
     // 检查 main 模块的 deps (core_modules) 中是否有这个包
   } else if self.main.deps.get(pkg) is Some(mod) {
-    self.load_module(mod)
+    self.load_package(mod)
     mod
   } else {
     current_module
@@ -67,11 +67,11 @@ pub fn[T] ClosureInterpreter::with_ident(
     }
     Dot(pkg~, id~) =>
       if current_module.deps.get(pkg) is Some(mod) {
-        self.load_module(mod)
+        self.load_package(mod)
         func(mod, id)
         // 检查 main 模块的 deps (core_modules) 中是否有这个包
       } else if self.main.deps.get(pkg) is Some(mod) {
-        self.load_module(mod)
+        self.load_package(mod)
         func(mod, id)
       } else {
         func(current_module, id)
