@@ -1,6 +1,6 @@
 ///|
 test "list_methods" {
-  let vm = MoonBitVM::new(log=true)
+  let vm = MoonBitVM::new()
   assert_eq(
     vm.eval("let list = @list.of([1, 2, 3]); list").to_string(),
     "More(1, tail=More(2, tail=More(3, tail=Empty)))",

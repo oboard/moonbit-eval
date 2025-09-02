@@ -211,11 +211,35 @@ fn RuntimeType::find_method(
 ) -> (RuntimePackage, RuntimeValue)? {
   match self {
     Object(pkg~, name~) =>
+      // 首先查找struct方法
       if pkg.struct_methods.get(name).map(x => x.get(method_name))
         is Some(Some(func)) {
         Some((pkg, func))
       } else {
-        None
+        // 如果没有找到struct方法，查找trait方法
+        // 只遍历当前类型derive的trait，而不是所有trait
+        let mut found_trait_method = None
+
+        // 直接使用当前类型名查找derive的trait
+        match pkg.type_derived_traits.get(name) {
+          Some(derived_traits) =>
+            // 只遍历该类型derive的trait
+            for trait_name in derived_traits {
+              match pkg.trait_methods.get(trait_name) {
+                Some(methods) =>
+                  match methods.get(method_name) {
+                    Some(func) => {
+                      found_trait_method = Some((pkg, func))
+                      break
+                    }
+                    None => ()
+                  }
+                None => ()
+              }
+            }
+          None => ()
+        }
+        found_trait_method
       }
     _ => None
   }

@@ -310,6 +310,11 @@ pub fn RuntimeType::option() -> RuntimeType {
 }
 
 ///|
+pub fn RuntimeType::string_builder() -> RuntimeType {
+  Object(pkg=moonbitlang_core_builtin_module, name="StringBuilder")
+}
+
+///|
 pub fn RuntimeType::result() -> RuntimeType {
   Object(pkg=moonbitlang_core_result_module, name="Result")
 }

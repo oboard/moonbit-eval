@@ -159,7 +159,7 @@ fn ClosureInterpreter::visit_try(
   catch_ : @list.List[@syntax.Case],
 ) -> RuntimeValue raise ControlFlow {
   self.visit(body) catch {
-    Raise(value) => self.execute_match_runtime(value, catch_)
+    Raise(value) => self.pattern_match(value, catch_)
     e => raise e
   }
 }

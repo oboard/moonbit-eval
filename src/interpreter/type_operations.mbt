@@ -55,6 +55,7 @@ fn RuntimePackage::find_static_type(
     "Map" => RuntimeType::map()
     "Iter" => RuntimeType::iter()
     "Option" | "Some" | "None" => RuntimeType::option()
+    "StringBuilder" => RuntimeType::string_builder()
     // TODO: infer type
     _ =>
       // 首先检查是否是构造函数
@@ -106,7 +107,7 @@ fn RuntimeValue::get_type(self : RuntimeValue) -> RuntimeType {
     Iter(_) => RuntimeType::iter()
     Iter2(_) => RuntimeType::iter()
     Json(_) => RuntimeType::json()
-    StringBuilder(_) => RuntimeType::string()
+    StringBuilder(_) => RuntimeType::string_builder()
   }
 }
 

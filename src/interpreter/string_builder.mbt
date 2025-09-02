@@ -6,6 +6,9 @@ let stringbuilder_methods : Map[String, RuntimeFunction] = {
   "to_string": stringbuilder_to_string_fn,
   "write_iter": stringbuilder_write_iter_fn,
   "write_object": stringbuilder_write_object_fn,
+  "write_string": stringbuilder_write_string_fn,
+  "write_char": stringbuilder_write_char_fn,
+  "write_substring": stringbuilder_write_substring_fn,
 }
 
 ///|
@@ -47,6 +50,38 @@ let stringbuilder_write_iter_fn : RuntimeFunction = ctx => match ctx.args {
 let stringbuilder_write_object_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: StringBuilder(self), .. }, { val: str, .. }] => {
     self.write_object(str)
+    Unit
+  }
+  _ => Unit
+}
+
+///|
+let stringbuilder_write_string_fn : RuntimeFunction = ctx => match ctx.args {
+  [{ val: StringBuilder(self), .. }, { val: String(str), .. }] => {
+    self.write_string(str)
+    Unit
+  }
+  _ => Unit
+}
+
+///|
+let stringbuilder_write_char_fn : RuntimeFunction = ctx => match ctx.args {
+  [{ val: StringBuilder(self), .. }, { val: Char(ch), .. }] => {
+    self.write_char(ch)
+    Unit
+  }
+  _ => Unit
+}
+
+///|
+let stringbuilder_write_substring_fn : RuntimeFunction = ctx => match ctx.args {
+  [
+    { val: StringBuilder(self), .. },
+    { val: String(str), .. },
+    { val: Int(start), .. },
+    { val: Int(len), .. },
+  ] => {
+    self.write_substring(str, start, len)
     Unit
   }
   _ => Unit

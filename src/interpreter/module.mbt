@@ -40,9 +40,13 @@ pub(all) struct RuntimePackage {
   stubs : Map[String, String]
   // 类型定义
   type_definitions : Map[String, @syntax.TypeDecl]
+  // 类型派生的trait映射 - 存储类型名到其derive的trait列表
+  type_derived_traits : Map[String, Array[String]] // type_name -> [trait_name]
   // 构造函数集合 - 存储构造函数名
   constructors : Map[String, String] // constructor_name -> type_name
   struct_methods : Map[String, Map[String, RuntimeValue]]
+  // trait 方法存储 - 存储 trait_id -> method_name -> function
+  trait_methods : Map[String, Map[String, RuntimeValue]]
   values : Map[String, RuntimeValue]
   mut env : RuntimeEnvironment
   deps : Map[String, RuntimePackage]
@@ -88,11 +92,13 @@ pub fn RuntimePackage::new(
     traits: Map::new(),
     stubs: core_stubs,
     type_definitions: Map::new(),
+    type_derived_traits: Map::new(),
     constructors: Map::new(),
     struct_methods: Map::new(),
     type_aliases: Map::new(),
     trait_aliases: Map::new(),
     fn_aliases: Map::new(),
+    trait_methods: Map::new(),
     values: Map::new(),
     env,
     deps: deps.unwrap_or(Map::new()),

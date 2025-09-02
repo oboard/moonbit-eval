@@ -45,11 +45,11 @@ let option_map_fn : RuntimeFunction = ctx => match ctx.args {
     ..,
   ] => {
     // 执行闭包调用
-    let result = ctx.context.call_closure(
+    let result = ctx.context.call(
       func,
       ctx.mod,
       captured_env,
-      @list.of([{ value: inner_value.to_expr(), kind: Positional }]),
+      @list.of([{ val: inner_value, kind: Positional }]),
     )
     ctx.mod.cons("Some", [result])
   }
@@ -73,11 +73,11 @@ let option_map_or_fn : RuntimeFunction = ctx => match ctx.args {
     ..,
   ] =>
     // 对于Some值，执行闭包调用
-    ctx.context.call_closure(
+    ctx.context.call(
       func,
       ctx.mod,
       captured_env,
-      @list.of([{ value: inner_value.to_expr(), kind: Positional }]),
+      @list.of([{ val: inner_value, kind: Positional }]),
     )
   [
     { val: Constructor({ val: { name: "None", fields: [] }, .. }), .. },
@@ -103,11 +103,11 @@ let option_map_or_else_fn : RuntimeFunction = ctx => match ctx.args {
     ..,
   ] =>
     // 对于Some值，执行map闭包
-    ctx.context.call_closure(
+    ctx.context.call(
       map_func,
       ctx.mod,
       captured_env,
-      @list.of([{ value: inner_value.to_expr(), kind: Positional }]),
+      @list.of([{ val: inner_value, kind: Positional }]),
     )
   [
     { val: Constructor({ val: { name: "None", fields: [] }, .. }), .. },
@@ -116,7 +116,7 @@ let option_map_or_else_fn : RuntimeFunction = ctx => match ctx.args {
     ..,
   ] =>
     // 对于None值，执行else闭包
-    ctx.context.call_closure(else_func, ctx.mod, captured_env, @list.of([]))
+    ctx.context.call(else_func, ctx.mod, captured_env, @list.of([]))
   _ => Unit
 }
 
@@ -134,11 +134,11 @@ let option_bind_fn : RuntimeFunction = ctx => match ctx.args {
     ..,
   ] =>
     // 执行闭包调用，bind应该返回函数的结果（应该是Option类型）
-    ctx.context.call_closure(
+    ctx.context.call(
       func,
       ctx.mod,
       captured_env,
-      @list.of([{ value: inner_value.to_expr(), kind: Positional }]),
+      @list.of([{ val: inner_value, kind: Positional }]),
     )
   [{ val: Constructor({ val: { name: "None", fields: [] }, .. }), .. }, _, ..] =>
     ctx.mod.cons("None", [])
@@ -221,11 +221,11 @@ let option_filter_fn : RuntimeFunction = ctx => match ctx.args {
     ..,
   ] => {
     // 执行谓词闭包
-    let result = ctx.context.call_closure(
+    let result = ctx.context.call(
       predicate,
       ctx.mod,
       captured_env,
-      @list.of([{ value: inner_value.to_expr(), kind: Positional }]),
+      @list.of([{ val: inner_value, kind: Positional }]),
     )
     // 根据谓词结果决定是否保留值
     match result {
@@ -298,6 +298,6 @@ let option_unwrap_or_else_fn : RuntimeFunction = ctx => match ctx.args {
     ..,
   ] =>
     // 对于None值，执行else闭包
-    ctx.context.call_closure(else_func, ctx.mod, captured_env, @list.new())
+    ctx.context.call(else_func, ctx.mod, captured_env, @list.new())
   _ => Unit
 }

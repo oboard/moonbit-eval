@@ -1,6 +1,6 @@
 ///|
 test {
-  let vm = MoonBitVM::new(log=true)
+  let vm = MoonBitVM::new()
   vm.eval(
     (
       #|struct A {

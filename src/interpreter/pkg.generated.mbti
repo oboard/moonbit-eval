@@ -40,8 +40,6 @@ fn extract_type_name(@syntax.Type) -> String
 
 let fixedarray_methods : Map[String, (RuntimeFunctionContext) -> RuntimeValue raise ControlFlow]
 
-fn get_expected_runtime_type(String) -> String?
-
 let int_embedded_code : Map[String, (RuntimeFunctionContext) -> RuntimeValue raise ControlFlow]
 
 let int_methods : Map[String, (RuntimeFunctionContext) -> RuntimeValue raise ControlFlow]
@@ -95,7 +93,6 @@ fn ClosureInterpreter::call_closure(Self, @syntax.Func, RuntimePackage, RuntimeE
 fn ClosureInterpreter::constants_equal(Self, @syntax.Constant, @syntax.Constant) -> Bool
 fn ClosureInterpreter::constants_equal_expr(Self, @syntax.Expr, @syntax.Expr) -> Bool
 fn[A] ClosureInterpreter::error(Self, String) -> A raise ControlFlow
-fn ClosureInterpreter::execute_match_runtime(Self, RuntimeValue, @list.List[@syntax.Case]) -> RuntimeValue raise ControlFlow
 fn ClosureInterpreter::find_pkg(Self, String) -> RuntimePackage
 fn ClosureInterpreter::format_patterns(Self, @list.List[@syntax.Case]) -> String
 fn ClosureInterpreter::get_function_type_string(Self, RuntimeValue) -> String
@@ -105,18 +102,17 @@ fn ClosureInterpreter::is_known_function(Self, String) -> Bool
 fn ClosureInterpreter::load_module(Self, RuntimeModule) -> Unit
 fn ClosureInterpreter::load_package(Self, RuntimePackage, target? : String) -> Unit
 fn ClosureInterpreter::lookup_current_function(Self) -> String
+fn ClosureInterpreter::match_case(Self, RuntimeValue, @syntax.Pattern) -> Bool
 fn ClosureInterpreter::new() -> Self
 fn ClosureInterpreter::parse_error_type(Self, @syntax.ErrorType) -> RuntimeErrorType
 fn ClosureInterpreter::parse_type(Self, @syntax.Type) -> RuntimeType
-fn ClosureInterpreter::pattern_matches_runtime(Self, RuntimeValue, @syntax.Pattern) -> Bool
+fn ClosureInterpreter::pattern_match(Self, RuntimeValue, @list.List[@syntax.Case]) -> RuntimeValue raise ControlFlow
 fn ClosureInterpreter::pattern_to_runtime_value(Self, @syntax.Pattern) -> RuntimeValue?
-fn ClosureInterpreter::pattern_to_value(Self, @syntax.Pattern) -> @syntax.Expr?
 fn ClosureInterpreter::pop_scope(Self) -> Unit
 fn ClosureInterpreter::push_scope(Self, RuntimeLocation) -> Unit
 fn ClosureInterpreter::runtime_value_in_range(Self, RuntimeValue, @syntax.Pattern, @syntax.Pattern, Bool) -> Bool
 fn ClosureInterpreter::top_eval(Self, String) -> Unit
 fn ClosureInterpreter::top_visit(Self, @syntax.Impl) -> RuntimeValue
-fn ClosureInterpreter::value_in_range(Self, @syntax.Expr, @syntax.Pattern, @syntax.Pattern, Bool) -> Bool
 fn ClosureInterpreter::visit(Self, @syntax.Expr, expected_type? : String) -> RuntimeValue raise ControlFlow
 fn ClosureInterpreter::visit_interp(Self, @list.List[@syntax.InterpElem]) -> RuntimeValue raise ControlFlow
 fn ClosureInterpreter::visit_multiline_string(Self, @list.List[@syntax.MultilineStringElem]) -> RuntimeValue raise ControlFlow
@@ -216,8 +212,10 @@ pub(all) struct RuntimePackage {
   trait_aliases : Map[String, WithType[@syntax.TraitDecl]]
   stubs : Map[String, String]
   type_definitions : Map[String, @syntax.TypeDecl]
+  type_derived_traits : Map[String, Array[String]]
   constructors : Map[String, String]
   struct_methods : Map[String, Map[String, RuntimeValue]]
+  trait_methods : Map[String, Map[String, RuntimeValue]]
   values : Map[String, RuntimeValue]
   mut env : RuntimeEnvironment
   deps : Map[String, RuntimePackage]
@@ -228,6 +226,7 @@ fn RuntimePackage::check_type_constraint(Self, RuntimeValue, @syntax.Type) -> Bo
 fn RuntimePackage::cons(Self, String, Array[RuntimeValue]) -> RuntimeValue
 fn RuntimePackage::cons_with_labels(Self, String, Array[(String?, RuntimeValue, Bool)]) -> RuntimeValue
 fn RuntimePackage::define_struct_method(Self, String, String, @syntax.Func) -> Unit
+fn RuntimePackage::define_trait_method(Self, String, String, RuntimeValue) -> Unit
 fn RuntimePackage::find(Self, String) -> RuntimeValue?
 fn RuntimePackage::find_stub(Self, String) -> String
 fn RuntimePackage::is_constructor(Self, String) -> Bool
@@ -263,6 +262,7 @@ fn RuntimeType::map() -> Self
 fn RuntimeType::option() -> Self
 fn RuntimeType::result() -> Self
 fn RuntimeType::string() -> Self
+fn RuntimeType::string_builder() -> Self
 fn RuntimeType::tuple() -> Self
 fn RuntimeType::uint() -> Self
 fn RuntimeType::uint16() -> Self
@@ -306,6 +306,7 @@ pub(all) enum RuntimeValue {
 fn RuntimeValue::from_constant_with_type(@syntax.Constant, String?) -> Self
 fn RuntimeValue::from_expr(@syntax.Expr) -> Self
 fn RuntimeValue::from_option(Self?) -> Self
+fn RuntimeValue::from_pattern(@syntax.Pattern) -> Self
 fn RuntimeValue::from_result(Result[Self, Self]) -> Self
 fn RuntimeValue::is_mutable(Self) -> Bool
 fn RuntimeValue::is_reference(Self) -> Bool

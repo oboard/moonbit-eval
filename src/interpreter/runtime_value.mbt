@@ -638,28 +638,6 @@ pub fn RuntimeValue::is_mutable(self : RuntimeValue) -> Bool {
 }
 
 ///|
-/// 从类型名称推断期望的RuntimeValue类型
-pub fn get_expected_runtime_type(type_name : String) -> String? {
-  match type_name {
-    "Int" => Some("Int")
-    "UInt" => Some("UInt")
-    "Int64" => Some("Int64")
-    "UInt64" => Some("UInt64")
-    "UInt16" => Some("UInt16")
-    "Byte" => Some("Byte")
-    "Double" => Some("Double")
-    "Float" => Some("Float")
-    "BigInt" => Some("BigInt")
-    "String" => Some("String")
-    "Bytes" => Some("Bytes")
-    "Char" => Some("Char")
-    "Bool" => Some("Bool")
-    "Json" => Some("Json")
-    _ => None
-  }
-}
-
-///|
 pub impl Show for RuntimeValue with output(self, logger : &Logger) -> Unit {
   logger.write_string(self.to_string())
 }

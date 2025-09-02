@@ -208,3 +208,22 @@ pub fn RuntimePackage::define_struct_method(
   }
   methods.set(method_name, RuntimeValue::Closure(func, self.env))
 }
+
+///|
+/// 处理trait方法定义
+pub fn RuntimePackage::define_trait_method(
+  self : RuntimePackage,
+  trait_id : String,
+  method_name : String,
+  func : RuntimeValue,
+) -> Unit {
+  let methods = match self.trait_methods.get(trait_id) {
+    Some(methods) => methods
+    None => {
+      let methods = Map::new()
+      self.trait_methods.set(trait_id, methods)
+      methods
+    }
+  }
+  methods.set(method_name, func)
+}

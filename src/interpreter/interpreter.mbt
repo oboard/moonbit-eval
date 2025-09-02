@@ -139,12 +139,16 @@ pub fn ClosureInterpreter::top_visit(
 ) -> RuntimeValue {
   match node {
     TopView(_) => Unit
-    TopImpl(self_ty~, method_name~, params~, body~, ..) => {
+    TopImpl(self_ty~, trait_~, method_name~, params~, body~, ..) => {
       // 处理 trait 实现，如 impl Show for A with to_string
       let type_name = match self_ty {
-        Some(Name(constr_id={ id: Ident(name~), .. }, ..)) => name
-        Some(Name(constr_id={ id: Dot(id~, ..), .. }, ..)) => id
-        _ => return Unit // 无法确定类型名，跳过
+        Some(Name(constr_id={ id: Ident(name~), .. }, ..)) => Some(name)
+        Some(Name(constr_id={ id: Dot(id~, ..), .. }, ..)) => Some(id)
+        _ => None // 无法确定类型名，但仍需处理 trait 方法
+      }
+      let trait_name = match trait_.name {
+        Ident(name~) => name
+        Dot(id~, ..) => id
       }
       let method_name = method_name.name
 
@@ -170,8 +174,17 @@ pub fn ClosureInterpreter::top_visit(
             },
           )
 
-          // 将 trait 方法注册为结构体方法
-          self.current_module.define_struct_method(type_name, method_name, func)
+          // 如果能确定类型名，将 trait 方法注册为结构体方法
+          match type_name {
+            Some(name) =>
+              self.current_module.define_struct_method(name, method_name, func)
+            None => () // 无法确定类型名时不注册到具体类型，但仍处理 trait
+          }
+          self.current_module.define_trait_method(
+            trait_name,
+            method_name,
+            RuntimeValue::Closure(func, self.current_module.env),
+          )
           Unit
         }
         _ => Unit
@@ -259,7 +272,7 @@ pub fn ClosureInterpreter::top_visit(
     }
     TopTypeDef(def) => {
       match def {
-        { tycon, params, components, .. } => {
+        { tycon, params, components, deriving, .. } => {
           self.current_module.type_definitions.set(tycon, def)
 
           // 处理泛型类型参数
@@ -270,6 +283,22 @@ pub fn ClosureInterpreter::top_visit(
             }
           } else {
             ()
+          }
+
+          // 保存deriving信息到type_derived_traits
+          let derived_traits = []
+          for derive_directive in deriving {
+            derived_traits.push(
+              match derive_directive.type_name.name {
+                Ident(name~) => name
+                Dot(id~, ..) => id
+              },
+            )
+          } else {
+            ()
+          }
+          if derived_traits.length() > 0 {
+            self.current_module.type_derived_traits.set(tycon, derived_traits)
           }
 
           // 注册枚举构造函数到运行时环境
@@ -528,7 +557,7 @@ pub fn ClosureInterpreter::visit(
 
     // 处理 Let 绑定
     Let(pattern~, expr~, body~, ..) => {
-      ignore(self.pattern_matches_runtime(self.visit(expr), pattern))
+      ignore(self.match_case(self.visit(expr), pattern))
       self.visit(body)
     }
 
@@ -615,7 +644,7 @@ pub fn ClosureInterpreter::visit(
     // 处理 match 表达式
     Match(expr~, cases~, ..) => {
       let expr_runtime = self.visit(expr)
-      self.execute_match_runtime(expr_runtime, cases)
+      self.pattern_match(expr_runtime, cases)
     }
 
     // 处理字段访问
@@ -714,8 +743,7 @@ pub fn ClosureInterpreter::visit(
     Guard(cond~, otherwise~, body~, ..) =>
       self.visit_guard(cond, otherwise, body)
     Defer(expr~, body~, ..) => self.visit_defer(expr, body)
-    Is(expr~, pat~, ..) =>
-      Bool(self.pattern_matches_runtime(self.visit(expr), pat))
+    Is(expr~, pat~, ..) => Bool(self.match_case(self.visit(expr), pat))
 
     // 处理分组表达式
     Group(expr~, ..) => self.visit(expr)
@@ -780,7 +808,7 @@ pub fn ClosureInterpreter::visit(
       let mut result = Unit
       while is_continue {
         is_continue = false
-        result = self.execute_match_runtime(arg, cases) catch {
+        result = self.pattern_match(arg, cases) catch {
           Break(value) => return value
           Continue(arr) => {
             arg = Tuple(arr)
@@ -993,19 +1021,6 @@ pub fn ClosureInterpreter::visit_scoped(
   defer self.pop_scope()
   self.visit(node)
 }
-
-///|
-// interp_string 方法已移动到 string_operations.mbt
-
-// pattern_matches_runtime 方法已移动到 pattern_matching_runtime.mbt
-
-///|
-/// 检查类型约束
-// check_type_constraint 方法已移动到 type_constraints.mbt
-
-// runtime_value_in_range 方法已移动到 pattern_matching_runtime.mbt
-
-// pattern_to_runtime_value 方法已移动到 pattern_matching_runtime.mbt
 
 ///|
 /// 检查函数是否为已知函数（存在于任何函数映射中）
