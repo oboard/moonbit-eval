@@ -32,6 +32,7 @@ pub(all) enum RuntimeValue {
   String(String)
   Bytes(Bytes)
   StringView(@string.View)
+  StringBuilder(StringBuilder)
 
   // 复合值类型
   Tuple(Array[RuntimeValue])
@@ -87,6 +88,7 @@ pub impl Compare for RuntimeValue with compare(self, other) {
     (Byte(a), Byte(b)) => a.compare(b)
     (Bytes(a), Bytes(b)) => a.compare(b)
     (StringView(a), StringView(b)) => a.compare(b)
+    (StringBuilder(a), StringBuilder(b)) => a.to_string().compare(b.to_string())
     (Tuple(a), Tuple(b)) => a.compare(b)
     (Array(a), Array(b)) => a.compare(b)
     (Json(a), Json(b)) => a.to_string().compare(b.to_string())
@@ -120,6 +122,24 @@ pub impl Add for RuntimeValue with op_add(
     (Byte(a), Byte(b)) => Byte(a + b)
     (Bytes(a), Bytes(b)) => Bytes(a + b)
     (StringView(a), StringView(b)) => StringView(a + b)
+    (StringBuilder(a), StringBuilder(b)) => {
+      let result = StringBuilder::new()
+      result.write_string(a.to_string())
+      result.write_string(b.to_string())
+      StringBuilder(result)
+    }
+    (StringBuilder(sb), String(s)) => {
+      let result = StringBuilder::new()
+      result.write_string(sb.to_string())
+      result.write_string(s)
+      StringBuilder(result)
+    }
+    (String(s), StringBuilder(sb)) => {
+      let result = StringBuilder::new()
+      result.write_string(s)
+      result.write_string(sb.to_string())
+      StringBuilder(result)
+    }
     (Tuple(a), Tuple(b)) => Tuple(a + b)
     (Array(a), Array(b)) => Array(a + b)
     _ => abort("unable to add")
@@ -170,6 +190,7 @@ pub impl ToJson for RuntimeValue with to_json(self : RuntimeValue) -> Json {
     String(s) => s.to_json()
     Bytes(b) => b.to_string().to_json()
     StringView(sv) => sv.to_string().to_json()
+    StringBuilder(sb) => sb.to_string().to_json()
     Tuple(t) => t.to_json()
     Array(a) => a.to_json()
     FixedArray(a) => a.to_json()
@@ -211,6 +232,7 @@ pub impl Eq for RuntimeValue with op_equal(
     (String(a), String(b)) => a == b
     (Bytes(a), Bytes(b)) => a == b
     (StringView(a), StringView(b)) => a == b
+    (StringBuilder(a), StringBuilder(b)) => a.to_string() == b.to_string()
 
     // 复合值类型比较
     (Tuple(a), Tuple(b)) | (Array(a), Array(b)) => a == b
@@ -661,6 +683,7 @@ pub impl Show for RuntimeValue with to_string(self) -> String {
     String(s) => s
     Bytes(b) => b.to_string()
     StringView(sv) => sv.to_string()
+    StringBuilder(sb) => sb.to_string()
     Tuple(values) => {
       let parts = values.map(fn(v) { v.to_string() })
       "(" + parts.join(", ") + ")"
@@ -905,6 +928,7 @@ pub fn RuntimeValue::to_expr(self : RuntimeValue) -> @syntax.Expr {
     Iter(_) => Unit(loc=_dummy_loc, faked=true)
     Iter2(_) => Unit(loc=_dummy_loc, faked=true)
     Json(_) => Unit(loc=_dummy_loc, faked=true)
+    StringBuilder(sb) => Constant(c=String(sb.to_string()), loc=_dummy_loc)
   }
 }
 
@@ -972,6 +996,21 @@ pub fn RuntimeValue::iter2(self : RuntimeValue) -> RuntimeValue {
     }
     String(str) => {
       // 将字符串转换为 Iter2，每个元素是 (index, char) 元组
+      let chars = str.to_array()
+      let iter_impl = Iter2::new(fn(f) {
+        for i = 0; i < chars.length(); i = i + 1 {
+          match f(Int(i), Char(chars[i])) {
+            IterEnd => return IterEnd
+            IterContinue => ()
+          }
+        }
+        IterEnd
+      })
+      Iter2(iter_impl)
+    }
+    StringBuilder(sb) => {
+      // 将 StringBuilder 转换为 Iter2，每个元素是 (index, char) 元组
+      let str = sb.to_string()
       let chars = str.to_array()
       let iter_impl = Iter2::new(fn(f) {
         for i = 0; i < chars.length(); i = i + 1 {

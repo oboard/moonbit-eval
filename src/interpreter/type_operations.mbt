@@ -106,6 +106,7 @@ fn RuntimeValue::get_type(self : RuntimeValue) -> RuntimeType {
     Iter(_) => RuntimeType::iter()
     Iter2(_) => RuntimeType::iter()
     Json(_) => RuntimeType::json()
+    StringBuilder(_) => RuntimeType::string()
   }
 }
 

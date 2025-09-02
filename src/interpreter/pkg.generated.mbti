@@ -288,6 +288,7 @@ pub(all) enum RuntimeValue {
   String(String)
   Bytes(Bytes)
   StringView(@string.View)
+  StringBuilder(StringBuilder)
   Tuple(Array[RuntimeValue])
   Array(Array[RuntimeValue])
   FixedArray(FixedArray[RuntimeValue])

@@ -15,6 +15,8 @@ pub let fixedarray_methods : Map[String, RuntimeFunction] = {
   "iter2": fixedarray_iter2_fn,
   "binary_search": fixedarray_binary_search_fn,
   "binary_search_by": fixedarray_binary_search_by_fn,
+  "set_utf16le_char_fn": fixedarray_set_utf16le_char_fn,
+  "set_utf16be_char_fn": fixedarray_set_utf16be_char_fn,
 }
 
 ///|
@@ -179,5 +181,63 @@ let fixedarray_binary_search_by_fn : RuntimeFunction = ctx => match ctx.args {
     .map(Int(_))
     .map_err(Int(_))
     |> RuntimeValue::from_result
+  _ => Unit
+}
+
+///|
+/// FixedArray::set_utf16le_char operation - Set UTF-16LE character bytes
+let fixedarray_set_utf16le_char_fn : RuntimeFunction = ctx => match ctx.args {
+  [
+    { val: FixedArray(self), .. },
+    { val: Int(offset), .. },
+    { val: Char(value), .. },
+  ] => {
+    let code = value.to_uint()
+    if code < 0x10000 {
+      self[offset] = Byte((code & 0xFF).to_byte())
+      self[offset + 1] = Byte((code >> 8).to_byte())
+      Int(2)
+    } else if code < 0x110000 {
+      let hi = code - 0x10000
+      let lo = (hi >> 10) | 0xD800
+      let hi = (hi & 0x3FF) | 0xDC00
+      self[offset] = Byte((lo & 0xFF).to_byte())
+      self[offset + 1] = Byte((lo >> 8).to_byte())
+      self[offset + 2] = Byte((hi & 0xFF).to_byte())
+      self[offset + 3] = Byte((hi >> 8).to_byte())
+      Int(4)
+    } else {
+      error("Char out of range")
+    }
+  }
+  _ => Unit
+}
+
+///|
+/// FixedArray::set_utf16be_char operation - Set UTF-16BE character bytes
+let fixedarray_set_utf16be_char_fn : RuntimeFunction = ctx => match ctx.args {
+  [
+    { val: FixedArray(self), .. },
+    { val: Int(offset), .. },
+    { val: Char(value), .. },
+  ] => {
+    let code = value.to_uint()
+    if code < 0x10000 {
+      self[offset] = Byte((code >> 8).to_byte())
+      self[offset + 1] = Byte((code & 0xFF).to_byte())
+      Int(2)
+    } else if code < 0x110000 {
+      let hi = code - 0x10000
+      let lo = (hi >> 10) | 0xD800
+      let hi = (hi & 0x3FF) | 0xDC00
+      self[offset] = Byte((lo >> 8).to_byte())
+      self[offset + 1] = Byte((lo & 0xFF).to_byte())
+      self[offset + 2] = Byte((hi >> 8).to_byte())
+      self[offset + 3] = Byte((hi & 0xFF).to_byte())
+      Int(4)
+    } else {
+      error("Char out of range")
+    }
+  }
   _ => Unit
 }

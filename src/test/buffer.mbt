@@ -16,7 +16,8 @@
 //     vm
 //     .eval(
 //       (
-//         #|let result = StringBuilder::new()..write_char('a')
+//         #|let buf = StringBuilder::new()
+//         #|
 //         #|  //..write_char('a')
 //         #|  //..write_object(1001)
 //         #|  //..write_string("abcdef")
@@ -26,7 +27,9 @@
 //     .to_string(),
 //     "()",
 //   )
-//   inspect(vm.eval("result"), content="Error: variable @main.result not found")
+//   println(vm.eval("buf.write_char('a')"))
+//   // println(vm.eval("buf.write_char('a')"))
+//   // inspect(vm.eval("result"), content="Error: variable @main.result not found")
 // }
 
 // ///|
