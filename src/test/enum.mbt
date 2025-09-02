@@ -2,7 +2,7 @@
 
 ///|
 test "basic_enum" {
-  let vm = MoonBitVM::new(log=true)
+  let vm = MoonBitVM::new()
   inspect(
     vm.eval(
       (
@@ -25,9 +25,9 @@ test "basic_enum" {
     ),
     content="()",
   )
-  inspect(vm.eval("compare_int(0, 1)"), content="Relation::Smaller")
-  inspect(vm.eval("compare_int(1, 1)"), content="Relation::Equal")
-  inspect(vm.eval("compare_int(2, 1)"), content="Relation::Greater")
+  inspect(vm.eval("compare_int(0, 1)"), content="Smaller")
+  inspect(vm.eval("compare_int(1, 1)"), content="Equal")
+  inspect(vm.eval("compare_int(2, 1)"), content="Greater")
 }
 
 ///|

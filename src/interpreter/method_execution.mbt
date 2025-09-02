@@ -125,7 +125,6 @@ fn ClosureInterpreter::execute_method_call(
         val: self.visit(arg.value),
         kind: RuntimeArgumentKind::from_syntax(arg.kind),
       })
-      self.current_module = pkg
       self.push_scope(RuntimeLocation::FunctionCall(method_name))
       defer {
         self.pop_scope()
@@ -133,16 +132,19 @@ fn ClosureInterpreter::execute_method_call(
       }
       // Bind self parameter and other args
       match func {
-        Closure(Lambda(parameters~, body~, ..), _env) => {
-          // Bind parameters
-          match parameters {
-            More(Positional(binder={ name: "self", .. }, ..), ..) =>
-              self.bind_function_parameters(
-                parameters,
-                @list.construct({ val: self_value, kind: Positional }, args),
-              )
-            _ => self.bind_function_parameters(parameters, args)
+        Closure(Lambda(parameters~, body~, ..), captured_env) => {
+          // Switch to closure's captured environment
+          let old_env = pkg.env
+          self.current_module = pkg
+          self.current_module.env = captured_env
+          defer {
+            self.current_module.env = old_env
           }
+          // Bind parameters - always include self_value as first parameter
+          self.bind_function_parameters(
+            parameters,
+            @list.construct({ val: self_value, kind: Positional }, args),
+          )
 
           // Execute function body
           self.visit(body)

@@ -54,11 +54,18 @@ fn RuntimePackage::find_static_type(
     "UninitializedArray" => RuntimeType::uninitialized_array()
     "Map" => RuntimeType::map()
     "Iter" => RuntimeType::iter()
-    "Option" => RuntimeType::option()
+    "Option" | "Some" | "None" => RuntimeType::option()
     // TODO: infer type
     _ =>
-      if self.type_definitions.get(name) is Some(_) {
-        Object(pkg=self, name~)
+      // 首先检查是否是构造函数
+      if self.constructors.get(name) is Some(type_name) {
+        if self.type_definitions.get(type_name) is Some(decl) {
+          Object(pkg=self, name=decl.tycon)
+        } else {
+          Any
+        }
+      } else if self.type_definitions.get(name) is Some(decl) {
+        Object(pkg=self, name=decl.tycon)
       } else {
         Any
       }
@@ -95,12 +102,7 @@ fn RuntimeValue::get_type(self : RuntimeValue) -> RuntimeType {
     // TODO: 闭包类型
     Closure(_) => Any
     Exception(_) => Any
-    Constructor({ val: { name, .. }, ty: type_info }) =>
-      match name {
-        "Some" | "None" => RuntimeType::option()
-        "More" | "Empty" => RuntimeType::list()
-        _ => type_info
-      }
+    Constructor({ ty: type_info, .. }) => type_info
     Iter(_) => RuntimeType::iter()
     Iter2(_) => RuntimeType::iter()
     Json(_) => RuntimeType::json()

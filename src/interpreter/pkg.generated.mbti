@@ -207,6 +207,7 @@ pub(all) struct RuntimePackage {
   type_aliases : Map[String, WithType[@syntax.TypeDecl]]
   stubs : Map[String, String]
   type_definitions : Map[String, @syntax.TypeDecl]
+  constructors : Map[String, String]
   struct_methods : Map[String, Map[String, RuntimeValue]]
   values : Map[String, RuntimeValue]
   mut env : RuntimeEnvironment
@@ -220,6 +221,7 @@ fn RuntimePackage::cons_with_labels(Self, String, Array[(String?, RuntimeValue, 
 fn RuntimePackage::define_struct_method(Self, String, String, @syntax.Func) -> Unit
 fn RuntimePackage::find(Self, String) -> RuntimeValue?
 fn RuntimePackage::find_stub(Self, String) -> String
+fn RuntimePackage::is_constructor(Self, String) -> Bool
 fn RuntimePackage::new(String, deps? : Map[String, Self], files? : Map[String, String]) -> Self
 fn RuntimePackage::set(Self, String, RuntimeValue) -> Unit
 impl ToJson for RuntimePackage

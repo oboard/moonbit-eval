@@ -39,6 +39,7 @@ pub async fn load_package(
       meta: meta_info,
       stubs: Map::new(),
       type_definitions: Map::new(),
+      constructors: Map::new(),
       struct_methods: Map::new(),
       traits: Map::new(),
       values: Map::new(),

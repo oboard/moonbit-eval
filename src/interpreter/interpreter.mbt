@@ -211,7 +211,8 @@ pub fn ClosureInterpreter::top_visit(
             Variant(constructors) =>
               for constr in constructors {
                 let constr_name = constr.name.name
-                self.current_module.type_definitions.set(constr_name, def)
+                // 将构造函数注册到constructors集合中
+                self.current_module.constructors.set(constr_name, tycon)
               } else {
                 ()
               }
@@ -357,9 +358,19 @@ pub fn ClosureInterpreter::visit(
 
     // 处理变量标识符
     Ident(id={ name, .. }, ..) =>
-      self.with_ident(name, (pkg, name) => match pkg.find(name) {
-        Some(v) => v
-        None => self.error("variable @\{pkg.meta.name}.\{name} not found")
+      self.with_ident(name, (
+        pkg,
+        name,
+        // 首先检查是否为构造函数
+      ) => if pkg.is_constructor(name) {
+        // 如果是构造函数，直接创建零参数构造函数实例
+        pkg.cons(name, [])
+      } else {
+        // 否则查找变量值
+        match pkg.find(name) {
+          Some(v) => v
+          None => self.error("variable @\{pkg.meta.name}.\{name} not found")
+        }
       })
 
     // 处理中缀表达式（如 1+1）

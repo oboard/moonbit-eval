@@ -9,6 +9,8 @@ pub(all) struct RuntimePackage {
   stubs : Map[String, String]
   // 类型定义
   type_definitions : Map[String, @syntax.TypeDecl]
+  // 构造函数集合 - 存储构造函数名
+  constructors : Map[String, String] // constructor_name -> type_name
   struct_methods : Map[String, Map[String, RuntimeValue]]
   values : Map[String, RuntimeValue]
   mut env : RuntimeEnvironment
@@ -69,6 +71,7 @@ pub fn RuntimePackage::new(
     traits: Map::new(),
     stubs: core_stubs,
     type_definitions: Map::new(),
+    constructors: Map::new(),
     struct_methods: Map::new(),
     type_aliases: Map::new(),
     fn_aliases: Map::new(),
@@ -85,8 +88,8 @@ pub fn RuntimePackage::find(
   self : RuntimePackage,
   name : String,
 ) -> RuntimeValue? {
-  match self.values.get(name) {
-    None => self.env.find(name)
+  match self.env.find(name) {
+    None => self.values.get(name)
     v => v
   }
 }
@@ -114,4 +117,15 @@ pub fn RuntimePackage::cons_with_labels(
     { name: label, value, mutable }
   })
   Constructor({ val: { name, fields }, ty: self.find_static_type(name) })
+}
+
+///|
+///
+/// 检查名称是否为构造函数
+pub fn RuntimePackage::is_constructor(
+  self : RuntimePackage,
+  name : String,
+) -> Bool {
+  // 直接检查构造函数集合
+  self.constructors.contains(name)
 }

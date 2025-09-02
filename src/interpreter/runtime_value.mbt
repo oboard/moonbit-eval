@@ -717,10 +717,10 @@ pub impl Show for RuntimeValue with to_string(self) -> String {
       })
       "\{self.get_type()}::{" + parts.join(", ") + "}"
     }
-    Constructor({ val: { name, fields }, ty }) =>
+    Constructor({ val: { name, fields }, .. }) =>
       // Format constructor call with field names if present
       if fields.length() == 0 {
-        "\{ty}::\{name}"
+        "\{name}"
       } else {
         let arg_strs = fields.map(fn(field) {
           match field.name {
@@ -797,7 +797,10 @@ pub impl Show for RuntimeValue with to_string(self) -> String {
                   Array(..) => "Array"
                   Tuple(..) => "Tuple"
                   Record(..) => "Record"
-                  Apply(func=Function(func~, ..), ..) => infer_func_type(func)
+                  Apply(
+                    func=Function(func=Lambda(return_type=Some(ty), ..), ..),
+                    ..
+                  ) => type_to_string(ty)
                   _ => "Any"
                 }
                 "(" + param_strs.join(", ") + ") -> " + inferred_type
