@@ -16,6 +16,18 @@ test "foreach_loop" {
     vm.eval("let sum = 0; for i in 0..<3 { sum = sum + i }; sum"),
     content="3",
   )
+  inspect(
+    vm.eval(
+      (
+        #|let mut result = ""
+        #| for i, j in [3,2,1] { 
+        #|  result += " i_\{i} = \{j} "
+        #|}
+        #|result
+      ),
+    ),
+    content=" i_0 = 3  i_1 = 2  i_2 = 1 ",
+  )
 }
 
 ///|
