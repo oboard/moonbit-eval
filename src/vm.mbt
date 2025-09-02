@@ -223,7 +223,7 @@ pub fn MoonBitVM::eval(
   code : String,
   log? : Bool,
   top? : Bool = false,
-) -> EvalResult raise @interpreter.ControlFlow {
+) -> EvalResult {
   try {
     if top {
       let (impls, _diagnostics) = @moonbitlang/parser.parse_string(
@@ -252,6 +252,6 @@ pub fn MoonBitVM::eval(
     }
   } catch {
     @interpreter.ControlFlow::Error(msg) => Error(msg, self.interpreter)
-    other => raise other
+    _ => panic()
   }
 }
