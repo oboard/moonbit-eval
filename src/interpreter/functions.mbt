@@ -42,7 +42,7 @@ pub fn ClosureInterpreter::call(
       self.push_scope(
         RuntimeLocation::FunctionCall(
           "@" +
-          mod.meta.name +
+          mod.name +
           "." +
           name.unwrap_or("<function>") +
           self.get_function_type_string(Closure(function, env)),

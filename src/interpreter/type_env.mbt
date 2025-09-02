@@ -44,10 +44,10 @@ pub impl Eq for RuntimeType with op_equal(
     ) => args1 == args2 && res1 == res2 && err1 == err2 && async1 == async2
     (Tuple(tys1), Tuple(tys2)) => tys1 == tys2
     (Name(pkg=pkg1, name=name1, tys=tys1), Name(pkg=pkg2, name=name2, tys=tys2)) =>
-      pkg1.meta.name == pkg2.meta.name && name1 == name2 && tys1 == tys2
+      pkg1.name == pkg2.name && name1 == name2 && tys1 == tys2
     (Option(ty1), Option(ty2)) => ty1 == ty2
     (Object(pkg=pkg1, name=name1), Object(pkg=pkg2, name=name2)) =>
-      pkg1.meta.name == pkg2.meta.name && name1 == name2
+      pkg1.name == pkg2.name && name1 == name2
     _ => false
   }
 }
@@ -118,9 +118,9 @@ pub impl Show for RuntimeType with output(self : RuntimeType, logger : &Logger) 
       logger.write_char(')')
     }
     Name(pkg~, name~, tys~) => {
-      if pkg.meta.name != "main" {
+      if pkg.name != "main" {
         logger.write_char('@')
-        logger.write_string(pkg.meta.name)
+        logger.write_string(pkg.name)
         logger.write_char('.')
       }
       logger.write_string(name)
@@ -140,9 +140,9 @@ pub impl Show for RuntimeType with output(self : RuntimeType, logger : &Logger) 
       logger.write_char('?')
     }
     Object(pkg~, name~) => {
-      if pkg.meta.name != "main" {
+      if pkg.name != "main" {
         logger.write_char('@')
-        logger.write_string(pkg.meta.name)
+        logger.write_string(pkg.name)
         logger.write_char('.')
       }
       logger.write_string(name)

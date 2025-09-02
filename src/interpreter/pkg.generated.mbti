@@ -133,7 +133,7 @@ pub(all) struct ConstructorValue {
   fields : Array[ConstructorField]
 }
 
-pub(all) struct PackageMeta {
+pub(all) struct ModuleInfo {
   name : String
   version : String?
   deps : Map[String, String]?
@@ -144,10 +144,10 @@ pub(all) struct PackageMeta {
   description : String?
   source : String?
 }
-fn PackageMeta::new(String, version? : String, readme? : String, repository? : String, license? : String, keywords? : Array[String], description? : String, source? : String, deps? : Map[String, String]) -> Self
-impl Show for PackageMeta
-impl ToJson for PackageMeta
-impl @json.FromJson for PackageMeta
+fn ModuleInfo::new(String, version? : String, readme? : String, repository? : String, license? : String, keywords? : Array[String], description? : String, source? : String, deps? : Map[String, String]) -> Self
+impl Show for ModuleInfo
+impl ToJson for ModuleInfo
+impl @json.FromJson for ModuleInfo
 
 pub(all) struct RuntimeArgument {
   val : RuntimeValue
@@ -200,11 +200,17 @@ pub enum RuntimeLocation {
 }
 impl Show for RuntimeLocation
 
+pub(all) struct RuntimeModule {
+  meta : ModuleInfo
+  pkgs : Map[String, RuntimePackage]
+}
+
 pub(all) struct RuntimePackage {
-  meta : PackageMeta
+  name : String
   traits : Map[String, @syntax.TraitDecl]
   fn_aliases : Map[String, WithType[RuntimeValue]]
   type_aliases : Map[String, WithType[@syntax.TypeDecl]]
+  trait_aliases : Map[String, WithType[@syntax.TraitDecl]]
   stubs : Map[String, String]
   type_definitions : Map[String, @syntax.TypeDecl]
   constructors : Map[String, String]

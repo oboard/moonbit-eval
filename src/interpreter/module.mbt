@@ -1,10 +1,32 @@
 ///|
+pub(all) struct RuntimeModule {
+  meta : ModuleInfo
+  pkgs : Map[String, RuntimePackage]
+}
+
+///|
+/// 包元数据
+pub(all) struct ModuleInfo {
+  name : String
+  version : String?
+  deps : Map[String, String]?
+  readme : String?
+  repository : String?
+  license : String?
+  keywords : Array[String]?
+  description : String?
+  source : String?
+} derive(Show, ToJson, FromJson)
+
+///|
 pub(all) struct RuntimePackage {
-  meta : PackageMeta
+  name : String
   traits : Map[String, @syntax.TraitDecl]
   // 函数别名存储 - 存储函数名到其实际实现的映射
   fn_aliases : Map[String, WithType[RuntimeValue]]
   type_aliases : Map[String, WithType[@syntax.TypeDecl]]
+  // trait 别名存储 - 存储 trait 名到其实际实现的映射
+  trait_aliases : Map[String, WithType[@syntax.TraitDecl]]
   // 存根 - 存储函数名到其实际实现的映射
   stubs : Map[String, String]
   // 类型定义
@@ -20,22 +42,8 @@ pub(all) struct RuntimePackage {
 } derive(ToJson)
 
 ///|
-/// 包元数据
-pub(all) struct PackageMeta {
-  name : String
-  version : String?
-  deps : Map[String, String]?
-  readme : String?
-  repository : String?
-  license : String?
-  keywords : Array[String]?
-  description : String?
-  source : String?
-} derive(Show, ToJson, FromJson)
-
-///|
 /// 模块元数据构造函数
-pub fn PackageMeta::new(
+pub fn ModuleInfo::new(
   name : String,
   version? : String,
   readme? : String,
@@ -45,7 +53,7 @@ pub fn PackageMeta::new(
   description? : String,
   source? : String,
   deps? : Map[String, String],
-) -> PackageMeta {
+) -> ModuleInfo {
   {
     name,
     version,
@@ -67,13 +75,14 @@ pub fn RuntimePackage::new(
 ) -> RuntimePackage {
   let env = RuntimeEnvironment::new()
   {
-    meta: PackageMeta::new(pkg),
+    name: pkg,
     traits: Map::new(),
     stubs: core_stubs,
     type_definitions: Map::new(),
     constructors: Map::new(),
     struct_methods: Map::new(),
     type_aliases: Map::new(),
+    trait_aliases: Map::new(),
     fn_aliases: Map::new(),
     values: Map::new(),
     env,
