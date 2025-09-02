@@ -25,12 +25,12 @@ fn ClosureInterpreter::execute_function_by_name(
       kind: RuntimeArgumentKind::from_syntax(arg.kind),
     })
     .to_array()
-  self.with_ident(long_ident, fn(mod, name) {
-    let name = mod.find_stub(name)
+  self.with_ident(long_ident, fn(pkg, name) {
+    let name = pkg.find_stub(name)
 
     // 按优先级查找：用户函数 -> Lambda变量 -> 外部函数 -> embedded函数
     let func = match
-      mod.find(name).unwrap_or(self.current_module.find(name).unwrap_or(Unit)) {
+      pkg.find(name).unwrap_or(self.current_module.find(name).unwrap_or(Unit)) {
       Closure(func, env) =>
         // 检查是否是embedded函数的标记函数
         match func {
@@ -65,7 +65,7 @@ fn ClosureInterpreter::execute_function_by_name(
         }
       FunctionLookupResult::RuntimeClosure(lambda_func, captured_env) =>
         // 调用闭包：使用专门的闭包调用方法
-        self.call_closure(lambda_func, mod, captured_env, args, name~)
+        self.call_closure(lambda_func, pkg, captured_env, args, name~)
       FunctionLookupResult::ExternFunction(extern_func) =>
         extern_func(RuntimeFunctionContext::{
           mod: self.current_module,
@@ -80,7 +80,7 @@ fn ClosureInterpreter::execute_function_by_name(
         })
       FunctionLookupResult::NotFound =>
         self.error(
-          "execute_function_by_name method @\{mod.meta.name}.\{name} not found",
+          "execute_function_by_name method @\{pkg.name}.\{name} not found",
         )
     }
   })

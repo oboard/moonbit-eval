@@ -131,8 +131,66 @@ pub fn ClosureInterpreter::top_visit(
 ) -> RuntimeValue {
   match node {
     TopView(_) => Unit
-    TopImpl(_) => Unit
-    TopBatchTraitAlias(_) => Unit
+    TopImpl(self_ty~, method_name~, params~, body~, ..) => {
+      // 处理 trait 实现，如 impl Show for A with to_string
+      let type_name = match self_ty {
+        Some(Name(constr_id={ id: Ident(name~), .. }, ..)) => name
+        Some(Name(constr_id={ id: Dot(id~, ..), .. }, ..)) => id
+        _ => return Unit // 无法确定类型名，跳过
+      }
+      let method_name = method_name.name
+
+      // 从 body 中提取函数实现
+      match body {
+        DeclBody(expr~, ..) => {
+          // 构造函数对象
+          let func = @syntax.Func::Lambda(
+            parameters=params,
+            params_loc={
+              start: { fname: "", lnum: 0, bol: 0, cnum: 0 },
+              end: { fname: "", lnum: 0, bol: 0, cnum: 0 },
+            },
+            body=expr,
+            return_type=None,
+            error_type=@syntax.ErrorType::NoErrorType,
+            kind=@syntax.FnKind::Lambda,
+            has_error=None,
+            is_async=false,
+            loc={
+              start: { fname: "", lnum: 0, bol: 0, cnum: 0 },
+              end: { fname: "", lnum: 0, bol: 0, cnum: 0 },
+            },
+          )
+
+          // 将 trait 方法注册为结构体方法
+          self.current_module.define_struct_method(type_name, method_name, func)
+          Unit
+        }
+        _ => Unit
+      }
+    }
+    TopBatchTraitAlias(pkg~, targets~, ..) => {
+      let pkg = pkg.map(l => l.name)
+      // 处理每个 trait 别名目标
+      for target in targets {
+        let binder_name = target.binder.name
+        let target_name = target.target.map(l => l.name).unwrap_or(binder_name)
+        let mod = match pkg {
+          Some(pkg) => self.find_pkg(pkg)
+          None => self.current_module
+        }
+        let target_value = mod.traits.get(binder_name)
+        // 将别名映射到目标 trait
+        if target_value is Some(target_value) {
+          self.current_module.trait_aliases.set(target_name, {
+            val: target_value,
+            ty: Object(pkg=mod, name=binder_name),
+          })
+        }
+      } else {
+        Unit
+      }
+    }
     TopBatchTypeAlias(pkg~, targets~, ..) => {
       let pkg = pkg.map(l => l.name)
       // 处理每个类型别名目标
@@ -262,7 +320,7 @@ pub fn ClosureInterpreter::top_visit(
             body=expr,
             return_type=inferred_return_type,
             error_type=fun_decl.error_type,
-            kind=Arrow,
+            kind=@syntax.FnKind::Lambda,
             has_error=fun_decl.has_error,
             is_async=fun_decl.is_async,
             loc~,
@@ -369,7 +427,7 @@ pub fn ClosureInterpreter::visit(
         // 否则查找变量值
         match pkg.find(name) {
           Some(v) => v
-          None => self.error("variable @\{pkg.meta.name}.\{name} not found")
+          None => self.error("variable @\{pkg.name}.\{name} not found")
         }
       })
 
