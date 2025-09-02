@@ -307,6 +307,7 @@ fn RuntimeValue::from_result(Result[Self, Self]) -> Self
 fn RuntimeValue::is_mutable(Self) -> Bool
 fn RuntimeValue::is_reference(Self) -> Bool
 fn RuntimeValue::iter(Self) -> Self
+fn RuntimeValue::iter2(Self) -> Self
 fn RuntimeValue::overload_array_literal(Self, String) -> Self
 fn RuntimeValue::overload_literal(Self, String) -> Self
 fn RuntimeValue::to_expr(Self) -> @syntax.Expr

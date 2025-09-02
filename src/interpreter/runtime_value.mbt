@@ -964,6 +964,49 @@ pub fn RuntimeValue::iter(self : RuntimeValue) -> RuntimeValue {
 }
 
 ///|
+/// 为 RuntimeValue 实现 iter2() 方法，返回双值迭代器
+/// 根据 iter2.mbt 中的 iter2_iter_fn，应该返回 Iter，其中每个元素是元组
+pub fn RuntimeValue::iter2(self : RuntimeValue) -> RuntimeValue {
+  match self {
+    Array(arr) => {
+      // 将数组转换为 Iter，每个元素是 (index, value) 元组
+      let iter_impl = Iter::new(fn(f) {
+        for i = 0; i < arr.length(); i = i + 1 {
+          match f(RuntimeValue::Tuple([Int(i), arr[i]])) {
+            IterEnd => return IterEnd
+            IterContinue => ()
+          }
+        }
+        IterEnd
+      })
+      Iter(iter_impl)
+    }
+    String(str) => {
+      // 将字符串转换为 Iter，每个元素是 (index, char) 元组
+      let chars = str.to_array()
+      let iter_impl = Iter::new(fn(f) {
+        for i = 0; i < chars.length(); i = i + 1 {
+          match f(RuntimeValue::Tuple([Int(i), Char(chars[i])])) {
+            IterEnd => return IterEnd
+            IterContinue => ()
+          }
+        }
+        IterEnd
+      })
+      Iter(iter_impl)
+    }
+    Iter2(iter2) => {
+      // 将 Iter2 转换为 Iter，每个元素是元组
+      let iter_impl = iter2
+        .iter()
+        .map(fn(pair) { RuntimeValue::Tuple([pair.0, pair.1]) })
+      Iter(iter_impl)
+    }
+    _ => Iter(Iter::new(fn(_) { IterEnd }))
+  }
+}
+
+///|
 /// RuntimeValue 之间的中缀运算 - 消除对 constant_infix 的依赖
 pub fn runtime_value_infix(
   op : String,

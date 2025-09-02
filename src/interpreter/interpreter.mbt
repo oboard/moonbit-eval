@@ -841,16 +841,22 @@ pub fn ClosureInterpreter::visit(
     ForEach(binders~, expr~, body~, ..) => {
       let iterable_value = self.visit(expr)
 
-      // 获取迭代器：如果已经是 Iter 类型就直接使用，否则调用 iter() 方法
-      let get_iterator = fn(value) {
+      // 根据绑定变量数量选择合适的迭代器
+      let get_iterator = fn(value, binder_count) {
         match value {
           Iter(_) => value // 已经是迭代器，直接使用
-          _ => value.iter() // 调用 iter() 方法转换为迭代器
+          _ =>
+            // 如果有多个绑定变量，使用 iter2()，否则使用 iter()
+            if binder_count > 1 {
+              value.iter2() // 返回 (index, value) 元组
+            } else {
+              value.iter() // 返回单个值
+            }
         }
       }
 
-      // 首先检查是否为范围表达式
-      let iterator = match expr {
+      // 检查是否为范围表达式，否则使用默认迭代器
+      let iterator : RuntimeValue? = match expr {
         Infix(op~, lhs~, rhs~, ..) =>
           match op.name {
             Ident(name="..<") => {
@@ -858,18 +864,20 @@ pub fn ClosureInterpreter::visit(
               let end_val = self.visit(rhs)
               match (start_val, end_val) {
                 (Int(start), Int(end)) =>
-                  Iter(
-                    Iter::new(visit_fn => {
-                      for i in start..<end {
-                        match visit_fn(Int(i)) {
-                          IterEnd => return IterEnd
-                          IterContinue => ()
+                  Some(
+                    RuntimeValue::Iter(
+                      Iter::new(visit_fn => {
+                        for i in start..<end {
+                          match visit_fn(Int(i)) {
+                            IterEnd => return IterEnd
+                            IterContinue => ()
+                          }
                         }
-                      }
-                      IterEnd
-                    }),
+                        IterEnd
+                      }),
+                    ),
                   )
-                _ => get_iterator(iterable_value)
+                _ => None
               }
             }
             Ident(name="..=") => {
@@ -877,40 +885,57 @@ pub fn ClosureInterpreter::visit(
               let end_val = self.visit(rhs)
               match (start_val, end_val) {
                 (Int(start), Int(end)) =>
-                  Iter(
-                    Iter::new(visit_fn => {
-                      for i in start..=end {
-                        match visit_fn(Int(i)) {
-                          IterEnd => return IterEnd
-                          IterContinue => ()
+                  Some(
+                    RuntimeValue::Iter(
+                      Iter::new(visit_fn => {
+                        for i in start..=end {
+                          match visit_fn(Int(i)) {
+                            IterEnd => return IterEnd
+                            IterContinue => ()
+                          }
                         }
-                      }
-                      IterEnd
-                    }),
+                        IterEnd
+                      }),
+                    ),
                   )
-                _ => get_iterator(iterable_value)
+                _ => None
               }
             }
-            _ => get_iterator(iterable_value)
+            _ => None
           }
-        _ => get_iterator(iterable_value)
+        _ => None
+      }
+
+      // 如果不是范围表达式，使用默认迭代器逻辑
+      let final_iterator = match iterator {
+        Some(iter) => iter
+        None => {
+          let binder_count = binders.length()
+          get_iterator(iterable_value, binder_count)
+        }
       }
 
       // 使用迭代器进行迭代
-      match iterator {
+      match final_iterator {
         Iter(iter_impl) =>
-          for idx, value in iter_impl {
+          for value in iter_impl {
             // 创建新作用域来隔离循环变量
             self.push_scope(RuntimeLocation::ControlFlow("foreach"))
             defer self.pop_scope()
             // 绑定循环变量
             match binders {
               More(Some(binder), tail=Empty) =>
+                // 单个绑定变量：直接绑定值
                 self.current_module.env.set(binder.name, value)
-              More(Some(binder1), tail=More(Some(binder2), ..)) => {
-                self.current_module.env.set(binder1.name, Int(idx))
-                self.current_module.env.set(binder2.name, value)
-              }
+              More(Some(binder1), tail=More(Some(binder2), ..)) =>
+                // 多个绑定变量：解构元组
+                match value {
+                  Tuple([first, second]) => {
+                    self.current_module.env.set(binder1.name, first)
+                    self.current_module.env.set(binder2.name, second)
+                  }
+                  _ => self.error("for iter bind failed")
+                }
               _ => ()
             }
             try {
