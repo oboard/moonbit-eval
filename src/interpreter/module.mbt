@@ -1,4 +1,7 @@
 ///|
+let url_base = "https://moonbitlang-mooncakes.s3.us-west-2.amazonaws.com/user"
+
+///|
 pub(all) struct RuntimeModule {
   meta : ModuleInfo
   pkgs : Map[String, RuntimePackage]
@@ -17,6 +20,12 @@ pub(all) struct ModuleInfo {
   description : String?
   source : String?
 } derive(Show, ToJson, FromJson)
+
+///|
+pub async fn ModuleInfo::get_zip_url(self : ModuleInfo) -> String noraise {
+  let v = self.version.map_or("", v => "/\{v}")
+  "\{url_base}/\{self.name}\{v}.zip"
+}
 
 ///|
 pub(all) struct RuntimePackage {

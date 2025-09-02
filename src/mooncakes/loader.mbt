@@ -41,19 +41,27 @@ pub async fn load_module(
   let module_index = @mio.get(url).unwrap_json()
   let pkgs : Map[String, @interpreter.RuntimePackage] = {}
 
-  // 解析 module_index.json 中的包信息
-  if module_index is { "childs": Array(childs), .. } {
-    while childs.pop() is Some(child) {
-      if child is { "name": String(pkg_name), "package": package_info, .. } {
-        if package_info is { "path": String(path), .. } {
-          match load_package(path, {}) {
-            Some(pkg) => pkgs.set(pkg_name, pkg)
-            None => ()
-          }
+  // Parse package information from module_index.json recursively
+  async fn parse_child(
+    child : Json,
+    pkgs : Map[String, @interpreter.RuntimePackage],
+  ) raise {
+    if child is { "childs": Array(childs), .. } {
+      while childs.pop() is Some(sub_child) {
+        parse_child(sub_child, pkgs)
+      }
+    }
+    if child is { "name": String(pkg_name), "package": package_info, .. } {
+      if package_info is { "path": String(path), .. } {
+        match load_package(path, pkgs) {
+          Some(pkg) => pkgs.set(pkg_name, pkg)
+          None => ()
         }
       }
     }
   }
+
+  parse_child(module_index, pkgs)
   modules.set(mod_name, @interpreter.RuntimeModule::{ meta, pkgs })
   modules
 }
@@ -64,15 +72,21 @@ pub async fn load_package(
   deps : Map[String, @interpreter.RuntimePackage],
 ) -> @interpreter.RuntimePackage? raise {
   let url = "https://mooncakes.io/assets/\{pkg_name}/resource.json"
-  let info = @mio.get(url).json()
+  let info = @mio.get(url).unwrap_json()
   let sources : Map[String, String] = {}
   if info is { "source_files": Array(source_files), .. } {
     while source_files.pop() is Some(file) {
       if file is String(name) {
-        let source = @mio.get("https://mooncakes.io/assets/\{pkg_name}/\{name}").text() catch {
+        let source = @mio.get(
+          "https://mooncakes.io/assets/\{pkg_name}/\{name}.html",
+        ).text() catch {
           _ => ""
         }
-        sources.set(name, source)
+        let start = source.find("<pre><code class=\"moonbit\">")
+        let end = source.rev_find("</code></pre>")
+        if (start, end) is (Some(start), Some(end)) {
+          sources.set(name, source[start:end].to_string())
+        }
       }
     }
     Some({
