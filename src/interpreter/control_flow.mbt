@@ -50,7 +50,7 @@ fn ClosureInterpreter::visit_for(
 
     // 执行循环体，处理break和continue
     (self.visit_scoped(body, RuntimeLocation::ControlFlow("for")) catch {
-      Break(value) => return value.unwrap_or(Unit)
+      Break(value) => return value
       Continue(arr) => {
         if !arr.is_empty() {
           binders.eachi(fn(i, binder) {
@@ -95,10 +95,7 @@ fn ClosureInterpreter::visit_while(
     // 执行循环体，处理break和continue
     (self.visit_scoped(loop_body, RuntimeLocation::ControlFlow("while")) catch {
       Break(value) => {
-        result = match value {
-          Some(v) => v
-          None => Unit
-        }
+        result = value
         broke = true
         break
       }

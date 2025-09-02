@@ -72,7 +72,7 @@ fn unit(loc? : @basic.Location) -> @syntax.Expr
 pub suberror ControlFlow {
   Raise(RuntimeValue)
   Continue(Array[RuntimeValue])
-  Break(RuntimeValue?)
+  Break(RuntimeValue)
   Return(RuntimeValue)
   Error(String)
 }

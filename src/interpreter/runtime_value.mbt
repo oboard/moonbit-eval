@@ -67,7 +67,7 @@ pub(all) enum RuntimeValue {
 pub suberror ControlFlow {
   Raise(RuntimeValue)
   Continue(Array[RuntimeValue])
-  Break(RuntimeValue?)
+  Break(RuntimeValue)
   Return(RuntimeValue)
   Error(String)
 }

@@ -743,9 +743,9 @@ pub fn ClosureInterpreter::visit(
       match arg {
         Some(expr) => {
           let break_value = self.visit(expr)
-          raise Break(Some(break_value))
+          raise Break(break_value)
         }
-        None => raise Break(None)
+        None => raise Break(Unit)
       }
 
     // 处理 Return 表达式
@@ -773,7 +773,7 @@ pub fn ClosureInterpreter::visit(
       while is_continue {
         is_continue = false
         result = self.execute_match_runtime(arg, cases) catch {
-          Break(value) => return value.unwrap_or(Unit)
+          Break(value) => return value
           Continue(arr) => {
             arg = Tuple(arr)
             is_continue = true
