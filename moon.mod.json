@@ -4,7 +4,7 @@
   "deps": {
     "moonbitlang/parser": "0.1.2",
     "Yoorkin/trie": "0.2.5",
-    "oboard/mio": "0.3.5"
+    "oboard/mio": "0.3.7"
   },
   "readme": "README.md",
   "repository": "https://github.com/oboard/moonbit-eval",

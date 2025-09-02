@@ -5,7 +5,7 @@ pub(all) struct MoonBitVM {
 }
 
 ///|
-pub enum EvalResult {
+pub(all) enum EvalResult {
   Success(RuntimeValue, ClosureInterpreter)
   Error(String, ClosureInterpreter)
 }

@@ -53,3 +53,65 @@ test "cross_package_method_calling" {
   )
   assert_eq(vm.eval("arr1.length()").to_string(), "5")
 }
+
+///|
+test "online_package" {
+  let vm = MoonBitVM::new()
+  @mio.run(() => {
+    let modules = try? @mooncakes.load_module("oboard/mimetype")
+    if modules is Ok(modules) {
+      vm.interpreter.main.deps.set(
+        "mimetype",
+        modules.get("oboard/mimetype").unwrap().pkgs["lib"],
+      )
+      println(
+        vm.eval("@minetype.new().get_type(\"txt\")") catch {
+          _ => Error("Failed to get type", vm.interpreter)
+        },
+      )
+    }
+  })
+}
+
+///|
+test {
+  @mio.run(fn() {
+    async fn load(mod_name) noraise {
+      let url = "https://mooncakes.io/assets/\{mod_name}/resource.json"
+      let info = try? @mio.get(url).unwrap_json()
+      if info is Ok(a) {
+        let json = a
+        println(json)
+      } else {
+        abort("Failed to get resource.json")
+      }
+    }
+
+    load("oboard/mimetype")
+  })
+}
+
+///|
+test {
+  @mio.run(fn() {
+    println(try? @mooncakes.load_meta("oboard/mimetype").to_json())
+  })
+}
+
+///|
+test {
+  @mio.run(fn() {
+    async fn load(mod_name) noraise {
+      let url = "https://mooncakes.io/assets/\{mod_name}/resource.json"
+      let info = try? @mio.get(url).unwrap_json()
+      if info is Ok(a) {
+        let json = a
+        println(json)
+      } else {
+        abort("Failed to get resource.json")
+      }
+    }
+
+    load("oboard/mimetype")
+  })
+}

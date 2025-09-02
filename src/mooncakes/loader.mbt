@@ -1,63 +1,49 @@
 ///|
-pub async fn load_module(
+pub async fn load_meta(
   mod_name : String,
   version? : String,
-) -> Array[@interpreter.RuntimeModule] noraise {
+) -> @interpreter.ModuleInfo raise {
+  ///|
   let mod_name = mod_name + (if version is Some(v) { "@" + v } else { "" })
-  let modules = []
-
   // 获取模块元信息
   let url = "https://mooncakes.io/assets/\{mod_name}/resource.json"
-  let info = @mio.get(url).json() catch { _ => {} }
-  let meta = if info is { "meta_info": meta_info, .. } {
-    @json.from_json(meta_info) catch {
-      _ => @interpreter.ModuleInfo::new("")
-    }
+  let info = try? @mio.get(url).unwrap_json()
+  if info is Ok({ "meta_info": meta_info, .. }) {
+    @json.from_json(meta_info)
   } else {
     @interpreter.ModuleInfo::new("")
   }
+}
+
+///|
+pub async fn load_module(
+  mod_name : String,
+  version? : String,
+) -> Map[String, @interpreter.RuntimeModule] raise {
+  let mod_name = mod_name + (if version is Some(v) { "@" + v } else { "" })
+  let modules : Map[String, @interpreter.RuntimeModule] = {}
+
+  // 获取模块元信息
+  let meta = load_meta(mod_name, version?)
 
   // 处理依赖模块
-  if info is { "meta_info": meta_info, .. } {
-    match meta_info {
-      Object(obj) =>
-        match obj.get("deps") {
-          Some(String(name)) => {
-            let dep_modules = load_module(name)
-            for dep_module in dep_modules {
-              modules.push(dep_module)
-            }
-          }
-          Some(Object(deps_obj)) => {
-            // 收集所有依赖名称
-            let dep_names = []
-            for name, version in deps_obj {
-              if version is String(version) {
-                dep_names.push(name + "@" + version)
-              } else {
-                dep_names.push(name)
-              }
-            }
-            // 加载所有依赖
-            for name in dep_names {
-              let dep_modules = load_module(name)
-              for dep_module in dep_modules {
-                modules.push(dep_module)
-              }
-            }
-          }
-          _ => ()
-        }
-      _ => ()
+  if meta.deps is Some(deps) {
+    // for name, version in deps {
+    let deps = deps.to_array()
+    while deps.pop() is Some((name, version)) {
+      let dep_modules = load_module(name, version~)
+      for name, dep_module in dep_modules {
+        modules.set(name, dep_module)
+      }
     }
   }
   let url = "https://mooncakes.io/assets/\{mod_name}/module_index.json"
-  let module_index = @mio.get(url).json() catch { _ => {} }
+  let module_index = @mio.get(url).unwrap_json()
   let pkgs : Map[String, @interpreter.RuntimePackage] = {}
 
   // 解析 module_index.json 中的包信息
   if module_index is { "childs": Array(childs), .. } {
-    for child in childs {
+    while childs.pop() is Some(child) {
       if child is { "name": String(pkg_name), "package": package_info, .. } {
         if package_info is { "path": String(path), .. } {
           match load_package(path, {}) {
@@ -68,7 +54,7 @@ pub async fn load_module(
       }
     }
   }
-  modules.push(@interpreter.RuntimeModule::{ meta, pkgs })
+  modules.set(mod_name, @interpreter.RuntimeModule::{ meta, pkgs })
   modules
 }
 
@@ -76,12 +62,12 @@ pub async fn load_module(
 pub async fn load_package(
   pkg_name : String,
   deps : Map[String, @interpreter.RuntimePackage],
-) -> @interpreter.RuntimePackage? noraise {
+) -> @interpreter.RuntimePackage? raise {
   let url = "https://mooncakes.io/assets/\{pkg_name}/resource.json"
-  let info = @mio.get(url).json() catch { _ => {} }
+  let info = @mio.get(url).json()
   let sources : Map[String, String] = {}
   if info is { "source_files": Array(source_files), .. } {
-    for file in source_files {
+    while source_files.pop() is Some(file) {
       if file is String(name) {
         let source = @mio.get("https://mooncakes.io/assets/\{pkg_name}/\{name}").text() catch {
           _ => ""
