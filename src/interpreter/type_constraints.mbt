@@ -113,7 +113,7 @@ pub fn RuntimePackage::check_type_constraint(
       ),
     ) => true
 
-    // TODO: call op_equal
+    // TODO: call equal
     // 构造函数类型检查
     (
       Constructor({ ty: Name(name=name1, ..), val: { fields, .. } }),

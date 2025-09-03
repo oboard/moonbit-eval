@@ -105,7 +105,7 @@ pub impl Hash for RuntimeValue with hash_combine(
 }
 
 ///|
-pub impl Add for RuntimeValue with op_add(
+pub impl Add for RuntimeValue with add(
   self : RuntimeValue,
   other : RuntimeValue,
 ) -> RuntimeValue {
@@ -213,7 +213,7 @@ pub impl ToJson for RuntimeValue with to_json(self : RuntimeValue) -> Json {
 
 ///|
 /// 特别处理 Function 类型，通过函数签名比较相等性
-pub impl Eq for RuntimeValue with op_equal(
+pub impl Eq for RuntimeValue with equal(
   self : RuntimeValue,
   other : RuntimeValue,
 ) -> Bool {

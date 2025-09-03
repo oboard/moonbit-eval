@@ -17,7 +17,7 @@ pub(all) enum RuntimeType {
 } derive(ToJson(style="flat"))
 
 ///|
-pub impl Eq for RuntimeErrorType with op_equal(
+pub impl Eq for RuntimeErrorType with equal(
   self : RuntimeErrorType,
   other : RuntimeErrorType,
 ) -> Bool {
@@ -32,10 +32,7 @@ pub impl Eq for RuntimeErrorType with op_equal(
 }
 
 ///|
-pub impl Eq for RuntimeType with op_equal(
-  self : RuntimeType,
-  other : RuntimeType,
-) -> Bool {
+pub impl Eq for RuntimeType with equal(self : RuntimeType, other : RuntimeType) -> Bool {
   match (self, other) {
     (Any, Any) => true
     (
