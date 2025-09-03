@@ -14,7 +14,7 @@ priv enum FunctionLookupResult {
 
 ///|
 /// 根据函数名执行函数
-fn ClosureInterpreter::execute_function_by_name(
+fn ClosureInterpreter::call_by_name(
   self : ClosureInterpreter,
   long_ident : @syntax.LongIdent,
   args : @list.List[@syntax.Argument],

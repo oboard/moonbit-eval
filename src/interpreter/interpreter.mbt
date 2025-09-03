@@ -688,7 +688,7 @@ pub fn ClosureInterpreter::visit(
             @syntax.Argument::{ value: left_expr, kind: Positional },
             @list.new(),
           )
-          self.execute_function_by_name(name, pipe_args)
+          self.call_by_name(name, pipe_args)
         }
         // 处理方法调用，如 [] |> Array::push(5)
         Apply(func~, args~, ..) =>
@@ -717,7 +717,7 @@ pub fn ClosureInterpreter::visit(
                 @syntax.Argument::{ value: left_expr, kind: Positional },
                 args,
               )
-              self.execute_function_by_name(name, pipe_args)
+              self.call_by_name(name, pipe_args)
             }
             _ => left_val
           }

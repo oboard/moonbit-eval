@@ -160,7 +160,7 @@ fn ClosureInterpreter::visit_apply(
 ) -> RuntimeValue raise ControlFlow {
   try {
     match func {
-      Ident(id={ name, .. }, ..) => self.execute_function_by_name(name, args)
+      Ident(id={ name, .. }, ..) => self.call_by_name(name, args)
       // 处理构造函数调用，如 Some(5)
       Constr(constr~, ..) => {
         let fields = args
