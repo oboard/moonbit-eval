@@ -5,7 +5,8 @@
 [![License](https://img.shields.io/github/license/oboard/moonbit-eval)](https://github.com/oboard/moonbit-eval/blob/main/LICENSE)
 
 ## Demo
-🚀 **[REPL Demo https://moonrepl.oboard.eu.org/](https://moonrepl.oboard.eu.org/)**
+🚀 **[REPL Demo](https://github.com/oboard/moonbit-repl/releases/)**
+
 🚀 **[Notebook Demo https://moonbit-notebook.oboard.fun/](https://moonbit-notebook.oboard.fun/)**
 
 ## Introduction
