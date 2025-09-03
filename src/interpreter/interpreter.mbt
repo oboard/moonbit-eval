@@ -14,11 +14,7 @@ pub(all) struct ClosureInterpreter {
 
 ///|
 pub fn ClosureInterpreter::new() -> ClosureInterpreter {
-  let main = RuntimePackage::new(
-    "main",
-    deps=core_modules,
-    files=moonbitlang_core_prelude_module.files,
-  )
+  let main = RuntimePackage::new("main", deps=core_modules)
   let self = {
     extern_fns: {},
     embedded_fns: core_embedded_code,
