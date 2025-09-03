@@ -154,6 +154,7 @@ let core_embedded_methods : Map[String, Map[String, RuntimeFunction]] = {
   "Iter": iter_methods,
   "Iter2": iter2_methods,
   "StringBuilder": stringbuilder_methods,
+  "Json": json_methods,
 }
 
 ///|
