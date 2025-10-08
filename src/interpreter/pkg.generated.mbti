@@ -5,7 +5,6 @@ import(
   "moonbitlang/core/bigint"
   "moonbitlang/core/json"
   "moonbitlang/core/list"
-  "moonbitlang/core/string"
   "moonbitlang/parser/basic"
   "moonbitlang/parser/syntax"
 )
@@ -287,7 +286,7 @@ pub(all) enum RuntimeValue {
   Byte(Byte)
   String(String)
   Bytes(Bytes)
-  StringView(@string.View)
+  StringView(StringView)
   StringBuilder(StringBuilder)
   Tuple(Array[RuntimeValue])
   Array(Array[RuntimeValue])
@@ -296,7 +295,7 @@ pub(all) enum RuntimeValue {
   UninitializedArray(UninitializedArray[RuntimeValue])
   Map(Map[RuntimeValue, RuntimeValue])
   Struct(WithType[Map[String, RuntimeValue]])
-  Closure(@syntax.Func, RuntimeEnvironment)
+  Fn(@syntax.Func, RuntimeEnvironment)
   Constructor(WithType[ConstructorValue])
   Exception(String)
   Iter(Iter[RuntimeValue])

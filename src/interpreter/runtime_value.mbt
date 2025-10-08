@@ -45,8 +45,8 @@ pub(all) enum RuntimeValue {
   // 结构类型 - 直接存储字段映射
   Struct(WithType[Map[String, RuntimeValue]])
 
-  // 闭包 - 包含函数定义和捕获的环境（所有函数都是闭包）
-  Closure(@syntax.Func, RuntimeEnvironment)
+  // 函数类型 - 包含函数定义和捕获的环境（所有函数都是闭包）
+  Fn(@syntax.Func, RuntimeEnvironment)
 
   // 构造函数调用 - 支持带标签参数和可变字段
   Constructor(WithType[ConstructorValue])
@@ -196,7 +196,7 @@ pub impl ToJson for RuntimeValue with to_json(self : RuntimeValue) -> Json {
     FixedArray(a) => a.to_json()
     ArrayView(a) => a.to_json()
     Struct(s) => s.val.to_json()
-    Closure(f, _) => f.to_json()
+    Fn(f, _) => f.to_json()
     Constructor({ val: { name, fields }, .. }) => {
       let args = fields.map(fn(field) { field.value })
       [name, args.to_json()]
@@ -241,7 +241,7 @@ pub impl Eq for RuntimeValue with equal(
     (Struct({ val: a, .. }), Struct({ val: b, .. })) => a == b
 
     // 闭包类型的比较 - 比较函数签名和环境
-    (Closure(func_a, _), Closure(func_b, _)) =>
+    (Fn(func_a, _), Fn(func_b, _)) =>
       compare_function_signatures(func_a, func_b)
 
     // 构造函数比较
@@ -734,7 +734,7 @@ pub impl Show for RuntimeValue with to_string(self) -> String {
     Iter(_) => "<iterator>"
     Iter2(_) => "<iter2>"
     // 从函数中提取参数和返回类型信息
-    Closure(func, _env) => {
+    Fn(func, _env) => {
       fn infer_func_type(func : @syntax.Func) -> String {
         match func {
           @syntax.Func::Lambda(parameters~, return_type~, body~, ..) => {
@@ -900,7 +900,7 @@ pub fn RuntimeValue::to_expr(self : RuntimeValue) -> @syntax.Expr {
     UninitializedArray(_) => Unit(loc=_dummy_loc, faked=true)
     // 结构类型转换为Record表达式
     Struct(_) => Unit(loc=_dummy_loc, faked=true)
-    Closure(func, _env) => Function(func~, loc=_dummy_loc)
+    Fn(func, _env) => Function(func~, loc=_dummy_loc)
     Constructor(_) => Unit(loc=_dummy_loc, faked=true)
     Exception(_) => Unit(loc=_dummy_loc, faked=true)
     Iter(_) => Unit(loc=_dummy_loc, faked=true)
@@ -935,7 +935,7 @@ pub fn RuntimeValue::from_expr(expr : @syntax.Expr) -> RuntimeValue {
       // 实际使用时需要通过带store的方法来处理
       Array(values.to_array())
     }
-    Function(func~, ..) => Closure(func, RuntimeEnvironment::new())
+    Function(func~, ..) => Fn(func, RuntimeEnvironment::new())
     Record(fields~, ..) => {
       // 创建一个新的结构
       let struct_data = Map::new()

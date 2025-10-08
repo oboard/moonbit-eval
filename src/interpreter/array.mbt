@@ -247,7 +247,7 @@ let array_reserve_capacity_fn : RuntimeFunction = ctx => match ctx.args {
 ///|
 /// 数组each操作
 let array_each_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Array(arr), .. }, { val: Closure(f, env), .. }] => {
+  [{ val: Array(arr), .. }, { val: Fn(f, env), .. }] => {
     arr.each(fn(val) {
       ctx.context.call(
         f,
@@ -265,7 +265,7 @@ let array_each_fn : RuntimeFunction = ctx => match ctx.args {
 ///|
 /// 数组eachi操作
 let array_eachi_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Array(arr), .. }, { val: Closure(f, env), .. }] => {
+  [{ val: Array(arr), .. }, { val: Fn(f, env), .. }] => {
     arr.eachi(fn(i, val) {
       ctx.context.call(
         f,
@@ -283,7 +283,7 @@ let array_eachi_fn : RuntimeFunction = ctx => match ctx.args {
 ///|
 /// 数组map操作
 let array_map_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Array(arr), .. }, { val: Closure(f, env), .. }] => {
+  [{ val: Array(arr), .. }, { val: Fn(f, env), .. }] => {
     let new_arr = arr.map(fn(val) {
       ctx.context.call(
         f,
@@ -300,7 +300,7 @@ let array_map_fn : RuntimeFunction = ctx => match ctx.args {
 ///|
 /// 数组mapi操作
 let array_mapi_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Array(arr), .. }, { val: Closure(f, env), .. }] => {
+  [{ val: Array(arr), .. }, { val: Fn(f, env), .. }] => {
     let new_arr = arr.mapi(fn(i, val) {
       ctx.context.call(
         f,
@@ -317,7 +317,7 @@ let array_mapi_fn : RuntimeFunction = ctx => match ctx.args {
 ///|
 /// 数组filter操作
 let array_filter_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Array(arr), .. }, { val: Closure(f, env), .. }] => {
+  [{ val: Array(arr), .. }, { val: Fn(f, env), .. }] => {
     let new_arr = arr.filter(fn(val) {
       ctx.context.call(
         f,
@@ -335,12 +335,7 @@ let array_filter_fn : RuntimeFunction = ctx => match ctx.args {
 ///|
 /// 数组fold操作
 let array_fold_fn : RuntimeFunction = ctx => match ctx.args {
-  [
-    { val: Array(arr), .. },
-    { val: init_val, .. },
-    { val: Closure(f, env), .. },
-    ..,
-  ] =>
+  [{ val: Array(arr), .. }, { val: init_val, .. }, { val: Fn(f, env), .. }, ..] =>
     arr.fold(init=init_val, fn(acc, val) {
       ctx.context.call(
         f,
@@ -355,7 +350,7 @@ let array_fold_fn : RuntimeFunction = ctx => match ctx.args {
 ///|
 /// 数组index_of操作
 let array_search_by_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Array(arr), .. }, { val: Closure(f, env), .. }] => {
+  [{ val: Array(arr), .. }, { val: Fn(f, env), .. }] => {
     let index = arr.search_by(val => (try? ctx.context.call(
         f,
         ctx.mod,

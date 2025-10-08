@@ -199,7 +199,7 @@ fn ClosureInterpreter::visit_apply(
       _ => {
         let func_value = self.visit(func)
         match func_value {
-          Closure(function, captured_env) =>
+          Fn(function, captured_env) =>
             self.call_closure(function, self.current_module, captured_env, args)
           _ => Unit
         }

@@ -31,7 +31,7 @@ fn ClosureInterpreter::call_by_name(
     // 按优先级查找：用户函数 -> Lambda变量 -> 外部函数 -> embedded函数
     let func = match
       pkg.find(name).unwrap_or(self.current_module.find(name).unwrap_or(Unit)) {
-      Closure(func, env) =>
+      Fn(func, env) =>
         // 检查是否是embedded函数的标记函数
         match func {
           Lambda(body=Ident(id={ name: Ident(name=embedded_name), .. }, ..), ..) =>
@@ -132,7 +132,7 @@ fn ClosureInterpreter::method_call(
       }
       // Bind self parameter and other args
       match func {
-        Closure(Lambda(parameters~, body~, ..), captured_env) => {
+        Fn(Lambda(parameters~, body~, ..), captured_env) => {
           // Switch to closure's captured environment
           let old_env = pkg.env
           self.current_module = pkg
@@ -195,7 +195,7 @@ fn ClosureInterpreter::execute_static_method_call(
   match type_info.find_method(method_name) {
     Some((pkg, func)) =>
       match func {
-        Closure(func, env) =>
+        Fn(func, env) =>
           self.call_closure(func, pkg, env, args, name=method_name)
         _ => Unit
       }

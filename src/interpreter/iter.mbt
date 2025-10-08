@@ -217,7 +217,7 @@ let iter_join_fn : RuntimeFunction = ctx => match ctx.args {
 
 ///|
 let iter_each_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Iter(iter), .. }, { val: Closure(func, env), .. }] => {
+  [{ val: Iter(iter), .. }, { val: Fn(func, env), .. }] => {
     iter.each(fn(val) {
       let runtime_args = @list.of([{ val, kind: Positional }])
       ctx.context.call(func, ctx.mod, env, runtime_args) |> ignore
@@ -229,7 +229,7 @@ let iter_each_fn : RuntimeFunction = ctx => match ctx.args {
 
 ///|
 let iter_map_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Iter(iter), .. }, { val: Closure(func, env), .. }] => {
+  [{ val: Iter(iter), .. }, { val: Fn(func, env), .. }] => {
     let mapped = iter.map(fn(val) {
       let runtime_args = @list.of([{ val, kind: Positional }])
       ctx.context.call(func, ctx.mod, env, runtime_args) catch {
@@ -243,7 +243,7 @@ let iter_map_fn : RuntimeFunction = ctx => match ctx.args {
 
 ///|
 let iter_filter_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Iter(iter), .. }, { val: Closure(func, env), .. }] => {
+  [{ val: Iter(iter), .. }, { val: Fn(func, env), .. }] => {
     let filtered = iter.filter(fn(val) {
       let runtime_args = @list.of([{ val, kind: Positional }])
       try {
@@ -262,12 +262,7 @@ let iter_filter_fn : RuntimeFunction = ctx => match ctx.args {
 
 ///|
 let iter_fold_fn : RuntimeFunction = ctx => match ctx.args {
-  [
-    { val: Iter(iter), .. },
-    { val: init, .. },
-    { val: Closure(func, env), .. },
-    ..,
-  ] => {
+  [{ val: Iter(iter), .. }, { val: init, .. }, { val: Fn(func, env), .. }, ..] => {
     let result = iter.fold(init~, fn(acc, val) {
       let runtime_args = @list.of([
         { val: acc, kind: Positional },
@@ -284,7 +279,7 @@ let iter_fold_fn : RuntimeFunction = ctx => match ctx.args {
 
 ///|
 let iter_all_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Iter(iter), .. }, { val: Closure(func, env), .. }] => {
+  [{ val: Iter(iter), .. }, { val: Fn(func, env), .. }] => {
     let result = iter.all(fn(val) {
       let runtime_args = @list.of([{ val, kind: Positional }])
       try {
@@ -303,7 +298,7 @@ let iter_all_fn : RuntimeFunction = ctx => match ctx.args {
 
 ///|
 let iter_any_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Iter(iter), .. }, { val: Closure(func, env), .. }] => {
+  [{ val: Iter(iter), .. }, { val: Fn(func, env), .. }] => {
     let result = iter.any(fn(val) {
       let runtime_args = @list.of([{ val, kind: Positional }])
       try {
@@ -322,7 +317,7 @@ let iter_any_fn : RuntimeFunction = ctx => match ctx.args {
 
 ///|
 let iter_find_first_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Iter(iter), .. }, { val: Closure(func, env), .. }] => {
+  [{ val: Iter(iter), .. }, { val: Fn(func, env), .. }] => {
     let result = iter.find_first(fn(val) {
       let runtime_args = @list.of([{ val, kind: Positional }])
       try {
@@ -343,7 +338,7 @@ let iter_find_first_fn : RuntimeFunction = ctx => match ctx.args {
 
 ///|
 let iter_eachi_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Iter(iter), .. }, { val: Closure(func, env), .. }] => {
+  [{ val: Iter(iter), .. }, { val: Fn(func, env), .. }] => {
     iter.eachi(fn(index, val) {
       let runtime_args = @list.of([
         { val: Int(index), kind: Positional },
@@ -363,7 +358,7 @@ let iter_eachi_fn : RuntimeFunction = ctx => match ctx.args {
 
 ///|
 let iter_drop_while_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Iter(iter), .. }, { val: Closure(func, env), .. }] => {
+  [{ val: Iter(iter), .. }, { val: Fn(func, env), .. }] => {
     let result = iter.drop_while(fn(val) {
       let runtime_args = @list.of([{ val, kind: Positional }])
       try {
@@ -382,7 +377,7 @@ let iter_drop_while_fn : RuntimeFunction = ctx => match ctx.args {
 
 ///|
 let iter_filter_map_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Iter(iter), .. }, { val: Closure(func, env), .. }] => {
+  [{ val: Iter(iter), .. }, { val: Fn(func, env), .. }] => {
     let result = iter.filter_map(fn(val) {
       let runtime_args = @list.of([{ val, kind: Positional }])
       try {
@@ -401,7 +396,7 @@ let iter_filter_map_fn : RuntimeFunction = ctx => match ctx.args {
 
 ///|
 let iter_flat_map_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Iter(iter), .. }, { val: Closure(func, env), .. }] => {
+  [{ val: Iter(iter), .. }, { val: Fn(func, env), .. }] => {
     let result = iter.flat_map(fn(val) {
       let runtime_args = @list.of([{ val, kind: Positional }])
       try {
@@ -436,7 +431,7 @@ let iter_flatten_fn : RuntimeFunction = ctx => match ctx.args {
 
 ///|
 let iter_group_by_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Iter(iter), .. }, { val: Closure(func, env), .. }] => {
+  [{ val: Iter(iter), .. }, { val: Fn(func, env), .. }] => {
     // group_by is complex, implement a simplified version
     let groups = Map::new()
     iter.each(fn(val) {
@@ -477,7 +472,7 @@ let iter_just_run_fn : RuntimeFunction = ctx => match ctx.args {
 
 ///|
 let iter_map_option_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Iter(iter), .. }, { val: Closure(func, env), .. }] => {
+  [{ val: Iter(iter), .. }, { val: Fn(func, env), .. }] => {
     let result = iter.filter_map(fn(val) {
       let runtime_args = @list.of([{ val, kind: Positional }])
       try {
@@ -496,7 +491,7 @@ let iter_map_option_fn : RuntimeFunction = ctx => match ctx.args {
 
 ///|
 let iter_map_while_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Iter(iter), .. }, { val: Closure(func, env), .. }] => {
+  [{ val: Iter(iter), .. }, { val: Fn(func, env), .. }] => {
     let result = Array::new()
     let should_continue = { val: true }
     iter.each(fn(val) {
@@ -519,7 +514,7 @@ let iter_map_while_fn : RuntimeFunction = ctx => match ctx.args {
 
 ///|
 let iter_mapi_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Iter(iter), .. }, { val: Closure(func, env), .. }] => {
+  [{ val: Iter(iter), .. }, { val: Fn(func, env), .. }] => {
     let result = iter.mapi(fn(index, val) {
       let runtime_args = @list.of([
         { val: Int(index), kind: Positional },
@@ -545,7 +540,7 @@ let iter_run_fn : RuntimeFunction = ctx => match ctx.args {
 
 ///|
 let iter_take_while_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Iter(iter), .. }, { val: Closure(func, env), .. }] => {
+  [{ val: Iter(iter), .. }, { val: Fn(func, env), .. }] => {
     let result = iter.take_while(fn(val) {
       let runtime_args = @list.of([{ val, kind: Positional }])
       try {
@@ -564,7 +559,7 @@ let iter_take_while_fn : RuntimeFunction = ctx => match ctx.args {
 
 ///|
 let iter_tap_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Iter(iter), .. }, { val: Closure(func, env), .. }] => {
+  [{ val: Iter(iter), .. }, { val: Fn(func, env), .. }] => {
     let result = iter.tap(fn(val) {
       let runtime_args = @list.of([{ val, kind: Positional }])
       try {

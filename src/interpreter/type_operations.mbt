@@ -101,7 +101,7 @@ fn RuntimeValue::get_type(self : RuntimeValue) -> RuntimeType {
     Struct(data) => data.ty
     // Closure(Lambda(parameters~,return_type~,error_type~,is_async~,..),_) => Arrow
     // TODO: 闭包类型
-    Closure(_) => Any
+    Fn(_) => Any
     Exception(_) => Any
     Constructor({ ty: type_info, .. }) => type_info
     Iter(_) => RuntimeType::iter()
@@ -148,7 +148,7 @@ pub fn ClosureInterpreter::get_function_type_string(
   value : RuntimeValue,
 ) -> String {
   match value {
-    Closure(func, _env) =>
+    Fn(func, _env) =>
       // 从函数中提取参数和返回类型信息
       match func {
         Lambda(parameters~, return_type~, body~, ..) => {

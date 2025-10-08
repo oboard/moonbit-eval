@@ -20,7 +20,7 @@ pub let iter2_methods : Map[String, RuntimeFunction] = {
 
 ///|
 let iter2_run_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Iter2(iter2), .. }, { val: Closure(func, env), .. }] => {
+  [{ val: Iter2(iter2), .. }, { val: Fn(func, env), .. }] => {
     let result = iter2.run(fn(a, b) {
       let runtime_args = @list.of([
         { val: a, kind: Positional },
@@ -45,7 +45,7 @@ let iter2_run_fn : RuntimeFunction = ctx => match ctx.args {
 
 ///|
 let iter2_each_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Iter2(iter2), .. }, { val: Closure(func, env), .. }] => {
+  [{ val: Iter2(iter2), .. }, { val: Fn(func, env), .. }] => {
     iter2.each(fn(a, b) {
       let runtime_args = @list.of([
         { val: a, kind: Positional },

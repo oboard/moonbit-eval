@@ -111,7 +111,7 @@ pub fn RuntimeEnvironment::top_func_def_to_closure(
       } => Some(name)
       _ => None
     }
-    (type_name, RuntimeValue::Closure(func, self.create_closure_env()))
+    (type_name, RuntimeValue::Fn(func, self.create_closure_env()))
   } else {
     (None, Unit)
   }

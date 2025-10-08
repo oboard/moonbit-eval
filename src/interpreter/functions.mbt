@@ -45,7 +45,7 @@ pub fn ClosureInterpreter::call(
           mod.name +
           "." +
           name.unwrap_or("<function>") +
-          self.get_function_type_string(Closure(function, env)),
+          self.get_function_type_string(Fn(function, env)),
         ),
       )
       // 在新环境中绑定已解释的参数值
@@ -206,7 +206,7 @@ pub fn RuntimePackage::define_struct_method(
       methods
     }
   }
-  methods.set(method_name, RuntimeValue::Closure(func, self.env))
+  methods.set(method_name, RuntimeValue::Fn(func, self.env))
 }
 
 ///|

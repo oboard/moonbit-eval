@@ -141,7 +141,7 @@ let string_find_fn : RuntimeFunction = ctx => match ctx.args {
 
 ///|
 let string_find_by_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: String(s), .. }, { val: Closure(func, env), .. }] =>
+  [{ val: String(s), .. }, { val: Fn(func, env), .. }] =>
     RuntimeValue::from_option(
       s
       .find_by(char => {
@@ -165,12 +165,7 @@ let string_find_by_fn : RuntimeFunction = ctx => match ctx.args {
 
 ///|
 let string_fold_fn : RuntimeFunction = ctx => match ctx.args {
-  [
-    { val: String(s), .. },
-    { val: init, .. },
-    { val: Closure(func, env), .. },
-    ..,
-  ] =>
+  [{ val: String(s), .. }, { val: init, .. }, { val: Fn(func, env), .. }, ..] =>
     s.fold(init~, fn(acc, char) {
       ctx.context.call(
         func,
@@ -278,7 +273,7 @@ let string_rev_fold_fn : RuntimeFunction = ctx => match ctx.args {
   [
     { val: String(s), .. },
     { val: init, kind: Labelled("init") },
-    { val: Closure(func, env), .. },
+    { val: Fn(func, env), .. },
     ..,
   ] =>
     s.rev_fold(init~, fn(acc, char) {

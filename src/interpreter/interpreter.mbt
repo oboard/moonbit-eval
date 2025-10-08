@@ -179,7 +179,7 @@ pub fn ClosureInterpreter::top_visit(
           self.current_module.define_trait_method(
             trait_name,
             method_name,
-            RuntimeValue::Closure(func, self.current_module.env),
+            RuntimeValue::Fn(func, self.current_module.env),
           )
           Unit
         }
@@ -361,10 +361,7 @@ pub fn ClosureInterpreter::top_visit(
           if type_name is Some(type_name) {
             self.current_module.define_struct_method(type_name, func_name, func)
           }
-          self.current_module.set(
-            func_name,
-            Closure(func, self.current_module.env),
-          )
+          self.current_module.set(func_name, Fn(func, self.current_module.env))
         }
         // 处理embedded函数声明
         DeclStubs(stubs) =>
@@ -497,7 +494,7 @@ pub fn ClosureInterpreter::visit(
         _ => {
           let ty = self_value.get_type()
           match ty.find_method("op_as_view") {
-            Some((pkg, Closure(func, env))) =>
+            Some((pkg, Fn(func, env))) =>
               self.call(
                 func,
                 pkg,
@@ -549,7 +546,7 @@ pub fn ClosureInterpreter::visit(
 
     // 处理函数 - 闭包应该捕获对环境的引用以支持可变变量
     Function(func~, ..) =>
-      Closure(func, self.current_module.env.create_closure_env())
+      Fn(func, self.current_module.env.create_closure_env())
 
     // 处理 Let 绑定
     Let(pattern~, expr~, body~, ..) => {
@@ -568,9 +565,9 @@ pub fn ClosureInterpreter::visit(
 
     // 处理函数定义
     LetFn(name={ name, .. }, func~, body~, ..) => {
-      self.current_module.env.set(name, Closure(func, self.current_module.env))
+      self.current_module.env.set(name, Fn(func, self.current_module.env))
       match body {
-        Unit(..) => Closure(func, self.current_module.env)
+        Unit(..) => Fn(func, self.current_module.env)
         _ => self.visit(body)
       }
     }
@@ -581,7 +578,7 @@ pub fn ClosureInterpreter::visit(
         let env = self.current_module.env.create_closure_env()
         let name = binding.0.name
         let func = binding.1
-        self.current_module.env.set(name, Closure(func, env))
+        self.current_module.env.set(name, Fn(func, env))
       }
       self.visit(body)
     }
@@ -600,7 +597,7 @@ pub fn ClosureInterpreter::visit(
       for binding in bindings {
         let name = binding.0.name
         let func = binding.2
-        shared_env.update(name, Closure(func, shared_env))
+        shared_env.update(name, Fn(func, shared_env))
       }
 
       // Add all closures to current environment
@@ -1037,7 +1034,7 @@ pub fn ClosureInterpreter::is_known_function(
   }
 
   // 检查用户定义函数
-  if self.current_module.find(actual_name).unwrap_or(Unit) is Closure(_) {
+  if self.current_module.find(actual_name).unwrap_or(Unit) is Fn(_) {
     return true
   }
   false

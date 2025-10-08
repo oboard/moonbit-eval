@@ -41,7 +41,7 @@ let option_map_fn : RuntimeFunction = ctx => match ctx.args {
       ),
       ..,
     },
-    { val: Closure(func, captured_env), .. },
+    { val: Fn(func, captured_env), .. },
     ..,
   ] => {
     // 执行闭包调用
@@ -69,7 +69,7 @@ let option_map_or_fn : RuntimeFunction = ctx => match ctx.args {
       ..,
     },
     _,
-    { val: Closure(func, captured_env), .. },
+    { val: Fn(func, captured_env), .. },
     ..,
   ] =>
     // 对于Some值，执行闭包调用
@@ -99,7 +99,7 @@ let option_map_or_else_fn : RuntimeFunction = ctx => match ctx.args {
       ..,
     },
     _,
-    { val: Closure(map_func, captured_env), .. },
+    { val: Fn(map_func, captured_env), .. },
     ..,
   ] =>
     // 对于Some值，执行map闭包
@@ -111,7 +111,7 @@ let option_map_or_else_fn : RuntimeFunction = ctx => match ctx.args {
     )
   [
     { val: Constructor({ val: { name: "None", fields: [] }, .. }), .. },
-    { val: Closure(else_func, captured_env), .. },
+    { val: Fn(else_func, captured_env), .. },
     _,
     ..,
   ] =>
@@ -130,7 +130,7 @@ let option_bind_fn : RuntimeFunction = ctx => match ctx.args {
       ),
       ..,
     },
-    { val: Closure(func, captured_env), .. },
+    { val: Fn(func, captured_env), .. },
     ..,
   ] =>
     // 执行闭包调用，bind应该返回函数的结果（应该是Option类型）
@@ -217,7 +217,7 @@ let option_filter_fn : RuntimeFunction = ctx => match ctx.args {
       ),
       ..,
     },
-    { val: Closure(predicate, captured_env), .. },
+    { val: Fn(predicate, captured_env), .. },
     ..,
   ] => {
     // 执行谓词闭包
@@ -294,7 +294,7 @@ let option_unwrap_or_else_fn : RuntimeFunction = ctx => match ctx.args {
   ] => inner_value
   [
     { val: Constructor({ val: { name: "None", fields: [] }, .. }), .. },
-    { val: Closure(else_func, captured_env), .. },
+    { val: Fn(else_func, captured_env), .. },
     ..,
   ] =>
     // 对于None值，执行else闭包
