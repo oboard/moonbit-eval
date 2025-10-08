@@ -2,7 +2,7 @@
 pub async fn load_meta(
   mod_name : String,
   version? : String,
-) -> @interpreter.ModuleInfo raise {
+) -> @interpreter.ModuleInfo {
   ///|
   let mod_name = mod_name + (if version is Some(v) { "@" + v } else { "" })
   // 获取模块元信息
@@ -19,7 +19,7 @@ pub async fn load_meta(
 pub async fn load_module(
   mod_name : String,
   version? : String,
-) -> Map[String, @interpreter.RuntimeModule] raise {
+) -> Map[String, @interpreter.RuntimeModule] {
   let mod_name = mod_name + (if version is Some(v) { "@" + v } else { "" })
   let modules : Map[String, @interpreter.RuntimeModule] = {}
 
@@ -45,7 +45,7 @@ pub async fn load_module(
   async fn parse_child(
     child : Json,
     pkgs : Map[String, @interpreter.RuntimePackage],
-  ) raise {
+  ) {
     if child is { "childs": Array(childs), .. } {
       while childs.pop() is Some(sub_child) {
         parse_child(sub_child, pkgs)
@@ -70,7 +70,7 @@ pub async fn load_module(
 pub async fn load_package(
   pkg_name : String,
   deps : Map[String, @interpreter.RuntimePackage],
-) -> @interpreter.RuntimePackage? raise {
+) -> @interpreter.RuntimePackage? {
   let url = "https://mooncakes.io/assets/\{pkg_name}/resource.json"
   let info = @mio.get(url).unwrap_json()
   let sources : Map[String, String] = {}

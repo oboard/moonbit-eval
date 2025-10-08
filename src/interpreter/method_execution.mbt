@@ -101,7 +101,7 @@ fn ClosureInterpreter::method_call(
         match type_methods.get(method_name) {
           Some(embedded_method) => {
             // Prepare args: actual_self_value + evaluated args
-            let evaluated_args = @list.construct(
+            let evaluated_args = @list.cons(
               self_value,
               args.map(fn(arg) { self.visit(arg.value) }),
             )
@@ -143,7 +143,7 @@ fn ClosureInterpreter::method_call(
           // Bind parameters - always include self_value as first parameter
           self.bind_function_parameters(
             parameters,
-            @list.construct({ val: self_value, kind: Positional }, args),
+            @list.cons({ val: self_value, kind: Positional }, args),
           )
 
           // Execute function body

@@ -99,22 +99,12 @@ fn ClosureInterpreter::visit_array_set(
         _ => ()
       }
     }
-    ArrayView(view) => {
-      let index = self.visit(index)
-      match index {
-        Int(index) => {
-          let value = self.visit(value)
-          view[index] = value
-        }
-        _ => ()
-      }
-    }
     Map(map) => {
       let index = self.visit(index)
       let value = self.visit(value)
       map.set(index, value)
     }
-    _ => ()
+    _ => raise Error("Unsupported array set operation")
   }
   Unit
 }

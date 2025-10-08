@@ -684,7 +684,7 @@ pub fn ClosureInterpreter::visit(
         Ident(id={ name, .. }, ..) => {
           // 创建包含左侧值的参数列表
           let left_expr = left_val.to_expr()
-          let pipe_args = @list.construct(
+          let pipe_args = @list.cons(
             @syntax.Argument::{ value: left_expr, kind: Positional },
             @list.new(),
           )
@@ -700,7 +700,7 @@ pub fn ClosureInterpreter::visit(
               ) raise ControlFlow {
                 // 将左侧值添加到参数列表前面
                 let left_expr = left_val.to_expr()
-                let pipe_args = @list.construct(
+                let pipe_args = @list.cons(
                   @syntax.Argument::{ value: left_expr, kind: Positional },
                   args,
                 )
@@ -713,7 +713,7 @@ pub fn ClosureInterpreter::visit(
             Ident(id={ name, .. }, ..) => {
               // 处理函数调用，如 5 |> func(arg1, arg2)
               let left_expr = left_val.to_expr()
-              let pipe_args = @list.construct(
+              let pipe_args = @list.cons(
                 @syntax.Argument::{ value: left_expr, kind: Positional },
                 args,
               )

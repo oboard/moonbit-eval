@@ -14,7 +14,7 @@ pub(all) enum RuntimeType {
   Name(pkg~ : RuntimePackage, name~ : String, tys~ : @list.List[RuntimeType])
   Option(RuntimeType)
   Object(pkg~ : RuntimePackage, name~ : String)
-} derive(ToJson(style="flat"))
+} derive(ToJson)
 
 ///|
 pub impl Eq for RuntimeErrorType with equal(
@@ -56,7 +56,7 @@ pub(all) enum RuntimeErrorType {
   NoErrorType
   Noraise
   MaybeError(RuntimeType)
-} derive(ToJson(style="flat"))
+} derive(ToJson)
 
 ///|
 pub impl Show for RuntimeErrorType with output(
