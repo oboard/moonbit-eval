@@ -275,7 +275,7 @@ let map_set_fn : RuntimeFunction = ctx => match ctx.args {
 ///|
 /// Map size操作
 let map_size_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Map(map), .. }] => Int(map.size())
+  [{ val: Map(map), .. }] => Int(map.length())
   _ => Unit
 }
 

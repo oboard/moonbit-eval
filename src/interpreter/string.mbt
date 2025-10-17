@@ -321,7 +321,7 @@ let string_strip_suffix_fn : RuntimeFunction = ctx => match ctx.args {
 
 ///|
 let string_to_bytes_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: String(s), .. }] => Bytes(s.to_bytes())
+  [{ val: String(s), .. }] => Bytes(@encoding/utf8.encode(s))
   _ => Bytes(b"")
 }
 
@@ -340,21 +340,21 @@ let string_to_upper_fn : RuntimeFunction = ctx => match ctx.args {
 ///|
 let string_trim_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: String(s), .. }, { val: StringView(char_set), .. }] =>
-    StringView(s.trim(char_set))
+    StringView(s.trim(char_set~))
   _ => StringView("")
 }
 
 ///|
 let string_trim_start_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: String(s), .. }, { val: StringView(char_set), .. }] =>
-    StringView(s.trim_start(char_set))
+    StringView(s.trim_start(char_set~))
   _ => StringView("")
 }
 
 ///|
 let string_trim_end_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: String(s), .. }, { val: StringView(char_set), .. }] =>
-    StringView(s.trim_end(char_set))
+    StringView(s.trim_end(char_set~))
   _ => StringView("")
 }
 

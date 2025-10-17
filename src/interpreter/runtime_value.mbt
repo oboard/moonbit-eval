@@ -31,14 +31,14 @@ pub(all) enum RuntimeValue {
   Byte(Byte)
   String(String)
   Bytes(Bytes)
-  StringView(@string.View)
+  StringView(StringView)
   StringBuilder(StringBuilder)
 
   // 复合值类型
   Tuple(Array[RuntimeValue])
   Array(Array[RuntimeValue])
   FixedArray(FixedArray[RuntimeValue])
-  ArrayView(@array.View[RuntimeValue])
+  ArrayView(ArrayView[RuntimeValue])
   UninitializedArray(UninitializedArray[RuntimeValue])
   Map(Map[RuntimeValue, RuntimeValue])
 
@@ -922,7 +922,7 @@ pub fn RuntimeValue::from_expr(expr : @syntax.Expr) -> RuntimeValue {
         Double(d) => Double((try? @strconv.parse_double(d)).unwrap())
         Char(c) => Char(c.get_char(0).unwrap())
         String(s) => String(s)
-        Bytes(b) => Bytes(b.to_bytes())
+        Bytes(b) => Bytes(@encoding/utf8.encode(b))
         _ => Unit
       }
     Tuple(exprs~, ..) => {
