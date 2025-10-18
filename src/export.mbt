@@ -14,8 +14,11 @@ pub fn MoonBitVM::create(log? : Bool = false) -> MoonBitVM {
 }
 
 ///|
-pub fn eval_result_to_string(result : EvalResult) -> String {
-  result.to_string()
+pub fn eval_result_to_string(result : Result[RuntimeValue, String]) -> String {
+  match result {
+    Ok(value) => value.to_string()
+    Err(msg) => "Error: " + msg
+  }
 }
 
 ///|
