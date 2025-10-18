@@ -35,10 +35,10 @@ pub fn ClosureInterpreter::call(
   match function {
     @syntax.Func::Lambda(parameters~, body~, return_type~, ..) => {
       // 切换到闭包捕获的环境
-      let old_mod = self.current_module
+      let old_mod = self.current_pkg
       let old_env = mod.env
-      self.current_module = mod
-      self.current_module.env = env
+      self.current_pkg = mod
+      self.current_pkg.env = env
       self.push_scope(
         RuntimeLocation::FunctionCall(
           "@" +
@@ -52,8 +52,8 @@ pub fn ClosureInterpreter::call(
       self.bind_runtime_parameters(parameters, args)
       defer {
         self.pop_scope()
-        self.current_module.env = old_env
-        self.current_module = old_mod
+        self.current_pkg.env = old_env
+        self.current_pkg = old_mod
       }
       // 执行函数体
       let result = self.visit(body)
@@ -80,7 +80,7 @@ pub fn ClosureInterpreter::bind_function_parameters(
   params : @list.List[@syntax.Parameter],
   args : @list.List[RuntimeArgument],
 ) -> Unit raise ControlFlow {
-  let env = self.current_module.env
+  let env = self.current_pkg.env
   match (params, args) {
     (@list.More(param, tail=rest_params), @list.More(arg, tail=rest_args)) => {
       let value = arg.val
@@ -148,7 +148,7 @@ fn ClosureInterpreter::bind_runtime_parameters(
         // 可选参数没有对应实参时，使用默认值
         Optional(binder={ name, .. }, default~, ..) => {
           let default_value = self.visit(default)
-          self.current_module.env.set(name, default_value)
+          self.current_pkg.env.set(name, default_value)
           continue (rest_params, rest_args)
         }
         // 问号可选参数没有对应实参时，不绑定任何值
@@ -166,7 +166,7 @@ fn ClosureInterpreter::bind_runtime_parameters(
         | QuestionOptional(binder={ name, .. }, ..)
         // 可选参数：当有参数提供时绑定参数值
         | Optional(binder={ name, .. }, ..) =>
-          self.current_module.env.set(name, value)
+          self.current_pkg.env.set(name, value)
         // 丢弃位置参数：不绑定到任何变量
         DiscardPositional(..) => ()
       }
@@ -178,7 +178,7 @@ fn ClosureInterpreter::bind_runtime_parameters(
         // 可选参数没有对应实参时，使用默认值
         Optional(binder={ name, .. }, default~, ..) => {
           let default_value = self.visit(default)
-          self.current_module.env.set(name, default_value)
+          self.current_pkg.env.set(name, default_value)
           continue (rest_params, @list.new())
         }
         // 问号可选参数没有对应实参时，不绑定任何值

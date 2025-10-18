@@ -159,12 +159,12 @@ pub fn ClosureInterpreter::match_case(
   match pattern {
     // 变量模式匹配（总是匹配，并绑定变量）
     Var({ name, .. }) => {
-      self.current_module.env.set(name, value)
+      self.current_pkg.env.set(name, value)
       true
     }
     Constraint(pat~, ty~, ..) =>
       // 首先尝试类型约束检查
-      if self.current_module.check_type_constraint(value, ty) {
+      if self.current_pkg.check_type_constraint(value, ty) {
         // 类型检查通过，继续检查模式匹配
         self.match_case(value, pat)
       } else {
@@ -316,7 +316,7 @@ pub fn ClosureInterpreter::match_case(
                       | LabelledPun(label)
                       | LabelledOption(label~, ..)
                       | LabelledOptionPun(label~, ..) =>
-                        self.current_module.env.set(
+                        self.current_pkg.env.set(
                           label.name,
                           fields[index].value,
                         )
@@ -337,7 +337,7 @@ pub fn ClosureInterpreter::match_case(
           }
         _ => {
           // 查找构造函数对应的值
-          let constr_runtime_value = self.current_module.env
+          let constr_runtime_value = self.current_pkg.env
             .find(constr.name.name)
             .unwrap_or(Unit)
           match (value, constr_runtime_value) {
@@ -357,7 +357,7 @@ pub fn ClosureInterpreter::match_case(
       // 先检查内部模式是否匹配
       if self.match_case(value, pat) {
         // 如果匹配成功，将值绑定到别名变量
-        self.current_module.env.set(alias_.name, value)
+        self.current_pkg.env.set(alias_.name, value)
         true
       } else {
         false
@@ -463,7 +463,7 @@ pub fn ClosureInterpreter::pattern_to_runtime_value(
       }
     Constr(constr~, ..) =>
       // 查找构造函数的值
-      Some(self.current_module.find(constr.name.name).unwrap_or(Unit))
+      Some(self.current_pkg.find(constr.name.name).unwrap_or(Unit))
     Any(..) => None // 通配符表示开放边界
     _ => None
   }

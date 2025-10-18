@@ -3,7 +3,6 @@
   "version": "0.8.5",
   "deps": {
     "moonbitlang/parser": "0.1.11",
-    "Yoorkin/trie": "0.2.9",
     "oboard/mio": "0.4.2"
   },
   "readme": "README.md",

@@ -31,12 +31,12 @@ pub fn ClosureInterpreter::find_pkg(
   self : ClosureInterpreter,
   pkg : String,
 ) -> RuntimePackage {
-  let current_module = self.current_module
+  let current_module = self.current_pkg
   if current_module.deps.get(pkg) is Some(mod) {
     self.load_package(mod)
     mod
     // 检查 main 模块的 deps (core_modules) 中是否有这个包
-  } else if self.main.deps.get(pkg) is Some(mod) {
+  } else if self.main_pkg.deps.get(pkg) is Some(mod) {
     self.load_package(mod)
     mod
   } else {
@@ -50,7 +50,7 @@ pub fn[T] ClosureInterpreter::with_ident(
   long_ident : @syntax.LongIdent,
   func : (RuntimePackage, String) -> T raise?,
 ) -> T raise? {
-  let current_module = self.current_module
+  let current_module = self.current_pkg
   match long_ident {
     Ident(name~) => {
       let f = current_module.type_aliases.get(name)
@@ -70,7 +70,7 @@ pub fn[T] ClosureInterpreter::with_ident(
         self.load_package(mod)
         func(mod, id)
         // 检查 main 模块的 deps (core_modules) 中是否有这个包
-      } else if self.main.deps.get(pkg) is Some(mod) {
+      } else if self.main_pkg.deps.get(pkg) is Some(mod) {
         self.load_package(mod)
         func(mod, id)
       } else {
@@ -155,8 +155,8 @@ pub fn ClosureInterpreter::push_scope(
 ) -> Unit {
   self.call_stack.push(loc)
   // println(String::make(self.call_stack.length(), ' ') + loc.to_string() + "{")
-  self.current_module.env = RuntimeEnvironment::new(
-    parent=self.current_module.env,
+  self.current_pkg.env = RuntimeEnvironment::new(
+    parent=self.current_pkg.env,
   )
 }
 
@@ -165,7 +165,7 @@ pub fn ClosureInterpreter::push_scope(
 pub fn ClosureInterpreter::pop_scope(self : ClosureInterpreter) -> Unit {
   // println(String::make(self.call_stack.length(), ' ') + self.call_stack.pop().to_string() + "}")
   self.call_stack.pop() |> ignore
-  if self.current_module.env.parent is Some(parent) {
-    self.current_module.env = parent
+  if self.current_pkg.env.parent is Some(parent) {
+    self.current_pkg.env = parent
   }
 }

@@ -6,8 +6,8 @@ pub(all) struct ClosureInterpreter {
   embedded_fns : Map[String, RuntimeFunction]
   // embedded方法存储 - 按类型组织的embedded方法定义
   embedded_methods : Map[String, Map[String, RuntimeFunction]]
-  main : RuntimePackage
-  mut current_module : RuntimePackage
+  main_pkg : RuntimePackage
+  mut current_pkg : RuntimePackage
   // 调用栈跟踪
   call_stack : Array[RuntimeLocation]
 }
@@ -19,8 +19,8 @@ pub fn ClosureInterpreter::new() -> ClosureInterpreter {
     extern_fns: {},
     embedded_fns: core_embedded_code,
     embedded_methods: core_embedded_methods,
-    main,
-    current_module: main,
+    main_pkg: main,
+    current_pkg: main,
     call_stack: [],
   }
   self.load_package(main)
@@ -116,10 +116,10 @@ pub fn ClosureInterpreter::load_package(
       }
     }
   }
-  let old_module = self.current_module
-  self.current_module = pkg
+  let old_module = self.current_pkg
+  self.current_pkg = pkg
   defer {
-    self.current_module = old_module
+    self.current_pkg = old_module
   }
   for file_name, code in pkg.files {
     if file_name.has_suffix(".mbt") {
@@ -173,13 +173,13 @@ pub fn ClosureInterpreter::top_visit(
           // 如果能确定类型名，将 trait 方法注册为结构体方法
           match type_name {
             Some(name) =>
-              self.current_module.define_struct_method(name, method_name, func)
+              self.current_pkg.define_struct_method(name, method_name, func)
             None => () // 无法确定类型名时不注册到具体类型，但仍处理 trait
           }
-          self.current_module.define_trait_method(
+          self.current_pkg.define_trait_method(
             trait_name,
             method_name,
-            RuntimeValue::Fn(func, self.current_module.env),
+            RuntimeValue::Fn(func, self.current_pkg.env),
           )
           Unit
         }
@@ -194,12 +194,12 @@ pub fn ClosureInterpreter::top_visit(
         let target_name = target.target.map(l => l.name).unwrap_or(binder_name)
         let mod = match pkg {
           Some(pkg) => self.find_pkg(pkg)
-          None => self.current_module
+          None => self.current_pkg
         }
         let target_value = mod.traits.get(binder_name)
         // 将别名映射到目标 trait
         if target_value is Some(target_value) {
-          self.current_module.trait_aliases.set(target_name, {
+          self.current_pkg.trait_aliases.set(target_name, {
             val: target_value,
             ty: Object(pkg=mod, name=binder_name),
           })
@@ -216,12 +216,12 @@ pub fn ClosureInterpreter::top_visit(
         let target_name = target.target.map(l => l.name).unwrap_or(binder_name)
         let mod = match pkg {
           Some(pkg) => self.find_pkg(pkg)
-          None => self.current_module
+          None => self.current_pkg
         }
         let target_value = mod.type_definitions.get(binder_name)
         // 将别名映射到目标函数
         if target_value is Some(target_value) {
-          self.current_module.type_aliases.set(target_name, {
+          self.current_pkg.type_aliases.set(target_name, {
             val: target_value,
             ty: Object(pkg=mod, name=binder_name),
           })
@@ -245,16 +245,16 @@ pub fn ClosureInterpreter::top_visit(
           (None, Some(name)) =>
             self.with_ident(@syntax.LongIdent::Ident(name~), (mod, _name) => mod)
           (Some(pkg), None) => self.find_pkg(pkg)
-          (None, None) => self.current_module
+          (None, None) => self.current_pkg
         }
         let target_value = mod.find(binder_name)
         // 将别名映射到目标函数
         if target_value is Some(target_value) {
-          self.current_module.fn_aliases.set(target_name, {
+          self.current_pkg.fn_aliases.set(target_name, {
             val: target_value,
             ty: Object(pkg=mod, name=binder_name),
           })
-          self.current_module.set(binder_name, target_value)
+          self.current_pkg.set(binder_name, target_value)
         }
       }
       Unit
@@ -263,13 +263,13 @@ pub fn ClosureInterpreter::top_visit(
     // 处理顶层常量定义（如 const Zero = 0）
     TopLetDef(binder~, expr~, ..) => {
       let value = self.visit(expr) catch { _ => Unit }
-      self.current_module.values.set(binder.name, value)
+      self.current_pkg.values.set(binder.name, value)
       value
     }
     TopTypeDef(def) => {
       match def {
         { tycon, params, components, deriving, .. } => {
-          self.current_module.type_definitions.set(tycon, def)
+          self.current_pkg.type_definitions.set(tycon, def)
 
           // 处理泛型类型参数
           let type_params = []
@@ -294,7 +294,7 @@ pub fn ClosureInterpreter::top_visit(
             ()
           }
           if derived_traits.length() > 0 {
-            self.current_module.type_derived_traits.set(tycon, derived_traits)
+            self.current_pkg.type_derived_traits.set(tycon, derived_traits)
           }
 
           // 注册枚举构造函数到运行时环境
@@ -303,7 +303,7 @@ pub fn ClosureInterpreter::top_visit(
               for constr in constructors {
                 let constr_name = constr.name.name
                 // 将构造函数注册到constructors集合中
-                self.current_module.constructors.set(constr_name, tycon)
+                self.current_pkg.constructors.set(constr_name, tycon)
               } else {
                 ()
               }
@@ -318,6 +318,7 @@ pub fn ClosureInterpreter::top_visit(
     TopFuncDef(fun_decl~, decl_body~, loc~) => {
       // 从fun_decl中提取函数名
       let func_name = fun_decl.name.name
+      let attrs = fun_decl.attrs
       let type_name = match fun_decl.type_name {
         Some({ name: Ident(name=type_name), .. }) => Some(type_name)
         Some({ name: Dot(..), .. }) => None // 处理点号形式的类型名
@@ -359,9 +360,27 @@ pub fn ClosureInterpreter::top_visit(
             loc~,
           )
           if type_name is Some(type_name) {
-            self.current_module.define_struct_method(type_name, func_name, func)
+            self.current_pkg.define_struct_method(type_name, func_name, func)
           }
-          self.current_module.set(func_name, Fn(func, self.current_module.env))
+          let func_value = Fn(func, self.current_pkg.env)
+          self.current_pkg.set(func_name, func_value)
+          // 处理alias属性，将别名映射到函数
+          attrs.each(attr => match attr {
+            {
+              parsed: Some(
+                Apply(
+                  { name: "alias", .. },
+                  More(Expr(Ident({ name, .. })), ..)
+                )
+              ),
+              ..,
+            } =>
+              self.current_pkg.fn_aliases.set(name, {
+                val: func_value,
+                ty: Object(pkg=self.current_pkg, name=func_name),
+              })
+            _ => ()
+          })
         }
         // 处理embedded函数声明
         DeclStubs(stubs) =>
@@ -386,7 +405,7 @@ pub fn ClosureInterpreter::top_visit(
     // : @list.List[Attribute]
     // : DocString
     TopTrait(decl) => {
-      self.current_module.traits.set(decl.name.name, decl)
+      self.current_pkg.traits.set(decl.name.name, decl)
       Unit
     }
     // _ => self.error("TopExpr: unimplemented:" + node.to_json().stringify())
@@ -546,7 +565,7 @@ pub fn ClosureInterpreter::visit(
 
     // 处理函数 - 闭包应该捕获对环境的引用以支持可变变量
     Function(func~, ..) =>
-      Fn(func, self.current_module.env.create_closure_env())
+      Fn(func, self.current_pkg.env.create_closure_env())
 
     // 处理 Let 绑定
     Let(pattern~, expr~, body~, ..) => {
@@ -558,16 +577,16 @@ pub fn ClosureInterpreter::visit(
     LetMut(binder={ name, .. }, expr~, body~, ..) => {
       let runtime_value = self.visit(expr)
       self.push_scope(RuntimeLocation::LetMut(name))
-      self.current_module.env.set_mutable_variable(name, runtime_value)
+      self.current_pkg.env.set_mutable_variable(name, runtime_value)
       // 执行body部分，这是关键！
       self.visit(body)
     }
 
     // 处理函数定义
     LetFn(name={ name, .. }, func~, body~, ..) => {
-      self.current_module.env.set(name, Fn(func, self.current_module.env))
+      self.current_pkg.env.set(name, Fn(func, self.current_pkg.env))
       match body {
-        Unit(..) => Fn(func, self.current_module.env)
+        Unit(..) => Fn(func, self.current_pkg.env)
         _ => self.visit(body)
       }
     }
@@ -575,16 +594,16 @@ pub fn ClosureInterpreter::visit(
     // 处理递归函数定义
     LetRec(bindings~, body~, ..) => {
       for binding in bindings {
-        let env = self.current_module.env.create_closure_env()
+        let env = self.current_pkg.env.create_closure_env()
         let name = binding.0.name
         let func = binding.1
-        self.current_module.env.set(name, Fn(func, env))
+        self.current_pkg.env.set(name, Fn(func, env))
       }
       self.visit(body)
     }
     LetAnd(bindings~, body~, ..) => {
       // Create a shared environment for all mutually recursive functions
-      let shared_env = self.current_module.env.create_closure_env()
+      let shared_env = self.current_pkg.env.create_closure_env()
 
       // First pass: Create placeholder closures in the shared environment
       for binding in bindings {
@@ -603,7 +622,7 @@ pub fn ClosureInterpreter::visit(
       // Add all closures to current environment
       for binding in bindings {
         let name = binding.0.name
-        self.current_module.env.set(name, shared_env.find(name).unwrap_or(Unit))
+        self.current_pkg.env.set(name, shared_env.find(name).unwrap_or(Unit))
       }
       self.visit(body)
     }
@@ -762,10 +781,10 @@ pub fn ClosureInterpreter::visit(
       match constr.extra_info {
         TypeName(ty_name) =>
           self.with_ident(ty_name.name, fn(_env, _name) {
-            self.current_module.cons(constr.name.name, [])
+            self.current_pkg.cons(constr.name.name, [])
           })
-        Package(_pkg) => self.current_module.cons(constr.name.name, [])
-        _ => self.current_module.cons(constr.name.name, [])
+        Package(_pkg) => self.current_pkg.cons(constr.name.name, [])
+        _ => self.current_pkg.cons(constr.name.name, [])
       }
     // 处理 Break 表达式
     Break(arg~, ..) =>
@@ -962,7 +981,7 @@ pub fn ClosureInterpreter::visit(
             match binders {
               More(Some(binder), tail=Empty) =>
                 // 单个绑定变量：直接绑定值
-                self.current_module.env.set(binder.name, value)
+                self.current_pkg.env.set(binder.name, value)
               _ => ()
             }
             try {
@@ -982,8 +1001,8 @@ pub fn ClosureInterpreter::visit(
             // 绑定循环变量
             match binders {
               More(Some(binder1), tail=More(Some(binder2), ..)) => {
-                self.current_module.env.set(binder1.name, first)
-                self.current_module.env.set(binder2.name, second)
+                self.current_pkg.env.set(binder1.name, first)
+                self.current_pkg.env.set(binder2.name, second)
               }
               _ => self.error("foreach: invalid binders")
             }
@@ -1021,7 +1040,7 @@ pub fn ClosureInterpreter::is_known_function(
   self : ClosureInterpreter,
   name : String,
 ) -> Bool {
-  let actual_name = self.current_module.find_stub(name)
+  let actual_name = self.current_pkg.find_stub(name)
 
   // 检查外部函数
   if self.extern_fns.contains(actual_name) {
@@ -1034,7 +1053,7 @@ pub fn ClosureInterpreter::is_known_function(
   }
 
   // 检查用户定义函数
-  if self.current_module.find(actual_name).unwrap_or(Unit) is Fn(_) {
+  if self.current_pkg.find(actual_name).unwrap_or(Unit) is Fn(_) {
     return true
   }
   false

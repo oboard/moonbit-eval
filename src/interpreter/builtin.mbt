@@ -147,6 +147,7 @@ let core_embedded_methods : Map[String, Map[String, RuntimeFunction]] = {
     "to_i64_reinterpret": uint64_to_int64_fn,
   },
   "Array": array_methods,
+  "Bytes": bytes_methods,
   "FixedArray": fixedarray_methods,
   "ArrayView": array_view_methods,
   "Option": option_methods,

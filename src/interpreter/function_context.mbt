@@ -9,3 +9,20 @@ pub(all) struct RuntimeFunctionContext {
 ///|
 /// 新的函数类型定义 - 统一的上下文访问
 pub typealias (RuntimeFunctionContext) -> RuntimeValue raise ControlFlow as RuntimeFunction
+
+///|
+pub fn RuntimeFunctionContext::named(
+  ctx : RuntimeFunctionContext,
+  name : String,
+) -> RuntimeValue? {
+  for arg in ctx.args {
+    match arg.kind {
+      Labelled(arg_name) | LabelledOption(arg_name) =>
+        if arg_name == name {
+          return Some(arg.val)
+        }
+      _ => continue
+    }
+  }
+  None
+}

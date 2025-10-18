@@ -14,6 +14,8 @@ let array_methods : Map[String, (RuntimeFunctionContext) -> RuntimeValue raise C
 
 let array_view_methods : Map[String, (RuntimeFunctionContext) -> RuntimeValue raise ControlFlow]
 
+let bytes_methods : Map[String, (RuntimeFunctionContext) -> RuntimeValue raise ControlFlow]
+
 fn check_type_constraint2(RuntimeType, @syntax.Type) -> Bool
 
 fn[T : Compare] compare(T, T, String) -> @syntax.Constant
@@ -200,6 +202,7 @@ pub(all) struct RuntimeFunctionContext {
   mod : RuntimePackage
   args : Array[RuntimeArgument]
 }
+fn RuntimeFunctionContext::named(Self, String) -> RuntimeValue?
 
 pub enum RuntimeLocation {
   FunctionCall(String)

@@ -75,7 +75,7 @@ fn ClosureInterpreter::visit_variable_augmented_assignment(
   })
   let right_val = self.visit(rhs)
   let new_val = runtime_value_infix(base_op, current_val, right_val)
-  self.current_module.env.update(var_name_str, new_val)
+  self.current_pkg.env.update(var_name_str, new_val)
   Unit
 }
 

@@ -154,6 +154,12 @@ inspect(vm.eval("match (1, 2) { (a, b) => a + b }"), content="3")
 | Traits | 🟡 | Interface definitions |
 | Trait as expressions | 🟡 | (value as Trait) syntax for trait casting |
 | Packages | 🟡 | Module system with @package.function syntax (no trait, trait derive, operator overloading) |
+| **Attribute** | | |
+| #alias | ✅ | Function alias |
+| #external | ❌ | External function binding |
+| #callsite | ❌ | Call site information |
+| #skip | ❌ | Skipping compilation of a function |
+| #cfg | ❌ | Conditional compilation based on configuration |
 | **Not Yet Supported** | | |
 | Async/await | ❌ | Asynchronous programming |
 

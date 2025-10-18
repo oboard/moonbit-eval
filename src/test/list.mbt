@@ -14,7 +14,6 @@ test "list_methods" {
     vm.eval("list").to_string(),
     "More(1, tail=More(2, tail=More(3, tail=Empty)))",
   )
-
   // Test basic list operations
   assert_eq(vm.eval("let l = @list.empty()").to_string(), "()")
   assert_eq(vm.eval("l.is_empty()").to_string(), "true")

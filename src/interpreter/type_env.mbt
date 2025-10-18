@@ -185,14 +185,14 @@ pub fn ClosureInterpreter::parse_type(
     Tuple(tys~, ..) => Tuple(tys.map(ty => self.parse_type(ty)))
     Name(constr_id={ id, .. }, tys~, ..) => {
       let (pkg, name) = match id {
-        Ident(name~) => (self.current_module, name)
+        Ident(name~) => (self.current_pkg, name)
         Dot(pkg~, id~) => (self.find_pkg(pkg), id)
       }
       Name(pkg~, name~, tys=tys.map(ty => self.parse_type(ty)))
     }
     Object({ id, .. }) => {
       let (pkg, name) = match id {
-        Ident(name~) => (self.current_module, name)
+        Ident(name~) => (self.current_pkg, name)
         Dot(pkg~, id~) => (self.find_pkg(pkg), id)
       }
       Object(pkg~, name~)

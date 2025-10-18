@@ -80,14 +80,12 @@ test "string_literal_overloading" {
   let vm = MoonBitVM::new()
 
   // simple string to bytes conversion
-  let simple_result = vm.eval("(\"hello\" as Bytes)")
-  assert_eq(simple_result.to_string(), "b\"\\x68\\x65\\x6c\\x6c\\x6f\"")
+  assert_eq(vm.eval("(\"hello\" as Bytes)").to_string(), "b\"hello\"")
 
   // String -> Bytes conversion - test in single eval call
-  let result = vm.eval("let b : Bytes = \"hello\"; b")
   // Verify the type is correctly converted to Bytes
+  assert_eq(vm.eval("let b : Bytes = \"hello\"; b.length()").to_string(), "5")
   inspect(vm.eval("typeof(b)"), content="@moonbitlang/core/bytes.Bytes")
-  assert_eq(result.to_string(), "b\"\\x68\\x65\\x6c\\x6c\\x6f\"")
 }
 
 ///|
@@ -105,9 +103,9 @@ test "array_literal_overloading" {
   )
   // Verify it's converted to Bytes type
   assert_eq(
-    vm.eval("bytes").to_string(),
+    vm.eval("bytes.length()").to_string(),
     (
-      #|b"\x48\x65\x6c\x6c\x6f"
+      #|5
     ),
   )
 

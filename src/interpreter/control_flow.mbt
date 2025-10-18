@@ -16,7 +16,7 @@ fn ClosureInterpreter::visit_for(
     match binder_init {
       (binder, init_expr) => {
         let init_value = self.visit(init_expr)
-        self.current_module.env.set(binder.name, init_value)
+        self.current_pkg.env.set(binder.name, init_value)
       }
     }
   }
@@ -26,7 +26,7 @@ fn ClosureInterpreter::visit_for(
     match update_tuple {
       (binder, update_expr) => {
         let new_value = self.visit(update_expr) catch { _ => Unit }
-        self.current_module.env.update(binder.name, new_value)
+        self.current_pkg.env.update(binder.name, new_value)
       }
     }
   }
@@ -54,7 +54,7 @@ fn ClosureInterpreter::visit_for(
       Continue(arr) => {
         if !arr.is_empty() {
           binders.eachi(fn(i, binder) {
-            self.current_module.env.update(binder.0.name, arr[i])
+            self.current_pkg.env.update(binder.0.name, arr[i])
           })
         } else {
           execute_continue_block()

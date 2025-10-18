@@ -72,10 +72,10 @@ fn ClosureInterpreter::visit_record_creation(
     for field in fields {
       field_names.push(field.label.name)
     }
-    let type_name = self.current_module.infer_struct_type_from_fields(
+    let type_name = self.current_pkg.infer_struct_type_from_fields(
       field_names,
     )
-    alloc(self.current_module, type_name)
+    alloc(self.current_pkg, type_name)
   }
 }
 
@@ -185,7 +185,7 @@ fn ClosureInterpreter::visit_apply(
         let constr_name = constr.name.name
         Constructor({
           val: { name: constr_name, fields },
-          ty: self.current_module.find_static_type(constr_name),
+          ty: self.current_pkg.find_static_type(constr_name),
         })
       }
       // 处理静态方法调用，如 Bool::default()
@@ -200,7 +200,7 @@ fn ClosureInterpreter::visit_apply(
         let func_value = self.visit(func)
         match func_value {
           Fn(function, captured_env) =>
-            self.call_closure(function, self.current_module, captured_env, args)
+            self.call_closure(function, self.current_pkg, captured_env, args)
           _ => Unit
         }
       }
