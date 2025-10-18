@@ -173,13 +173,18 @@ pub fn ClosureInterpreter::top_visit(
           // 如果能确定类型名，将 trait 方法注册为结构体方法
           match type_name {
             Some(name) =>
-              self.current_pkg.define_struct_method(name, method_name, func)
+              self.define_struct_method(
+                self.current_pkg,
+                name,
+                method_name,
+                func,
+              )
             None => () // 无法确定类型名时不注册到具体类型，但仍处理 trait
           }
           self.current_pkg.define_trait_method(
             trait_name,
             method_name,
-            RuntimeValue::Fn(func, self.current_pkg.env),
+            RuntimeValue::Fn(self.create_function(func, self.current_pkg)),
           )
           Unit
         }
@@ -357,9 +362,16 @@ pub fn ClosureInterpreter::top_visit(
             loc~,
           )
           if type_name is Some(type_name) {
-            self.current_pkg.define_struct_method(type_name, func_name, func)
+            self.define_struct_method(
+              self.current_pkg,
+              type_name,
+              func_name,
+              func,
+            )
           }
-          let func_value = Fn(func, self.current_pkg.env)
+          let func_value = Fn(
+            self.create_function(func, self.current_pkg, name=func_name),
+          )
           self.current_pkg.set(func_name, func_value)
           // 处理alias属性，将别名映射到函数
           attrs.each(attr => match attr {
@@ -508,16 +520,15 @@ pub fn ClosureInterpreter::visit(
         _ => {
           let ty = self_value.get_type()
           match ty.find_method("op_as_view") {
-            Some((pkg, Fn(func, env))) =>
+            Some((pkg, Fn(func))) =>
               self.call(
                 func,
                 pkg,
-                env,
-                @list.of([
+                [
                   { val: self_value, kind: Positional },
                   { val: start.unwrap_or(Unit), kind: LabelledOption("start") },
                   { val: end.unwrap_or(Unit), kind: LabelledOption("end") },
-                ]),
+                ],
                 name="op_as_view",
               )
             Some(_) =>
@@ -559,7 +570,7 @@ pub fn ClosureInterpreter::visit(
     }
 
     // 处理函数 - 闭包应该捕获对环境的引用以支持可变变量
-    Function(func~, ..) => Fn(func, self.current_pkg.env.create_closure_env())
+    Function(func~, ..) => Fn(self.create_function(func, self.current_pkg))
 
     // 处理 Let 绑定
     Let(pattern~, expr~, body~, ..) => {
@@ -578,9 +589,12 @@ pub fn ClosureInterpreter::visit(
 
     // 处理函数定义
     LetFn(name={ name, .. }, func~, body~, ..) => {
-      self.current_pkg.env.set(name, Fn(func, self.current_pkg.env))
+      self.current_pkg.env.set(
+        name,
+        Fn(self.create_function(func, self.current_pkg)),
+      )
       match body {
-        Unit(..) => Fn(func, self.current_pkg.env)
+        Unit(..) => Fn(self.create_function(func, self.current_pkg))
         _ => self.visit(body)
       }
     }
@@ -588,10 +602,12 @@ pub fn ClosureInterpreter::visit(
     // 处理递归函数定义
     LetRec(bindings~, body~, ..) => {
       for binding in bindings {
-        let env = self.current_pkg.env.create_closure_env()
         let name = binding.0.name
         let func = binding.1
-        self.current_pkg.env.set(name, Fn(func, env))
+        self.current_pkg.env.set(
+          name,
+          Fn(self.create_function(func, self.current_pkg, name~)),
+        )
       }
       self.visit(body)
     }
@@ -610,7 +626,10 @@ pub fn ClosureInterpreter::visit(
       for binding in bindings {
         let name = binding.0.name
         let func = binding.2
-        shared_env.update(name, Fn(func, shared_env))
+        shared_env.update(
+          name,
+          Fn(self.create_function(func, self.current_pkg, name~)),
+        )
       }
 
       // Add all closures to current environment

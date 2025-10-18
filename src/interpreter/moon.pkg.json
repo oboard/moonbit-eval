@@ -5,6 +5,7 @@
     "moonbitlang/parser/basic",
     "moonbitlang/parser",
     "moonbitlang/parser/tokens",
-    "moonbitlang/parser/attribute"
+    "moonbitlang/parser/attribute",
+    "moonbitlang/x/fs"
   ]
 }

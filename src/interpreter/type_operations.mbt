@@ -142,62 +142,55 @@ fn ClosureInterpreter::infer_return_type_from_expr(
 }
 
 ///|
-/// 将RuntimeValue转换为字符串表示（带解释器支持，用于正确的类型推导）
+/// 转换为字符串表示（带解释器支持，用于正确的类型推导）
 pub fn ClosureInterpreter::get_function_type_string(
   self : ClosureInterpreter,
-  value : RuntimeValue,
+  func : @syntax.Func,
 ) -> String {
-  match value {
-    Fn(func, _env) =>
-      // 从函数中提取参数和返回类型信息
-      match func {
-        Lambda(parameters~, return_type~, body~, ..) => {
-          let param_strs = []
-          for param in parameters {
-            let param_str = match param {
-              @syntax.Parameter::Positional(binder~, ty~) =>
-                match ty {
-                  Some(t) => binder.name + ": " + type_to_string(t)
-                  None => binder.name
-                }
-              @syntax.Parameter::Labelled(binder~, ty~) =>
-                match ty {
-                  Some(t) => binder.name + "~: " + type_to_string(t)
-                  None => binder.name + "~"
-                }
-              @syntax.Parameter::Optional(binder~, ty~, default~) => {
-                let type_str = match ty {
-                  Some(t) => binder.name + "~: " + type_to_string(t)
-                  None => binder.name + "~"
-                }
-                match default {
-                  @syntax.Expr::Constant(c=Int(val), ..) =>
-                    type_str + " = " + val
-                  _ => type_str
-                }
-              }
-              @syntax.Parameter::QuestionOptional(binder~, ty~) =>
-                match ty {
-                  Some(t) => binder.name + "?: " + type_to_string(t)
-                  None => binder.name + "?"
-                }
-              @syntax.Parameter::DiscardPositional(..) => "_"
+  // 从函数中提取参数和返回类型信息
+  match func {
+    Lambda(parameters~, return_type~, body~, ..) => {
+      let param_strs = []
+      for param in parameters {
+        let param_str = match param {
+          @syntax.Parameter::Positional(binder~, ty~) =>
+            match ty {
+              Some(t) => binder.name + ": " + type_to_string(t)
+              None => binder.name
             }
-            param_strs.push(param_str)
-          }
-          match return_type {
-            Some(t) => "(" + param_strs.join(", ") + ") -> " + type_to_string(t)
-            None => {
-              // 推断返回类型，对于柯里化函数需要特殊处理
-              let inferred_type = self
-                .infer_return_type_from_expr(body)
-                .to_string()
-              "(" + param_strs.join(", ") + ") -> " + inferred_type
+          @syntax.Parameter::Labelled(binder~, ty~) =>
+            match ty {
+              Some(t) => binder.name + "~: " + type_to_string(t)
+              None => binder.name + "~"
+            }
+          @syntax.Parameter::Optional(binder~, ty~, default~) => {
+            let type_str = match ty {
+              Some(t) => binder.name + "~: " + type_to_string(t)
+              None => binder.name + "~"
+            }
+            match default {
+              @syntax.Expr::Constant(c=Int(val), ..) => type_str + " = " + val
+              _ => type_str
             }
           }
+          @syntax.Parameter::QuestionOptional(binder~, ty~) =>
+            match ty {
+              Some(t) => binder.name + "?: " + type_to_string(t)
+              None => binder.name + "?"
+            }
+          @syntax.Parameter::DiscardPositional(..) => "_"
         }
-        _ => "<function>"
+        param_strs.push(param_str)
       }
-    _ => value.to_string()
+      match return_type {
+        Some(t) => "(" + param_strs.join(", ") + ") -> " + type_to_string(t)
+        None => {
+          // 推断返回类型，对于柯里化函数需要特殊处理
+          let inferred_type = self.infer_return_type_from_expr(body).to_string()
+          "(" + param_strs.join(", ") + ") -> " + inferred_type
+        }
+      }
+    }
+    _ => "<function>"
   }
 }
