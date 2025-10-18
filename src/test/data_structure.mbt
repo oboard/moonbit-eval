@@ -187,11 +187,13 @@ test "method_calls" {
     "()",
   )
   assert_eq(vm.eval("let calc = { value: 10 }").to_string(), "()")
+  assert_eq(vm.eval("calc").to_string(), "Calculator::{value: 10}")
+  assert_eq(vm.eval("calc.value").to_string(), "10")
   assert_eq(vm.eval("calc.add(5)").to_string(), "15")
   assert_eq(vm.eval("calc.multiply(3)").to_string(), "30")
   assert_eq(
     vm.eval("Calculator::add").to_string(),
-    "(self: Calculator, x: Int) -> Int",
+    "(Calculator, Int) -> Int",
   )
 }
 

@@ -7,12 +7,12 @@ test "basic_functions" {
   let vm = MoonBitVM::new()
   assert_eq(
     vm.eval("fn double(x: Int) -> Int { x * 2 }").to_string(),
-    "(x: Int) -> Int",
+    "(Int) -> Int",
   )
   inspect(vm.eval("double(2)"), content="4")
   assert_eq(
     vm.eval("fn add(a: Int, b: Int) -> Int { a + b }").to_string(),
-    "(a: Int, b: Int) -> Int",
+    "(Int, Int) -> Int",
   )
   inspect(vm.eval("add(1, 2)"), content="3")
 }
@@ -22,12 +22,12 @@ test "named_parameters" {
   let vm = MoonBitVM::new()
   assert_eq(
     vm.eval("fn add_named(a~: Int, b~: Int) -> Int { a + b }").to_string(),
-    "(a~: Int, b~: Int) -> Int",
+    "(Int, Int) -> Int",
   )
   inspect(vm.eval("add_named(a=1, b=2)"), content="3")
   inspect(
     vm.eval("fn add_optional(a~: Int, b~: Int=2) -> Int { a + b }"),
-    content="(a~: Int, b~: Int = 2) -> Int",
+    content="(Int, Int) -> Int",
   )
   assert_eq(vm.eval("add_optional(a=1)").to_string(), "3")
 }
@@ -76,7 +76,7 @@ test "recursive_functions" {
       ),
     )
     .to_string(),
-    "(n: Int) -> Int",
+    "(Int) -> Int",
   )
   assert_eq(vm.eval("fib(10)").to_string(), "89")
 }

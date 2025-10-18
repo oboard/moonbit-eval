@@ -20,7 +20,7 @@ test "module" {
 test "math" {
   let vm = MoonBitVM::new()
   assert_eq(vm.eval("@math.abs(-1.0)").to_string(), "1")
-  assert_eq(vm.eval("@math.abs").to_string(), "(x: Double) -> Double")
+  assert_eq(vm.eval("@math.abs").to_string(), "(Double) -> Double")
 }
 
 ///|
@@ -33,8 +33,8 @@ test "bigint" {
 ///|
 test "cmp" {
   let vm = MoonBitVM::new()
-  assert_eq(vm.eval("@cmp.maximum").to_string(), "(x: T, y: T) -> T")
-  assert_eq(vm.eval("@cmp.minimum").to_string(), "(x: T, y: T) -> T")
+  assert_eq(vm.eval("@cmp.maximum").to_string(), "(T, T) -> T")
+  assert_eq(vm.eval("@cmp.minimum").to_string(), "(T, T) -> T")
   assert_eq(vm.eval("@cmp.maximum(1, 2)").to_string(), "2")
   assert_eq(vm.eval("@cmp.minimum(1, 2)").to_string(), "1")
 }

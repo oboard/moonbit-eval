@@ -39,7 +39,7 @@ test "guard_expressions" {
       ),
     )
     .to_string(),
-    "(array: Array[Int], index: Int) -> Int?",
+    "(Array[Int], Int) -> Int?",
   )
   assert_eq(vm.eval("guarded_get([1, 2, 3], -1)").to_string(), "None")
 }
@@ -166,7 +166,7 @@ test "loop_control" {
       ),
     )
     .to_string(),
-    "(n: Int, acc: Int) -> Int",
+    "(Int, Int) -> Int",
   )
   assert_eq(vm.eval("sum_with_continue(5, 1)").to_string(), "9")
 }
@@ -227,7 +227,7 @@ test "loop_expressions" {
         #|}
       ),
     ),
-    content="(xs: @list.List[Int]) -> Int",
+    content="(List[Int]) -> Int",
   )
   inspect(vm.eval("let list = @list.from_array([1, 2, 3])"), content="()")
   inspect(

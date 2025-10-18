@@ -114,14 +114,14 @@ fn ClosureInterpreter::method_call(
   if self_type is (Object(name~, ..) | Name(name~, ..)) {
     match self.find_embedded_method(name, method_name) {
       Some(embedded_method) => {
-        let evaluated_args = @list.cons(
-          self_value,
-          args.map(fn(arg) { self.visit(arg.value) }),
-        )
+        let evaluated_args = self.convert_to_runtime_arguments(args)
         return self.execute_embedded_function(
           embedded_method,
           FixedArray::from_array(
-            evaluated_args.map(arg => { val: arg, kind: Positional }).to_array(),
+            [
+              { val: self_value, kind: RuntimeArgumentKind::Positional },
+              ..evaluated_args,
+            ],
           ),
         )
       }
@@ -150,12 +150,10 @@ fn ClosureInterpreter::execute_user_method(
 ) -> RuntimeValue raise ControlFlow {
   let old_mod = self.current_pkg
   let args = FixedArray::from_array(
-    args
-    .map(arg => {
-      val: self.visit(arg.value),
-      kind: RuntimeArgumentKind::from_syntax(arg.kind),
-    })
-    .to_array(),
+    [
+      { val: self_value, kind: RuntimeArgumentKind::Positional },
+      ..self.convert_to_runtime_arguments(args),
+    ],
   )
   self.push_scope(RuntimeLocation::FunctionCall(method_name))
   defer {

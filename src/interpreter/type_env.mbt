@@ -91,7 +91,8 @@ pub impl Show for RuntimeType with output(self : RuntimeType, logger : &Logger) 
       let mut first = true
       for arg in args {
         if !first {
-          logger.write_char(',')
+          logger.write_string(", ")
+        } else {
           first = false
         }
         arg.output(logger)
@@ -106,7 +107,8 @@ pub impl Show for RuntimeType with output(self : RuntimeType, logger : &Logger) 
       let mut first = true
       for ty in tys {
         if !first {
-          logger.write_char(',')
+          logger.write_string(", ")
+        } else {
           first = false
         }
         ty.output(logger)
@@ -120,16 +122,19 @@ pub impl Show for RuntimeType with output(self : RuntimeType, logger : &Logger) 
         logger.write_char('.')
       }
       logger.write_string(name)
-      logger.write_char('(')
-      let mut first = true
-      for ty in tys {
-        if !first {
-          logger.write_char(',')
-          first = false
+      if !tys.is_empty() {
+        logger.write_char('[')
+        let mut first = true
+        for ty in tys {
+          if !first {
+            logger.write_string(", ")
+          } else {
+            first = false
+          }
+          ty.output(logger)
         }
-        ty.output(logger)
+        logger.write_char(']')
       }
-      logger.write_char(')')
     }
     Option(ty) => {
       ty.output(logger)

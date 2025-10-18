@@ -12,6 +12,6 @@ test "function_alias" {
     top=true,
   )
   |> ignore
-  inspect(vm.eval("abs"), content="(self: Int) -> Int")
+  inspect(vm.eval("abs"), content="(Int) -> Int")
   inspect(vm.eval("abs(-5)"), content="5")
 }

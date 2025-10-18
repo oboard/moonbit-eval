@@ -151,7 +151,7 @@ test "complex_overloading_scenarios" {
   // Function parameter overloading
   inspect(
     vm.eval("fn test_param(x : UInt64) -> UInt64 { x }"),
-    content="(x: UInt64) -> UInt64",
+    content="(UInt64) -> UInt64",
   )
   inspect(vm.eval("test_param(42)"), content="42")
 }

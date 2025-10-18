@@ -718,26 +718,11 @@ pub fn ClosureInterpreter::visit(
           )
           match func {
             Method(type_name~, method_name~, ..) =>
-              self.with_ident(type_name.name, (
-                pkg,
-                ty_name,
-                // 查找用户定义的静态方法
-              ) => match pkg.struct_methods.get(ty_name) {
-                Some(methods) =>
-                  match methods.get(method_name.name) {
-                    Some(Fn(func)) =>
-                      (func.val)({
-                        context: self,
-                        pkg: self.current_pkg,
-                        args: self.convert_to_runtime_arguments(pipe_args),
-                      })
-                    _ =>
-                      self.error(
-                        "method \{ty_name}:\{method_name.name} not found",
-                      )
-                  }
-                None => self.error("type \{ty_name} not found")
-              })
+              self.with_ident(type_name.name, (pkg, type_name) => self.execute_static_method_call(
+                pkg.find_static_type(type_name),
+                method_name.name,
+                pipe_args,
+              ))
             Ident(id={ name, .. }, ..) => {
               // 处理函数调用，如 5 |> func(arg1, arg2)
               let pipe_args = @list.cons(

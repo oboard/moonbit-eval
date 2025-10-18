@@ -8,7 +8,7 @@ test "currying" {
   let vm = MoonBitVM::new()
   assert_eq(vm.eval("let add = x => y => x + y").to_string(), "()")
   assert_eq(vm.eval("let f = add(10)").to_string(), "()")
-  assert_eq(vm.eval("f").to_string(), "(y) -> Any")
+  assert_eq(vm.eval("f").to_string(), "(Any) -> Any")
   assert_eq(vm.eval("f(1)").to_string(), "11")
   assert_eq(vm.eval("add(5)(3)").to_string(), "8")
 }
