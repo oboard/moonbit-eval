@@ -220,7 +220,7 @@ let iter_each_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Iter(iter), .. }, { val: Fn(func, env), .. }] => {
     iter.each(fn(val) {
       let runtime_args = @list.of([{ val, kind: Positional }])
-      ctx.context.call(func, ctx.mod, env, runtime_args) |> ignore
+      ctx.context.call(func, ctx.pkg, env, runtime_args) |> ignore
     })
     Unit
   }
@@ -232,7 +232,7 @@ let iter_map_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Iter(iter), .. }, { val: Fn(func, env), .. }] => {
     let mapped = iter.map(fn(val) {
       let runtime_args = @list.of([{ val, kind: Positional }])
-      ctx.context.call(func, ctx.mod, env, runtime_args) catch {
+      ctx.context.call(func, ctx.pkg, env, runtime_args) catch {
         _ => Unit // Return Unit on error
       }
     })
@@ -247,7 +247,7 @@ let iter_filter_fn : RuntimeFunction = ctx => match ctx.args {
     let filtered = iter.filter(fn(val) {
       let runtime_args = @list.of([{ val, kind: Positional }])
       try {
-        match ctx.context.call(func, ctx.mod, env, runtime_args) {
+        match ctx.context.call(func, ctx.pkg, env, runtime_args) {
           Bool(b) => b
           _ => false
         }
@@ -268,7 +268,7 @@ let iter_fold_fn : RuntimeFunction = ctx => match ctx.args {
         { val: acc, kind: Positional },
         { val, kind: Positional },
       ])
-      ctx.context.call(func, ctx.mod, env, runtime_args) catch {
+      ctx.context.call(func, ctx.pkg, env, runtime_args) catch {
         _ => acc // Return accumulator on error
       }
     })
@@ -283,7 +283,7 @@ let iter_all_fn : RuntimeFunction = ctx => match ctx.args {
     let result = iter.all(fn(val) {
       let runtime_args = @list.of([{ val, kind: Positional }])
       try {
-        match ctx.context.call(func, ctx.mod, env, runtime_args) {
+        match ctx.context.call(func, ctx.pkg, env, runtime_args) {
           Bool(b) => b
           _ => false
         }
@@ -302,7 +302,7 @@ let iter_any_fn : RuntimeFunction = ctx => match ctx.args {
     let result = iter.any(fn(val) {
       let runtime_args = @list.of([{ val, kind: Positional }])
       try {
-        match ctx.context.call(func, ctx.mod, env, runtime_args) {
+        match ctx.context.call(func, ctx.pkg, env, runtime_args) {
           Bool(b) => b
           _ => false
         }
@@ -321,7 +321,7 @@ let iter_find_first_fn : RuntimeFunction = ctx => match ctx.args {
     let result = iter.find_first(fn(val) {
       let runtime_args = @list.of([{ val, kind: Positional }])
       try {
-        match ctx.context.call(func, ctx.mod, env, runtime_args) {
+        match ctx.context.call(func, ctx.pkg, env, runtime_args) {
           Bool(b) => b
           _ => false
         }
@@ -345,7 +345,7 @@ let iter_eachi_fn : RuntimeFunction = ctx => match ctx.args {
         { val, kind: Positional },
       ])
       try {
-        let _ = ctx.context.call(func, ctx.mod, env, runtime_args)
+        let _ = ctx.context.call(func, ctx.pkg, env, runtime_args)
 
       } catch {
         _ => () // Ignore errors
@@ -362,7 +362,7 @@ let iter_drop_while_fn : RuntimeFunction = ctx => match ctx.args {
     let result = iter.drop_while(fn(val) {
       let runtime_args = @list.of([{ val, kind: Positional }])
       try {
-        match ctx.context.call(func, ctx.mod, env, runtime_args) {
+        match ctx.context.call(func, ctx.pkg, env, runtime_args) {
           Bool(b) => b
           _ => false
         }
@@ -381,7 +381,7 @@ let iter_filter_map_fn : RuntimeFunction = ctx => match ctx.args {
     let result = iter.filter_map(fn(val) {
       let runtime_args = @list.of([{ val, kind: Positional }])
       try {
-        match ctx.context.call(func, ctx.mod, env, runtime_args) {
+        match ctx.context.call(func, ctx.pkg, env, runtime_args) {
           Unit => None
           other => Some(other)
         }
@@ -400,7 +400,7 @@ let iter_flat_map_fn : RuntimeFunction = ctx => match ctx.args {
     let result = iter.flat_map(fn(val) {
       let runtime_args = @list.of([{ val, kind: Positional }])
       try {
-        match ctx.context.call(func, ctx.mod, env, runtime_args) {
+        match ctx.context.call(func, ctx.pkg, env, runtime_args) {
           Iter(inner_iter) => inner_iter
           Array(arr) => arr.iter()
           _ => Iter::empty()
@@ -436,7 +436,7 @@ let iter_group_by_fn : RuntimeFunction = ctx => match ctx.args {
     let groups = Map::new()
     iter.each(fn(val) {
       let runtime_args = @list.of([{ val, kind: Positional }])
-      let key = ctx.context.call(func, ctx.mod, env, runtime_args) catch {
+      let key = ctx.context.call(func, ctx.pkg, env, runtime_args) catch {
         _ => Unit
       }
       match groups.get(key) {
@@ -476,7 +476,7 @@ let iter_map_option_fn : RuntimeFunction = ctx => match ctx.args {
     let result = iter.filter_map(fn(val) {
       let runtime_args = @list.of([{ val, kind: Positional }])
       try {
-        match ctx.context.call(func, ctx.mod, env, runtime_args) {
+        match ctx.context.call(func, ctx.pkg, env, runtime_args) {
           Unit => None
           other => Some(other)
         }
@@ -498,7 +498,7 @@ let iter_map_while_fn : RuntimeFunction = ctx => match ctx.args {
       if should_continue.val {
         let runtime_args = @list.of([{ val, kind: Positional }])
         try {
-          match ctx.context.call(func, ctx.mod, env, runtime_args) {
+          match ctx.context.call(func, ctx.pkg, env, runtime_args) {
             Unit => should_continue.val = false
             other => result.push(other)
           }
@@ -520,7 +520,7 @@ let iter_mapi_fn : RuntimeFunction = ctx => match ctx.args {
         { val: Int(index), kind: Positional },
         { val, kind: Positional },
       ])
-      ctx.context.call(func, ctx.mod, env, runtime_args) catch {
+      ctx.context.call(func, ctx.pkg, env, runtime_args) catch {
         _ => Unit
       }
     })
@@ -544,7 +544,7 @@ let iter_take_while_fn : RuntimeFunction = ctx => match ctx.args {
     let result = iter.take_while(fn(val) {
       let runtime_args = @list.of([{ val, kind: Positional }])
       try {
-        match ctx.context.call(func, ctx.mod, env, runtime_args) {
+        match ctx.context.call(func, ctx.pkg, env, runtime_args) {
           Bool(b) => b
           _ => false
         }
@@ -563,7 +563,7 @@ let iter_tap_fn : RuntimeFunction = ctx => match ctx.args {
     let result = iter.tap(fn(val) {
       let runtime_args = @list.of([{ val, kind: Positional }])
       try {
-        let _ = ctx.context.call(func, ctx.mod, env, runtime_args)
+        let _ = ctx.context.call(func, ctx.pkg, env, runtime_args)
 
       } catch {
         _ => ()

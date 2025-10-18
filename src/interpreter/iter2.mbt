@@ -27,7 +27,7 @@ let iter2_run_fn : RuntimeFunction = ctx => match ctx.args {
         { val: b, kind: Positional },
       ])
       try {
-        match ctx.context.call(func, ctx.mod, env, runtime_args) {
+        match ctx.context.call(func, ctx.pkg, env, runtime_args) {
           Unit => IterEnd
           _ => IterContinue
         }
@@ -51,7 +51,7 @@ let iter2_each_fn : RuntimeFunction = ctx => match ctx.args {
         { val: a, kind: Positional },
         { val: b, kind: Positional },
       ])
-      try ctx.context.call(func, ctx.mod, env, runtime_args) |> ignore catch {
+      try ctx.context.call(func, ctx.pkg, env, runtime_args) |> ignore catch {
         _ => ()
       }
     })

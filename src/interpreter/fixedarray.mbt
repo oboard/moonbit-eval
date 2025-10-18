@@ -171,7 +171,7 @@ let fixedarray_binary_search_by_fn : RuntimeFunction = ctx => match ctx.args {
     .binary_search_by(v => match
       ctx.context.call(
         f,
-        ctx.mod,
+        ctx.pkg,
         env,
         @list.singleton({ val: v, kind: Positional }),
       ) {

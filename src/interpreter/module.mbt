@@ -32,7 +32,7 @@ pub(all) struct RuntimePackage {
   name : String
   traits : Map[String, @syntax.TraitDecl]
   // 函数别名存储 - 存储函数名到其实际实现的映射
-  fn_aliases : Map[String, WithType[RuntimeValue]]
+  fn_aliases : Map[String, RuntimeValue]
   type_aliases : Map[String, WithType[@syntax.TypeDecl]]
   // trait 别名存储 - 存储 trait 名到其实际实现的映射
   trait_aliases : Map[String, WithType[@syntax.TraitDecl]]

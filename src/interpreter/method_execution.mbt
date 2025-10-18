@@ -1,16 +1,91 @@
-// Helper enum for function lookup
+// Helper enum for function lookup - SIMPLIFIED
 
 ///|
 priv enum FunctionLookupResult {
-  EmbeddedFunction(String)
   RuntimeClosure(@syntax.Func, RuntimeEnvironment)
-  ExternFunction(RuntimeFunction)
-  GlobalEmbedded(RuntimeFunction)
+  DirectFunction(RuntimeFunction)
   NotFound
 }
 
 // Method execution operations for ClosureInterpreter
 // This file contains all method calling and static method execution logic
+
+///|
+/// 创建RuntimeFunctionContext的辅助函数
+fn ClosureInterpreter::create_function_context(
+  self : ClosureInterpreter,
+  args : Array[RuntimeArgument],
+) -> RuntimeFunctionContext {
+  RuntimeFunctionContext::{ pkg: self.current_pkg, context: self, args }
+}
+
+///|
+/// 查找embedded方法的辅助函数
+fn ClosureInterpreter::find_embedded_method(
+  self : ClosureInterpreter,
+  type_name : String,
+  method_name : String,
+) -> RuntimeFunction? {
+  match self.embedded_methods.get(type_name) {
+    Some(methods) => methods.get(method_name)
+    None => None
+  }
+}
+
+///|
+/// 执行embedded函数的辅助函数
+fn ClosureInterpreter::execute_embedded_function(
+  self : ClosureInterpreter,
+  func : RuntimeFunction,
+  args : Array[RuntimeArgument],
+) -> RuntimeValue raise ControlFlow {
+  func(self.create_function_context(args))
+}
+
+///|
+/// 查找函数 - 简化版本
+fn ClosureInterpreter::lookup_function(
+  self : ClosureInterpreter,
+  pkg : RuntimePackage,
+  name : String,
+) -> FunctionLookupResult {
+  // 首先查找用户函数
+  match pkg.find(name).unwrap_or(self.current_pkg.find(name).unwrap_or(Unit)) {
+    Fn(func, env) =>
+      // 检查是否是embedded函数的标记
+      match func {
+        Lambda(body=Ident(id={ name: Ident(name=embedded_name), .. }, ..), ..) =>
+          match embedded_name {
+            ['%', ..] =>
+              match self.embedded_fns.get(embedded_name) {
+                Some(embedded_func) =>
+                  FunctionLookupResult::DirectFunction(embedded_func)
+                None => FunctionLookupResult::NotFound
+              }
+            _ => FunctionLookupResult::RuntimeClosure(func, env)
+          }
+        _ => FunctionLookupResult::RuntimeClosure(func, env)
+      }
+    _ =>
+      // 查找fn_aliases
+      match pkg.fn_aliases.get(name) {
+        Some(Fn(func, env)) => FunctionLookupResult::RuntimeClosure(func, env)
+        _ =>
+          // 查找extern函数
+          match self.extern_fns.get(name) {
+            Some(extern_func) =>
+              FunctionLookupResult::DirectFunction(extern_func)
+            None =>
+              // 查找embedded函数
+              match self.embedded_fns.get(name) {
+                Some(embedded_func) =>
+                  FunctionLookupResult::DirectFunction(embedded_func)
+                None => FunctionLookupResult::NotFound
+              }
+          }
+      }
+  }
+}
 
 ///|
 /// 根据函数名执行函数
@@ -27,57 +102,11 @@ fn ClosureInterpreter::call_by_name(
     .to_array()
   self.with_ident(long_ident, fn(pkg, name) {
     let name = pkg.find_stub(name)
-
-    // 按优先级查找：用户函数 -> Lambda变量 -> 外部函数 -> embedded函数
-    let func = match
-      pkg.find(name).unwrap_or(self.current_pkg.find(name).unwrap_or(Unit)) {
-      Fn(func, env) =>
-        // 检查是否是embedded函数的标记函数
-        match func {
-          Lambda(body=Ident(id={ name: Ident(name=embedded_name), .. }, ..), ..) =>
-            match embedded_name {
-              ['%', ..] => FunctionLookupResult::EmbeddedFunction(embedded_name)
-              _ => FunctionLookupResult::RuntimeClosure(func, env)
-            }
-          _ => FunctionLookupResult::RuntimeClosure(func, env)
-        }
-      _ =>
-        match self.extern_fns.get(name) {
-          Some(extern_func) => FunctionLookupResult::ExternFunction(extern_func)
-          None =>
-            match self.embedded_fns.get(name) {
-              Some(embedded_func) =>
-                FunctionLookupResult::GlobalEmbedded(embedded_func)
-              None => FunctionLookupResult::NotFound
-            }
-        }
-    }
-    match func {
-      FunctionLookupResult::EmbeddedFunction(embedded_name) =>
-        match self.embedded_fns.get(embedded_name) {
-          Some(embedded_func) =>
-            embedded_func(RuntimeFunctionContext::{
-              mod: self.current_pkg,
-              context: self,
-              args: evaluated_args,
-            })
-          None => self.error("Embedded function:\{embedded_name} not found")
-        }
+    match self.lookup_function(pkg, name) {
       FunctionLookupResult::RuntimeClosure(lambda_func, captured_env) =>
-        // 调用闭包：使用专门的闭包调用方法
         self.call_closure(lambda_func, pkg, captured_env, args, name~)
-      FunctionLookupResult::ExternFunction(extern_func) =>
-        extern_func(RuntimeFunctionContext::{
-          mod: self.current_pkg,
-          context: self,
-          args: evaluated_args,
-        })
-      FunctionLookupResult::GlobalEmbedded(embedded_func) =>
-        embedded_func(RuntimeFunctionContext::{
-          mod: self.current_pkg,
-          context: self,
-          args: evaluated_args,
-        })
+      FunctionLookupResult::DirectFunction(func) =>
+        self.execute_embedded_function(func, evaluated_args)
       FunctionLookupResult::NotFound =>
         self.error(
           "execute_function_by_name method @\{pkg.name}.\{name} not found",
@@ -95,68 +124,71 @@ fn ClosureInterpreter::method_call(
   args : @list.List[@syntax.Argument],
 ) -> RuntimeValue raise ControlFlow {
   let self_type = self_value.get_type()
+
+  // 尝试embedded方法
   if self_type is (Object(name~, ..) | Name(name~, ..)) {
-    match self.embedded_methods.get(name) {
-      Some(type_methods) =>
-        match type_methods.get(method_name) {
-          Some(embedded_method) => {
-            // Prepare args: actual_self_value + evaluated args
-            let evaluated_args = @list.cons(
-              self_value,
-              args.map(fn(arg) { self.visit(arg.value) }),
-            )
-            return embedded_method(RuntimeFunctionContext::{
-              context: self,
-              mod: self.current_pkg,
-              args: evaluated_args
-              .map(arg => { val: arg, kind: Positional })
-              .to_array(),
-            })
-          }
-          None => () // Continue to try regular methods
-        }
+    match self.find_embedded_method(name, method_name) {
+      Some(embedded_method) => {
+        let evaluated_args = @list.cons(
+          self_value,
+          args.map(fn(arg) { self.visit(arg.value) }),
+        )
+        return self.execute_embedded_function(
+          embedded_method,
+          evaluated_args.map(arg => { val: arg, kind: Positional }).to_array(),
+        )
+      }
       None => () // Continue to try regular methods
     }
   }
-  match self_type.find_method(method_name) {
-    Some((pkg, func)) => {
-      let old_mod = self.current_pkg
-      let args = args.map(arg => {
-        val: self.visit(arg.value),
-        kind: RuntimeArgumentKind::from_syntax(arg.kind),
-      })
-      self.push_scope(RuntimeLocation::FunctionCall(method_name))
-      defer {
-        self.pop_scope()
-        self.current_pkg = old_mod
-      }
-      // Bind self parameter and other args
-      match func {
-        Fn(Lambda(parameters~, body~, ..), captured_env) => {
-          // Switch to closure's captured environment
-          let old_env = pkg.env
-          self.current_pkg = pkg
-          self.current_pkg.env = captured_env
-          defer {
-            self.current_pkg.env = old_env
-          }
-          // Bind parameters - always include self_value as first parameter
-          self.bind_function_parameters(
-            parameters,
-            @list.cons({ val: self_value, kind: Positional }, args),
-          )
 
-          // Execute function body
-          self.visit(body)
-        }
-        _ =>
-          self.error(
-            "exec method: \{self_type.to_string()}::\{method_name} not found",
-          )
-      }
-    }
+  // 尝试用户定义的方法
+  match self_type.find_method(method_name) {
+    Some((pkg, func)) =>
+      self.execute_user_method(pkg, func, self_value, method_name, args)
     None =>
       self.error("exec: \{self_type.to_string()}::\{method_name} not found")
+  }
+}
+
+///|
+/// 执行用户定义的方法
+fn ClosureInterpreter::execute_user_method(
+  self : ClosureInterpreter,
+  pkg : RuntimePackage,
+  func : RuntimeValue,
+  self_value : RuntimeValue,
+  method_name : String,
+  args : @list.List[@syntax.Argument],
+) -> RuntimeValue raise ControlFlow {
+  let old_mod = self.current_pkg
+  let args = args.map(arg => {
+    val: self.visit(arg.value),
+    kind: RuntimeArgumentKind::from_syntax(arg.kind),
+  })
+  self.push_scope(RuntimeLocation::FunctionCall(method_name))
+  defer {
+    self.pop_scope()
+    self.current_pkg = old_mod
+  }
+  match func {
+    Fn(Lambda(parameters~, body~, ..), captured_env) => {
+      let old_env = pkg.env
+      self.current_pkg = pkg
+      self.current_pkg.env = captured_env
+      defer {
+        self.current_pkg.env = old_env
+      }
+      self.bind_function_parameters(
+        parameters,
+        @list.cons({ val: self_value, kind: Positional }, args),
+      )
+      self.visit(body)
+    }
+    _ =>
+      self.error(
+        "exec method: \{self_value.get_type().to_string()}::\{method_name} not found",
+      )
   }
 }
 
@@ -168,30 +200,23 @@ fn ClosureInterpreter::execute_static_method_call(
   method_name : String,
   args : @list.List[@syntax.Argument],
 ) -> RuntimeValue raise ControlFlow {
+  // 尝试embedded方法
   if type_info is Object(name~, ..) {
-    match self.embedded_methods.get(name) {
-      Some(methods) =>
-        match methods.get(method_name) {
-          Some(embedded_func) => {
-            let evaluated_args = args
-              .map(arg => {
-                val: self.visit(arg.value),
-                kind: RuntimeArgumentKind::from_syntax(arg.kind),
-              })
-              .to_array()
-            return embedded_func(RuntimeFunctionContext::{
-              mod: self.current_pkg,
-              context: self,
-              args: evaluated_args,
-            })
-          }
-          None => ()
-        }
+    match self.find_embedded_method(name, method_name) {
+      Some(embedded_func) => {
+        let evaluated_args = args
+          .map(arg => {
+            val: self.visit(arg.value),
+            kind: RuntimeArgumentKind::from_syntax(arg.kind),
+          })
+          .to_array()
+        return self.execute_embedded_function(embedded_func, evaluated_args)
+      }
       None => ()
     }
   }
 
-  // If no embedded method found, try user-defined struct methods
+  // 尝试用户定义的静态方法
   match type_info.find_method(method_name) {
     Some((pkg, func)) =>
       match func {
@@ -212,35 +237,39 @@ fn RuntimeType::find_method(
   match self {
     Object(pkg~, name~) =>
       // 首先查找struct方法
-      if pkg.struct_methods.get(name).map(x => x.get(method_name))
-        is Some(Some(func)) {
-        Some((pkg, func))
-      } else {
-        // 如果没有找到struct方法，查找trait方法
-        // 只遍历当前类型derive的trait，而不是所有trait
-        let mut found_trait_method = None
-
-        // 直接使用当前类型名查找derive的trait
-        match pkg.type_derived_traits.get(name) {
-          Some(derived_traits) =>
-            // 只遍历该类型derive的trait
-            for trait_name in derived_traits {
-              match pkg.trait_methods.get(trait_name) {
-                Some(methods) =>
-                  match methods.get(method_name) {
-                    Some(func) => {
-                      found_trait_method = Some((pkg, func))
-                      break
-                    }
-                    None => ()
-                  }
-                None => ()
-              }
-            }
-          None => ()
-        }
-        found_trait_method
+      match pkg.struct_methods.get(name) {
+        Some(methods) =>
+          match methods.get(method_name) {
+            Some(func) => Some((pkg, func))
+            None => find_trait_method(pkg, name, method_name)
+          }
+        None => find_trait_method(pkg, name, method_name)
       }
     _ => None
+  }
+}
+
+///|
+/// 查找trait方法的辅助函数
+fn find_trait_method(
+  pkg : RuntimePackage,
+  type_name : String,
+  method_name : String,
+) -> (RuntimePackage, RuntimeValue)? {
+  match pkg.type_derived_traits.get(type_name) {
+    Some(derived_traits) => {
+      for trait_name in derived_traits {
+        match pkg.trait_methods.get(trait_name) {
+          Some(methods) =>
+            match methods.get(method_name) {
+              Some(func) => return Some((pkg, func))
+              None => continue
+            }
+          None => continue
+        }
+      }
+      None
+    }
+    None => None
   }
 }

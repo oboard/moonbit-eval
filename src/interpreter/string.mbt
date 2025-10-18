@@ -147,7 +147,7 @@ let string_find_by_fn : RuntimeFunction = ctx => match ctx.args {
       .find_by(char => {
         let res = ctx.context.call(
           func,
-          ctx.mod,
+          ctx.pkg,
           env,
           @list.singleton({ val: Char(char), kind: Positional }),
         ) catch {
@@ -169,7 +169,7 @@ let string_fold_fn : RuntimeFunction = ctx => match ctx.args {
     s.fold(init~, fn(acc, char) {
       ctx.context.call(
         func,
-        ctx.mod,
+        ctx.pkg,
         env,
         @list.of([
           { val: acc, kind: Positional },
@@ -279,7 +279,7 @@ let string_rev_fold_fn : RuntimeFunction = ctx => match ctx.args {
     s.rev_fold(init~, fn(acc, char) {
       ctx.context.call(
         func,
-        ctx.mod,
+        ctx.pkg,
         env,
         @list.of([
           { val: acc, kind: Positional },

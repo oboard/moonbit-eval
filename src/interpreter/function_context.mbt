@@ -2,7 +2,7 @@
 /// Runtime函数执行上下文 - 统一所有函数的执行环境
 pub(all) struct RuntimeFunctionContext {
   context : ClosureInterpreter
-  mod : RuntimePackage
+  pkg : RuntimePackage
   args : Array[RuntimeArgument]
 }
 

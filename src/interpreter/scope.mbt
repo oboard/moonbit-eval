@@ -29,16 +29,16 @@ pub fn RuntimeEnvironment::find(
 ///|
 pub fn ClosureInterpreter::find_pkg(
   self : ClosureInterpreter,
-  pkg : String,
+  pkg_name : String,
 ) -> RuntimePackage {
   let current_module = self.current_pkg
-  if current_module.deps.get(pkg) is Some(mod) {
-    self.load_package(mod)
-    mod
+  if current_module.deps.get(pkg_name) is Some(pkg) {
+    self.load_package(pkg)
+    pkg
     // 检查 main 模块的 deps (core_modules) 中是否有这个包
-  } else if self.main_pkg.deps.get(pkg) is Some(mod) {
-    self.load_package(mod)
-    mod
+  } else if self.main_pkg.deps.get(pkg_name) is Some(pkg) {
+    self.load_package(pkg)
+    pkg
   } else {
     current_module
   }
@@ -54,7 +54,7 @@ pub fn[T] ClosureInterpreter::with_ident(
   match long_ident {
     Ident(name~) => {
       let f = current_module.type_aliases.get(name)
-      let mod = match f {
+      let pkg = match f {
         Some(f) =>
           match f.ty {
             Object(pkg~, ..) => pkg
@@ -63,16 +63,16 @@ pub fn[T] ClosureInterpreter::with_ident(
           }
         None => current_module
       }
-      func(mod, name)
+      func(pkg, name)
     }
     Dot(pkg~, id~) =>
-      if current_module.deps.get(pkg) is Some(mod) {
-        self.load_package(mod)
-        func(mod, id)
+      if current_module.deps.get(pkg) is Some(pkg) {
+        self.load_package(pkg)
+        func(pkg, id)
         // 检查 main 模块的 deps (core_modules) 中是否有这个包
-      } else if self.main_pkg.deps.get(pkg) is Some(mod) {
-        self.load_package(mod)
-        func(mod, id)
+      } else if self.main_pkg.deps.get(pkg) is Some(pkg) {
+        self.load_package(pkg)
+        func(pkg, id)
       } else {
         func(current_module, id)
       }
@@ -155,9 +155,7 @@ pub fn ClosureInterpreter::push_scope(
 ) -> Unit {
   self.call_stack.push(loc)
   // println(String::make(self.call_stack.length(), ' ') + loc.to_string() + "{")
-  self.current_pkg.env = RuntimeEnvironment::new(
-    parent=self.current_pkg.env,
-  )
+  self.current_pkg.env = RuntimeEnvironment::new(parent=self.current_pkg.env)
 }
 
 ///|

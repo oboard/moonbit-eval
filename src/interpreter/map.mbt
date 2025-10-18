@@ -80,7 +80,7 @@ let map_each_fn : RuntimeFunction = ctx => match ctx.args {
     map.each(fn(key, val) {
       ctx.context.call(
         f,
-        ctx.mod,
+        ctx.pkg,
         env,
         @list.of([{ val: key, kind: Positional }, { val, kind: Positional }]),
       )
@@ -98,7 +98,7 @@ let map_eachi_fn : RuntimeFunction = ctx => match ctx.args {
     map.eachi(fn(i, key, val) {
       ctx.context.call(
         f,
-        ctx.mod,
+        ctx.pkg,
         env,
         @list.of([
           { val: Int(i), kind: Positional },
@@ -170,7 +170,7 @@ let map_get_or_init_fn : RuntimeFunction = ctx => match ctx.args {
     match map.get(key) {
       Some(val) => val
       None => {
-        let val = ctx.context.call(f, ctx.mod, env, @list.empty())
+        let val = ctx.context.call(f, ctx.pkg, env, @list.empty())
         map.set(key, val)
         val
       }
@@ -218,7 +218,7 @@ let map_map_fn : RuntimeFunction = ctx => match ctx.args {
     map.each(fn(key, val) {
       let new_val = ctx.context.call(
         f,
-        ctx.mod,
+        ctx.pkg,
         env,
         @list.of([{ val: key, kind: Positional }, { val, kind: Positional }]),
       )
@@ -298,7 +298,7 @@ let map_update_fn : RuntimeFunction = ctx => match ctx.args {
       Some(old_val) => {
         let new_val = ctx.context.call(
           f,
-          ctx.mod,
+          ctx.pkg,
           env,
           @list.singleton({ val: old_val, kind: Positional }),
         )

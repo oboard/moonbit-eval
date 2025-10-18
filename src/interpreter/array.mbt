@@ -251,7 +251,7 @@ let array_each_fn : RuntimeFunction = ctx => match ctx.args {
     arr.each(fn(val) {
       ctx.context.call(
         f,
-        ctx.mod,
+        ctx.pkg,
         env,
         @list.singleton({ val, kind: Positional }),
       )
@@ -269,7 +269,7 @@ let array_eachi_fn : RuntimeFunction = ctx => match ctx.args {
     arr.eachi(fn(i, val) {
       ctx.context.call(
         f,
-        ctx.mod,
+        ctx.pkg,
         env,
         @list.of([{ val: Int(i), kind: Positional }, { val, kind: Positional }]),
       )
@@ -287,7 +287,7 @@ let array_map_fn : RuntimeFunction = ctx => match ctx.args {
     let new_arr = arr.map(fn(val) {
       ctx.context.call(
         f,
-        ctx.mod,
+        ctx.pkg,
         env,
         @list.singleton({ val, kind: Positional }),
       )
@@ -304,7 +304,7 @@ let array_mapi_fn : RuntimeFunction = ctx => match ctx.args {
     let new_arr = arr.mapi(fn(i, val) {
       ctx.context.call(
         f,
-        ctx.mod,
+        ctx.pkg,
         env,
         @list.of([{ val: Int(i), kind: Positional }, { val, kind: Positional }]),
       )
@@ -321,7 +321,7 @@ let array_filter_fn : RuntimeFunction = ctx => match ctx.args {
     let new_arr = arr.filter(fn(val) {
       ctx.context.call(
         f,
-        ctx.mod,
+        ctx.pkg,
         env,
         @list.singleton({ val, kind: Positional }),
       )
@@ -339,7 +339,7 @@ let array_fold_fn : RuntimeFunction = ctx => match ctx.args {
     arr.fold(init=init_val, fn(acc, val) {
       ctx.context.call(
         f,
-        ctx.mod,
+        ctx.pkg,
         env,
         @list.of([{ val: acc, kind: Positional }, { val, kind: Positional }]),
       )
@@ -353,7 +353,7 @@ let array_search_by_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Array(arr), .. }, { val: Fn(f, env), .. }] => {
     let index = arr.search_by(val => (try? ctx.context.call(
         f,
-        ctx.mod,
+        ctx.pkg,
         env,
         @list.singleton({ val, kind: Positional }),
       ))

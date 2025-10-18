@@ -70,7 +70,7 @@ let array_view_all_fn : RuntimeFunction = ctx => match ctx.args {
     Bool(
       arr.all(elem => ctx.context.call(
           f,
-          ctx.mod,
+          ctx.pkg,
           env,
           @list.singleton({ val: elem, kind: Positional }),
         )
@@ -86,7 +86,7 @@ let array_view_any_fn : RuntimeFunction = ctx => match ctx.args {
     Bool(
       arr.any(elem => ctx.context.call(
           f,
-          ctx.mod,
+          ctx.pkg,
           env,
           @list.singleton({ val: elem, kind: Positional }),
         )
@@ -108,7 +108,7 @@ let array_view_each_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: ArrayView(arr), .. }, { val: Fn(f, env), .. }] => {
     arr.each(elem => ctx.context.call(
         f,
-        ctx.mod,
+        ctx.pkg,
         env,
         @list.singleton({ val: elem, kind: Positional }),
       )
@@ -124,7 +124,7 @@ let array_view_eachi_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: ArrayView(arr), .. }, { val: Fn(f, env), .. }] => {
     arr.eachi((i, elem) => ctx.context.call(
         f,
-        ctx.mod,
+        ctx.pkg,
         env,
         @list.of([
           { val: Int(i), kind: Positional },
@@ -144,7 +144,7 @@ let array_view_filter_fn : RuntimeFunction = ctx => match ctx.args {
     Array(
       arr.filter(elem => ctx.context.call(
           f,
-          ctx.mod,
+          ctx.pkg,
           env,
           @list.singleton({ val: elem, kind: Positional }),
         )
@@ -160,7 +160,7 @@ let array_view_fold_fn : RuntimeFunction = ctx => match ctx.args {
     arr.fold(init~, fn(acc, elem) {
       ctx.context.call(
         f,
-        ctx.mod,
+        ctx.pkg,
         env,
         @list.of([
           { val: acc, kind: Positional },
@@ -178,7 +178,7 @@ let array_view_foldi_fn : RuntimeFunction = ctx => match ctx.args {
     arr.foldi(init~, fn(i, acc, elem) {
       ctx.context.call(
         f,
-        ctx.mod,
+        ctx.pkg,
         env,
         @list.of([
           { val: Int(i), kind: Positional },
@@ -226,7 +226,7 @@ let array_view_map_fn : RuntimeFunction = ctx => match ctx.args {
     Array(
       arr.map(elem => ctx.context.call(
         f,
-        ctx.mod,
+        ctx.pkg,
         env,
         @list.singleton({ val: elem, kind: Positional }),
       )),
@@ -241,7 +241,7 @@ let array_view_mapi_fn : RuntimeFunction = ctx => match ctx.args {
     Array(
       arr.mapi((i, elem) => ctx.context.call(
         f,
-        ctx.mod,
+        ctx.pkg,
         env,
         @list.of([
           { val: Int(i), kind: Positional },
@@ -259,7 +259,7 @@ let array_view_rev_fold_fn : RuntimeFunction = ctx => match ctx.args {
     arr.rev_fold(init~, fn(acc, elem) {
       ctx.context.call(
         f,
-        ctx.mod,
+        ctx.pkg,
         env,
         @list.of([
           { val: acc, kind: Positional },
@@ -277,7 +277,7 @@ let array_view_rev_foldi_fn : RuntimeFunction = ctx => match ctx.args {
     arr.rev_foldi(init~, fn(i, acc, elem) {
       ctx.context.call(
         f,
-        ctx.mod,
+        ctx.pkg,
         env,
         @list.of([
           { val: Int(i), kind: Positional },

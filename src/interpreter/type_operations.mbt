@@ -122,7 +122,7 @@ fn ClosureInterpreter::infer_return_type_from_expr(
     Apply(func~, ..) =>
       match func {
         @syntax.Expr::Ident(id={ name: ident, .. }, ..) =>
-          self.with_ident(ident, (mod, name) => mod.env
+          self.with_ident(ident, (pkg, name) => pkg.env
             .find(name)
             .unwrap_or(Unit)
             .get_type())

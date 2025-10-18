@@ -81,8 +81,8 @@ pub(all) struct ClosureInterpreter {
   extern_fns : Map[String, (RuntimeFunctionContext) -> RuntimeValue raise ControlFlow]
   embedded_fns : Map[String, (RuntimeFunctionContext) -> RuntimeValue raise ControlFlow]
   embedded_methods : Map[String, Map[String, (RuntimeFunctionContext) -> RuntimeValue raise ControlFlow]]
-  main : RuntimePackage
-  mut current_module : RuntimePackage
+  main_pkg : RuntimePackage
+  mut current_pkg : RuntimePackage
   call_stack : Array[RuntimeLocation]
 }
 fn ClosureInterpreter::add_embedded_fn(Self, String, (RuntimeFunctionContext) -> RuntimeValue raise ControlFlow) -> Unit
@@ -199,7 +199,7 @@ impl ToJson for RuntimeErrorType
 
 pub(all) struct RuntimeFunctionContext {
   context : ClosureInterpreter
-  mod : RuntimePackage
+  pkg : RuntimePackage
   args : Array[RuntimeArgument]
 }
 fn RuntimeFunctionContext::named(Self, String) -> RuntimeValue?
@@ -223,7 +223,7 @@ impl ToJson for RuntimeModule
 pub(all) struct RuntimePackage {
   name : String
   traits : Map[String, @syntax.TraitDecl]
-  fn_aliases : Map[String, WithType[RuntimeValue]]
+  fn_aliases : Map[String, RuntimeValue]
   type_aliases : Map[String, WithType[@syntax.TypeDecl]]
   trait_aliases : Map[String, WithType[@syntax.TraitDecl]]
   stubs : Map[String, String]

@@ -44,7 +44,7 @@ let bytes_makei_fn : RuntimeFunction = ctx => match ctx.args {
       let arg = Int(i)
       let ret = ctx.context.call(
         f,
-        ctx.mod,
+        ctx.pkg,
         env,
         @list.singleton({ val: arg, kind: Positional }),
       )

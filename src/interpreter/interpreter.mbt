@@ -250,10 +250,7 @@ pub fn ClosureInterpreter::top_visit(
         let target_value = mod.find(binder_name)
         // 将别名映射到目标函数
         if target_value is Some(target_value) {
-          self.current_pkg.fn_aliases.set(target_name, {
-            val: target_value,
-            ty: Object(pkg=mod, name=binder_name),
-          })
+          self.current_pkg.fn_aliases.set(target_name, target_value)
           self.current_pkg.set(binder_name, target_value)
         }
       }
@@ -370,15 +367,13 @@ pub fn ClosureInterpreter::top_visit(
               parsed: Some(
                 Apply(
                   { name: "alias", .. },
-                  More(Expr(Ident({ name, .. })), ..)
+                  More(Expr(Ident({ name: alias_name, .. })), ..)
                 )
               ),
               ..,
             } =>
-              self.current_pkg.fn_aliases.set(name, {
-                val: func_value,
-                ty: Object(pkg=self.current_pkg, name=func_name),
-              })
+              // println("\{alias_name} -> \{func_name}")
+              self.current_pkg.fn_aliases.set(alias_name, func_value)
             _ => ()
           })
         }
@@ -564,8 +559,7 @@ pub fn ClosureInterpreter::visit(
     }
 
     // 处理函数 - 闭包应该捕获对环境的引用以支持可变变量
-    Function(func~, ..) =>
-      Fn(func, self.current_pkg.env.create_closure_env())
+    Function(func~, ..) => Fn(func, self.current_pkg.env.create_closure_env())
 
     // 处理 Let 绑定
     Let(pattern~, expr~, body~, ..) => {
@@ -711,7 +705,7 @@ pub fn ClosureInterpreter::visit(
           match func {
             Method(type_name~, method_name~, ..) =>
               self.with_ident(type_name.name, fn(
-                mod,
+                pkg,
                 type_name,
               ) raise ControlFlow {
                 // 将左侧值添加到参数列表前面
@@ -721,7 +715,7 @@ pub fn ClosureInterpreter::visit(
                   args,
                 )
                 self.execute_static_method_call(
-                  mod.find_static_type(type_name),
+                  pkg.find_static_type(type_name),
                   method_name.name,
                   pipe_args,
                 )
