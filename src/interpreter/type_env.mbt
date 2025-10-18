@@ -14,6 +14,7 @@ pub(all) enum RuntimeType {
   Name(pkg~ : RuntimePackage, name~ : String, tys~ : @list.List[RuntimeType])
   Option(RuntimeType)
   Object(pkg~ : RuntimePackage, name~ : String)
+  Internal
 } derive(ToJson)
 
 ///|
@@ -148,6 +149,7 @@ pub impl Show for RuntimeType with output(self : RuntimeType, logger : &Logger) 
       }
       logger.write_string(name)
     }
+    Internal => logger.write_string("<internal>")
   }
 }
 

@@ -191,10 +191,7 @@ test "method_calls" {
   assert_eq(vm.eval("calc.value").to_string(), "10")
   assert_eq(vm.eval("calc.add(5)").to_string(), "15")
   assert_eq(vm.eval("calc.multiply(3)").to_string(), "30")
-  assert_eq(
-    vm.eval("Calculator::add").to_string(),
-    "(Calculator, Int) -> Int",
-  )
+  assert_eq(vm.eval("Calculator::add").to_string(), "(Calculator, Int) -> Int")
 }
 
 ///|

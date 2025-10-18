@@ -15,6 +15,7 @@ pub(all) struct ClosureInterpreter {
 ///|
 pub fn ClosureInterpreter::new() -> ClosureInterpreter {
   let main = RuntimePackage::new("main", deps=core_modules)
+  main.deps.set("fs", fs_package)
   let self = {
     extern_fns: {},
     embedded_fns: core_embedded_code,

@@ -263,6 +263,7 @@ pub(all) enum RuntimeType {
   Name(pkg~ : RuntimePackage, name~ : String, tys~ : @list.List[RuntimeType])
   Option(RuntimeType)
   Object(pkg~ : RuntimePackage, name~ : String)
+  Internal
 }
 fn RuntimeType::any() -> Self
 fn RuntimeType::array() -> Self
