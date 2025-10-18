@@ -12,6 +12,6 @@ test "function_alias" {
     top=true,
   )
   |> ignore
-  assert_eq(vm.eval("abs").to_string(), "(self: Int) -> Int")
-  assert_eq(vm.eval("abs(-5)").to_string(), "5")
+  inspect(vm.eval("abs"), content="(self: Int) -> Int")
+  inspect(vm.eval("abs(-5)"), content="5")
 }

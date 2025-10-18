@@ -11,6 +11,6 @@ test "alias" {
     top=true,
   )
   |> ignore
-  assert_true(vm.eval("one()") is Ok(Int(1)))
-  assert_true(vm.eval("number_one()") is Ok(Int(1)))
+  inspect(vm.eval("one()"), content="1")
+  inspect(vm.eval("number_one()"), content="1")
 }

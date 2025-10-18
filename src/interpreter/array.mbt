@@ -247,15 +247,9 @@ let array_reserve_capacity_fn : RuntimeFunction = ctx => match ctx.args {
 ///|
 /// 数组each操作
 let array_each_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Array(arr), .. }, { val: Fn(f, env), .. }] => {
+  [{ val: Array(arr), .. }, { val: Fn(f), .. }] => {
     arr.each(fn(val) {
-      ctx.context.call(
-        f,
-        ctx.pkg,
-        env,
-        @list.singleton({ val, kind: Positional }),
-      )
-      |> ignore
+      ctx.context.call(f.val, ctx.pkg, [{ val, kind: Positional }]) |> ignore
     })
     Unit
   }
@@ -265,14 +259,12 @@ let array_each_fn : RuntimeFunction = ctx => match ctx.args {
 ///|
 /// 数组eachi操作
 let array_eachi_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Array(arr), .. }, { val: Fn(f, env), .. }] => {
+  [{ val: Array(arr), .. }, { val: Fn(f), .. }] => {
     arr.eachi(fn(i, val) {
-      ctx.context.call(
-        f,
-        ctx.pkg,
-        env,
-        @list.of([{ val: Int(i), kind: Positional }, { val, kind: Positional }]),
-      )
+      ctx.context.call(f.val, ctx.pkg, [
+        { val: Int(i), kind: Positional },
+        { val, kind: Positional },
+      ])
       |> ignore
     })
     Unit
@@ -283,14 +275,9 @@ let array_eachi_fn : RuntimeFunction = ctx => match ctx.args {
 ///|
 /// 数组map操作
 let array_map_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Array(arr), .. }, { val: Fn(f, env), .. }] => {
+  [{ val: Array(arr), .. }, { val: Fn(f), .. }] => {
     let new_arr = arr.map(fn(val) {
-      ctx.context.call(
-        f,
-        ctx.pkg,
-        env,
-        @list.singleton({ val, kind: Positional }),
-      )
+      ctx.context.call(f.val, ctx.pkg, [{ val, kind: Positional }])
     })
     Array(new_arr)
   }
@@ -300,14 +287,12 @@ let array_map_fn : RuntimeFunction = ctx => match ctx.args {
 ///|
 /// 数组mapi操作
 let array_mapi_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Array(arr), .. }, { val: Fn(f, env), .. }] => {
+  [{ val: Array(arr), .. }, { val: Fn(f), .. }] => {
     let new_arr = arr.mapi(fn(i, val) {
-      ctx.context.call(
-        f,
-        ctx.pkg,
-        env,
-        @list.of([{ val: Int(i), kind: Positional }, { val, kind: Positional }]),
-      )
+      ctx.context.call(f.val, ctx.pkg, [
+        { val: Int(i), kind: Positional },
+        { val, kind: Positional },
+      ])
     })
     Array(new_arr)
   }
@@ -317,14 +302,9 @@ let array_mapi_fn : RuntimeFunction = ctx => match ctx.args {
 ///|
 /// 数组filter操作
 let array_filter_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Array(arr), .. }, { val: Fn(f, env), .. }] => {
+  [{ val: Array(arr), .. }, { val: Fn(f), .. }] => {
     let new_arr = arr.filter(fn(val) {
-      ctx.context.call(
-        f,
-        ctx.pkg,
-        env,
-        @list.singleton({ val, kind: Positional }),
-      )
+      ctx.context.call(f.val, ctx.pkg, [{ val, kind: Positional }])
       is Bool(true)
     })
     Array(new_arr)
@@ -335,14 +315,12 @@ let array_filter_fn : RuntimeFunction = ctx => match ctx.args {
 ///|
 /// 数组fold操作
 let array_fold_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Array(arr), .. }, { val: init_val, .. }, { val: Fn(f, env), .. }, ..] =>
+  [{ val: Array(arr), .. }, { val: init_val, .. }, { val: Fn(f), .. }, ..] =>
     arr.fold(init=init_val, fn(acc, val) {
-      ctx.context.call(
-        f,
-        ctx.pkg,
-        env,
-        @list.of([{ val: acc, kind: Positional }, { val, kind: Positional }]),
-      )
+      ctx.context.call(f.val, ctx.pkg, [
+        { val: acc, kind: Positional },
+        { val, kind: Positional },
+      ])
     })
   _ => Unit
 }
@@ -350,13 +328,10 @@ let array_fold_fn : RuntimeFunction = ctx => match ctx.args {
 ///|
 /// 数组index_of操作
 let array_search_by_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Array(arr), .. }, { val: Fn(f, env), .. }] => {
-    let index = arr.search_by(val => (try? ctx.context.call(
-        f,
-        ctx.pkg,
-        env,
-        @list.singleton({ val, kind: Positional }),
-      ))
+  [{ val: Array(arr), .. }, { val: Fn(f), .. }] => {
+    let index = arr.search_by(val => (try? ctx.context.call(f.val, ctx.pkg, [
+        { val, kind: Positional },
+      ]))
       is Ok(Bool(true)))
     RuntimeValue::from_option(index.map(Int(_)))
   }

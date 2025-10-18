@@ -13,7 +13,7 @@ fn add_embedded_method(MoonBitVM, String, String, (@interpreter.RuntimeFunctionC
 
 fn add_extern_fn(MoonBitVM, String, (@interpreter.RuntimeFunctionContext) -> @interpreter.RuntimeValue raise @interpreter.ControlFlow) -> Unit
 
-fn eval_result_to_string(EvalResult) -> String
+fn eval_result_to_string(Result[@interpreter.RuntimeValue, String]) -> String
 
 fn expr_to_string(@syntax.Expr) -> String
 
@@ -24,7 +24,7 @@ fn value_to_string(@interpreter.RuntimeValue) -> String
 // Errors
 
 // Types and methods
-pub(all) enum EvalResult {
+pub enum EvalResult {
   Success(@interpreter.RuntimeValue, @interpreter.ClosureInterpreter)
   Error(String, @interpreter.ClosureInterpreter)
 }

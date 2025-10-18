@@ -5,6 +5,25 @@ pub(all) struct MoonBitVM {
 }
 
 ///|
+pub enum EvalResult {
+  Success(RuntimeValue, ClosureInterpreter)
+  Error(String, ClosureInterpreter)
+}
+
+///|
+pub impl Show for EvalResult with output(self : EvalResult, logger : &Logger) -> Unit {
+  logger.write_string(self.to_string())
+}
+
+///|
+pub impl Show for EvalResult with to_string(self : EvalResult) -> String {
+  match self {
+    Success(value, _) => value.to_string()
+    Error(msg, _) => "Error: " + msg
+  }
+}
+
+///|
 pub fn MoonBitVM::new(log? : Bool = false) -> MoonBitVM {
   let interpreter = ClosureInterpreter::new()
   interpreter.add_extern_fn("println", ctx => match ctx.args {
@@ -202,7 +221,7 @@ pub fn MoonBitVM::eval(
   code : String,
   log? : Bool,
   top? : Bool = false,
-) -> Result[RuntimeValue, String] {
+) -> EvalResult {
   try {
     if top {
       let (impls, _diagnostics) = @moonbitlang/parser.parse_string(
@@ -217,7 +236,7 @@ pub fn MoonBitVM::eval(
         let result = self.interpreter.top_visit(node)
         last_result = result
       })
-      return Ok(last_result)
+      return Success(last_result, self.interpreter)
     }
     match @interpreter.parse_code_to_expr(code) {
       Ok(expr) => {
@@ -225,12 +244,12 @@ pub fn MoonBitVM::eval(
         if log.unwrap_or(self.log) {
           println(expr.to_json().stringify())
         }
-        Ok(result_value)
+        return Success(result_value, self.interpreter)
       }
       Err(_) => self.eval(code, log?, top=true)
     }
   } catch {
-    @interpreter.ControlFlow::Error(msg) => Err(msg)
+    @interpreter.ControlFlow::Error(msg) => Error(msg, self.interpreter)
     _ => panic()
   }
 }

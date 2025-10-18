@@ -5,8 +5,7 @@
 pub fn ClosureInterpreter::call_closure(
   self : ClosureInterpreter,
   function : @syntax.Func,
-  mod : RuntimePackage,
-  env : RuntimeEnvironment,
+  pkg : RuntimePackage,
   args : @list.List[@syntax.Argument],
   name? : String,
 ) -> RuntimeValue raise ControlFlow {
@@ -16,7 +15,11 @@ pub fn ClosureInterpreter::call_closure(
       let runtime_args = self.convert_to_runtime_arguments(args)
 
       // 调用运行时版本
-      self.call(function, mod, env, runtime_args, name?)
+      self.call(
+        self.create_function(function, pkg, name?).val,
+        pkg,
+        runtime_args,
+      )
     }
     _ => RuntimeValue::Unit
   }
@@ -26,45 +29,44 @@ pub fn ClosureInterpreter::call_closure(
 /// 调用闭包函数，使用已求值的运行时参数
 pub fn ClosureInterpreter::call(
   self : ClosureInterpreter,
-  function : @syntax.Func,
-  mod : RuntimePackage,
-  env : RuntimeEnvironment,
-  args : @list.List[RuntimeArgument],
-  name? : String,
+  function : RuntimeFunction,
+  pkg : RuntimePackage,
+  args : FixedArray[RuntimeArgument],
 ) -> RuntimeValue raise ControlFlow {
-  match function {
-    @syntax.Func::Lambda(parameters~, body~, return_type~, ..) => {
-      // 切换到闭包捕获的环境
-      let old_mod = self.current_pkg
-      let old_env = mod.env
-      self.current_pkg = mod
-      self.current_pkg.env = env
-      self.push_scope(
-        RuntimeLocation::FunctionCall(
-          "@" +
-          mod.name +
-          "." +
-          name.unwrap_or("<function>") +
-          self.get_function_type_string(Fn(function, env)),
-        ),
-      )
-      // 在新环境中绑定已解释的参数值
-      self.bind_runtime_parameters(parameters, args)
-      defer {
-        self.pop_scope()
-        self.current_pkg.env = old_env
-        self.current_pkg = old_mod
-      }
-      // 执行函数体
-      let result = self.visit(body)
-      match (result.get_type(), result, return_type) {
-        (Any, Struct({ val, .. }), Some(Arrow(res~, ..))) =>
-          Struct({ val, ty: self.parse_type(res) })
-        _ => result
-      }
-    }
-    _ => RuntimeValue::Unit
-  }
+  function({ context: self, pkg, args })
+  // match function {
+  //   @syntax.Func::Lambda(parameters~, body~, return_type~, ..) => {
+  //     // 切换到闭包捕获的环境
+  //     let old_mod = self.current_pkg
+  //     let old_env = pkg.env
+  //     self.current_pkg = pkg
+  //     self.current_pkg.env = env
+  //     self.push_scope(
+  //       RuntimeLocation::FunctionCall(
+  //         "@" +
+  //         pkg.name +
+  //         "." +
+  //         name.unwrap_or("<function>") +
+  //         self.get_function_type_string(Fn(function, env)),
+  //       ),
+  //     )
+  //     // 在新环境中绑定已解释的参数值
+  //     self.bind_runtime_parameters(parameters, args)
+  //     defer {
+  //       self.pop_scope()
+  //       self.current_pkg.env = old_env
+  //       self.current_pkg = old_mod
+  //     }
+  //     // 执行函数体
+  //     let result = self.visit(body)
+  //     match (result.get_type(), result, return_type) {
+  //       (Any, Struct({ val, .. }), Some(Arrow(res~, ..))) =>
+  //         Struct({ val, ty: self.parse_type(res) })
+  //       _ => result
+  //     }
+  //   }
+  //   _ => RuntimeValue::Unit
+  // }
 }
 
 ///| 处理函数定义、调用和参数绑定
@@ -124,11 +126,15 @@ pub fn ClosureInterpreter::bind_function_parameters(
 fn ClosureInterpreter::convert_to_runtime_arguments(
   self : ClosureInterpreter,
   args : @list.List[@syntax.Argument],
-) -> @list.List[RuntimeArgument] raise ControlFlow {
-  args.map(arg => RuntimeArgument::{
-    val: self.visit(arg.value),
-    kind: RuntimeArgumentKind::from_syntax(arg.kind),
-  })
+) -> FixedArray[RuntimeArgument] raise ControlFlow {
+  FixedArray::from_iter(
+    args
+    .map(arg => RuntimeArgument::{
+      val: self.visit(arg.value),
+      kind: RuntimeArgumentKind::from_syntax(arg.kind),
+    })
+    .iter(),
+  )
 }
 
 ///|
@@ -192,21 +198,25 @@ fn ClosureInterpreter::bind_runtime_parameters(
 
 ///|
 /// 处理函数定义
-pub fn RuntimePackage::define_struct_method(
-  self : RuntimePackage,
+pub fn ClosureInterpreter::define_struct_method(
+  self : ClosureInterpreter,
+  pkg : RuntimePackage,
   type_name : String,
   method_name : String,
   func : @syntax.Func,
 ) -> Unit {
-  let methods = match self.struct_methods.get(type_name) {
+  let methods = match pkg.struct_methods.get(type_name) {
     Some(methods) => methods
     None => {
       let methods = Map::new()
-      self.struct_methods.set(type_name, methods)
+      pkg.struct_methods.set(type_name, methods)
       methods
     }
   }
-  methods.set(method_name, RuntimeValue::Fn(func, self.env))
+  methods.set(
+    method_name,
+    RuntimeValue::Fn(self.create_function(func, pkg, name=method_name)),
+  )
 }
 
 ///|

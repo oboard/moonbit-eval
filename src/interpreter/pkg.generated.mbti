@@ -41,6 +41,10 @@ fn extract_type_name(@syntax.Type) -> String
 
 let fixedarray_methods : Map[String, (RuntimeFunctionContext) -> RuntimeValue raise ControlFlow]
 
+let fs_methods : Map[String, (RuntimeFunctionContext) -> RuntimeValue raise ControlFlow]
+
+let fs_package : RuntimePackage
+
 let int_embedded_code : Map[String, (RuntimeFunctionContext) -> RuntimeValue raise ControlFlow]
 
 let int_methods : Map[String, (RuntimeFunctionContext) -> RuntimeValue raise ControlFlow]
@@ -89,14 +93,16 @@ fn ClosureInterpreter::add_embedded_fn(Self, String, (RuntimeFunctionContext) ->
 fn ClosureInterpreter::add_embedded_method(Self, String, String, (RuntimeFunctionContext) -> RuntimeValue raise ControlFlow) -> Unit
 fn ClosureInterpreter::add_extern_fn(Self, String, (RuntimeFunctionContext) -> RuntimeValue raise ControlFlow) -> Unit
 fn ClosureInterpreter::bind_function_parameters(Self, @list.List[@syntax.Parameter], @list.List[RuntimeArgument]) -> Unit raise ControlFlow
-fn ClosureInterpreter::call(Self, @syntax.Func, RuntimePackage, RuntimeEnvironment, @list.List[RuntimeArgument], name? : String) -> RuntimeValue raise ControlFlow
-fn ClosureInterpreter::call_closure(Self, @syntax.Func, RuntimePackage, RuntimeEnvironment, @list.List[@syntax.Argument], name? : String) -> RuntimeValue raise ControlFlow
+fn ClosureInterpreter::call(Self, (RuntimeFunctionContext) -> RuntimeValue raise ControlFlow, RuntimePackage, FixedArray[RuntimeArgument]) -> RuntimeValue raise ControlFlow
+fn ClosureInterpreter::call_closure(Self, @syntax.Func, RuntimePackage, @list.List[@syntax.Argument], name? : String) -> RuntimeValue raise ControlFlow
 fn ClosureInterpreter::constants_equal(Self, @syntax.Constant, @syntax.Constant) -> Bool
 fn ClosureInterpreter::constants_equal_expr(Self, @syntax.Expr, @syntax.Expr) -> Bool
+fn ClosureInterpreter::create_function(Self, @syntax.Func, RuntimePackage, name? : String) -> WithType[(RuntimeFunctionContext) -> RuntimeValue raise ControlFlow]
+fn ClosureInterpreter::define_struct_method(Self, RuntimePackage, String, String, @syntax.Func) -> Unit
 fn[A] ClosureInterpreter::error(Self, String) -> A raise ControlFlow
 fn ClosureInterpreter::find_pkg(Self, String) -> RuntimePackage
 fn ClosureInterpreter::format_patterns(Self, @list.List[@syntax.Case]) -> String
-fn ClosureInterpreter::get_function_type_string(Self, RuntimeValue) -> String
+fn ClosureInterpreter::get_function_type_string(Self, @syntax.Func) -> String
 fn ClosureInterpreter::infer_pattern_type(Self, @syntax.Pattern) -> String?
 fn ClosureInterpreter::interp_string(Self, @list.List[@syntax.InterpElem]) -> String raise ControlFlow
 fn ClosureInterpreter::is_known_function(Self, String) -> Bool
@@ -113,6 +119,7 @@ fn ClosureInterpreter::pop_scope(Self) -> Unit
 fn ClosureInterpreter::push_scope(Self, RuntimeLocation) -> Unit
 fn ClosureInterpreter::runtime_value_in_range(Self, RuntimeValue, @syntax.Pattern, @syntax.Pattern, Bool) -> Bool
 fn ClosureInterpreter::top_eval(Self, String) -> Unit
+fn ClosureInterpreter::top_func_def_to_closure(Self, RuntimePackage, @syntax.Impl, name? : String) -> (String?, RuntimeValue)
 fn ClosureInterpreter::top_visit(Self, @syntax.Impl) -> RuntimeValue
 fn ClosureInterpreter::visit(Self, @syntax.Expr, expected_type? : String) -> RuntimeValue raise ControlFlow
 fn ClosureInterpreter::visit_interp(Self, @list.List[@syntax.InterpElem]) -> RuntimeValue raise ControlFlow
@@ -176,7 +183,6 @@ fn RuntimeEnvironment::new(parent? : Self, values? : Map[String, RuntimeValue]) 
 fn RuntimeEnvironment::set(Self, String, RuntimeValue) -> Unit
 fn RuntimeEnvironment::set_mutable_variable(Self, String, RuntimeValue) -> Unit
 fn RuntimeEnvironment::to_json(Self) -> Json // from trait `ToJson`
-fn RuntimeEnvironment::top_func_def_to_closure(Self, @syntax.Impl) -> (String?, RuntimeValue)
 fn RuntimeEnvironment::update(Self, String, RuntimeValue) -> Unit
 impl ToJson for RuntimeEnvironment
 
@@ -200,7 +206,7 @@ impl ToJson for RuntimeErrorType
 pub(all) struct RuntimeFunctionContext {
   context : ClosureInterpreter
   pkg : RuntimePackage
-  args : Array[RuntimeArgument]
+  args : FixedArray[RuntimeArgument]
 }
 fn RuntimeFunctionContext::named(Self, String) -> RuntimeValue?
 
@@ -241,7 +247,6 @@ pub(all) struct RuntimePackage {
 fn RuntimePackage::check_type_constraint(Self, RuntimeValue, @syntax.Type) -> Bool
 fn RuntimePackage::cons(Self, String, Array[RuntimeValue]) -> RuntimeValue
 fn RuntimePackage::cons_with_labels(Self, String, Array[(String?, RuntimeValue, Bool)]) -> RuntimeValue
-fn RuntimePackage::define_struct_method(Self, String, String, @syntax.Func) -> Unit
 fn RuntimePackage::define_trait_method(Self, String, String, RuntimeValue) -> Unit
 fn RuntimePackage::find(Self, String) -> RuntimeValue?
 fn RuntimePackage::find_stub(Self, String) -> String
@@ -319,7 +324,7 @@ pub(all) enum RuntimeValue {
   UninitializedArray(UninitializedArray[RuntimeValue])
   Map(Map[RuntimeValue, RuntimeValue])
   Struct(WithType[Map[String, RuntimeValue]])
-  Fn(@syntax.Func, RuntimeEnvironment)
+  Fn(WithType[(RuntimeFunctionContext) -> RuntimeValue raise ControlFlow])
   Constructor(WithType[ConstructorValue])
   Exception(String)
   Iter(Iter[RuntimeValue])
@@ -330,7 +335,6 @@ fn RuntimeValue::add(Self, Self) -> Self // from trait `Add`
 fn RuntimeValue::compare(Self, Self) -> Int // from trait `Compare`
 fn RuntimeValue::equal(Self, Self) -> Bool // from trait `Eq`
 fn RuntimeValue::from_constant_with_type(@syntax.Constant, String?) -> Self
-fn RuntimeValue::from_expr(@syntax.Expr) -> Self
 fn RuntimeValue::from_option(Self?) -> Self
 fn RuntimeValue::from_pattern(@syntax.Pattern) -> Self
 fn RuntimeValue::from_result(Result[Self, Self]) -> Self
@@ -346,7 +350,6 @@ fn RuntimeValue::op_equal(Self, Self) -> Bool // from trait `Eq`
 fn RuntimeValue::output(Self, &Logger) -> Unit // from trait `Show`
 fn RuntimeValue::overload_array_literal(Self, String) -> Self
 fn RuntimeValue::overload_literal(Self, String) -> Self
-fn RuntimeValue::to_expr(Self) -> @syntax.Expr
 fn RuntimeValue::to_json(Self) -> Json // from trait `ToJson`
 fn RuntimeValue::to_string(Self) -> String // from trait `Show`
 impl Add for RuntimeValue

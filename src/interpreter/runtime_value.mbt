@@ -46,7 +46,7 @@ pub(all) enum RuntimeValue {
   Struct(WithType[Map[String, RuntimeValue]])
 
   // 函数类型 - 包含函数定义和捕获的环境（所有函数都是闭包）
-  Fn(@syntax.Func, RuntimeEnvironment)
+  Fn(WithType[RuntimeFunction])
 
   // 构造函数调用 - 支持带标签参数和可变字段
   Constructor(WithType[ConstructorValue])
@@ -189,14 +189,14 @@ pub impl ToJson for RuntimeValue with to_json(self : RuntimeValue) -> Json {
     Byte(b) => b.to_json()
     String(s) => s.to_json()
     Bytes(b) => b.to_string().to_json()
-    StringView(sv) => sv.to_string().to_json()
+    StringView(sv) => sv.to_json()
     StringBuilder(sb) => sb.to_string().to_json()
     Tuple(t) => t.to_json()
     Array(a) => a.to_json()
     FixedArray(a) => a.to_json()
     ArrayView(a) => a.to_json()
     Struct(s) => s.val.to_json()
-    Fn(f, _) => f.to_json()
+    Fn(f) => ["function", f.ty.to_json()]
     Constructor({ val: { name, fields }, .. }) => {
       let args = fields.map(fn(field) { field.value })
       [name, args.to_json()]
@@ -241,8 +241,7 @@ pub impl Eq for RuntimeValue with equal(
     (Struct({ val: a, .. }), Struct({ val: b, .. })) => a == b
 
     // 闭包类型的比较 - 比较函数签名和环境
-    (Fn(func_a, _), Fn(func_b, _)) =>
-      compare_function_signatures(func_a, func_b)
+    (Fn(a), Fn(b)) => compare_function_signatures(a, b)
 
     // 构造函数比较
     (
@@ -272,76 +271,10 @@ pub impl Eq for RuntimeValue with equal(
 ///|
 /// 通过参数类型、返回类型等信息判断函数是否相同
 fn compare_function_signatures(
-  func_a : @syntax.Func,
-  func_b : @syntax.Func,
+  a : WithType[RuntimeFunction],
+  b : WithType[RuntimeFunction],
 ) -> Bool {
-  match (func_a, func_b) {
-    (
-      Lambda(parameters=params_a, return_type=ret_type_a, ..),
-      Lambda(parameters=params_b, return_type=ret_type_b, ..),
-    ) => {
-      // 比较参数列表长度
-      if params_a.length() != params_b.length() {
-        return false
-      }
-
-      // 比较每个参数的类型
-      let mut parameters_a = params_a
-      let mut parameters_b = params_b
-      while true {
-        match (parameters_a, parameters_b) {
-          (@list.More(param_a, tail=tail_a), @list.More(param_b, tail=tail_b)) => {
-            if not(compare_parameter_signatures(param_a, param_b)) {
-              return false
-            }
-            parameters_a = tail_a
-            parameters_b = tail_b
-          }
-          (@list.Empty, @list.Empty) => break
-          _ => return false
-        }
-      }
-
-      // 比较返回类型
-      match (ret_type_a, ret_type_b) {
-        (Some(ret_a), Some(ret_b)) => compare_type_signatures(ret_a, ret_b)
-        (None, None) => true
-        _ => false
-      }
-    }
-    _ => false // 其他函数类型暂不支持
-  }
-}
-
-///|
-/// 比较两个参数的签名是否相等
-fn compare_parameter_signatures(
-  param_a : @syntax.Parameter,
-  param_b : @syntax.Parameter,
-) -> Bool {
-  match (param_a, param_b) {
-    (
-      @syntax.Parameter::Positional(binder=binder_a, ty=ty_a),
-      @syntax.Parameter::Positional(binder=binder_b, ty=ty_b),
-    )
-    | (
-      @syntax.Parameter::Labelled(binder=binder_a, ty=ty_a),
-      @syntax.Parameter::Labelled(binder=binder_b, ty=ty_b),
-    )
-    | (
-      @syntax.Parameter::QuestionOptional(binder=binder_a, ty=ty_a),
-      @syntax.Parameter::QuestionOptional(binder=binder_b, ty=ty_b),
-    ) => binder_a.name == binder_b.name && compare_optional_types(ty_a, ty_b)
-    (
-      @syntax.Parameter::Optional(binder=binder_a, ty=ty_a, ..),
-      @syntax.Parameter::Optional(binder=binder_b, ty=ty_b, ..),
-    ) => binder_a.name == binder_b.name && compare_optional_types(ty_a, ty_b)
-    (
-      @syntax.Parameter::DiscardPositional(ty=ty_a, ..),
-      @syntax.Parameter::DiscardPositional(ty=ty_b, ..),
-    ) => compare_optional_types(ty_a, ty_b)
-    _ => false
-  }
+  a.ty == b.ty
 }
 
 ///|
@@ -464,16 +397,6 @@ pub fn RuntimeValue::from_constant_with_type(
   match expected_type {
     Some(ty) => default_value.overload_literal(ty)
     None => default_value
-  }
-}
-
-///|
-/// 比较两个可选类型是否相等
-fn compare_optional_types(ty_a : @syntax.Type?, ty_b : @syntax.Type?) -> Bool {
-  match (ty_a, ty_b) {
-    (Some(t_a), Some(t_b)) => compare_type_signatures(t_a, t_b)
-    (None, None) => true
-    _ => false
   }
 }
 
@@ -734,86 +657,7 @@ pub impl Show for RuntimeValue with to_string(self) -> String {
     Iter(_) => "<iterator>"
     Iter2(_) => "<iter2>"
     // 从函数中提取参数和返回类型信息
-    Fn(func, _env) => {
-      fn infer_func_type(func : @syntax.Func) -> String {
-        match func {
-          @syntax.Func::Lambda(parameters~, return_type~, body~, ..) => {
-            let param_strs = []
-            for param in parameters {
-              let param_str = match param {
-                @syntax.Parameter::Positional(binder~, ty~) =>
-                  match ty {
-                    Some(t) => binder.name + ": " + type_to_string(t) // 简化类型显示
-                    None => binder.name
-                  }
-                @syntax.Parameter::Labelled(binder~, ty~) =>
-                  match ty {
-                    Some(t) => binder.name + "~: " + type_to_string(t)
-                    None => binder.name + "~"
-                  }
-                @syntax.Parameter::Optional(binder~, ty~, default~) => {
-                  let type_str = match ty {
-                    Some(t) => binder.name + "~: " + type_to_string(t)
-                    None => binder.name + "~"
-                  }
-                  // 添加默认值显示
-                  match default {
-                    Constant(c=Int(val), ..) => type_str + " = " + val
-                    _ => type_str
-                  }
-                }
-                @syntax.Parameter::QuestionOptional(binder~, ty~) =>
-                  match ty {
-                    Some(t) => binder.name + "?: " + type_to_string(t)
-                    None => binder.name + "?"
-                  }
-                @syntax.Parameter::DiscardPositional(..) => "_"
-              }
-              param_strs.push(param_str)
-            }
-            match return_type {
-              Some(t) =>
-                "(" + param_strs.join(", ") + ") -> " + type_to_string(t)
-              None => {
-                // 对于没有显式返回类型的函数，无法在这里进行复杂的类型推导
-                // 因为这里没有解释器上下文，所以只能进行简单的推导
-                let inferred_type = match body {
-                  Constant(c~, ..) =>
-                    match c {
-                      Int(_) => "Int"
-                      UInt(_) => "UInt"
-                      Int64(_) => "Int64"
-                      // UInt16(_) => "UInt16"
-                      UInt64(_) => "UInt64"
-                      Float(_) => "Float"
-                      Double(_) => "Double"
-                      BigInt(_) => "BigInt"
-                      Char(_) => "Char"
-                      Byte(_) => "Byte"
-                      String(_) => "String"
-                      Bool(_) => "Bool"
-                      Bytes(_) => "Bytes"
-                    }
-                  Unit(..) => "Unit"
-                  Array(..) => "Array"
-                  Tuple(..) => "Tuple"
-                  Record(..) => "Record"
-                  Apply(
-                    func=Function(func=Lambda(return_type=Some(ty), ..), ..),
-                    ..
-                  ) => type_to_string(ty)
-                  _ => "Any"
-                }
-                "(" + param_strs.join(", ") + ") -> " + inferred_type
-              }
-            }
-          }
-          _ => "<function>"
-        }
-      }
-
-      infer_func_type(func)
-    }
+    Fn(func) => func.ty.to_string()
     Exception(msg) => "exception: " + msg
     Json(j) => j.to_string()
   }
@@ -854,103 +698,6 @@ pub fn type_to_string(ty : @syntax.Type) -> String {
       }
     Option(ty~, ..) => type_to_string(ty) + "?"
     Object(_) => "Object"
-  }
-}
-
-///|
-/// 将RuntimeValue转换为表达式（用于输出）
-pub fn RuntimeValue::to_expr(self : RuntimeValue) -> @syntax.Expr {
-  let _dummy_loc = @basic.Location::{
-    start: { fname: "", lnum: 0, bol: 0, cnum: 0 },
-    end: { fname: "", lnum: 0, bol: 0, cnum: 0 },
-  }
-  match self {
-    Map(_) => Unit(loc=_dummy_loc, faked=true)
-    Unit => Unit(loc=_dummy_loc, faked=true)
-    Bool(b) => Constant(c=Bool(b), loc=_dummy_loc)
-    Int(i) => Constant(c=Int(i.to_string()), loc=_dummy_loc)
-    UInt(u) => Constant(c=Int(u.to_string()), loc=_dummy_loc)
-    UInt16(u) => Constant(c=Int(u.to_string()), loc=_dummy_loc)
-    Int64(i64) => Constant(c=Int64(i64.to_string()), loc=_dummy_loc)
-    UInt64(u64) => Constant(c=UInt64(u64.to_string()), loc=_dummy_loc)
-    Float(f) => Constant(c=Float(f.to_string()), loc=_dummy_loc)
-    Double(d) => Constant(c=Double(d.to_string()), loc=_dummy_loc)
-    BigInt(b) => Constant(c=BigInt(b.to_string()), loc=_dummy_loc)
-    Char(c) => Constant(c=Char(c.to_string()), loc=_dummy_loc)
-    Byte(b) => Constant(c=Int(b.to_int().to_string()), loc=_dummy_loc)
-    String(s) => Constant(c=String(s), loc=_dummy_loc)
-    Bytes(b) => Constant(c=Bytes(b.to_string()), loc=_dummy_loc)
-    StringView(sv) => Constant(c=String(sv.to_string()), loc=_dummy_loc)
-    Tuple(values) => {
-      let exprs = values.map(fn(v) { v.to_expr() })
-      Tuple(exprs=@list.from_array(exprs), loc=_dummy_loc)
-    }
-    Array(values) => {
-      let exprs = values.map(fn(v) { v.to_expr() })
-      Array(exprs=@list.from_array(exprs), loc=_dummy_loc)
-    }
-    FixedArray(values) => {
-      let exprs = Array::from_fixed_array(values.map(fn(v) { v.to_expr() }))
-      Array(exprs=@list.from_array(exprs), loc=_dummy_loc)
-    }
-    ArrayView(values) => {
-      let exprs = values.map(fn(v) { v.to_expr() })
-      Array(exprs=@list.from_array(exprs), loc=_dummy_loc)
-    }
-    UninitializedArray(_) => Unit(loc=_dummy_loc, faked=true)
-    // 结构类型转换为Record表达式
-    Struct(_) => Unit(loc=_dummy_loc, faked=true)
-    Fn(func, _env) => Function(func~, loc=_dummy_loc)
-    Constructor(_) => Unit(loc=_dummy_loc, faked=true)
-    Exception(_) => Unit(loc=_dummy_loc, faked=true)
-    Iter(_) => Unit(loc=_dummy_loc, faked=true)
-    Iter2(_) => Unit(loc=_dummy_loc, faked=true)
-    Json(_) => Unit(loc=_dummy_loc, faked=true)
-    StringBuilder(sb) => Constant(c=String(sb.to_string()), loc=_dummy_loc)
-  }
-}
-
-///|
-/// 将@syntax.Expr转换为RuntimeValue
-pub fn RuntimeValue::from_expr(expr : @syntax.Expr) -> RuntimeValue {
-  match expr {
-    Unit(..) => Unit
-    Constant(c~, ..) =>
-      match c {
-        Bool(b) => Bool(b)
-        Int(i) => Int((try? @strconv.parse_int(i)).unwrap())
-        Double(d) => Double((try? @strconv.parse_double(d)).unwrap())
-        Char(c) => Char(c.get_char(0).unwrap())
-        String(s) => String(s)
-        Bytes(b) => Bytes(@encoding/utf8.encode(b))
-        _ => Unit
-      }
-    Tuple(exprs~, ..) => {
-      let values = exprs.map(fn(e) { RuntimeValue::from_expr(e) })
-      Tuple(values.to_array())
-    }
-    Array(exprs~, ..) => {
-      let values = exprs.map(fn(e) { RuntimeValue::from_expr(e) })
-      // 数组应该是引用类型，但这里无法访问store，暂时返回Array
-      // 实际使用时需要通过带store的方法来处理
-      Array(values.to_array())
-    }
-    Function(func~, ..) => Fn(func, RuntimeEnvironment::new())
-    Record(fields~, ..) => {
-      // 创建一个新的结构
-      let struct_data = Map::new()
-      for field in fields {
-        let field_name = field.label.name
-        let field_value = RuntimeValue::from_expr(field.expr)
-        struct_data.set(field_name, field_value)
-      }
-      Struct({ val: struct_data, ty: Any })
-    }
-    Ident(..) => Unit // Ident表达式需要通过环境查找，这里返回Unit作为占位符
-    Sequence(last_expr~, ..) =>
-      // 对于Sequence表达式，只关心最后一个表达式的值
-      RuntimeValue::from_expr(last_expr)
-    _ => Unit
   }
 }
 

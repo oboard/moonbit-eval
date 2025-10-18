@@ -76,14 +76,12 @@ let map_copy_fn : RuntimeFunction = ctx => match ctx.args {
 ///|
 /// Map each操作
 let map_each_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Map(map), .. }, { val: Fn(f, env), .. }] => {
+  [{ val: Map(map), .. }, { val: Fn(f), .. }] => {
     map.each(fn(key, val) {
-      ctx.context.call(
-        f,
-        ctx.pkg,
-        env,
-        @list.of([{ val: key, kind: Positional }, { val, kind: Positional }]),
-      )
+      ctx.context.call(f.val, ctx.pkg, [
+        { val: key, kind: Positional },
+        { val, kind: Positional },
+      ])
       |> ignore
     })
     Unit
@@ -94,18 +92,13 @@ let map_each_fn : RuntimeFunction = ctx => match ctx.args {
 ///|
 /// Map eachi操作
 let map_eachi_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Map(map), .. }, { val: Fn(f, env), .. }] => {
+  [{ val: Map(map), .. }, { val: Fn(f), .. }] => {
     map.eachi(fn(i, key, val) {
-      ctx.context.call(
-        f,
-        ctx.pkg,
-        env,
-        @list.of([
-          { val: Int(i), kind: Positional },
-          { val: key, kind: Positional },
-          { val, kind: Positional },
-        ]),
-      )
+      ctx.context.call(f.val, ctx.pkg, [
+        { val: Int(i), kind: Positional },
+        { val: key, kind: Positional },
+        { val, kind: Positional },
+      ])
       |> ignore
     })
     Unit
@@ -166,11 +159,11 @@ let map_get_or_default_fn : RuntimeFunction = ctx => match ctx.args {
 ///|
 /// Map get_or_init操作
 let map_get_or_init_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Map(map), .. }, { val: key, .. }, { val: Fn(f, env), .. }] =>
+  [{ val: Map(map), .. }, { val: key, .. }, { val: Fn(f), .. }] =>
     match map.get(key) {
       Some(val) => val
       None => {
-        let val = ctx.context.call(f, ctx.pkg, env, @list.empty())
+        let val = ctx.context.call(f.val, ctx.pkg, [])
         map.set(key, val)
         val
       }
@@ -213,15 +206,13 @@ let map_keys_fn : RuntimeFunction = ctx => match ctx.args {
 ///|
 /// Map map操作
 let map_map_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Map(map), .. }, { val: Fn(f, env), .. }] => {
+  [{ val: Map(map), .. }, { val: Fn(f), .. }] => {
     let new_map = Map::new()
     map.each(fn(key, val) {
-      let new_val = ctx.context.call(
-        f,
-        ctx.pkg,
-        env,
-        @list.of([{ val: key, kind: Positional }, { val, kind: Positional }]),
-      )
+      let new_val = ctx.context.call(f.val, ctx.pkg, [
+        { val: key, kind: Positional },
+        { val, kind: Positional },
+      ])
       new_map.set(key, new_val)
     })
     Map(new_map)
@@ -293,15 +284,12 @@ let map_to_array_fn : RuntimeFunction = ctx => match ctx.args {
 ///|
 /// Map update操作
 let map_update_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Map(map), .. }, { val: key, .. }, { val: Fn(f, env), .. }] => {
+  [{ val: Map(map), .. }, { val: key, .. }, { val: Fn(f), .. }] => {
     match map.get(key) {
       Some(old_val) => {
-        let new_val = ctx.context.call(
-          f,
-          ctx.pkg,
-          env,
-          @list.singleton({ val: old_val, kind: Positional }),
-        )
+        let new_val = ctx.context.call(f.val, ctx.pkg, [
+          { val: old_val, kind: Positional },
+        ])
         map.set(key, new_val)
       }
       None => ()

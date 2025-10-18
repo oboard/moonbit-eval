@@ -99,7 +99,6 @@ pub impl Show for RuntimeType with output(self : RuntimeType, logger : &Logger) 
       logger.write_char(')')
       logger.write_string(" -> ")
       res.output(logger)
-      logger.write_string(" raise ")
       err.output(logger)
     }
     Tuple(tys) => {
@@ -115,7 +114,7 @@ pub impl Show for RuntimeType with output(self : RuntimeType, logger : &Logger) 
       logger.write_char(')')
     }
     Name(pkg~, name~, tys~) => {
-      if pkg.name != "main" {
+      if pkg.name != "main" && !pkg.name.has_prefix("moonbitlang/core") {
         logger.write_char('@')
         logger.write_string(pkg.name)
         logger.write_char('.')
@@ -198,6 +197,38 @@ pub fn ClosureInterpreter::parse_type(
       Object(pkg~, name~)
     }
     Option(ty~, ..) => Option(self.parse_type(ty))
+  }
+}
+
+///|
+fn ClosureInterpreter::parse_function_type(
+  self : ClosureInterpreter,
+  func : @syntax.Func,
+) -> RuntimeType {
+  match func {
+    Lambda(parameters~, error_type~, is_async~, body~, return_type~, ..) => {
+      let param_types = parameters.map(param => match param {
+        DiscardPositional(ty~, ..) =>
+          self.parse_type(ty.unwrap_or(Any(loc=dummy_loc())))
+        Positional(ty~, ..) =>
+          self.parse_type(ty.unwrap_or(Any(loc=dummy_loc())))
+        Labelled(ty~, ..) => self.parse_type(ty.unwrap_or(Any(loc=dummy_loc())))
+        Optional(ty~, ..) => self.parse_type(ty.unwrap_or(Any(loc=dummy_loc())))
+        QuestionOptional(ty~, ..) =>
+          self.parse_type(ty.unwrap_or(Any(loc=dummy_loc())))
+      })
+      let return_type = match return_type {
+        Some(return_type) => self.parse_type(return_type)
+        None => self.infer_return_type_from_expr(body)
+      }
+      Arrow(
+        args=param_types,
+        res=return_type,
+        err=self.parse_error_type(error_type),
+        is_async~,
+      )
+    }
+    _ => Any
   }
 }
 

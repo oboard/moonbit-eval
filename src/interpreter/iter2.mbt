@@ -20,14 +20,14 @@ pub let iter2_methods : Map[String, RuntimeFunction] = {
 
 ///|
 let iter2_run_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Iter2(iter2), .. }, { val: Fn(func, env), .. }] => {
+  [{ val: Iter2(iter2), .. }, { val: Fn(func), .. }] => {
     let result = iter2.run(fn(a, b) {
-      let runtime_args = @list.of([
-        { val: a, kind: Positional },
-        { val: b, kind: Positional },
-      ])
       try {
-        match ctx.context.call(func, ctx.pkg, env, runtime_args) {
+        match
+          ctx.context.call(func.val, ctx.pkg, [
+            { val: a, kind: Positional },
+            { val: b, kind: Positional },
+          ]) {
           Unit => IterEnd
           _ => IterContinue
         }
@@ -45,13 +45,15 @@ let iter2_run_fn : RuntimeFunction = ctx => match ctx.args {
 
 ///|
 let iter2_each_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Iter2(iter2), .. }, { val: Fn(func, env), .. }] => {
+  [{ val: Iter2(iter2), .. }, { val: Fn(func), .. }] => {
     iter2.each(fn(a, b) {
-      let runtime_args = @list.of([
-        { val: a, kind: Positional },
-        { val: b, kind: Positional },
-      ])
-      try ctx.context.call(func, ctx.pkg, env, runtime_args) |> ignore catch {
+      try
+        ctx.context.call(func.val, ctx.pkg, [
+          { val: a, kind: Positional },
+          { val: b, kind: Positional },
+        ])
+        |> ignore
+      catch {
         _ => ()
       }
     })

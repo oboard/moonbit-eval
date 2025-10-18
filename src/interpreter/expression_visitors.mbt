@@ -197,8 +197,12 @@ fn ClosureInterpreter::visit_apply(
       _ => {
         let func_value = self.visit(func)
         match func_value {
-          Fn(function, captured_env) =>
-            self.call_closure(function, self.current_pkg, captured_env, args)
+          Fn(function) =>
+            self.call(
+              function.val,
+              self.current_pkg,
+              self.convert_to_runtime_arguments(args),
+            )
           _ => Unit
         }
       }

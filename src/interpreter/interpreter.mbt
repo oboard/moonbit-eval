@@ -184,7 +184,7 @@ pub fn ClosureInterpreter::top_visit(
           self.current_pkg.define_trait_method(
             trait_name,
             method_name,
-            RuntimeValue::Fn(self.create_function(func, self.current_pkg)),
+            Fn(self.create_function(func, self.current_pkg)),
           )
           Unit
         }
@@ -521,16 +521,11 @@ pub fn ClosureInterpreter::visit(
           let ty = self_value.get_type()
           match ty.find_method("op_as_view") {
             Some((pkg, Fn(func))) =>
-              self.call(
-                func,
-                pkg,
-                [
-                  { val: self_value, kind: Positional },
-                  { val: start.unwrap_or(Unit), kind: LabelledOption("start") },
-                  { val: end.unwrap_or(Unit), kind: LabelledOption("end") },
-                ],
-                name="op_as_view",
-              )
+              self.call(func.val, pkg, [
+                { val: self_value, kind: Positional },
+                { val: start.unwrap_or(Unit), kind: LabelledOption("start") },
+                { val: end.unwrap_or(Unit), kind: LabelledOption("end") },
+              ])
             Some(_) =>
               self.error("\{ty.to_string()}::op_as_view is not a function")
             None => self.error("\{ty.to_string()}::op_as_view not found")
@@ -705,54 +700,57 @@ pub fn ClosureInterpreter::visit(
     }
 
     // 处理管道表达式 (Pipe) - 将左侧值作为右侧函数的第一个参数
-    Pipe(lhs~, rhs~, ..) => {
-      // 先评估左侧值
-      let left_val = self.visit(lhs)
+    Pipe(lhs~, rhs~, ..) =>
       match rhs {
         // 处理简单函数调用，如 5 |> ignore
         Ident(id={ name, .. }, ..) => {
-          // 创建包含左侧值的参数列表
-          let left_expr = left_val.to_expr()
           let pipe_args = @list.cons(
-            @syntax.Argument::{ value: left_expr, kind: Positional },
+            @syntax.Argument::{ value: lhs, kind: Positional },
             @list.new(),
           )
           self.call_by_name(name, pipe_args)
         }
         // 处理方法调用，如 [] |> Array::push(5)
-        Apply(func~, args~, ..) =>
+        Apply(func~, args~, ..) => {
+          let pipe_args = @list.cons(
+            @syntax.Argument::{ value: lhs, kind: Positional },
+            args,
+          )
           match func {
             Method(type_name~, method_name~, ..) =>
-              self.with_ident(type_name.name, fn(
+              self.with_ident(type_name.name, (
                 pkg,
-                type_name,
-              ) raise ControlFlow {
-                // 将左侧值添加到参数列表前面
-                let left_expr = left_val.to_expr()
-                let pipe_args = @list.cons(
-                  @syntax.Argument::{ value: left_expr, kind: Positional },
-                  args,
-                )
-                self.execute_static_method_call(
-                  pkg.find_static_type(type_name),
-                  method_name.name,
-                  pipe_args,
-                )
+                ty_name,
+                // 查找用户定义的静态方法
+              ) => match pkg.struct_methods.get(ty_name) {
+                Some(methods) =>
+                  match methods.get(method_name.name) {
+                    Some(Fn(func)) =>
+                      (func.val)({
+                        context: self,
+                        pkg: self.current_pkg,
+                        args: self.convert_to_runtime_arguments(pipe_args),
+                      })
+                    _ =>
+                      self.error(
+                        "method \{ty_name}:\{method_name.name} not found",
+                      )
+                  }
+                None => self.error("type \{ty_name} not found")
               })
             Ident(id={ name, .. }, ..) => {
               // 处理函数调用，如 5 |> func(arg1, arg2)
-              let left_expr = left_val.to_expr()
               let pipe_args = @list.cons(
-                @syntax.Argument::{ value: left_expr, kind: Positional },
+                @syntax.Argument::{ value: lhs, kind: Positional },
                 args,
               )
               self.call_by_name(name, pipe_args)
             }
-            _ => left_val
+            _ => panic()
           }
-        _ => left_val
+        }
+        _ => panic()
       }
-    }
 
     // 处理序列表达式
     Sequence(exprs~, last_expr~, ..) => {
@@ -870,9 +868,9 @@ pub fn ClosureInterpreter::visit(
     RecordUpdate(record~, fields~, ..) =>
       self.visit_record_update(record, fields)
     Method(type_name~, method_name~, ..) =>
-      self.with_ident(type_name.name, fn(mod, ty_name) {
+      self.with_ident(type_name.name, fn(pkg, ty_name) {
         // 查找用户定义的静态方法
-        match mod.struct_methods.get(ty_name) {
+        match pkg.struct_methods.get(ty_name) {
           Some(methods) =>
             match methods.get(method_name.name) {
               Some(func) => func

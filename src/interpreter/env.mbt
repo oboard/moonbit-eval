@@ -77,9 +77,11 @@ pub fn RuntimeEnvironment::create_closure_env(
 
 ///|
 /// 处理函数声明体，创建Lambda函数
-pub fn RuntimeEnvironment::top_func_def_to_closure(
-  self : RuntimeEnvironment,
+pub fn ClosureInterpreter::top_func_def_to_closure(
+  self : ClosureInterpreter,
+  pkg : RuntimePackage,
   func : @syntax.Impl,
+  name? : String,
 ) -> (String?, RuntimeValue) {
   if func
     is TopFuncDef(fun_decl~, decl_body=DeclBody(local_types=_, expr=body), loc~) {
@@ -111,7 +113,7 @@ pub fn RuntimeEnvironment::top_func_def_to_closure(
       } => Some(name)
       _ => None
     }
-    (type_name, RuntimeValue::Fn(func, self.create_closure_env()))
+    (type_name, Fn(self.create_function(func, pkg, name?)))
   } else {
     (None, Unit)
   }

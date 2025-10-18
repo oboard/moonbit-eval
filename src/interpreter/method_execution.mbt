@@ -2,7 +2,6 @@
 
 ///|
 priv enum FunctionLookupResult {
-  RuntimeClosure(@syntax.Func, RuntimeEnvironment)
   DirectFunction(RuntimeFunction)
   NotFound
 }
@@ -14,7 +13,7 @@ priv enum FunctionLookupResult {
 /// 创建RuntimeFunctionContext的辅助函数
 fn ClosureInterpreter::create_function_context(
   self : ClosureInterpreter,
-  args : Array[RuntimeArgument],
+  args : FixedArray[RuntimeArgument],
 ) -> RuntimeFunctionContext {
   RuntimeFunctionContext::{ pkg: self.current_pkg, context: self, args }
 }
@@ -37,7 +36,7 @@ fn ClosureInterpreter::find_embedded_method(
 fn ClosureInterpreter::execute_embedded_function(
   self : ClosureInterpreter,
   func : RuntimeFunction,
-  args : Array[RuntimeArgument],
+  args : FixedArray[RuntimeArgument],
 ) -> RuntimeValue raise ControlFlow {
   func(self.create_function_context(args))
 }
@@ -51,25 +50,11 @@ fn ClosureInterpreter::lookup_function(
 ) -> FunctionLookupResult {
   // 首先查找用户函数
   match pkg.find(name).unwrap_or(self.current_pkg.find(name).unwrap_or(Unit)) {
-    Fn(func, env) =>
-      // 检查是否是embedded函数的标记
-      match func {
-        Lambda(body=Ident(id={ name: Ident(name=embedded_name), .. }, ..), ..) =>
-          match embedded_name {
-            ['%', ..] =>
-              match self.embedded_fns.get(embedded_name) {
-                Some(embedded_func) =>
-                  FunctionLookupResult::DirectFunction(embedded_func)
-                None => FunctionLookupResult::NotFound
-              }
-            _ => FunctionLookupResult::RuntimeClosure(func, env)
-          }
-        _ => FunctionLookupResult::RuntimeClosure(func, env)
-      }
+    Fn(func) => FunctionLookupResult::DirectFunction(func.val)
     _ =>
       // 查找fn_aliases
       match pkg.fn_aliases.get(name) {
-        Some(Fn(func, env)) => FunctionLookupResult::RuntimeClosure(func, env)
+        Some(Fn(func)) => FunctionLookupResult::DirectFunction(func.val)
         _ =>
           // 查找extern函数
           match self.extern_fns.get(name) {
@@ -94,17 +79,17 @@ fn ClosureInterpreter::call_by_name(
   long_ident : @syntax.LongIdent,
   args : @list.List[@syntax.Argument],
 ) -> RuntimeValue raise ControlFlow {
-  let evaluated_args = args
+  let evaluated_args : FixedArray[RuntimeArgument] = FixedArray::from_array(
+    args
     .map(arg => RuntimeArgument::{
       val: self.visit(arg.value),
       kind: RuntimeArgumentKind::from_syntax(arg.kind),
     })
-    .to_array()
-  self.with_ident(long_ident, fn(pkg, name) {
+    .to_array(),
+  )
+  self.with_ident(long_ident, (pkg, name) => {
     let name = pkg.find_stub(name)
     match self.lookup_function(pkg, name) {
-      FunctionLookupResult::RuntimeClosure(lambda_func, captured_env) =>
-        self.call_closure(lambda_func, pkg, captured_env, args, name~)
       FunctionLookupResult::DirectFunction(func) =>
         self.execute_embedded_function(func, evaluated_args)
       FunctionLookupResult::NotFound =>
@@ -135,7 +120,9 @@ fn ClosureInterpreter::method_call(
         )
         return self.execute_embedded_function(
           embedded_method,
-          evaluated_args.map(arg => { val: arg, kind: Positional }).to_array(),
+          FixedArray::from_array(
+            evaluated_args.map(arg => { val: arg, kind: Positional }).to_array(),
+          ),
         )
       }
       None => () // Continue to try regular methods
@@ -162,29 +149,21 @@ fn ClosureInterpreter::execute_user_method(
   args : @list.List[@syntax.Argument],
 ) -> RuntimeValue raise ControlFlow {
   let old_mod = self.current_pkg
-  let args = args.map(arg => {
-    val: self.visit(arg.value),
-    kind: RuntimeArgumentKind::from_syntax(arg.kind),
-  })
+  let args = FixedArray::from_array(
+    args
+    .map(arg => {
+      val: self.visit(arg.value),
+      kind: RuntimeArgumentKind::from_syntax(arg.kind),
+    })
+    .to_array(),
+  )
   self.push_scope(RuntimeLocation::FunctionCall(method_name))
   defer {
     self.pop_scope()
     self.current_pkg = old_mod
   }
   match func {
-    Fn(Lambda(parameters~, body~, ..), captured_env) => {
-      let old_env = pkg.env
-      self.current_pkg = pkg
-      self.current_pkg.env = captured_env
-      defer {
-        self.current_pkg.env = old_env
-      }
-      self.bind_function_parameters(
-        parameters,
-        @list.cons({ val: self_value, kind: Positional }, args),
-      )
-      self.visit(body)
-    }
+    Fn(func) => (func.val)({ context: self, pkg, args })
     _ =>
       self.error(
         "exec method: \{self_value.get_type().to_string()}::\{method_name} not found",
@@ -200,18 +179,19 @@ fn ClosureInterpreter::execute_static_method_call(
   method_name : String,
   args : @list.List[@syntax.Argument],
 ) -> RuntimeValue raise ControlFlow {
+  let evaluated_args = FixedArray::from_array(
+    args
+    .map(arg => {
+      val: self.visit(arg.value),
+      kind: RuntimeArgumentKind::from_syntax(arg.kind),
+    })
+    .to_array(),
+  )
   // 尝试embedded方法
   if type_info is Object(name~, ..) {
     match self.find_embedded_method(name, method_name) {
-      Some(embedded_func) => {
-        let evaluated_args = args
-          .map(arg => {
-            val: self.visit(arg.value),
-            kind: RuntimeArgumentKind::from_syntax(arg.kind),
-          })
-          .to_array()
+      Some(embedded_func) =>
         return self.execute_embedded_function(embedded_func, evaluated_args)
-      }
       None => ()
     }
   }
@@ -220,8 +200,7 @@ fn ClosureInterpreter::execute_static_method_call(
   match type_info.find_method(method_name) {
     Some((pkg, func)) =>
       match func {
-        Fn(func, env) =>
-          self.call_closure(func, pkg, env, args, name=method_name)
+        Fn(func) => self.call(func.val, pkg, evaluated_args)
         _ => Unit
       }
     None => self.error("static method \{type_info}::\{method_name} not found")

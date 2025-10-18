@@ -216,9 +216,8 @@ test "raise_expressions" {
 test "loop_expressions" {
   let vm = MoonBitVM::new()
   // Test loop expressions
-  assert_eq(
-    vm
-    .eval(
+  inspect(
+    vm.eval(
       (
         #|fn sum(xs : @list.List[Int]) -> Int {
         #|  loop (xs, 0) {
@@ -227,17 +226,16 @@ test "loop_expressions" {
         #|  }
         #|}
       ),
-    )
-    .to_string(),
-    "(xs: @list.List[Int]) -> Int",
+    ),
+    content="(xs: @list.List[Int]) -> Int",
   )
-  assert_eq(vm.eval("let list = @list.from_array([1, 2, 3])").to_string(), "()")
-  assert_eq(
-    vm.eval("list").to_string(),
-    "More(1, tail=More(2, tail=More(3, tail=Empty)))",
+  inspect(vm.eval("let list = @list.from_array([1, 2, 3])"), content="()")
+  inspect(
+    vm.eval("list"),
+    content="More(1, tail=More(2, tail=More(3, tail=Empty)))",
   )
-  assert_eq(vm.eval("sum(list)").to_string(), "6")
-  assert_eq(vm.eval("@list.to_array(list)").to_string(), "[1, 2, 3]")
+  inspect(vm.eval("sum(list)"), content="6")
+  inspect(vm.eval("@list.to_array(list)"), content="[1, 2, 3]")
 }
 
 ///|

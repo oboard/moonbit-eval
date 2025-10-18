@@ -166,15 +166,10 @@ let fixedarray_binary_search_fn : RuntimeFunction = ctx => match ctx.args {
 ///|
 /// FixedArray::binary_search_by 操作 - 使用比较函数的二分查找
 let fixedarray_binary_search_by_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: FixedArray(arr), .. }, { val: Fn(f, env), .. }] =>
+  [{ val: FixedArray(arr), .. }, { val: Fn(f), .. }] =>
     arr
     .binary_search_by(v => match
-      ctx.context.call(
-        f,
-        ctx.pkg,
-        env,
-        @list.singleton({ val: v, kind: Positional }),
-      ) {
+      ctx.context.call(f.val, ctx.pkg, [{ val: v, kind: Positional }]) {
       Int(i) => i
       _ => raise Error("binary_search_by closure must return int")
     })

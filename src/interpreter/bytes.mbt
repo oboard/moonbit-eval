@@ -39,15 +39,12 @@ let bytes_make_fn : RuntimeFunction = ctx => match ctx.args {
 
 ///|
 let bytes_makei_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Int(len), .. }, { val: Fn(f, env), .. }] => {
+  [{ val: Int(len), .. }, { val: Fn(f), .. }] => {
     let result = Bytes::makei(len, fn(i) {
       let arg = Int(i)
-      let ret = ctx.context.call(
-        f,
-        ctx.pkg,
-        env,
-        @list.singleton({ val: arg, kind: Positional }),
-      )
+      let ret = ctx.context.call(f.val, ctx.pkg, [
+        { val: arg, kind: Positional },
+      ])
       match ret {
         Byte(b) => b
         _ => 0

@@ -141,16 +141,13 @@ let string_find_fn : RuntimeFunction = ctx => match ctx.args {
 
 ///|
 let string_find_by_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: String(s), .. }, { val: Fn(func, env), .. }] =>
+  [{ val: String(s), .. }, { val: Fn(func), .. }] =>
     RuntimeValue::from_option(
       s
       .find_by(char => {
-        let res = ctx.context.call(
-          func,
-          ctx.pkg,
-          env,
-          @list.singleton({ val: Char(char), kind: Positional }),
-        ) catch {
+        let res = ctx.context.call(func.val, ctx.pkg, [
+          { val: Char(char), kind: Positional },
+        ]) catch {
           _ => Unit
         }
         match res {
@@ -165,17 +162,12 @@ let string_find_by_fn : RuntimeFunction = ctx => match ctx.args {
 
 ///|
 let string_fold_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: String(s), .. }, { val: init, .. }, { val: Fn(func, env), .. }, ..] =>
+  [{ val: String(s), .. }, { val: init, .. }, { val: Fn(func), .. }, ..] =>
     s.fold(init~, fn(acc, char) {
-      ctx.context.call(
-        func,
-        ctx.pkg,
-        env,
-        @list.of([
-          { val: acc, kind: Positional },
-          { val: Char(char), kind: Positional },
-        ]),
-      ) catch {
+      ctx.context.call(func.val, ctx.pkg, [
+        { val: acc, kind: Positional },
+        { val: Char(char), kind: Positional },
+      ]) catch {
         _ => Unit
       }
     })
@@ -273,19 +265,14 @@ let string_rev_fold_fn : RuntimeFunction = ctx => match ctx.args {
   [
     { val: String(s), .. },
     { val: init, kind: Labelled("init") },
-    { val: Fn(func, env), .. },
+    { val: Fn(func), .. },
     ..,
   ] =>
     s.rev_fold(init~, fn(acc, char) {
-      ctx.context.call(
-        func,
-        ctx.pkg,
-        env,
-        @list.of([
-          { val: acc, kind: Positional },
-          { val: Char(char), kind: Positional },
-        ]),
-      ) catch {
+      ctx.context.call(func.val, ctx.pkg, [
+        { val: acc, kind: Positional },
+        { val: Char(char), kind: Positional },
+      ]) catch {
         _ => Unit
       }
     })

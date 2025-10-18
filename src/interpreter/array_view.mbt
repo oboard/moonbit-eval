@@ -66,14 +66,11 @@ let array_view_len_fn : RuntimeFunction = ctx => match ctx.args {
 ///|
 /// ArrayView all 方法
 let array_view_all_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: ArrayView(arr), .. }, { val: Fn(f, env), .. }] =>
+  [{ val: ArrayView(arr), .. }, { val: Fn(f), .. }] =>
     Bool(
-      arr.all(elem => ctx.context.call(
-          f,
-          ctx.pkg,
-          env,
-          @list.singleton({ val: elem, kind: Positional }),
-        )
+      arr.all(elem => ctx.context.call(f.val, ctx.pkg, [
+          { val: elem, kind: Positional },
+        ])
         is Bool(true)),
     )
   _ => Unit
@@ -82,14 +79,11 @@ let array_view_all_fn : RuntimeFunction = ctx => match ctx.args {
 ///|
 /// ArrayView any 方法
 let array_view_any_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: ArrayView(arr), .. }, { val: Fn(f, env), .. }] =>
+  [{ val: ArrayView(arr), .. }, { val: Fn(f), .. }] =>
     Bool(
-      arr.any(elem => ctx.context.call(
-          f,
-          ctx.pkg,
-          env,
-          @list.singleton({ val: elem, kind: Positional }),
-        )
+      arr.any(elem => ctx.context.call(f.val, ctx.pkg, [
+          { val: elem, kind: Positional },
+        ])
         is Bool(true)),
     )
   _ => Unit
@@ -105,13 +99,10 @@ let array_view_contains_fn : RuntimeFunction = ctx => match ctx.args {
 ///|
 /// ArrayView each 方法
 let array_view_each_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: ArrayView(arr), .. }, { val: Fn(f, env), .. }] => {
-    arr.each(elem => ctx.context.call(
-        f,
-        ctx.pkg,
-        env,
-        @list.singleton({ val: elem, kind: Positional }),
-      )
+  [{ val: ArrayView(arr), .. }, { val: Fn(f), .. }] => {
+    arr.each(elem => ctx.context.call(f.val, ctx.pkg, [
+        { val: elem, kind: Positional },
+      ])
       |> ignore)
     Unit
   }
@@ -121,16 +112,11 @@ let array_view_each_fn : RuntimeFunction = ctx => match ctx.args {
 ///|
 /// ArrayView eachi 方法
 let array_view_eachi_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: ArrayView(arr), .. }, { val: Fn(f, env), .. }] => {
-    arr.eachi((i, elem) => ctx.context.call(
-        f,
-        ctx.pkg,
-        env,
-        @list.of([
-          { val: Int(i), kind: Positional },
-          { val: elem, kind: Positional },
-        ]),
-      )
+  [{ val: ArrayView(arr), .. }, { val: Fn(f), .. }] => {
+    arr.eachi((i, elem) => ctx.context.call(f.val, ctx.pkg, [
+        { val: Int(i), kind: Positional },
+        { val: elem, kind: Positional },
+      ])
       |> ignore)
     Unit
   }
@@ -140,14 +126,11 @@ let array_view_eachi_fn : RuntimeFunction = ctx => match ctx.args {
 ///|
 /// ArrayView filter 方法
 let array_view_filter_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: ArrayView(arr), .. }, { val: Fn(f, env), .. }] =>
+  [{ val: ArrayView(arr), .. }, { val: Fn(f), .. }] =>
     Array(
-      arr.filter(elem => ctx.context.call(
-          f,
-          ctx.pkg,
-          env,
-          @list.singleton({ val: elem, kind: Positional }),
-        )
+      arr.filter(elem => ctx.context.call(f.val, ctx.pkg, [
+          { val: elem, kind: Positional },
+        ])
         is Bool(true)),
     )
   _ => Unit
@@ -156,17 +139,12 @@ let array_view_filter_fn : RuntimeFunction = ctx => match ctx.args {
 ///|
 /// ArrayView fold 方法
 let array_view_fold_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: ArrayView(arr), .. }, { val: init, .. }, { val: Fn(f, env), .. }] =>
+  [{ val: ArrayView(arr), .. }, { val: init, .. }, { val: Fn(f), .. }] =>
     arr.fold(init~, fn(acc, elem) {
-      ctx.context.call(
-        f,
-        ctx.pkg,
-        env,
-        @list.of([
-          { val: acc, kind: Positional },
-          { val: elem, kind: Positional },
-        ]),
-      )
+      ctx.context.call(f.val, ctx.pkg, [
+        { val: acc, kind: Positional },
+        { val: elem, kind: Positional },
+      ])
     })
   _ => Unit
 }
@@ -174,18 +152,13 @@ let array_view_fold_fn : RuntimeFunction = ctx => match ctx.args {
 ///|
 /// ArrayView foldi 方法
 let array_view_foldi_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: ArrayView(arr), .. }, { val: init, .. }, { val: Fn(f, env), .. }] =>
+  [{ val: ArrayView(arr), .. }, { val: init, .. }, { val: Fn(f), .. }] =>
     arr.foldi(init~, fn(i, acc, elem) {
-      ctx.context.call(
-        f,
-        ctx.pkg,
-        env,
-        @list.of([
-          { val: Int(i), kind: Positional },
-          { val: acc, kind: Positional },
-          { val: elem, kind: Positional },
-        ]),
-      )
+      ctx.context.call(f.val, ctx.pkg, [
+        { val: Int(i), kind: Positional },
+        { val: acc, kind: Positional },
+        { val: elem, kind: Positional },
+      ])
     })
   _ => Unit
 }
@@ -222,14 +195,11 @@ let array_view_join_fn : RuntimeFunction = ctx => match ctx.args {
 ///|
 /// ArrayView map 方法
 let array_view_map_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: ArrayView(arr), .. }, { val: Fn(f, env), .. }] =>
+  [{ val: ArrayView(arr), .. }, { val: Fn(f), .. }] =>
     Array(
-      arr.map(elem => ctx.context.call(
-        f,
-        ctx.pkg,
-        env,
-        @list.singleton({ val: elem, kind: Positional }),
-      )),
+      arr.map(elem => ctx.context.call(f.val, ctx.pkg, [
+        { val: elem, kind: Positional },
+      ])),
     )
   _ => Unit
 }
@@ -237,17 +207,12 @@ let array_view_map_fn : RuntimeFunction = ctx => match ctx.args {
 ///|
 /// ArrayView mapi 方法
 let array_view_mapi_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: ArrayView(arr), .. }, { val: Fn(f, env), .. }] =>
+  [{ val: ArrayView(arr), .. }, { val: Fn(f), .. }] =>
     Array(
-      arr.mapi((i, elem) => ctx.context.call(
-        f,
-        ctx.pkg,
-        env,
-        @list.of([
-          { val: Int(i), kind: Positional },
-          { val: elem, kind: Positional },
-        ]),
-      )),
+      arr.mapi((i, elem) => ctx.context.call(f.val, ctx.pkg, [
+        { val: Int(i), kind: Positional },
+        { val: elem, kind: Positional },
+      ])),
     )
   _ => Unit
 }
@@ -255,17 +220,12 @@ let array_view_mapi_fn : RuntimeFunction = ctx => match ctx.args {
 ///|
 /// ArrayView rev_fold 方法
 let array_view_rev_fold_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: ArrayView(arr), .. }, { val: init, .. }, { val: Fn(f, env), .. }] =>
+  [{ val: ArrayView(arr), .. }, { val: init, .. }, { val: Fn(f), .. }] =>
     arr.rev_fold(init~, fn(acc, elem) {
-      ctx.context.call(
-        f,
-        ctx.pkg,
-        env,
-        @list.of([
-          { val: acc, kind: Positional },
-          { val: elem, kind: Positional },
-        ]),
-      )
+      ctx.context.call(f.val, ctx.pkg, [
+        { val: acc, kind: Positional },
+        { val: elem, kind: Positional },
+      ])
     })
   _ => Unit
 }
@@ -273,18 +233,13 @@ let array_view_rev_fold_fn : RuntimeFunction = ctx => match ctx.args {
 ///|
 /// ArrayView rev_foldi 方法
 let array_view_rev_foldi_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: ArrayView(arr), .. }, { val: init, .. }, { val: Fn(f, env), .. }] =>
+  [{ val: ArrayView(arr), .. }, { val: init, .. }, { val: Fn(f), .. }] =>
     arr.rev_foldi(init~, fn(i, acc, elem) {
-      ctx.context.call(
-        f,
-        ctx.pkg,
-        env,
-        @list.of([
-          { val: Int(i), kind: Positional },
-          { val: acc, kind: Positional },
-          { val: elem, kind: Positional },
-        ]),
-      )
+      ctx.context.call(f.val, ctx.pkg, [
+        { val: Int(i), kind: Positional },
+        { val: acc, kind: Positional },
+        { val: elem, kind: Positional },
+      ])
     })
   _ => Unit
 }
