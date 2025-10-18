@@ -35,6 +35,11 @@ inspect(vm.eval("if x > 40 { \"big\" } else { \"small\" }"), content="big")
 inspect(vm.eval("match (1, 2) { (a, b) => a + b }"), content="3")
 ```
 
+## ✨ Features
+
+- ✅ **🥮 Mooncakes Loader**: Load Mooncakes packages at runtime
+- ✅ **Builtin FileSystem Library**: Provides basic file system operations.
+
 ## MoonBit Language Support
 
 | Feature | Status | Description |
@@ -162,20 +167,6 @@ inspect(vm.eval("match (1, 2) { (a, b) => a + b }"), content="3")
 | #cfg | ❌ | Conditional compilation based on configuration |
 | **Not Yet Supported** | | |
 | Async/await | ❌ | Asynchronous programming |
-
-## Features
-
-- ✅ **Complete Expression Support**: Arithmetic, logical, and comparison operations
-- ✅ **Variable Management**: Immutable and mutable variable declarations
-- ✅ **Control Flow**: If-else statements, for loops, while loops
-- ✅ **Function Definitions**: Named functions with parameters and return types
-- ✅ **Lambda Expressions**: Anonymous functions with closure support
-- ✅ **Struct Definitions**: Custom data types with methods and mutable fields
-- ✅ **Pattern Matching**: Comprehensive pattern matching with multiple pattern types
-- ✅ **Array & Tuple Operations**: Creation, indexing, and destructuring
-- ✅ **External Integration**: External and embedded function support
-- ✅ **Built-in Methods**: Native methods for all primitive types
-- ✅ **Type System**: Basic type checking and inference
 
 ## Contributing
 
