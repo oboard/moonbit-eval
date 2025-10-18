@@ -300,6 +300,11 @@ pub fn RuntimeType::string() -> RuntimeType {
 }
 
 ///|
+pub fn RuntimeType::string_view() -> RuntimeType {
+  Object(pkg=moonbitlang_core_string_module, name="StringView")
+}
+
+///|
 pub fn RuntimeType::bytes() -> RuntimeType {
   Object(pkg=moonbitlang_core_bytes_module, name="Bytes")
 }
@@ -347,6 +352,11 @@ pub fn RuntimeType::option() -> RuntimeType {
 ///|
 pub fn RuntimeType::string_builder() -> RuntimeType {
   Object(pkg=moonbitlang_core_builtin_module, name="StringBuilder")
+}
+
+///|
+pub fn RuntimeType::hashmap() -> RuntimeType {
+  Object(pkg=moonbitlang_core_hashmap_module, name="HashMap")
 }
 
 ///|

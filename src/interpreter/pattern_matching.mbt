@@ -269,7 +269,7 @@ pub fn ClosureInterpreter::match_case(
     // Record模式匹配
     Record(fields=pat_fields, ..) =>
       match value {
-        Struct({ val: record_fields, .. }) => {
+        Object({ val: record_fields, .. }) => {
           for pat_field in pat_fields {
             match record_fields.get(pat_field.label.name) {
               Some(field_value) =>

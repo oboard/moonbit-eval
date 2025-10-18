@@ -12,7 +12,7 @@ fn ClosureInterpreter::visit_record_update(
   // 先评估原记录
   let original_record = self.visit(record)
   match original_record {
-    Struct(refer) => {
+    Object(refer) => {
       // 复制原有字段
       let new_fields = refer.val.copy()
 
@@ -24,7 +24,7 @@ fn ClosureInterpreter::visit_record_update(
       })
 
       // 创建新的结构体
-      Struct({ val: new_fields, ty: refer.ty })
+      Object({ val: new_fields, ty: refer.ty })
     }
     _ => self.error("RecordUpdate can only be applied to struct values")
   }
@@ -42,7 +42,7 @@ fn ClosureInterpreter::visit_mutate(
 
   // 获取记录的运行时值（支持嵌套字段访问）
   match self.visit(record) {
-    Struct(refer) =>
+    Object(refer) =>
       match accessor {
         Label(label) =>
           match augmented_by {

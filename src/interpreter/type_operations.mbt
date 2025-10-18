@@ -91,14 +91,16 @@ fn RuntimeValue::get_type(self : RuntimeValue) -> RuntimeType {
     Byte(_) => RuntimeType::byte()
     String(_) => RuntimeType::string()
     Bytes(_) => RuntimeType::bytes()
-    StringView(_) => RuntimeType::string()
+    StringView(_) => RuntimeType::string_view()
+    StringBuilder(_) => RuntimeType::string_builder()
+    HashMap(_) => RuntimeType::hashmap()
     Tuple(_) => RuntimeType::tuple()
     Array(_) => RuntimeType::array()
     FixedArray(_) => RuntimeType::array()
     ArrayView(_) => RuntimeType::array_view()
     UninitializedArray(_) => RuntimeType::uninitialized_array()
     Map(_) => RuntimeType::map()
-    Struct(data) => data.ty
+    Object(data) => data.ty
     // Closure(Lambda(parameters~,return_type~,error_type~,is_async~,..),_) => Arrow
     // TODO: 闭包类型
     Fn(_) => Any
@@ -107,7 +109,6 @@ fn RuntimeValue::get_type(self : RuntimeValue) -> RuntimeType {
     Iter(_) => RuntimeType::iter()
     Iter2(_) => RuntimeType::iter()
     Json(_) => RuntimeType::json()
-    StringBuilder(_) => RuntimeType::string_builder()
   }
 }
 

@@ -4,6 +4,8 @@
       "path": "oboard/moonbit-eval",
       "alias": "eval"
     },
-    "oboard/moonbit-eval/interpreter"
+    "oboard/moonbit-eval/interpreter",
+    "oboard/mio",
+    "oboard/moonbit-eval/mooncakes"
   ]
 }

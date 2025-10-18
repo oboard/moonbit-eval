@@ -290,6 +290,7 @@ fn RuntimeType::output(Self, &Logger) -> Unit // from trait `Show`
 fn RuntimeType::result() -> Self
 fn RuntimeType::string() -> Self
 fn RuntimeType::string_builder() -> Self
+fn RuntimeType::string_view() -> Self
 fn RuntimeType::to_json(Self) -> Json // from trait `ToJson`
 fn RuntimeType::to_string(Self) -> String // from trait `Show`
 fn RuntimeType::tuple() -> Self
@@ -324,7 +325,7 @@ pub(all) enum RuntimeValue {
   ArrayView(ArrayView[RuntimeValue])
   UninitializedArray(UninitializedArray[RuntimeValue])
   Map(Map[RuntimeValue, RuntimeValue])
-  Struct(WithType[Map[String, RuntimeValue]])
+  Object(WithType[Map[String, RuntimeValue]])
   Fn(WithType[(RuntimeFunctionContext) -> RuntimeValue raise ControlFlow])
   Constructor(WithType[ConstructorValue])
   Exception(String)

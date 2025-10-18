@@ -129,11 +129,11 @@ pub fn RuntimePackage::check_type_constraint(
         true
       })
     (
-      Struct({ ty: Object(pkg={ name: pkg1, .. }, name=name1), .. }),
+      Object({ ty: Object(pkg={ name: pkg1, .. }, name=name1), .. }),
       Object({ id: Dot(pkg=pkg2, id=name2), .. }),
     ) => name1 == name2 && pkg1 == pkg2
     (
-      Struct({ ty: Object(name=name1, ..), .. }),
+      Object({ ty: Object(name=name1, ..), .. }),
       Object({ id: Ident(name=name2), .. }),
     ) => name1 == name2
 

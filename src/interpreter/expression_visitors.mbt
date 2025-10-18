@@ -62,7 +62,7 @@ fn ClosureInterpreter::visit_record_creation(
     evaluated_fields.set(field.label.name, field_value)
   }
   fn alloc(pkg : RuntimePackage, name : String) -> RuntimeValue {
-    Struct({ val: evaluated_fields, ty: Object(pkg~, name~) })
+    Object({ val: evaluated_fields, ty: Object(pkg~, name~) })
   }
 
   if type_name is Some(type_name) {
@@ -240,7 +240,9 @@ fn ClosureInterpreter::visit_field(
 ) -> RuntimeValue raise ControlFlow {
   let record_val = self.visit(record)
   match (record_val, accessor) {
-    (Struct({ val: fields, .. }), Label(label)) =>
+    (String(str), Index(tuple_index~, ..)) =>
+      RuntimeValue::from_option(str.get(tuple_index).map(Int(_)))
+    (Object({ val: fields, .. }), Label(label)) =>
       match fields.get(label.name) {
         Some(field_value) => field_value
         None => self.error("Field: not found")
@@ -268,7 +270,25 @@ fn ClosureInterpreter::visit_field(
         Some(field_value) => field_value
         None => self.error("Field: not found")
       }
-    _ => self.error("Field: not implemented")
+    // (Object({ty,..}),_)=>{
+    //   if ty.find_method("_[_]") is Some((pkg, func)) {
+    //     if func is Fn({ val: func, .. }) {
+    //       func({
+    //         context: self,
+    //         pkg,
+    //         args: [
+    //           RuntimeArgument::{ val: record_val, kind: Positional },
+    //           RuntimeArgument::{ val: accessor, kind: Positional },
+    //         ],
+    //       })
+    //     } else {
+    //       self.error("Field accessor: not implemented")
+    //     }
+    //   } else {
+    //     self.error("Field accessor: not implemented")
+    //   }
+    // }
+    _ => self.error("Field accessor: not implemented")
   }
 }
 

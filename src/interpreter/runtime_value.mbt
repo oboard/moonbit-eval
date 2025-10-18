@@ -33,6 +33,7 @@ pub(all) enum RuntimeValue {
   Bytes(Bytes)
   StringView(StringView)
   StringBuilder(StringBuilder)
+  HashMap(@hashmap.HashMap[RuntimeValue, RuntimeValue])
 
   // 复合值类型
   Tuple(Array[RuntimeValue])
@@ -43,7 +44,7 @@ pub(all) enum RuntimeValue {
   Map(Map[RuntimeValue, RuntimeValue])
 
   // 结构类型 - 直接存储字段映射
-  Struct(WithType[Map[String, RuntimeValue]])
+  Object(WithType[Map[String, RuntimeValue]])
 
   // 函数类型 - 包含函数定义和捕获的环境（所有函数都是闭包）
   Fn(WithType[RuntimeFunction])
@@ -195,7 +196,8 @@ pub impl ToJson for RuntimeValue with to_json(self : RuntimeValue) -> Json {
     Array(a) => a.to_json()
     FixedArray(a) => a.to_json()
     ArrayView(a) => a.to_json()
-    Struct(s) => s.val.to_json()
+    Object(s) => s.val.to_json()
+    HashMap(m) => m.to_json()
     Fn(f) => ["function", f.ty.to_json()]
     Constructor({ val: { name, fields }, .. }) => {
       let args = fields.map(fn(field) { field.value })
@@ -238,7 +240,7 @@ pub impl Eq for RuntimeValue with equal(
     (Tuple(a), Tuple(b)) | (Array(a), Array(b)) => a == b
 
     // 结构类型比较
-    (Struct({ val: a, .. }), Struct({ val: b, .. })) => a == b
+    (Object({ val: a, .. }), Object({ val: b, .. })) => a == b
 
     // 闭包类型的比较 - 比较函数签名和环境
     (Fn(a), Fn(b)) => compare_function_signatures(a, b)
@@ -486,7 +488,7 @@ pub fn RuntimeArgumentKind::from_syntax(
 /// 检查值是否为引用类型
 pub fn RuntimeValue::is_reference(self : RuntimeValue) -> Bool {
   match self {
-    Struct(_) => true
+    Object(_) => true
     Constructor(_) => true
     _ => false
   }
@@ -555,7 +557,7 @@ pub fn RuntimeValue::overload_array_literal(
 /// 检查值是否为可变类型
 pub fn RuntimeValue::is_mutable(self : RuntimeValue) -> Bool {
   match self {
-    Struct(_) => true
+    Object(_) => true
     _ => false
   }
 }
@@ -634,13 +636,14 @@ pub impl Show for RuntimeValue with to_string(self) -> String {
         .join(", ")
       "{\{parts}}"
     }
-    Struct(fields) => {
+    Object(fields) => {
       let parts = []
       fields.val.each(fn(field_name, field_value) {
         parts.push(field_name + ": " + field_value.to_string())
       })
       "\{self.get_type()}::{" + parts.join(", ") + "}"
     }
+    HashMap(hashmap) => hashmap.to_string()
     Constructor({ val: { name, fields }, .. }) =>
       // Format constructor call with field names if present
       if fields.length() == 0 {

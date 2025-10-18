@@ -37,7 +37,7 @@ fn ClosureInterpreter::visit_field_augmented_assignment(
 ) -> RuntimeValue raise ControlFlow {
   let right_val = self.visit(rhs)
   match self.visit(record) {
-    Struct(refer) =>
+    Object(refer) =>
       match accessor {
         Label(label) => {
           let current_val = refer.val.get(label.name).unwrap_or(Int(0))
@@ -103,6 +103,24 @@ fn ClosureInterpreter::visit_array_set(
       let index = self.visit(index)
       let value = self.visit(value)
       map.set(index, value)
+    }
+    Object({ ty, .. }) => {
+      let index = self.visit(index)
+      let value = self.visit(value)
+      if ty.find_method("_[_]=_") is Some((pkg, func)) {
+        if func is Fn({ val: func, .. }) {
+          func({
+            context: self,
+            pkg,
+            args: [
+              RuntimeArgument::{ val: array_value, kind: Positional },
+              RuntimeArgument::{ val: index, kind: Positional },
+              RuntimeArgument::{ val: value, kind: Positional },
+            ],
+          })
+          |> ignore
+        }
+      }
     }
     _ => raise Error("Unsupported array set operation")
   }

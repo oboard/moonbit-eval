@@ -45,8 +45,8 @@ pub fn ClosureInterpreter::create_function(
         // 执行函数体
         let result = self.visit(body)
         match (result.get_type(), result, return_type) {
-          (Any, Struct({ val, .. }), Some(Arrow(res~, ..))) =>
-            Struct({ val, ty: self.parse_type(res) })
+          (Any, Object({ val, .. }), Some(Arrow(res~, ..))) =>
+            Object({ val, ty: self.parse_type(res) })
           _ => result
         }
       }

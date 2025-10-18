@@ -114,6 +114,8 @@ let core_embedded_methods : Map[String, Map[String, RuntimeFunction]] = {
   "Bool": { "compare": bool_compare_fn, "default": bool_default_fn },
   "Int": int_methods,
   "String": string_methods,
+  "StringView": string_view_methods,
+  "HashMap": hash_map_methods,
   "UInt": {
     "mod": uint_mod_fn,
     "compare": uint_compare_fn,

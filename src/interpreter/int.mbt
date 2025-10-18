@@ -14,6 +14,7 @@ pub let int_methods : Map[String, RuntimeFunction] = {
   "popcnt": int_popcnt_fn,
   "to_string": int_to_string_fn,
   "unsafe_to_char": char_from_int_fn,
+  "next_power_of_two": int_next_power_of_two_fn,
 }
 
 ///|
@@ -141,5 +142,12 @@ let int_popcnt_fn : RuntimeFunction = ctx => match ctx.args {
 /// 整数转字符串
 let int_to_string_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Int(i), .. }] => String(i.to_string())
+  _ => Unit
+}
+
+///|
+/// 计算不小于该整数的最小2的幂
+let int_next_power_of_two_fn : RuntimeFunction = ctx => match ctx.args {
+  [{ val: Int(i), .. }] => Int(i.next_power_of_two())
   _ => Unit
 }

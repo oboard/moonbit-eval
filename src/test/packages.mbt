@@ -54,25 +54,20 @@ test "cross_package_method_calling" {
   assert_eq(vm.eval("arr1.length()").to_string(), "5")
 }
 
-// waiting for package `zipc`
-// ///|
-// test "online_package" {
-//   let vm = MoonBitVM::new()
-//   @mio.run(() => {
-//     let modules = try? @mooncakes.load_module("oboard/mimetype")
-//     if modules is Ok(modules) {
-//       vm.interpreter.main.deps.set(
-//         "mimetype",
-//         modules.get("oboard/mimetype").unwrap().pkgs["lib"],
-//       )
-//       println(
-//         vm.eval("@minetype.new().get_type(\"txt\")") catch {
-//           _ => Error("Failed to get type", vm.interpreter)
-//         },
-//       )
-//     }
-//   })
-// }
+///|
+test "online_package" {
+  let vm = MoonBitVM::new()
+  @mio.run(() => {
+    let modules = try? @mooncakes.load_module("wangweigang/hello")
+    if modules is Ok(modules) {
+      vm.interpreter.main_pkg.deps.set(
+        "hello",
+        modules.get("wangweigang/hello").unwrap().pkgs["hello"],
+      )
+      println(vm.eval("@hello.hello()"))
+    }
+  })
+}
 
 // ///|
 // test {
@@ -92,37 +87,76 @@ test "cross_package_method_calling" {
 //   })
 // }
 
-// ///|
+///|
 // test {
 //   @mio.run(fn() {
-//     if (try? @mooncakes.load_meta("oboard/mimetype")) is Ok(a) {
-//       println(a.get_zip_url())
+//     let module_name = "oboard/mimetype"
+//     if (try? @mooncakes.load_meta(module_name)) is Ok(a) {
 //       let res = try? @mio.get(a.get_zip_url())
 //       if res is Ok(res) {
-//         if @zipc.of_bytes(res.data) is Ok(zip) {
-//           println(zip.members.keys())
+//         if (try? @zip.Archive::of_bytes(res.data)) is Ok(zip) {
+//           if zip.find(@fpath.Fpath("moon.mod.json")) is Some(m) {
+//             if m.kind() is File(data) {
+//               let module_info : @interpreter.ModuleInfo = @json.from_json(
+//                 @json.parse(@encoding/utf8.decode(data.to_bytes())),
+//               ) catch {
+//                 _ => abort("Failed to read moon.mod.json")
+//               }
+//               // println(module_info)
+//               let root = if module_info.source is Some(source) {
+//                 source
+//               } else {
+//                 ""
+//               }
+//               // println(root)
+//               fn collect_files(root : String) -> Map[String, String] {
+//                 let files = {}
+//                 for entry in zip.to_array() {
+//                   if entry.kind() is File(file) {
+//                     let path = entry.path().to_string()
+//                     if path.has_prefix(root) && path.has_suffix(".mbt") {
+//                       try {
+//                         files[path] = @encoding/utf8.decode(file.to_bytes())
+//                       } catch {
+//                         _ => abort("Failed to decode file content")
+//                       }
+//                     }
+//                   }
+//                 }
+//                 files
+//               }
+//               // 找出所有的 packages
+//               fn scan_packages() -> Array[@interpreter.RuntimePackage] {
+//                 let pkgs = []
+//                 for entry in zip.to_array() {
+//                   if entry.is_dir() {
+//                     let dir = entry.path().to_string()
+//                     if zip.find(@fpath.Fpath(dir + "moon.pkg.json")) is Some(_) {
+//                       let pkg_name = module_name +
+//                         dir.strip_prefix(root).unwrap_or(dir).to_string()
+//                       // println(pkg_name)
+//                       // println(dir)
+//                       pkgs.push(
+//                         @interpreter.RuntimePackage::new(
+//                           pkg_name,
+//                           files=collect_files(dir),
+//                         ),
+//                       )
+//                     }
+//                   }
+//                 }
+//                 pkgs
+//               }
+
+//               let packages = scan_packages()
+
+//             }
+//           }
 //         }
 //       }
 //     }
 //   })
 // }
-
-// ///|
-// test "request" {
-//   @mio.run(fn() {
-//     if (try? @mio.get(
-//         "https://moonbitlang-mooncakes.s3.us-west-2.amazonaws.com/user/oboard/mimetype/0.1.8.zip",
-//       ))
-//       is Ok(res) {
-//       println(res.data.length())
-//       match @zipc.of_bytes(res.data) {
-//         Ok(zip) => println(zip.members.size())
-//         Err(e) => println(e.to_string())
-//       }
-//     }
-//   })
-// }
-
 // ///|
 // test {
 //   @mio.run(fn() {
