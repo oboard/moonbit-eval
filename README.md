@@ -39,6 +39,7 @@ inspect(vm.eval("match (1, 2) { (a, b) => a + b }"), content="3")
 
 - ✅ **🥮 Mooncakes Loader**: Load Mooncakes packages at runtime
 - ✅ **Builtin FileSystem Library**: Provides basic file system operations.
+- ✅ **Eval Function**: Allows dynamic evaluation of MoonBit code strings.
 
 ## MoonBit Language Support
 
