@@ -3,6 +3,7 @@ package "oboard/moonbit-eval/interpreter"
 
 import(
   "moonbitlang/core/bigint"
+  "moonbitlang/core/hashmap"
   "moonbitlang/core/json"
   "moonbitlang/core/list"
   "moonbitlang/parser/basic"
@@ -44,6 +45,8 @@ let fixedarray_methods : Map[String, (RuntimeFunctionContext) -> RuntimeValue ra
 let fs_methods : Map[String, (RuntimeFunctionContext) -> RuntimeValue raise ControlFlow]
 
 let fs_package : RuntimePackage
+
+let hash_map_methods : Map[String, (RuntimeFunctionContext) -> RuntimeValue raise ControlFlow]
 
 let int_embedded_code : Map[String, (RuntimeFunctionContext) -> RuntimeValue raise ControlFlow]
 
@@ -277,6 +280,7 @@ fn RuntimeType::double() -> Self
 fn RuntimeType::equal(Self, Self) -> Bool // from trait `Eq`
 fn RuntimeType::fixed_array() -> Self
 fn RuntimeType::float() -> Self
+fn RuntimeType::hashmap() -> Self
 fn RuntimeType::int() -> Self
 fn RuntimeType::int64() -> Self
 fn RuntimeType::iter() -> Self
@@ -319,6 +323,7 @@ pub(all) enum RuntimeValue {
   Bytes(Bytes)
   StringView(StringView)
   StringBuilder(StringBuilder)
+  HashMap(@hashmap.HashMap[RuntimeValue, RuntimeValue])
   Tuple(Array[RuntimeValue])
   Array(Array[RuntimeValue])
   FixedArray(FixedArray[RuntimeValue])
