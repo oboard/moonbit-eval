@@ -6,6 +6,7 @@ let core_stubs : Map[String, String] = {
   "println": "%println_mono",
   "typeof": "%typeof",
   "eval": "%eval",
+  "require": "%require",
   "panic": "%panic",
   "abort": "%abort",
 }
@@ -16,6 +17,7 @@ let builtin_embedded_code : Map[String, RuntimeFunction] = {
   "%panic": panic_fn,
   "%typeof": typeof_fn,
   "%eval": eval_fn,
+  "%require": require_fn,
   "%println_mono": println_mono_fn,
   "%ignore": ignore_fn,
   "%refeq": physical_equal_fn,
@@ -178,6 +180,18 @@ let eval_fn : RuntimeFunction = ctx => match ctx.args {
     }
   }
   _ => Unit
+}
+
+///|
+let require_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: String(pkg_name), .. }, { val: String(path), .. }] =>
+      if load_package_dir(pkg_name, path) is Some(pkg) {
+        ctx.context.current_pkg.deps[pkg_name] = pkg
+      }
+    _ => ()
+  }
+  Unit
 }
 
 ///|

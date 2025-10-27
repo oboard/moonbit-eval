@@ -58,6 +58,8 @@ let iter2_methods : Map[String, (RuntimeFunctionContext) -> RuntimeValue raise C
 
 let iter_methods : Map[String, (RuntimeFunctionContext) -> RuntimeValue raise ControlFlow]
 
+fn load_package_dir(String, String) -> RuntimePackage?
+
 let map_methods : Map[String, (RuntimeFunctionContext) -> RuntimeValue raise ControlFlow]
 
 let option_methods : Map[String, (RuntimeFunctionContext) -> RuntimeValue raise ControlFlow]
