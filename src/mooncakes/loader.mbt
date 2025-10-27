@@ -111,3 +111,79 @@ pub async fn load_package(
     None
   }
 }
+
+///|
+pub async fn load_module_zip(
+  mod_name : String,
+  version? : String,
+) -> @interpreter.RuntimeModule {
+  let module_name = mod_name + (if version is Some(v) { "@" + v } else { "" })
+  if (try? load_meta(module_name)) is Ok(a) {
+    let res = try? @mio.get(a.get_zip_url())
+    if res is Ok(res) {
+      if (try? @zip.Archive::of_bytes(res.data)) is Ok(zip) {
+        if zip.find(@fpath.Fpath("moon.mod.json")) is Some(m) {
+          if m.kind() is File(data) {
+            let module_info : @interpreter.ModuleInfo = @json.from_json(
+              @json.parse(@encoding/utf8.decode(data.to_bytes())),
+            ) catch {
+              _ => abort("Failed to read moon.mod.json")
+            }
+            // println(module_info)
+            let root = if module_info.source is Some(source) {
+              source
+            } else {
+              ""
+            }
+            // println(root)
+            fn collect_files(root : String) -> Map[String, String] {
+              let files = {}
+              for entry in zip.to_array() {
+                if entry.kind() is File(file) {
+                  let path = entry.path().to_string()
+                  if path.has_prefix(root) && path.has_suffix(".mbt") {
+                    try {
+                      files[path] = @encoding/utf8.decode(file.to_bytes())
+                    } catch {
+                      _ => abort("Failed to decode file content")
+                    }
+                  }
+                }
+              }
+              files
+            }
+            // 找出所有的 packages
+            fn scan_packages() -> Array[@interpreter.RuntimePackage] {
+              let pkgs = []
+              for entry in zip.to_array() {
+                if entry.is_dir() {
+                  let dir = entry.path().to_string()
+                  if zip.find(@fpath.Fpath(dir + "moon.pkg.json")) is Some(_) {
+                    let pkg_name = module_name +
+                      dir.strip_prefix(root).unwrap_or(dir).to_string()
+                    // println(pkg_name)
+                    // println(dir)
+                    pkgs.push(
+                      @interpreter.RuntimePackage::new(
+                        pkg_name,
+                        files=collect_files(dir),
+                      ),
+                    )
+                  }
+                }
+              }
+              pkgs
+            }
+
+            let packages = scan_packages()
+            return @interpreter.RuntimeModule::{
+              meta: a,
+              pkgs: Map::from_array(packages.map(pkg => (pkg.name, pkg))),
+            }
+          }
+        }
+      }
+    }
+  }
+  abort("Failed to load module zip")
+}

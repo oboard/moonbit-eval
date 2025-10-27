@@ -10,6 +10,8 @@ async fn load_meta(String, version? : String) -> @interpreter.ModuleInfo
 
 async fn load_module(String, version? : String) -> Map[String, @interpreter.RuntimeModule]
 
+async fn load_module_zip(String, version? : String) -> @interpreter.RuntimeModule
+
 async fn load_package(String, Map[String, @interpreter.RuntimePackage]) -> @interpreter.RuntimePackage?
 
 // Errors

@@ -1,6 +1,10 @@
 {
   "import": [
     "oboard/moonbit-eval/interpreter",
-    "oboard/mio"
+    "oboard/mio",
+    "bobzhang/zip",
+    "bobzhang/zip/types/fpath",
+    "bobzhang/zip/member",
+    "bobzhang/zip/file"
   ]
 }
