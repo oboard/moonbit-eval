@@ -6,7 +6,6 @@ import(
   "moonbitlang/core/hashmap"
   "moonbitlang/core/json"
   "moonbitlang/core/list"
-  "moonbitlang/parser/basic"
   "moonbitlang/parser/syntax"
 )
 
@@ -60,6 +59,8 @@ let iter_methods : Map[String, (RuntimeFunctionContext) -> RuntimeValue raise Co
 
 fn load_package_dir(String, String) -> RuntimePackage?
 
+fn manualUnescape(StringView) -> StringView
+
 let map_methods : Map[String, (RuntimeFunctionContext) -> RuntimeValue raise ControlFlow]
 
 let option_methods : Map[String, (RuntimeFunctionContext) -> RuntimeValue raise ControlFlow]
@@ -73,8 +74,6 @@ fn runtime_value_infix(String, RuntimeValue, RuntimeValue) -> RuntimeValue
 let string_embedded_code : Map[String, (RuntimeFunctionContext) -> RuntimeValue raise ControlFlow]
 
 fn type_to_string(@syntax.Type) -> String
-
-fn unit(loc? : @basic.Location) -> @syntax.Expr
 
 // Errors
 pub suberror ControlFlow {

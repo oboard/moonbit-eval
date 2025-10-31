@@ -29,6 +29,15 @@ test "basic_strings" {
 }
 
 ///|
+test "escape_strings" {
+  let vm = MoonBitVM::new()
+  inspect(vm.eval("\"hello\\nworld\""), content="hello\nworld")
+  inspect(vm.eval("\"hello\\tworld\""), content="hello\tworld")
+  inspect(vm.eval("\"hello\\u0042world\""), content="helloBworld")
+  inspect(vm.eval("\'\\n\'"), content="\n")
+}
+
+///|
 test "multiline_strings" {
   let vm = MoonBitVM::new()
   // Test multiline string syntax

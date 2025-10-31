@@ -293,10 +293,13 @@ fn RuntimeValue::from_constant(c : @syntax.Constant) -> RuntimeValue {
       let int_val = @strconv.parse_int(s) catch { _ => 0 }
       Byte(int_val.to_byte())
     }
-    Char(s) => Char(s.get_char(0).unwrap_or(' '))
-    String(s) => String(s)
+    Char(s) => Char(manualUnescape(s).get_char(0).unwrap_or(' '))
+    String(s) => String(manualUnescape(s.to_string_view()).to_string())
     BigInt(bigint) => BigInt(@bigint.BigInt::from_string(bigint))
-    _ => abort("Constant: not implemented")
+    Bytes(s) =>
+      Bytes(
+        @encoding.encode(UTF8, manualUnescape(s.to_string_view()).to_string()),
+      )
   }
 }
 
