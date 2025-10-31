@@ -59,7 +59,7 @@ let iter_methods : Map[String, (RuntimeFunctionContext) -> RuntimeValue raise Co
 
 fn load_package_dir(String, String) -> RuntimePackage?
 
-fn manualUnescape(StringView) -> StringView
+fn manualUnescape(StringView, StringBuilder) -> Unit
 
 let map_methods : Map[String, (RuntimeFunctionContext) -> RuntimeValue raise ControlFlow]
 

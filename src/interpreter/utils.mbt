@@ -10,42 +10,70 @@ fn fromCharCode(hex : StringView, base : Int) -> Char {
 }
 
 ///|
-pub fn manualUnescape(input : StringView) -> StringView {
+pub fn manualUnescape(input : StringView, buf : StringBuilder) -> Unit {
   try {
-    lexmatch input {
-      (tail, "\\n", rest) => "\{tail}\n\{manualUnescape(rest)}"
-      (tail, "\\t", rest) => "\{tail}\t\{manualUnescape(rest)}"
-      (tail, "\\r", rest) => "\{tail}\r\{manualUnescape(rest)}"
-      // Unicode escape
-      (tail, "\\u[0-9a-fA-F]{4}" as raw, rest) =>
-        "\{tail}\{fromCharCode(raw[2:],16)}\{manualUnescape(rest)}"
-      (tail, "\\x[0-9a-fA-F]{2}" as raw, rest) =>
-        "\{tail}\{fromCharCode(raw[2:],16)}\{manualUnescape(rest)}"
-      // Unicode escape with braces
-      (tail, "\\u[{][0-9a-fA-F]+[}]" as raw, rest) =>
-        "\{tail}\{fromCharCode(raw[3:-1],16)}\{manualUnescape(rest)}"
-      // Octal escape
-      (tail, "\\o[0-3][0-7]{2}" as raw, rest) =>
-        "\{tail}\{fromCharCode(raw[2:],8)}\{manualUnescape(rest)}"
-      (tail, "\\\\", rest) => "\{tail}\\\\\{manualUnescape(rest)}"
-      _ => input
+    loop input {
+      // EOF
+      "" => break
+      rest =>
+        continue {
+            let (c, rest) = lexmatch rest with longest {
+                ("\\n", rest) => ('\n', rest)
+                ("\\t", rest) => ('\t', rest)
+                ("\\r", rest) => ('\r', rest)
+                // Backspace
+                ("\\b", rest) => ('\b', rest)
+                // Unicode escape
+                ("\\u[0-9a-fA-F]{4}" as raw, rest) =>
+                  (fromCharCode(raw[2:], 16), rest)
+                ("\\x[0-9a-fA-F]{2}" as raw, rest) =>
+                  (fromCharCode(raw[2:], 16), rest)
+                // Unicode escape with braces
+                ("\\u[{][0-9a-fA-F]+[}]" as raw, rest) =>
+                  (fromCharCode(raw[3:-1], 16), rest)
+                // Octal escape
+                ("\\o[0-3][0-7]{2}" as raw, rest) =>
+                  (fromCharCode(raw[2:], 8), rest)
+                ("\\\\", rest) => ('\\', rest)
+                ("." as c, rest) => (c, rest)
+                _ => break
+              }
+            buf.write_char(c)
+            rest
+          }
     }
   } catch {
-    _ => input
+    _ => ()
   }
 }
 
 ///|
 test "manualUnescape" {
-  inspect(manualUnescape("\\nhello"), content="\nhello")
+  let builder = StringBuilder::new()
+  manualUnescape("\\nhello", builder)
   inspect(
-    manualUnescape("hello\\nworld"),
+    builder.to_string(),
+    content=(
+      #|
+      #|hello
+    ),
+  )
+  let builder = StringBuilder::new()
+  manualUnescape("hello\\nworld", builder)
+  inspect(
+    builder.to_string(),
     content=(
       #|hello
       #|world
     ),
   )
-  inspect(manualUnescape("\\u0041"), content="A")
-  inspect(manualUnescape("\\x41"), content="A")
-  inspect(manualUnescape("\\o061"), content="1")
+  let builder = StringBuilder::new()
+  manualUnescape("\\u0041", builder)
+  inspect(builder.to_string(), content="A")
+  let builder = StringBuilder::new()
+  manualUnescape("\\x41", builder)
+  inspect(builder.to_string(), content="A")
+  let builder = StringBuilder::new()
+  manualUnescape("\\o061", builder)
+  inspect(builder.to_string(), content="1")
 }
