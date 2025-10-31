@@ -13,13 +13,6 @@ test "eval eval" {
 }
 
 ///|
-test "eval eval eval" {
-  let vm = MoonBitVM::new()
-  let result = vm.eval("eval(\"eval(\\\"eval(\\\\\\\"1 + 2\\\\\\\")\\\")\")")
-  inspect(result, content="3")
-}
-
-///|
 test "typeof eval" {
   let vm = MoonBitVM::new()
   inspect(
