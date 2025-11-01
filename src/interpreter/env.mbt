@@ -13,7 +13,6 @@ pub fn RuntimeEnvironment::new(
 ) -> RuntimeEnvironment {
   if parent is Some(parent) {
     {
-      ..parent,
       values: values.unwrap_or({}),
       mutable_vars: Map::new(),
       parent: Some(parent),
@@ -28,22 +27,17 @@ pub fn RuntimeEnvironment::new(
 pub fn RuntimeEnvironment::copy(
   self : RuntimeEnvironment,
 ) -> RuntimeEnvironment {
-  let new_values = Map::new()
-  let new_mutable_vars = Map::new()
-  self.values.each(fn(key, value) { new_values.set(key, value) })
+  let values = Map::new()
+  let mutable_vars = Map::new()
+  self.values.each(fn(key, value) { values.set(key, value) })
   self.mutable_vars.each(fn(key, is_mutable) {
-    new_mutable_vars.set(key, is_mutable)
+    mutable_vars.set(key, is_mutable)
   })
-  let new_parent = match self.parent {
+  let parent = match self.parent {
     Some(parent) => Some(parent.copy())
     None => None
   }
-  {
-    ..self,
-    values: new_values,
-    mutable_vars: new_mutable_vars,
-    parent: new_parent,
-  }
+  { values, mutable_vars, parent }
 }
 
 ///|
@@ -51,28 +45,23 @@ pub fn RuntimeEnvironment::copy(
 pub fn RuntimeEnvironment::create_closure_env(
   self : RuntimeEnvironment,
 ) -> RuntimeEnvironment {
-  let new_values = Map::new()
-  let new_mutable_vars = Map::new()
+  let values = Map::new()
+  let mutable_vars = Map::new()
 
   // 只捕获不可变变量的值，可变变量通过父环境引用
   self.values.each(fn(key, value) {
     let is_mutable = self.mutable_vars.get(key).unwrap_or(false)
     if not(is_mutable) {
       // 不可变变量：捕获当前值
-      new_values.set(key, value)
-      new_mutable_vars.set(key, false)
+      values.set(key, value)
+      mutable_vars.set(key, false)
     }
     // 可变变量不在闭包环境中捕获，通过parent引用访问
   })
 
   // 设置父环境为当前环境，这样可变变量可以通过父环境访问
   // 继承父环境的全局状态（如类型定义、方法等）
-  {
-    ..self,
-    values: new_values,
-    mutable_vars: new_mutable_vars,
-    parent: Some(self),
-  }
+  { values, mutable_vars, parent: Some(self) }
 }
 
 ///|

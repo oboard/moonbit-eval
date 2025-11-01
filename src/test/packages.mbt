@@ -43,7 +43,7 @@ test "cmp" {
 test "cross_package_method_calling" {
   let vm = MoonBitVM::new()
   assert_eq(
-    vm.eval("let list = @list.of([1,2,3]); list").to_string(),
+    vm.eval("let list = @list.from_array([1,2,3]); list").to_string(),
     "More(1, tail=More(2, tail=More(3, tail=Empty)))",
   )
   assert_eq(vm.eval("list.to_array()").to_string(), "[1, 2, 3]")

@@ -8,7 +8,7 @@ pub(all) struct RuntimeFunctionContext {
 
 ///|
 /// 新的函数类型定义 - 统一的上下文访问
-pub typealias (RuntimeFunctionContext) -> RuntimeValue raise ControlFlow as RuntimeFunction
+pub type RuntimeFunction = (RuntimeFunctionContext) -> RuntimeValue raise ControlFlow
 
 ///|
 pub fn ClosureInterpreter::create_function(
@@ -36,7 +36,7 @@ pub fn ClosureInterpreter::create_function(
           ),
         )
         // 在新环境中绑定已解释的参数值
-        self.bind_runtime_parameters(parameters, @list.of(ctx.args))
+        self.bind_runtime_parameters(parameters, @list.from_array(ctx.args))
         defer {
           self.pop_scope()
           self.current_pkg.env = old_env

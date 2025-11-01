@@ -28,8 +28,6 @@ pub enum EvalResult {
   Success(@interpreter.RuntimeValue, @interpreter.ClosureInterpreter)
   Error(String, @interpreter.ClosureInterpreter)
 }
-fn EvalResult::output(Self, &Logger) -> Unit // from trait `Show`
-fn EvalResult::to_string(Self) -> String // from trait `Show`
 impl Show for EvalResult
 
 pub(all) struct MoonBitVM {

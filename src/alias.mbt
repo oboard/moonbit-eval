@@ -1,2 +1,6 @@
 ///|
-typealias @interpreter.(ClosureInterpreter, RuntimeValue, RuntimeFunction)
+using @interpreter {
+  type ClosureInterpreter,
+  type RuntimeValue,
+  type RuntimeFunction,
+}

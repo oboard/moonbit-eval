@@ -1,5 +1,5 @@
 ///|
-typealias @eval.MoonBitVM
+using @eval {type MoonBitVM}
 
 ///|
 test "function_alias" {

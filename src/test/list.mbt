@@ -2,7 +2,7 @@
 test "list_methods" {
   let vm = MoonBitVM::new()
   assert_eq(
-    vm.eval("let list = @list.of([1, 2, 3]); list").to_string(),
+    vm.eval("let list = @list.from_array([1, 2, 3]); list").to_string(),
     "More(1, tail=More(2, tail=More(3, tail=Empty)))",
   )
   assert_eq(vm.eval("typeof(list)").to_string(), "@moonbitlang/core/list.List")
@@ -20,7 +20,10 @@ test "list_methods" {
   assert_eq(vm.eval("l.length()").to_string(), "0")
 
   // Test list mapping and filtering
-  assert_eq(vm.eval("let l2 = @list.of([1, 2, 3, 4, 5])").to_string(), "()")
+  assert_eq(
+    vm.eval("let l2 = @list.from_array([1, 2, 3, 4, 5])").to_string(),
+    "()",
+  )
   assert_eq(
     vm.eval("l2.map(x => x * 2).to_array()").to_string(),
     "[2, 4, 6, 8, 10]",
@@ -35,7 +38,7 @@ test "list_methods" {
 
   // Test list concatenation and reversal
   assert_eq(
-    vm.eval("let l3 = @list.of([6, 7, 8]); l3.to_array()").to_string(),
+    vm.eval("let l3 = @list.from_array([6, 7, 8]); l3.to_array()").to_string(),
     "[6, 7, 8]",
   )
   assert_eq(vm.eval("l3.to_array()").to_string(), "[6, 7, 8]")
@@ -57,7 +60,7 @@ test "list_methods" {
   assert_eq(
     vm
     .eval(
-      "let l4 = @list.of([1, 2, 3]); let l5 = @list.of([4, 5, 6]); l4.zip(l5).to_array()",
+      "let l4 = @list.from_array([1, 2, 3]); let l5 = @list.from_array([4, 5, 6]); l4.zip(l5).to_array()",
     )
     .to_string(),
     "[(1, 4), (2, 5), (3, 6)]",
