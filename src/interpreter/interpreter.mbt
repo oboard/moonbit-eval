@@ -774,15 +774,21 @@ pub fn ClosureInterpreter::visit(
     }
 
     // 处理单独的构造函数表达式，如 None
-    Constr(constr~, ..) =>
+    Constr(constr~, ..) => {
+      let name = constr.name.name
       match constr.extra_info {
         TypeName(ty_name) =>
-          self.with_ident(ty_name.name, fn(_env, _name) {
-            self.current_pkg.cons(constr.name.name, [])
-          })
-        Package(_pkg) => self.current_pkg.cons(constr.name.name, [])
-        _ => self.current_pkg.cons(constr.name.name, [])
+          self.with_ident(ty_name.name, (_env, _name) => self.current_pkg.cons(
+            name,
+            [],
+          ))
+        Package(pkg) =>
+          self.find_pkg(pkg).env
+          .find(name)
+          .unwrap_or(self.current_pkg.cons(name, []))
+        _ => self.current_pkg.cons(name, [])
       }
+    }
     // 处理 Break 表达式
     Break(arg~, ..) =>
       match arg {

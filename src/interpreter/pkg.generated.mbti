@@ -18,24 +18,8 @@ let bytes_methods : Map[String, (RuntimeFunctionContext) -> RuntimeValue raise C
 
 fn check_type_constraint2(RuntimeType, @syntax.Type) -> Bool
 
-fn[T : Compare] compare(T, T, String) -> @syntax.Constant
-
-fn constant_infix(String, @syntax.Constant, @syntax.Constant) -> @syntax.Constant
-
 #callsite(autofill(loc))
 fn[A] error(String, loc~ : SourceLoc) -> A raise ControlFlow
-
-fn eval_double_op(Double, Double, String) -> @syntax.Constant
-
-fn eval_float_op(Double, Double, String) -> @syntax.Constant
-
-fn eval_int64_op(Int64, Int64, String) -> @syntax.Constant
-
-fn eval_int_op(Int, Int, String) -> @syntax.Constant
-
-fn eval_uint64_op(UInt64, UInt64, String) -> @syntax.Constant
-
-fn eval_uint_op(UInt, UInt, String) -> @syntax.Constant
 
 fn extract_type_name(@syntax.Type) -> String
 
@@ -50,8 +34,6 @@ let hash_map_methods : Map[String, (RuntimeFunctionContext) -> RuntimeValue rais
 let int_embedded_code : Map[String, (RuntimeFunctionContext) -> RuntimeValue raise ControlFlow]
 
 let int_methods : Map[String, (RuntimeFunctionContext) -> RuntimeValue raise ControlFlow]
-
-fn is_comparison_op(String) -> Bool
 
 let iter2_methods : Map[String, (RuntimeFunctionContext) -> RuntimeValue raise ControlFlow]
 

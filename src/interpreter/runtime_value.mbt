@@ -280,17 +280,57 @@ fn compare_function_signatures(
 }
 
 ///|
+fn parse_double(s : String) -> Double {
+  try {
+    // 支持十六进制浮点格式：0x3.243F6A8885A308CA8A54
+    if s.has_prefix("0x") || s.has_prefix("0X") {
+      match s.split(".").to_array() {
+        [int_part, frac_part] => {
+          let mut res = @strconv.parse_uint64(int_part, base=0).to_double()
+          let mut scale : Double = 1
+          frac_part
+          .to_array()
+          .each(c => {
+            let c = c.to_int()
+            let d = match c {
+              '0'..='9' => c - '0'
+              'a'..='z' => c + (10 - 'a')
+              'A'..='Z' => c + (10 - 'A')
+              _ => 0
+            }
+            scale /= 16
+            res += d.to_double() * scale
+          })
+          res
+        }
+        [int_part] => @strconv.parse_uint64(int_part, base=16).to_double()
+        _ => 0
+      }
+    } else {
+      @strconv.parse_double(s)
+    }
+  } catch {
+    _ => 0.0
+  }
+}
+
+///|
+test "parse_double" {
+  inspect(parse_double("0x3.243F6A8885A308CA8A54"), content="3.141592653589793")
+}
+
+///|
 fn RuntimeValue::from_constant(c : @syntax.Constant) -> RuntimeValue {
   match c {
     Bool(b) => Bool(b)
-    Int(s) => Int(@strconv.parse_int(s) catch { _ => 0 })
-    UInt(s) => UInt(@strconv.parse_uint(s) catch { _ => 0U })
+    Int(s) => Int(@strconv.parse_int64(s).to_int() catch { _ => 0 })
+    UInt(s) => UInt(@strconv.parse_uint64(s).to_uint() catch { _ => 0U })
     Int64(s) => Int64(@strconv.parse_int64(s) catch { _ => 0L })
     UInt64(s) => UInt64(@strconv.parse_uint64(s) catch { _ => 0UL })
-    Float(s) => Float((@strconv.parse_double(s) catch { _ => 0.0 }).to_float())
-    Double(s) => Double(@strconv.parse_double(s) catch { _ => 0.0 })
+    Float(s) => Float(parse_double(s).to_float())
+    Double(s) => Double(parse_double(s))
     Byte(s) => {
-      let int_val = @strconv.parse_int(s) catch { _ => 0 }
+      let int_val = @strconv.parse_int64(s) catch { _ => 0 }
       Byte(int_val.to_byte())
     }
     Char(s) => {
@@ -752,7 +792,7 @@ pub fn RuntimeValue::iter2(self : RuntimeValue) -> RuntimeValue {
       // 将 StringBuilder 转换为 Iter2，每个元素是 (index, char) 元组
       let str = sb.to_string()
       let chars = str.to_array()
-      let iter_impl = Iter2::new(fn(f) {
+      let iter_impl = Iter2::new(f => {
         for i = 0; i < chars.length(); i = i + 1 {
           match f(Int(i), Char(chars[i])) {
             IterEnd => return IterEnd
@@ -763,12 +803,12 @@ pub fn RuntimeValue::iter2(self : RuntimeValue) -> RuntimeValue {
       })
       Iter2(iter_impl)
     }
-    _ => Iter2(Iter2::new(fn(_) { IterEnd }))
+    _ => Iter2(Iter2::new(_ => IterEnd))
   }
 }
 
 ///|
-/// RuntimeValue 之间的中缀运算 - 消除对 constant_infix 的依赖
+/// RuntimeValue 之间的中缀运算
 pub fn runtime_value_infix(
   op : String,
   lhs : RuntimeValue,

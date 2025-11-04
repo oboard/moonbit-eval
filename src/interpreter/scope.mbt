@@ -50,23 +50,23 @@ pub fn[T] ClosureInterpreter::with_ident(
   long_ident : @syntax.LongIdent,
   func : (RuntimePackage, String) -> T raise?,
 ) -> T raise? {
-  let current_module = self.current_pkg
+  let current_pkg = self.current_pkg
   match long_ident {
     Ident(name~) => {
-      let f = current_module.type_aliases.get(name)
+      let f = current_pkg.type_aliases.get(name)
       let pkg = match f {
         Some(f) =>
           match f.ty {
             Object(pkg~, ..) => pkg
             Option(_) => moonbitlang_core_option_module
-            _ => current_module
+            _ => current_pkg
           }
-        None => current_module
+        None => current_pkg
       }
       func(pkg, name)
     }
     Dot(pkg~, id~) =>
-      if current_module.deps.get(pkg) is Some(pkg) {
+      if current_pkg.deps.get(pkg) is Some(pkg) {
         self.load_package(pkg)
         func(pkg, id)
         // 检查 main 模块的 deps (core_modules) 中是否有这个包
@@ -74,7 +74,7 @@ pub fn[T] ClosureInterpreter::with_ident(
         self.load_package(pkg)
         func(pkg, id)
       } else {
-        func(current_module, id)
+        func(current_pkg, id)
       }
   }
 }

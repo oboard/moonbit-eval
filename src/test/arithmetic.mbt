@@ -13,6 +13,19 @@ test "arithmetic_operators" {
 }
 
 ///|
+test "math" {
+  let vm = MoonBitVM::new()
+  inspect(vm.eval("@math.PI"), content="3.141592653589793")
+}
+
+///|
+test {
+  let vm = MoonBitVM::new()
+  inspect(vm.eval("pub const PI = 3.14", top=true), content="3.14")
+  inspect(vm.eval("PI"), content="3.14")
+}
+
+///|
 test "group_expressions" {
   let vm = MoonBitVM::new()
   // Test grouped expressions with parentheses
