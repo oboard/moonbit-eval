@@ -1,9 +1,8 @@
 {
   "name": "oboard/moonbit-eval",
-  "version": "0.8.12",
+  "version": "0.8.13",
   "deps": {
     "moonbitlang/parser": "0.1.11",
-    "oboard/mio": "0.4.3",
     "bobzhang/zip": "0.1.0"
   },
   "readme": "README.md",

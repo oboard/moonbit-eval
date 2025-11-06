@@ -54,20 +54,20 @@ test "cross_package_method_calling" {
   assert_eq(vm.eval("arr1.length()").to_string(), "5")
 }
 
-///|
-test "online_package" {
-  let vm = MoonBitVM::new()
-  @mio.run(() => {
-    let modules = try? @mooncakes.load_module("wangweigang/hello")
-    if modules is Ok(modules) {
-      vm.interpreter.main_pkg.deps.set(
-        "hello",
-        modules.get("wangweigang/hello").unwrap().pkgs["hello"],
-      )
-      println(vm.eval("@hello.hello()"))
-    }
-  })
-}
+// ///|
+// test "online_package" {
+//   let vm = MoonBitVM::new()
+//   @mio.run(() => {
+//     let modules = try? @mooncakes.load_module("wangweigang/hello")
+//     if modules is Ok(modules) {
+//       vm.interpreter.main_pkg.deps.set(
+//         "hello",
+//         modules.get("wangweigang/hello").unwrap().pkgs["hello"],
+//       )
+//       println(vm.eval("@hello.hello()"))
+//     }
+//   })
+// }
 
 // ///|
 // test {
