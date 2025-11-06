@@ -57,7 +57,7 @@ let hash_map_is_empty_fn : RuntimeFunction = ctx => match ctx.args {
 ///|
 /// HashMap capacity操作
 let hash_map_capacity_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: HashMap(map), .. }] => Int(map.capacity())
+  [{ val: HashMap(map), .. }] => Int(map.capacity(), raw=None)
   _ => Unit
 }
 
@@ -111,7 +111,7 @@ let hash_map_eachi_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: HashMap(map), .. }, { val: Fn(f), .. }] => {
     map.eachi(fn(i, key, val) {
       ctx.context.call(f.val, ctx.pkg, [
-        { val: Int(i), kind: Positional },
+        { val: Int(i, raw=None), kind: Positional },
         { val: key, kind: Positional },
         { val, kind: Positional },
       ])
@@ -229,7 +229,7 @@ let hash_map_keys_fn : RuntimeFunction = ctx => match ctx.args {
 ///|
 /// HashMap length操作
 let hash_map_length_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: HashMap(map), .. }] => Int(map.length())
+  [{ val: HashMap(map), .. }] => Int(map.length(), raw=None)
   _ => Unit
 }
 
@@ -318,7 +318,7 @@ let hash_map_set_fn : RuntimeFunction = ctx => match ctx.args {
 ///|
 /// HashMap size操作
 let hash_map_size_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: HashMap(map), .. }] => Int(map.length())
+  [{ val: HashMap(map), .. }] => Int(map.length(), raw=None)
   _ => Unit
 }
 

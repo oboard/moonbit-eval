@@ -40,14 +40,16 @@ fn ClosureInterpreter::visit_field_augmented_assignment(
     Object(refer) =>
       match accessor {
         Label(label) => {
-          let current_val = refer.val.get(label.name).unwrap_or(Int(0))
+          let current_val = refer.val
+            .get(label.name)
+            .unwrap_or(Int(0, raw=None))
           let new_val = runtime_value_infix(base_op, current_val, right_val)
           refer.val.set(label.name, new_val)
         }
         Index(tuple_index~, ..) => {
           let current_val = refer.val
             .get(tuple_index.to_string())
-            .unwrap_or(Int(0))
+            .unwrap_or(Int(0, raw=None))
           let new_val = runtime_value_infix(base_op, current_val, right_val)
           refer.val.set(tuple_index.to_string(), new_val)
         }
@@ -92,7 +94,7 @@ fn ClosureInterpreter::visit_array_set(
     Array(arr) => {
       let index = self.visit(index)
       match index {
-        Int(index) => {
+        Int(index, ..) => {
           let value = self.visit(value)
           arr[index] = value
         }

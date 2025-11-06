@@ -257,8 +257,8 @@ let option_unwrap_or_default_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Constructor({ val: { name: "None", fields: [] }, .. }), .. }] =>
     // 返回默认值，对于数值类型返回0，其他类型返回Unit
     // 这里简化实现，实际应该根据泛型类型参数确定默认值
-    Int(0)
-  _ => Int(0)
+    Int(0, raw=None)
+  _ => Int(0, raw=None)
 }
 
 ///|

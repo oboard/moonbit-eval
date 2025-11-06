@@ -84,8 +84,8 @@ let iter_to_array_fn : RuntimeFunction = ctx => match ctx.args {
 
 ///|
 let iter_count_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Iter(iter), .. }] => Int(iter.count())
-  _ => Int(0)
+  [{ val: Iter(iter), .. }] => Int(iter.count(), raw=None)
+  _ => Int(0, raw=None)
 }
 
 // Element access
@@ -104,7 +104,7 @@ let iter_last_fn : RuntimeFunction = ctx => match ctx.args {
 
 ///|
 let iter_nth_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Iter(iter), .. }, { val: Int(n), .. }] =>
+  [{ val: Iter(iter), .. }, { val: Int(n, ..), .. }] =>
     RuntimeValue::from_option(iter.nth(n))
   _ => Unit
 }
@@ -145,21 +145,24 @@ let iter_intersperse_fn : RuntimeFunction = ctx => match ctx.args {
 
 ///|
 let iter_take_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Iter(iter), .. }, { val: Int(n), .. }] => Iter(iter.take(n))
+  [{ val: Iter(iter), .. }, { val: Int(n, ..), .. }] => Iter(iter.take(n))
   _ => Unit
 }
 
 ///|
 let iter_drop_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Iter(iter), .. }, { val: Int(n), .. }] => Iter(iter.drop(n))
+  [{ val: Iter(iter), .. }, { val: Int(n, ..), .. }] => Iter(iter.drop(n))
   _ => Unit
 }
 
 ///|
 let iter_op_as_view_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Iter(iter), .. }, { val: Int(start), .. }, { val: Int(end), .. }] =>
-    Iter(iter.op_as_view(start~, end~))
-  [{ val: Iter(iter), .. }, { val: Int(start), .. }] =>
+  [
+    { val: Iter(iter), .. },
+    { val: Int(start, ..), .. },
+    { val: Int(end, ..), .. },
+  ] => Iter(iter.op_as_view(start~, end~))
+  [{ val: Iter(iter), .. }, { val: Int(start, ..), .. }] =>
     Iter(iter.op_as_view(start~))
   [{ val: iter_val, .. }] => iter_val
   _ => Unit
@@ -323,7 +326,7 @@ let iter_eachi_fn : RuntimeFunction = ctx => match ctx.args {
     iter.eachi(fn(index, val) {
       try {
         let _ = ctx.context.call(func.val, ctx.pkg, [
-          { val: Int(index), kind: Positional },
+          { val: Int(index, raw=None), kind: Positional },
           { val, kind: Positional },
         ])
 
@@ -411,7 +414,7 @@ let iter_iter2_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Iter(iter), .. }] => {
     // iter2 converts an iterator to an indexed iterator
     let result : Iter[RuntimeValue] = iter.mapi(fn(index, val) {
-      Tuple([Int(index), val])
+      Tuple([Int(index, raw=None), val])
     })
     Iter(result)
   }
@@ -474,7 +477,10 @@ let iter_mapi_fn : RuntimeFunction = ctx => match ctx.args {
     let result = iter.mapi((index, val) => try! ctx.context.call(
         func.val,
         ctx.pkg,
-        [{ val: Int(index), kind: Positional }, { val, kind: Positional }],
+        [
+          { val: Int(index, raw=None), kind: Positional },
+          { val, kind: Positional },
+        ],
       ))
     Iter(result)
   }

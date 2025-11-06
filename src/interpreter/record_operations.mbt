@@ -60,7 +60,9 @@ fn ClosureInterpreter::visit_mutate(
                 "%" => "%"
                 _ => "+" // 默认
               }
-              let current_val = refer.val.get(label.name).unwrap_or(Int(0))
+              let current_val = refer.val
+                .get(label.name)
+                .unwrap_or(Int(0, raw=None))
               let right_val = self.visit(field)
               let new_val = runtime_value_infix(base_op, current_val, right_val)
               refer.val.set(label.name, new_val)
@@ -87,7 +89,7 @@ fn ClosureInterpreter::visit_mutate(
               }
               let current_val = refer.val
                 .get(tuple_index.to_string())
-                .unwrap_or(Int(0))
+                .unwrap_or(Int(0, raw=None))
               let right_val = self.visit(field)
               let new_val = runtime_value_infix(base_op, current_val, right_val)
               refer.val.set(tuple_index.to_string(), new_val)

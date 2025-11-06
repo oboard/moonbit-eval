@@ -56,25 +56,25 @@ let string_methods : Map[String, RuntimeFunction] = {
 
 ///|
 let string_length : RuntimeFunction = ctx => match ctx.args {
-  [{ val: String(s), .. }] => Int(s.length())
-  _ => Int(0)
+  [{ val: String(s), .. }] => Int(s.length(), raw=None)
+  _ => Int(0, raw=None)
 }
 
 ///|
 let string_get_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: String(s), .. }, { val: Int(i), .. }] =>
+  [{ val: String(s), .. }, { val: Int(i, ..), .. }] =>
     if i >= 0 && i < s.length() {
-      Int(s[i])
+      Int(s[i], raw=None)
     } else {
-      Int(0)
+      Int(0, raw=None)
     }
-  _ => Int(0)
+  _ => Int(0, raw=None)
 }
 
 ///|
 let string_unsafe_get_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: String(s), .. }, { val: Int(i), .. }] => Int(s[i])
-  _ => Int(0)
+  [{ val: String(s), .. }, { val: Int(i, ..), .. }] => Int(s[i], raw=None)
+  _ => Int(0, raw=None)
 }
 
 ///|
@@ -99,7 +99,7 @@ let string_to_string_fn : RuntimeFunction = ctx => match ctx.args {
 
 ///|
 let string_make_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Int(len), .. }, { val: Char(value), .. }] =>
+  [{ val: Int(len, ..), .. }, { val: Char(value), .. }] =>
     String(String::make(len, value))
   _ => String("")
 }
@@ -135,7 +135,7 @@ let string_contains_char_fn : RuntimeFunction = ctx => Bool(
 ///|
 let string_find_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: String(str), .. }, { val: StringView(view), .. }] =>
-    RuntimeValue::from_option(str.find(view).map(Int(_)))
+    RuntimeValue::from_option(str.find(view).map(Int(_, raw=None)))
   _ => RuntimeValue::from_option(None)
 }
 
@@ -155,7 +155,7 @@ let string_find_by_fn : RuntimeFunction = ctx => match ctx.args {
           _ => false
         }
       })
-      .map(Int(_)),
+      .map(Int(_, raw=None)),
     )
   _ => RuntimeValue::from_option(None)
 }
@@ -208,7 +208,7 @@ let string_is_blank_fn : RuntimeFunction = ctx => match ctx.args {
 let string_pad_end_fn : RuntimeFunction = ctx => match ctx.args {
   [
     { val: String(s), .. },
-    { val: Int(total_width), .. },
+    { val: Int(total_width, ..), .. },
     { val: Char(padding_char), .. },
   ] => String(s.pad_end(total_width, padding_char))
   _ => String("")
@@ -218,7 +218,7 @@ let string_pad_end_fn : RuntimeFunction = ctx => match ctx.args {
 let string_pad_start_fn : RuntimeFunction = ctx => match ctx.args {
   [
     { val: String(s), .. },
-    { val: Int(total_width), .. },
+    { val: Int(total_width, ..), .. },
     { val: Char(padding_char), .. },
   ] => String(s.pad_start(total_width, padding_char))
   _ => String("")
@@ -226,7 +226,8 @@ let string_pad_start_fn : RuntimeFunction = ctx => match ctx.args {
 
 ///|
 let string_repeat_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: String(s), .. }, { val: Int(count), .. }] => String(s.repeat(count))
+  [{ val: String(s), .. }, { val: Int(count, ..), .. }] =>
+    String(s.repeat(count))
   _ => String("")
 }
 
@@ -256,7 +257,7 @@ let string_rev_fn : RuntimeFunction = ctx => match ctx.args {
 ///|
 let string_rev_find_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: String(s), .. }, { val: String(substr), .. }] =>
-    RuntimeValue::from_option(s.rev_find(substr).map(Int(_)))
+    RuntimeValue::from_option(s.rev_find(substr).map(Int(_, raw=None)))
   _ => RuntimeValue::from_option(None)
 }
 
@@ -355,18 +356,18 @@ let string_trim_space_fn : RuntimeFunction = ctx => match ctx.args {
 let string_view_fn : RuntimeFunction = ctx => match ctx.args {
   [
     { val: String(s), .. },
-    { val: Int(start_offset), kind: Labelled("start_offset") },
-    { val: Int(end_offset), kind: Labelled("end_offset") },
+    { val: Int(start_offset, ..), kind: Labelled("start_offset") },
+    { val: Int(end_offset, ..), kind: Labelled("end_offset") },
     ..,
   ] => StringView(s.view(start_offset~, end_offset~))
   [
     { val: String(s), .. },
-    { val: Int(start_offset), kind: Labelled("start_offset") },
+    { val: Int(start_offset, ..), kind: Labelled("start_offset") },
     ..,
   ] => StringView(s.view(start_offset~))
   [
     { val: String(s), .. },
-    { val: Int(end_offset), kind: Labelled("end_offset") },
+    { val: Int(end_offset, ..), kind: Labelled("end_offset") },
     ..,
   ] => StringView(s.view(end_offset~))
   [{ val: String(s), .. }] => StringView(s.view())

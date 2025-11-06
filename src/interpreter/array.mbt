@@ -57,14 +57,14 @@ let array_zip_fn : RuntimeFunction = ctx => match ctx.args {
 ///|
 /// 数组make操作
 let array_make_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Int(len), .. }, { val, .. }] => Array(Array::make(len, val))
+  [{ val: Int(len, ..), .. }, { val, .. }] => Array(Array::make(len, val))
   _ => Unit
 }
 
 ///|
 /// 数组new操作
 let array_new_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Int(len), kind: LabelledOption("capacity") }] =>
+  [{ val: Int(len, ..), kind: LabelledOption("capacity") }] =>
     Array(Array::new(capacity=len))
   _ => Array(Array::new())
 }
@@ -72,7 +72,7 @@ let array_new_fn : RuntimeFunction = ctx => match ctx.args {
 ///|
 /// 数组长度
 let array_length_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Array(arr), .. }] => Int(arr.length())
+  [{ val: Array(arr), .. }] => Int(arr.length(), raw=None)
   _ => Unit
 }
 
@@ -128,7 +128,7 @@ let array_join_fn : RuntimeFunction = ctx => match ctx.args {
 ///|
 /// 数组swap操作
 let array_swap_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Array(arr), .. }, { val: Int(i), .. }, { val: Int(j), .. }] => {
+  [{ val: Array(arr), .. }, { val: Int(i, ..), .. }, { val: Int(j, ..), .. }] => {
     arr.swap(i, j)
     Unit
   }
@@ -138,7 +138,7 @@ let array_swap_fn : RuntimeFunction = ctx => match ctx.args {
 ///|
 /// 数组get操作
 let array_get_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Array(arr), .. }, { val: Int(i), .. }] =>
+  [{ val: Array(arr), .. }, { val: Int(i, ..), .. }] =>
     RuntimeValue::from_option(arr.get(i))
   _ => Unit
 }
@@ -156,7 +156,7 @@ let array_append_fn : RuntimeFunction = ctx => match ctx.args {
 ///|
 /// 数组set操作
 let array_set_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Array(arr), .. }, { val: Int(i), .. }, { val, .. }] => {
+  [{ val: Array(arr), .. }, { val: Int(i, ..), .. }, { val, .. }] => {
     arr[i] = val
     Unit
   }
@@ -173,7 +173,7 @@ let array_pop_fn : RuntimeFunction = ctx => match ctx.args {
 ///|
 /// 数组insert操作
 let array_insert_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Array(arr), .. }, { val: Int(i), .. }, { val, .. }] => {
+  [{ val: Array(arr), .. }, { val: Int(i, ..), .. }, { val, .. }] => {
     arr.insert(i, val)
     Unit
   }
@@ -183,7 +183,7 @@ let array_insert_fn : RuntimeFunction = ctx => match ctx.args {
 ///|
 /// 数组remove操作
 let array_remove_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Array(arr), .. }, { val: Int(i), .. }] => arr.remove(i)
+  [{ val: Array(arr), .. }, { val: Int(i, ..), .. }] => arr.remove(i)
   _ => Unit
 }
 
@@ -198,14 +198,14 @@ let array_contains_fn : RuntimeFunction = ctx => match ctx.args {
 /// 数组search操作
 let array_search_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Array(arr), .. }, { val, .. }] =>
-    RuntimeValue::from_option(arr.search(val).map(fn(i) { Int(i) }))
+    RuntimeValue::from_option(arr.search(val).map(fn(i) { Int(i, raw=None) }))
   _ => Unit
 }
 
 ///|
 /// 数组capacity操作
 let array_capacity_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Array(arr), .. }] => Int(arr.capacity())
+  [{ val: Array(arr), .. }] => Int(arr.capacity(), raw=None)
   _ => Unit
 }
 
@@ -214,7 +214,7 @@ let array_capacity_fn : RuntimeFunction = ctx => match ctx.args {
 let array_resize_fn : RuntimeFunction = ctx => match ctx.args {
   [
     { val: Array(arr), .. },
-    { val: Int(new_size), .. },
+    { val: Int(new_size, ..), .. },
     { val: fill_val, .. },
     ..,
   ] => {
@@ -227,7 +227,7 @@ let array_resize_fn : RuntimeFunction = ctx => match ctx.args {
 ///|
 /// 数组truncate操作
 let array_truncate_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Array(arr), .. }, { val: Int(len), .. }] => {
+  [{ val: Array(arr), .. }, { val: Int(len, ..), .. }] => {
     arr.truncate(len)
     Unit
   }
@@ -237,7 +237,7 @@ let array_truncate_fn : RuntimeFunction = ctx => match ctx.args {
 ///|
 /// 数组reserve_capacity操作
 let array_reserve_capacity_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Array(arr), .. }, { val: Int(additional), .. }] => {
+  [{ val: Array(arr), .. }, { val: Int(additional, ..), .. }] => {
     arr.reserve_capacity(additional)
     Unit
   }
@@ -262,7 +262,7 @@ let array_eachi_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Array(arr), .. }, { val: Fn(f), .. }] => {
     arr.eachi(fn(i, val) {
       ctx.context.call(f.val, ctx.pkg, [
-        { val: Int(i), kind: Positional },
+        { val: Int(i, raw=None), kind: Positional },
         { val, kind: Positional },
       ])
       |> ignore
@@ -290,7 +290,7 @@ let array_mapi_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Array(arr), .. }, { val: Fn(f), .. }] => {
     let new_arr = arr.mapi(fn(i, val) {
       ctx.context.call(f.val, ctx.pkg, [
-        { val: Int(i), kind: Positional },
+        { val: Int(i, raw=None), kind: Positional },
         { val, kind: Positional },
       ])
     })
@@ -333,7 +333,7 @@ let array_search_by_fn : RuntimeFunction = ctx => match ctx.args {
         { val, kind: Positional },
       ]))
       is Ok(Bool(true)))
-    RuntimeValue::from_option(index.map(Int(_)))
+    RuntimeValue::from_option(index.map(Int(_, raw=None)))
   }
   _ => Unit
 }
@@ -350,7 +350,7 @@ let array_iter2_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Array(arr), .. }] =>
     Iter2(
       Iter2::new(yield_ => for i, v in arr {
-        guard yield_(Int(i), v) is IterContinue else { break IterEnd }
+        guard yield_(Int(i, raw=None), v) is IterContinue else { break IterEnd }
       } else {
         IterContinue
       }),

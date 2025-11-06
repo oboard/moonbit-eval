@@ -47,7 +47,7 @@ let map_is_empty_fn : RuntimeFunction = ctx => match ctx.args {
 ///|
 /// Map capacity操作
 let map_capacity_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Map(map), .. }] => Int(map.capacity())
+  [{ val: Map(map), .. }] => Int(map.capacity(), raw=None)
   _ => Unit
 }
 
@@ -95,7 +95,7 @@ let map_eachi_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Map(map), .. }, { val: Fn(f), .. }] => {
     map.eachi(fn(i, key, val) {
       ctx.context.call(f.val, ctx.pkg, [
-        { val: Int(i), kind: Positional },
+        { val: Int(i, raw=None), kind: Positional },
         { val: key, kind: Positional },
         { val, kind: Positional },
       ])
@@ -266,7 +266,7 @@ let map_set_fn : RuntimeFunction = ctx => match ctx.args {
 ///|
 /// Map size操作
 let map_size_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Map(map), .. }] => Int(map.length())
+  [{ val: Map(map), .. }] => Int(map.length(), raw=None)
   _ => Unit
 }
 

@@ -271,7 +271,7 @@ impl ToJson for RuntimeType
 pub(all) enum RuntimeValue {
   Unit
   Bool(Bool)
-  Int(Int)
+  Int(Int, raw~ : String?)
   UInt(UInt)
   UInt16(UInt16)
   Int64(Int64)
