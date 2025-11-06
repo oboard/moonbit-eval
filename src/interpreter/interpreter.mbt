@@ -266,7 +266,8 @@ pub fn ClosureInterpreter::top_visit(
     // 处理顶层常量定义（如 const Zero = 0）
     TopLetDef(binder~, expr~, ..) => {
       let value = self.visit(expr) catch { _ => Unit }
-      self.current_pkg.values.set(binder.name, value)
+      let name = binder.name
+      self.current_pkg.env.set(name, value)
       value
     }
     TopTypeDef(def) => {
@@ -786,7 +787,10 @@ pub fn ClosureInterpreter::visit(
           self.find_pkg(pkg).env
           .find(name)
           .unwrap_or(self.current_pkg.cons(name, []))
-        _ => self.current_pkg.cons(name, [])
+        _ =>
+          self.current_pkg.env
+          .find(name)
+          .unwrap_or(self.current_pkg.cons(name, []))
       }
     }
     // 处理 Break 表达式
