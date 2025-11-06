@@ -78,8 +78,8 @@ let stringbuilder_write_substring_fn : RuntimeFunction = ctx => match ctx.args {
   [
     { val: StringBuilder(self), .. },
     { val: String(str), .. },
-    { val: Int(start), .. },
-    { val: Int(len), .. },
+    { val: Int(start, ..), .. },
+    { val: Int(len, ..), .. },
   ] => {
     self.write_substring(str, start, len)
     Unit

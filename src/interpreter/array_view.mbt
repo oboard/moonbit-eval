@@ -29,7 +29,7 @@ pub let array_view_methods : Map[String, RuntimeFunction] = {
 ///|
 /// 数组长度
 let array_view_length_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: ArrayView(arr), .. }] => Int(arr.length())
+  [{ val: ArrayView(arr), .. }] => Int(arr.length(), raw=None)
   _ => Unit
 }
 
@@ -52,14 +52,14 @@ let array_view_buf_fn : RuntimeFunction = ctx => match ctx.args {
 ///|
 /// ArrayView start 方法 - 返回起始索引
 let array_view_start_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: ArrayView(arr), .. }] => Int(arr.start())
+  [{ val: ArrayView(arr), .. }] => Int(arr.start(), raw=None)
   _ => Unit
 }
 
 ///|
 /// ArrayView len 方法
 let array_view_len_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: ArrayView(arr), .. }] => Int(arr.len())
+  [{ val: ArrayView(arr), .. }] => Int(arr.len(), raw=None)
   _ => Unit
 }
 
@@ -114,7 +114,7 @@ let array_view_each_fn : RuntimeFunction = ctx => match ctx.args {
 let array_view_eachi_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: ArrayView(arr), .. }, { val: Fn(f), .. }] => {
     arr.eachi((i, elem) => ctx.context.call(f.val, ctx.pkg, [
-        { val: Int(i), kind: Positional },
+        { val: Int(i, raw=None), kind: Positional },
         { val: elem, kind: Positional },
       ])
       |> ignore)
@@ -155,7 +155,7 @@ let array_view_foldi_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: ArrayView(arr), .. }, { val: init, .. }, { val: Fn(f), .. }] =>
     arr.foldi(init~, fn(i, acc, elem) {
       ctx.context.call(f.val, ctx.pkg, [
-        { val: Int(i), kind: Positional },
+        { val: Int(i, raw=None), kind: Positional },
         { val: acc, kind: Positional },
         { val: elem, kind: Positional },
       ])
@@ -176,7 +176,7 @@ let array_view_iter2_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: ArrayView(self), .. }] =>
     Iter2(
       Iter2::new(yield_ => for i, v in self {
-        guard yield_(Int(i), v) is IterContinue else { break IterEnd }
+        guard yield_(Int(i, raw=None), v) is IterContinue else { break IterEnd }
       } else {
         IterContinue
       }),
@@ -210,7 +210,7 @@ let array_view_mapi_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: ArrayView(arr), .. }, { val: Fn(f), .. }] =>
     Array(
       arr.mapi((i, elem) => ctx.context.call(f.val, ctx.pkg, [
-        { val: Int(i), kind: Positional },
+        { val: Int(i, raw=None), kind: Positional },
         { val: elem, kind: Positional },
       ])),
     )
@@ -236,7 +236,7 @@ let array_view_rev_foldi_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: ArrayView(arr), .. }, { val: init, .. }, { val: Fn(f), .. }] =>
     arr.rev_foldi(init~, fn(i, acc, elem) {
       ctx.context.call(f.val, ctx.pkg, [
-        { val: Int(i), kind: Positional },
+        { val: Int(i, raw=None), kind: Positional },
         { val: acc, kind: Positional },
         { val: elem, kind: Positional },
       ])

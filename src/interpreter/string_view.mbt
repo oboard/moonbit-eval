@@ -54,8 +54,8 @@ let string_view_methods : Map[String, RuntimeFunction] = {
 
 ///|
 let string_view_length : RuntimeFunction = ctx => match ctx.args {
-  [{ val: StringView(s), .. }] => Int(s.length())
-  _ => Int(0)
+  [{ val: StringView(s), .. }] => Int(s.length(), raw=None)
+  _ => Int(0, raw=None)
 }
 
 ///|
@@ -67,26 +67,27 @@ let string_view_add : RuntimeFunction = ctx => match ctx.args {
 
 ///|
 let string_view_at : RuntimeFunction = ctx => match ctx.args {
-  [{ val: StringView(s), .. }, { val: Int(i), .. }] => Int(s.at(i))
+  [{ val: StringView(s), .. }, { val: Int(i, ..), .. }] =>
+    Int(s.at(i), raw=None)
   _ => StringView("")
 }
 
 ///|
 let string_view_char_length : RuntimeFunction = ctx => match ctx.args {
-  [{ val: StringView(s), .. }] => Int(s.char_length())
-  _ => Int(0)
+  [{ val: StringView(s), .. }] => Int(s.char_length(), raw=None)
+  _ => Int(0, raw=None)
 }
 
 ///|
 let string_view_char_length_eq : RuntimeFunction = ctx => match ctx.args {
-  [{ val: StringView(s), .. }, { val: Int(n), .. }] =>
+  [{ val: StringView(s), .. }, { val: Int(n, ..), .. }] =>
     Bool(s.char_length() == n)
   _ => Bool(false)
 }
 
 ///|
 let string_view_char_length_ge : RuntimeFunction = ctx => match ctx.args {
-  [{ val: StringView(s), .. }, { val: Int(n), .. }] =>
+  [{ val: StringView(s), .. }, { val: Int(n, ..), .. }] =>
     Bool(s.char_length() >= n)
   _ => Bool(false)
 }
@@ -94,8 +95,8 @@ let string_view_char_length_ge : RuntimeFunction = ctx => match ctx.args {
 ///|
 let string_view_compare : RuntimeFunction = ctx => match ctx.args {
   [{ val: StringView(s1), .. }, { val: StringView(s2), .. }] =>
-    Int(s1.compare(s2))
-  _ => Int(0)
+    Int(s1.compare(s2), raw=None)
+  _ => Int(0, raw=None)
 }
 
 ///|
@@ -126,10 +127,10 @@ let string_view_equal : RuntimeFunction = ctx => match ctx.args {
 let string_view_find : RuntimeFunction = ctx => match ctx.args {
   [{ val: StringView(s), .. }, { val: StringView(sub), .. }] =>
     match s.find(sub) {
-      Some(i) => Int(i)
-      None => Int(-1)
+      Some(i) => Int(i, raw=None)
+      None => Int(-1, raw=None)
     }
-  _ => Int(-1)
+  _ => Int(-1, raw=None)
 }
 
 ///|
@@ -148,14 +149,14 @@ let string_view_fold : RuntimeFunction = ctx => match ctx.args {
 
 ///|
 let string_view_get : RuntimeFunction = ctx => match ctx.args {
-  [{ val: StringView(s), .. }, { val: Int(i), .. }] =>
-    s.get(i).map(Int(_)) |> RuntimeValue::from_option
+  [{ val: StringView(s), .. }, { val: Int(i, ..), .. }] =>
+    s.get(i).map(Int(_, raw=None)) |> RuntimeValue::from_option
   _ => StringView("")
 }
 
 ///|
 let string_view_get_char : RuntimeFunction = ctx => match ctx.args {
-  [{ val: StringView(s), .. }, { val: Int(i), .. }] =>
+  [{ val: StringView(s), .. }, { val: Int(i, ..), .. }] =>
     s.get_char(i).map(Char(_)) |> RuntimeValue::from_option
   _ => StringView("")
 }
@@ -194,9 +195,9 @@ let string_view_iter : RuntimeFunction = ctx => match ctx.args {
 
 ///|
 let string_view_offset_of_nth_char : RuntimeFunction = ctx => match ctx.args {
-  [{ val: StringView(s), .. }, { val: Int(n), .. }] =>
-    RuntimeValue::from_option(s.offset_of_nth_char(n).map(Int(_)))
-  _ => Int(-1)
+  [{ val: StringView(s), .. }, { val: Int(n, ..), .. }] =>
+    RuntimeValue::from_option(s.offset_of_nth_char(n).map(Int(_, raw=None)))
+  _ => Int(-1, raw=None)
 }
 
 ///|
@@ -216,7 +217,7 @@ let string_view_op_equal : RuntimeFunction = ctx => match ctx.args {
 let string_view_pad_end : RuntimeFunction = ctx => match ctx.args {
   [
     { val: StringView(s), .. },
-    { val: Int(total_width), .. },
+    { val: Int(total_width, ..), .. },
     { val: Char(padding_char), .. },
   ] => StringView(s.pad_end(total_width, padding_char))
   _ => StringView("")
@@ -226,7 +227,7 @@ let string_view_pad_end : RuntimeFunction = ctx => match ctx.args {
 let string_view_pad_start : RuntimeFunction = ctx => match ctx.args {
   [
     { val: StringView(s), .. },
-    { val: Int(total_width), .. },
+    { val: Int(total_width, ..), .. },
     { val: Char(padding_char), .. },
   ] => StringView(s.pad_start(total_width, padding_char))
   _ => StringView("")
@@ -234,7 +235,8 @@ let string_view_pad_start : RuntimeFunction = ctx => match ctx.args {
 
 ///|
 let string_view_repeat : RuntimeFunction = ctx => match ctx.args {
-  [{ val: StringView(s), .. }, { val: Int(n), .. }] => StringView(s.repeat(n))
+  [{ val: StringView(s), .. }, { val: Int(n, ..), .. }] =>
+    StringView(s.repeat(n))
   _ => StringView("")
 }
 
@@ -268,10 +270,10 @@ let string_view_rev : RuntimeFunction = ctx => match ctx.args {
 let string_view_rev_find : RuntimeFunction = ctx => match ctx.args {
   [{ val: StringView(s), .. }, { val: StringView(sub), .. }] =>
     match s.rev_find(sub) {
-      Some(i) => Int(i)
-      None => Int(-1)
+      Some(i) => Int(i, raw=None)
+      None => Int(-1, raw=None)
     }
-  _ => Int(-1)
+  _ => Int(-1, raw=None)
 }
 
 ///|
@@ -310,8 +312,8 @@ let string_view_split : RuntimeFunction = ctx => match ctx.args {
 
 ///|
 let string_view_start_offset : RuntimeFunction = ctx => match ctx.args {
-  [{ val: StringView(s), .. }] => Int(s.start_offset())
-  _ => Int(0)
+  [{ val: StringView(s), .. }] => Int(s.start_offset(), raw=None)
+  _ => Int(0, raw=None)
 }
 
 ///|
@@ -405,11 +407,11 @@ let string_view_trim_start : RuntimeFunction = ctx => match ctx.args {
 
 ///|
 let string_view_unsafe_charcode_at : RuntimeFunction = ctx => match ctx.args {
-  [{ val: StringView(s), .. }, { val: Int(i), .. }] =>
+  [{ val: StringView(s), .. }, { val: Int(i, ..), .. }] =>
     if i >= 0 && i < s.length() {
-      Int(s.unsafe_charcode_at(i))
+      Int(s.unsafe_charcode_at(i), raw=None)
     } else {
-      Int(0)
+      Int(0, raw=None)
     }
-  _ => Int(0)
+  _ => Int(0, raw=None)
 }

@@ -40,7 +40,7 @@ fn ClosureInterpreter::visit_unary_expression(
       let val = self.visit(expr)
       match (name, val) {
         ("!", Bool(value)) => Bool(!value)
-        ("-", Int(value)) => Int(-value)
+        ("-", Int(value, ..)) => Int(-value, raw=None)
         ("-", Double(value)) => Double(-value)
         _ => Unit
       }
@@ -241,7 +241,7 @@ fn ClosureInterpreter::visit_field(
   let record_val = self.visit(record)
   match (record_val, accessor) {
     (String(str), Index(tuple_index~, ..)) =>
-      RuntimeValue::from_option(str.get(tuple_index).map(Int(_)))
+      RuntimeValue::from_option(str.get(tuple_index).map(Int(_, raw=None)))
     (Object({ val: fields, .. }), Label(label)) =>
       match fields.get(label.name) {
         Some(field_value) => field_value

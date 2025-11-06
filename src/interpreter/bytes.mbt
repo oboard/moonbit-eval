@@ -14,13 +14,13 @@ pub let bytes_methods : Map[String, RuntimeFunction] = {
 
 ///|
 let bytes_at_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Bytes(b), .. }, { val: Int(i), .. }] => Byte(b[i])
+  [{ val: Bytes(b), .. }, { val: Int(i, ..), .. }] => Byte(b[i])
   _ => Unit
 }
 
 ///|
 let bytes_compare_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Bytes(a), .. }, { val: Bytes(b), .. }] => Int(a.compare(b))
+  [{ val: Bytes(a), .. }, { val: Bytes(b), .. }] => Int(a.compare(b), raw=None)
   _ => Unit
 }
 
@@ -32,16 +32,16 @@ let bytes_equal_fn : RuntimeFunction = ctx => match ctx.args {
 
 ///|
 let bytes_make_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Int(len), .. }, { val: Byte(byte), .. }] =>
+  [{ val: Int(len, ..), .. }, { val: Byte(byte), .. }] =>
     Bytes(Bytes::make(len, byte))
   _ => Unit
 }
 
 ///|
 let bytes_makei_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Int(len), .. }, { val: Fn(f), .. }] => {
+  [{ val: Int(len, ..), .. }, { val: Fn(f), .. }] => {
     let result = Bytes::makei(len, fn(i) {
-      let arg = Int(i)
+      let arg = Int(i, raw=None)
       let ret = ctx.context.call(f.val, ctx.pkg, [
         { val: arg, kind: Positional },
       ])
@@ -57,7 +57,7 @@ let bytes_makei_fn : RuntimeFunction = ctx => match ctx.args {
 
 ///|
 let bytes_new_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Int(len), .. }] => Bytes(Bytes::new(len))
+  [{ val: Int(len, ..), .. }] => Bytes(Bytes::new(len))
   _ => Unit
 }
 
@@ -70,12 +70,12 @@ let bytes_op_equal_fn : RuntimeFunction = ctx => match ctx.args {
 ///|
 let bytes_to_unchecked_string_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Bytes(b), .. }] => {
-    let offset = if ctx.named("offset") is Some(Int(i)) {
+    let offset = if ctx.named("offset") is Some(Int(i, ..)) {
       Some(i)
     } else {
       None
     }
-    let length = if ctx.named("length") is Some(Int(i)) {
+    let length = if ctx.named("length") is Some(Int(i, ..)) {
       Some(i)
     } else {
       None
@@ -87,12 +87,12 @@ let bytes_to_unchecked_string_fn : RuntimeFunction = ctx => match ctx.args {
 
 ///|
 let bytes_unsafe_get_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Bytes(b), .. }, { val: Int(i), .. }] => Byte(b.unsafe_get(i))
+  [{ val: Bytes(b), .. }, { val: Int(i, ..), .. }] => Byte(b.unsafe_get(i))
   _ => Unit
 }
 
 ///|
 let bytes_length_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Bytes(b), .. }] => Int(b.length())
+  [{ val: Bytes(b), .. }] => Int(b.length(), raw=None)
   _ => Unit
 }

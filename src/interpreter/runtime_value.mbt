@@ -19,7 +19,7 @@ pub(all) enum RuntimeValue {
   // 基本值类型
   Unit
   Bool(Bool)
-  Int(Int)
+  Int(Int, raw~ : String?)
   UInt(UInt)
   UInt16(UInt16)
   Int64(Int64)
@@ -77,7 +77,7 @@ pub suberror ControlFlow {
 ///|
 pub impl Compare for RuntimeValue with compare(self, other) {
   match (self, other) {
-    (Int(a), Int(b)) => a.compare(b)
+    (Int(a, ..), Int(b, ..)) => a.compare(b)
     (UInt(a), UInt(b)) => a.compare(b)
     (Int64(a), Int64(b)) => a.compare(b)
     (UInt64(a), UInt64(b)) => a.compare(b)
@@ -111,7 +111,7 @@ pub impl Add for RuntimeValue with add(
   other : RuntimeValue,
 ) -> RuntimeValue {
   match (self, other) {
-    (Int(a), Int(b)) => Int(a + b)
+    (Int(a, ..), Int(b, ..)) => Int(a + b, raw=None)
     (UInt(a), UInt(b)) => UInt(a + b)
     (Int64(a), Int64(b)) => Int64(a + b)
     (UInt64(a), UInt64(b)) => UInt64(a + b)
@@ -152,7 +152,7 @@ pub impl Hash for RuntimeValue with hash(self : RuntimeValue) -> Int {
   match self {
     Unit => 0
     Bool(b) => b.hash()
-    Int(i) => i.hash()
+    Int(i, ..) => i.hash()
     UInt(u) => u.hash()
     Int64(i) => i.hash()
     UInt64(u) => u.hash()
@@ -178,7 +178,7 @@ pub impl ToJson for RuntimeValue with to_json(self : RuntimeValue) -> Json {
     Map(m) => m.to_json()
     Unit => Json::null()
     Bool(b) => b.to_json()
-    Int(i) => i.to_json()
+    Int(i, ..) => i.to_json()
     UInt(u) => u.to_json()
     Int64(i) => i.to_json()
     UInt16(u) => u.to_json()
@@ -223,7 +223,7 @@ pub impl Eq for RuntimeValue with equal(
     // 基本值类型比较
     (Unit, Unit) => true
     (Bool(a), Bool(b)) => a == b
-    (Int(a), Int(b)) => a == b
+    (Int(a, ..), Int(b, ..)) => a == b
     (UInt(a), UInt(b)) => a == b
     (Int64(a), Int64(b)) => a == b
     (UInt64(a), UInt64(b)) => a == b
@@ -323,7 +323,8 @@ test "parse_double" {
 fn RuntimeValue::from_constant(c : @syntax.Constant) -> RuntimeValue {
   match c {
     Bool(b) => Bool(b)
-    Int(s) => Int(@strconv.parse_int64(s).to_int() catch { _ => 0 })
+    Int(s) =>
+      Int(@strconv.parse_int64(s).to_int() catch { _ => 0 }, raw=Some(s))
     UInt(s) => UInt(@strconv.parse_uint64(s).to_uint() catch { _ => 0U })
     Int64(s) => Int64(@strconv.parse_int64(s) catch { _ => 0L })
     UInt64(s) => UInt64(@strconv.parse_uint64(s) catch { _ => 0UL })
@@ -371,27 +372,31 @@ pub fn RuntimeValue::overload_literal(
 ) -> RuntimeValue {
   match (self, expected_type) {
     // 数字字面量重载 (默认Int -> 其他数字类型)
-    (Int(i), "UInt") => UInt(i.reinterpret_as_uint())
-    (Int(i), "Int64") => Int64(i.to_int64())
-    (Int(i), "UInt64") => UInt64(i.to_uint64())
-    (Int(i), "UInt16") => UInt16(i.to_uint16())
-    (Int(i), "Byte") => Byte(i.to_byte())
-    (Int(i), "Double") => Double(i.to_double())
-    (Int(i), "Float") => Float(i.to_float())
-    (Int(i), "BigInt") => BigInt(BigInt::from_int(i))
+    (Int(_, raw=Some(raw)), "UInt") =>
+      UInt(@strconv.parse_uint64(raw).to_uint() catch { _ => 0U })
+    (Int(_, raw=Some(raw)), "Int64") =>
+      Int64(@strconv.parse_int64(raw) catch { _ => 0L })
+    (Int(_, raw=Some(raw)), "UInt64") =>
+      UInt64(@strconv.parse_uint64(raw) catch { _ => 0UL })
+    (Int(_, raw=Some(raw)), "UInt16") =>
+      UInt16(@strconv.parse_uint64(raw).to_uint16() catch { _ => 0 })
+    (Int(i, ..), "Byte") => Byte(i.to_byte())
+    (Int(i, ..), "Double") => Double(i.to_double())
+    (Int(i, ..), "Float") => Float(i.to_float())
+    (Int(i, ..), "BigInt") => BigInt(BigInt::from_int(i))
 
     // 字符串字面量重载 (默认String -> Bytes)
     (String(s), "Bytes") => Bytes(@encoding.encode(UTF8, s))
 
     // 字符字面量重载 (默认Char -> Int/Byte)
-    (Char(c), "Int") => Int(c.to_int())
+    (Char(c), "Int") => Int(c.to_int(), raw=None)
     (Char(c), "Byte") => Byte(c.to_int().to_byte())
 
     // 浮点数字面量重载 (默认Double -> Float)
     (Double(d), "Float") => Float(d.to_float())
 
     // JSON 类型重载 - 支持基本类型到 JSON 的转换
-    (Int(i), "Json") => Json(i.to_json())
+    (Int(i, ..), "Json") => Json(i.to_json())
     (Double(d), "Json") => Json(d.to_json())
     (String(s), "Json") => Json(s.to_json())
     (Bool(b), "Json") => Json(b.to_json())
@@ -428,7 +433,7 @@ pub fn RuntimeValue::overload_literal(
       let bytes = []
       for i = 0; i < arr.length(); i = i + 1 {
         match arr[i] {
-          Int(n) => bytes.push(n.to_byte())
+          Int(n, ..) => bytes.push(n.to_byte())
           Byte(b) => bytes.push(b)
           _ => return self // 如果不是Int数组，返回原值
         }
@@ -625,7 +630,7 @@ pub impl Show for RuntimeValue with to_string(self) -> String {
   match self {
     Unit => "()"
     Bool(b) => b.to_string()
-    Int(i) => i.to_string()
+    Int(i, ..) => i.to_string()
     UInt(u) => u.to_string()
     UInt16(u) => u.to_string()
     Int64(i64) => i64.to_string()
@@ -765,7 +770,7 @@ pub fn RuntimeValue::iter2(self : RuntimeValue) -> RuntimeValue {
       // 将数组转换为 Iter2，每个元素是 (index, value) 元组
       let iter_impl = Iter2::new(fn(f) {
         for i = 0; i < arr.length(); i = i + 1 {
-          match f(Int(i), arr[i]) {
+          match f(Int(i, raw=None), arr[i]) {
             IterEnd => return IterEnd
             IterContinue => ()
           }
@@ -779,7 +784,7 @@ pub fn RuntimeValue::iter2(self : RuntimeValue) -> RuntimeValue {
       let chars = str.to_array()
       let iter_impl = Iter2::new(fn(f) {
         for i = 0; i < chars.length(); i = i + 1 {
-          match f(Int(i), Char(chars[i])) {
+          match f(Int(i, raw=None), Char(chars[i])) {
             IterEnd => return IterEnd
             IterContinue => ()
           }
@@ -794,7 +799,7 @@ pub fn RuntimeValue::iter2(self : RuntimeValue) -> RuntimeValue {
       let chars = str.to_array()
       let iter_impl = Iter2::new(f => {
         for i = 0; i < chars.length(); i = i + 1 {
-          match f(Int(i), Char(chars[i])) {
+          match f(Int(i, raw=None), Char(chars[i])) {
             IterEnd => return IterEnd
             IterContinue => ()
           }
@@ -816,17 +821,25 @@ pub fn runtime_value_infix(
 ) -> RuntimeValue {
   match (lhs, rhs) {
     // Int 运算
-    (Int(left), Char(right)) =>
-      runtime_value_infix(op, Int(left), Int(right.to_int()))
-    (Char(left), Int(right)) =>
-      runtime_value_infix(op, Int(left.to_int()), Int(right))
-    (Int(left), Int(right)) =>
+    (Int(left, ..), Char(right)) =>
+      runtime_value_infix(
+        op,
+        Int(left, raw=None),
+        Int(right.to_int(), raw=None),
+      )
+    (Char(left), Int(right, ..)) =>
+      runtime_value_infix(
+        op,
+        Int(left.to_int(), raw=None),
+        Int(right, raw=None),
+      )
+    (Int(left, ..), Int(right, ..)) =>
       match op {
-        "+" => Int(left + right)
-        "-" => Int(left - right)
-        "*" => Int(left * right)
-        "/" => Int(left / right)
-        "%" => Int(left % right)
+        "+" => Int(left + right, raw=None)
+        "-" => Int(left - right, raw=None)
+        "*" => Int(left * right, raw=None)
+        "/" => Int(left / right, raw=None)
+        "%" => Int(left % right, raw=None)
         "==" => Bool(left == right)
         "!=" => Bool(left != right)
         "<" => Bool(left < right)

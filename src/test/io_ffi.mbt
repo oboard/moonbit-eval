@@ -14,7 +14,7 @@ test "embedded_code" {
   let vm = MoonBitVM::new()
   vm.interpreter.add_embedded_fn("%string_length2", ctx => if ctx.args
     is [{ val: String(s), .. }] {
-    Int(s.length())
+    Int(s.length(), raw=None)
   } else {
     Unit
   })

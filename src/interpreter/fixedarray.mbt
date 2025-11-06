@@ -29,14 +29,14 @@ let fixedarray_new_fn : RuntimeFunction = ctx => match ctx.args {
 ///|
 /// FixedArray::length 操作 - 获取数组长度
 let fixedarray_length_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: FixedArray(arr), .. }] => Int(arr.length())
+  [{ val: FixedArray(arr), .. }] => Int(arr.length(), raw=None)
   _ => Unit
 }
 
 ///|
 /// FixedArray::get 操作 - 安全获取元素
 let fixedarray_get_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: FixedArray(arr), .. }, { val: Int(i), .. }] =>
+  [{ val: FixedArray(arr), .. }, { val: Int(i, ..), .. }] =>
     if i >= 0 && i < arr.length() {
       arr[i]
     } else {
@@ -48,7 +48,7 @@ let fixedarray_get_fn : RuntimeFunction = ctx => match ctx.args {
 ///|
 /// FixedArray::set 操作 - 设置元素
 let fixedarray_set_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: FixedArray(arr), .. }, { val: Int(i), .. }, { val, .. }] => {
+  [{ val: FixedArray(arr), .. }, { val: Int(i, ..), .. }, { val, .. }] => {
     if i >= 0 && i < arr.length() {
       arr[i] = val
     }
@@ -60,14 +60,14 @@ let fixedarray_set_fn : RuntimeFunction = ctx => match ctx.args {
 ///|
 /// FixedArray::unsafe_get 操作 - 不安全获取元素
 let fixedarray_unsafe_get_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: FixedArray(arr), .. }, { val: Int(i), .. }] => arr[i]
+  [{ val: FixedArray(arr), .. }, { val: Int(i, ..), .. }] => arr[i]
   _ => Unit
 }
 
 ///|
 /// FixedArray::unsafe_set 操作 - 不安全设置元素
 let fixedarray_unsafe_set_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: FixedArray(arr), .. }, { val: Int(i), .. }, { val, .. }] => {
+  [{ val: FixedArray(arr), .. }, { val: Int(i, ..), .. }, { val, .. }] => {
     arr[i] = val
     Unit
   }
@@ -77,7 +77,8 @@ let fixedarray_unsafe_set_fn : RuntimeFunction = ctx => match ctx.args {
 ///|
 /// FixedArray::make 操作 - 创建指定大小和初始值的固定数组
 let fixedarray_make_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Int(len), .. }, { val, .. }] => FixedArray(FixedArray::make(len, val))
+  [{ val: Int(len, ..), .. }, { val, .. }] =>
+    FixedArray(FixedArray::make(len, val))
   _ => Unit
 }
 
@@ -95,10 +96,10 @@ let fixedarray_fill_fn : RuntimeFunction = ctx => match ctx.args {
 /// FixedArray::blit_to 操作 - 复制数组内容
 let fixedarray_blit_to_fn : RuntimeFunction = ctx => match ctx.args {
   [
-    { val: Int(dst_offset), .. },
+    { val: Int(dst_offset, ..), .. },
     { val: FixedArray(src), .. },
-    { val: Int(src_offset), .. },
-    { val: Int(len), .. },
+    { val: Int(src_offset, ..), .. },
+    { val: Int(len, ..), .. },
   ] => {
     src.unsafe_blit(dst_offset, src, src_offset, len)
     Unit
@@ -111,10 +112,10 @@ let fixedarray_blit_to_fn : RuntimeFunction = ctx => match ctx.args {
 let fixedarray_unsafe_blit_fn : RuntimeFunction = ctx => match ctx.args {
   [
     { val: FixedArray(dst), .. },
-    { val: Int(dst_offset), .. },
+    { val: Int(dst_offset, ..), .. },
     { val: FixedArray(src), .. },
-    { val: Int(src_offset), .. },
-    { val: Int(len), .. },
+    { val: Int(src_offset, ..), .. },
+    { val: Int(len, ..), .. },
   ] => {
     dst.unsafe_blit(dst_offset, src, src_offset, len)
     Unit
@@ -142,7 +143,7 @@ let fixedarray_iter2_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: FixedArray(arr), .. }] => {
     let iter2_impl = Iter2::new(yield_fn => {
       for i in 0..<arr.length() {
-        match yield_fn(Int(i), arr[i]) {
+        match yield_fn(Int(i, raw=None), arr[i]) {
           IterEnd => return IterEnd
           IterContinue => ()
         }
@@ -158,7 +159,7 @@ let fixedarray_iter2_fn : RuntimeFunction = ctx => match ctx.args {
 /// FixedArray::binary_search 操作 - 二分查找
 let fixedarray_binary_search_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: FixedArray(arr), .. }, { val: target, .. }] =>
-    arr.binary_search(target).map(Int(_)).map_err(Int(_))
+    arr.binary_search(target).map(Int(_, raw=None)).map_err(Int(_, raw=None))
     |> RuntimeValue::from_result
   _ => Unit
 }
@@ -170,11 +171,11 @@ let fixedarray_binary_search_by_fn : RuntimeFunction = ctx => match ctx.args {
     arr
     .binary_search_by(v => match
       ctx.context.call(f.val, ctx.pkg, [{ val: v, kind: Positional }]) {
-      Int(i) => i
+      Int(i, ..) => i
       _ => raise Error("binary_search_by closure must return int")
     })
-    .map(Int(_))
-    .map_err(Int(_))
+    .map(Int(_, raw=None))
+    .map_err(Int(_, raw=None))
     |> RuntimeValue::from_result
   _ => Unit
 }
@@ -184,14 +185,14 @@ let fixedarray_binary_search_by_fn : RuntimeFunction = ctx => match ctx.args {
 let fixedarray_set_utf16le_char_fn : RuntimeFunction = ctx => match ctx.args {
   [
     { val: FixedArray(self), .. },
-    { val: Int(offset), .. },
+    { val: Int(offset, ..), .. },
     { val: Char(value), .. },
   ] => {
     let code = value.to_uint()
     if code < 0x10000 {
       self[offset] = Byte((code & 0xFF).to_byte())
       self[offset + 1] = Byte((code >> 8).to_byte())
-      Int(2)
+      Int(2, raw=None)
     } else if code < 0x110000 {
       let hi = code - 0x10000
       let lo = (hi >> 10) | 0xD800
@@ -200,7 +201,7 @@ let fixedarray_set_utf16le_char_fn : RuntimeFunction = ctx => match ctx.args {
       self[offset + 1] = Byte((lo >> 8).to_byte())
       self[offset + 2] = Byte((hi & 0xFF).to_byte())
       self[offset + 3] = Byte((hi >> 8).to_byte())
-      Int(4)
+      Int(4, raw=None)
     } else {
       error("Char out of range")
     }
@@ -213,14 +214,14 @@ let fixedarray_set_utf16le_char_fn : RuntimeFunction = ctx => match ctx.args {
 let fixedarray_set_utf16be_char_fn : RuntimeFunction = ctx => match ctx.args {
   [
     { val: FixedArray(self), .. },
-    { val: Int(offset), .. },
+    { val: Int(offset, ..), .. },
     { val: Char(value), .. },
   ] => {
     let code = value.to_uint()
     if code < 0x10000 {
       self[offset] = Byte((code >> 8).to_byte())
       self[offset + 1] = Byte((code & 0xFF).to_byte())
-      Int(2)
+      Int(2, raw=None)
     } else if code < 0x110000 {
       let hi = code - 0x10000
       let lo = (hi >> 10) | 0xD800
@@ -229,7 +230,7 @@ let fixedarray_set_utf16be_char_fn : RuntimeFunction = ctx => match ctx.args {
       self[offset + 1] = Byte((lo & 0xFF).to_byte())
       self[offset + 2] = Byte((hi >> 8).to_byte())
       self[offset + 3] = Byte((hi & 0xFF).to_byte())
-      Int(4)
+      Int(4, raw=None)
     } else {
       error("Char out of range")
     }

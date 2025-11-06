@@ -185,7 +185,7 @@ pub fn ClosureInterpreter::match_case(
     // 常量模式匹配
     Constant(c=pattern_const, ..) =>
       match (value, pattern_const) {
-        (Int(v), Int(s)) => {
+        (Int(v, ..), Int(s)) => {
           let pattern_int = @strconv.parse_int(s) catch { _ => 0 }
           v == pattern_int
         }
@@ -342,7 +342,7 @@ pub fn ClosureInterpreter::match_case(
             .unwrap_or(Unit)
           match (value, constr_runtime_value) {
             // 如果构造函数是常量值，直接比较
-            (Int(v1), Int(v2)) => v1 == v2
+            (Int(v1, ..), Int(v2, ..)) => v1 == v2
             (Bool(v1), Bool(v2)) => v1 == v2
             (String(v1), String(v2)) => v1 == v2
             (Double(v1), Double(v2)) => v1 == v2
@@ -381,7 +381,7 @@ pub fn ClosureInterpreter::runtime_value_in_range(
   let lhs_value = self.pattern_to_runtime_value(lhs)
   let rhs_value = self.pattern_to_runtime_value(rhs)
   match (value, lhs_value, rhs_value) {
-    (Int(v), Some(Int(start)), Some(Int(end))) =>
+    (Int(v, ..), Some(Int(start, ..)), Some(Int(end, ..))) =>
       if inclusive {
         v >= start && v <= end
       } else {
@@ -400,14 +400,14 @@ pub fn ClosureInterpreter::runtime_value_in_range(
         v >= start && v < end
       }
     // 处理开放范围（如 _..<Zero 或 1..<_）
-    (Int(v), None, Some(Int(end))) =>
+    (Int(v, ..), None, Some(Int(end, ..))) =>
       // 左边界是通配符，如 _..<Zero
       if inclusive {
         v <= end
       } else {
         v < end
       }
-    (Int(v), Some(Int(start)), None) =>
+    (Int(v, ..), Some(Int(start, ..)), None) =>
       // 右边界是通配符，如 1..<_
       v >= start
     (Double(v), None, Some(Double(end))) =>
@@ -439,7 +439,7 @@ pub fn ClosureInterpreter::pattern_to_runtime_value(
       match c {
         Int(v) => {
           let int_val = @strconv.parse_int(v) catch { _ => return None }
-          Some(Int(int_val))
+          Some(Int(int_val, raw=None))
         }
         Double(v) => {
           let double_val = @strconv.parse_double(v) catch { _ => return None }

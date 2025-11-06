@@ -266,7 +266,8 @@ pub fn ClosureInterpreter::top_visit(
     // 处理顶层常量定义（如 const Zero = 0）
     TopLetDef(binder~, expr~, ..) => {
       let value = self.visit(expr) catch { _ => Unit }
-      self.current_pkg.values.set(binder.name, value)
+      let name = binder.name
+      self.current_pkg.env.set(name, value)
       value
     }
     TopTypeDef(def) => {
@@ -511,9 +512,9 @@ pub fn ClosureInterpreter::visit(
         Array(arr) =>
           ArrayView(
             match (start, end) {
-              (Some(Int(start)), Some(Int(end))) => arr[start:end]
-              (Some(Int(start)), None) => arr[start:]
-              (None, Some(Int(end))) => arr[:end]
+              (Some(Int(start, ..)), Some(Int(end, ..))) => arr[start:end]
+              (Some(Int(start, ..)), None) => arr[start:]
+              (None, Some(Int(end, ..))) => arr[:end]
               _ => arr[:]
             },
           )
@@ -542,7 +543,7 @@ pub fn ClosureInterpreter::visit(
         Array(arr) => {
           let index = self.visit(index)
           match (index, op) {
-            (Int(index), { name: Ident(name=op), .. }) => {
+            (Int(index, ..), { name: Ident(name=op), .. }) => {
               let value = self.visit(value)
               arr[index] = runtime_value_infix(op, arr[index], value)
             }
@@ -687,10 +688,10 @@ pub fn ClosureInterpreter::visit(
       let array_val = self.visit(array)
       let index_val = self.visit(index)
       match (array_val, index_val) {
-        (Array(values), Int(index_num)) => values[index_num]
-        (ArrayView(values), Int(index_num)) => values[index_num]
-        (UninitializedArray(values), Int(index_num)) => values[index_num]
-        (String(values), Int(index_num)) => Int(values[index_num])
+        (Array(values), Int(index_num, ..)) => values[index_num]
+        (ArrayView(values), Int(index_num, ..)) => values[index_num]
+        (UninitializedArray(values), Int(index_num, ..)) => values[index_num]
+        (String(values), Int(index_num, ..)) => Int(values[index_num], raw=None)
         (Map(values), index) =>
           match values.get(index) {
             Some(value) => value
@@ -786,7 +787,10 @@ pub fn ClosureInterpreter::visit(
           self.find_pkg(pkg).env
           .find(name)
           .unwrap_or(self.current_pkg.cons(name, []))
-        _ => self.current_pkg.cons(name, [])
+        _ =>
+          self.current_pkg.env
+          .find(name)
+          .unwrap_or(self.current_pkg.cons(name, []))
       }
     }
     // 处理 Break 表达式
@@ -900,12 +904,12 @@ pub fn ClosureInterpreter::visit(
               let start_val = self.visit(lhs)
               let end_val = self.visit(rhs)
               match (start_val, end_val) {
-                (Int(start), Int(end)) =>
+                (Int(start, ..), Int(end, ..)) =>
                   Some(
                     RuntimeValue::Iter(
                       Iter::new(visit_fn => {
                         for i in start..<end {
-                          match visit_fn(Int(i)) {
+                          match visit_fn(Int(i, raw=None)) {
                             IterEnd => return IterEnd
                             IterContinue => ()
                           }
@@ -921,12 +925,12 @@ pub fn ClosureInterpreter::visit(
               let start_val = self.visit(lhs)
               let end_val = self.visit(rhs)
               match (start_val, end_val) {
-                (Int(start), Int(end)) =>
+                (Int(start, ..), Int(end, ..)) =>
                   Some(
                     RuntimeValue::Iter(
                       Iter::new(visit_fn => {
                         for i in start..=end {
-                          match visit_fn(Int(i)) {
+                          match visit_fn(Int(i, raw=None)) {
                             IterEnd => return IterEnd
                             IterContinue => ()
                           }
