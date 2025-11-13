@@ -22,6 +22,14 @@ pub fn eval_result_to_string(result : EvalResult) -> String {
 }
 
 ///|
+pub fn code_to_ast(code : String) -> String {
+  match @interpreter.parse_code_to_impl(code) {
+    Ok(i) => i.to_json().stringify()
+    Err(msg) => msg
+  }
+}
+
+///|
 pub fn add_extern_fn(
   vm : MoonBitVM,
   name : String,

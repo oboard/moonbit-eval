@@ -13,6 +13,8 @@ fn add_embedded_method(MoonBitVM, String, String, (@interpreter.RuntimeFunctionC
 
 fn add_extern_fn(MoonBitVM, String, (@interpreter.RuntimeFunctionContext) -> @interpreter.RuntimeValue raise @interpreter.ControlFlow) -> Unit
 
+fn code_to_ast(String) -> String
+
 fn eval_result_to_string(EvalResult) -> String
 
 fn expr_to_string(@syntax.Expr) -> String
