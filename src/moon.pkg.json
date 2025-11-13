@@ -10,6 +10,7 @@
         "create",
         "eval",
         "eval_result_to_string",
+        "code_to_ast",
         "add_extern_fn",
         "add_embedded_fn",
         "add_embedded_method",
