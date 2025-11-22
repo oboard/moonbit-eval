@@ -233,8 +233,8 @@ let iter_map_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Iter(iter), .. }, { val: Fn(func), .. }] => {
     let mapped = iter.map(val => {
       let _ = try! ctx.context.call(func.val, ctx.pkg, [
-          { val, kind: Positional },
-        ])
+        { val, kind: Positional },
+      ])
       val
     })
     Iter(mapped)
@@ -475,13 +475,13 @@ let iter_map_while_fn : RuntimeFunction = ctx => match ctx.args {
 let iter_mapi_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Iter(iter), .. }, { val: Fn(func), .. }] => {
     let result = iter.mapi((index, val) => try! ctx.context.call(
-        func.val,
-        ctx.pkg,
-        [
-          { val: Int(index, raw=None), kind: Positional },
-          { val, kind: Positional },
-        ],
-      ))
+      func.val,
+      ctx.pkg,
+      [
+        { val: Int(index, raw=None), kind: Positional },
+        { val, kind: Positional },
+      ],
+    ))
     Iter(result)
   }
   _ => Unit

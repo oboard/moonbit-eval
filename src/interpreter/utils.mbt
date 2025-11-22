@@ -18,26 +18,26 @@ pub fn manualUnescape(input : StringView, buf : StringBuilder) -> Unit {
       rest =>
         continue {
             let (c, rest) = lexmatch rest with longest {
-                ("\\n", rest) => ('\n', rest)
-                ("\\t", rest) => ('\t', rest)
-                ("\\r", rest) => ('\r', rest)
-                // Backspace
-                ("\\b", rest) => ('\b', rest)
-                // Unicode escape
-                ("\\u[0-9a-fA-F]{4}" as raw, rest) =>
-                  (fromCharCode(raw[2:], 16), rest)
-                ("\\x[0-9a-fA-F]{2}" as raw, rest) =>
-                  (fromCharCode(raw[2:], 16), rest)
-                // Unicode escape with braces
-                ("\\u[{][0-9a-fA-F]+[}]" as raw, rest) =>
-                  (fromCharCode(raw[3:-1], 16), rest)
-                // Octal escape
-                ("\\o[0-3][0-7]{2}" as raw, rest) =>
-                  (fromCharCode(raw[2:], 8), rest)
-                ("\\\\", rest) => ('\\', rest)
-                ("." as c, rest) => (c, rest)
-                _ => break
-              }
+              ("\\n", rest) => ('\n', rest)
+              ("\\t", rest) => ('\t', rest)
+              ("\\r", rest) => ('\r', rest)
+              // Backspace
+              ("\\b", rest) => ('\b', rest)
+              // Unicode escape
+              ("\\u[0-9a-fA-F]{4}" as raw, rest) =>
+                (fromCharCode(raw[2:], 16), rest)
+              ("\\x[0-9a-fA-F]{2}" as raw, rest) =>
+                (fromCharCode(raw[2:], 16), rest)
+              // Unicode escape with braces
+              ("\\u[{][0-9a-fA-F]+[}]" as raw, rest) =>
+                (fromCharCode(raw[3:-1], 16), rest)
+              // Octal escape
+              ("\\o[0-3][0-7]{2}" as raw, rest) =>
+                (fromCharCode(raw[2:], 8), rest)
+              ("\\\\", rest) => ('\\', rest)
+              ("." as c, rest) => (c, rest)
+              _ => break
+            }
             buf.write_char(c)
             rest
           }

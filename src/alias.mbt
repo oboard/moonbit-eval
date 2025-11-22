@@ -1,6 +1,2 @@
 ///|
-using @interpreter {
-  type ClosureInterpreter,
-  type RuntimeValue,
-  type RuntimeFunction,
-}
+using @interpreter {type ClosureInterpreter, type RuntimeValue}
