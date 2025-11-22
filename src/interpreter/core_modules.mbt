@@ -179,8 +179,6 @@ let moonbitlang_core_array_module : RuntimePackage = RuntimePackage::new(
     "moonbitlang/core/builtin": moonbitlang_core_builtin_module,
     "moonbitlang/core/bytes": moonbitlang_core_bytes_module,
     "moonbitlang/core/string": moonbitlang_core_string_module,
-    "moonbitlang/core/quickcheck": moonbitlang_core_quickcheck_module,
-    "moonbitlang/core/quickcheck/splitmix": moonbitlang_core_quickcheck_splitmix_module,
   },
   files={
     "moon.pkg.json": (
@@ -188,15 +186,15 @@ let moonbitlang_core_array_module : RuntimePackage = RuntimePackage::new(
       #|  "import": [
       #|    "moonbitlang/core/builtin",
       #|    "moonbitlang/core/bytes",
-      #|    "moonbitlang/core/string",
-      #|    "moonbitlang/core/quickcheck",
-      #|    "moonbitlang/core/quickcheck/splitmix"
+      #|    "moonbitlang/core/string"        
       #|  ],
       #|  "test-import": [
       #|    "moonbitlang/core/char",
       #|    "moonbitlang/core/test",
       #|    "moonbitlang/core/random",
-      #|    "moonbitlang/core/json"
+      #|    "moonbitlang/core/json",
+      #|    "moonbitlang/core/ref",
+      #|    "moonbitlang/core/quickcheck"
       #|  ],
       #|  "targets": {
       #|    "array_js.mbt": ["js"],
@@ -297,13 +295,6 @@ let moonbitlang_core_array_module : RuntimePackage = RuntimePackage::new(
       #|    }
       #|  })
       #|}
-      #|pub impl[X : @quickcheck.Arbitrary] @quickcheck.Arbitrary for Array[X] with arbitrary(
-      #|  size,
-      #|  rs,
-      #|) {
-      #|  let len = if size == 0 { 0 } else { rs.next_positive_int() % size }
-      #|  Array::makei(len, x => X::arbitrary(x, rs))
-      #|}
       #|pub fn[A : @string.ToStringView] Array::join(
       #|  self : Array[A],
       #|  separator : StringView,
@@ -345,7 +336,16 @@ let moonbitlang_core_array_module : RuntimePackage = RuntimePackage::new(
       #|}
     ),
     "bitstring.mbt": (
+      #|fn UInt::extend_sign(self : UInt, len : Int) -> Int {
+      #|  let b = 32 - len
+      #|  self.reinterpret_as_int() << b >> b
+      #|}
+      #|fn UInt64::extend_sign(self : UInt64, len : Int) -> Int64 {
+      #|  let b = 64 - len
+      #|  self.reinterpret_as_int64() << b >> b
+      #|}
       #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
       #|pub fn ArrayView::unsafe_extract_bit(
       #|  bs : ArrayView[Byte],
       #|  offset : Int,
@@ -360,6 +360,22 @@ let moonbitlang_core_array_module : RuntimePackage = RuntimePackage::new(
       #|  }
       #|}
       #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
+      #|pub fn ArrayView::unsafe_extract_bit_signed(
+      #|  bs : ArrayView[Byte],
+      #|  offset : Int,
+      #|  _len : Int,
+      #|) -> Int {
+      #|  let byte_index = offset >> 3
+      #|  let bit_mask = (1 << (7 - (offset & 7))).to_byte()
+      #|  if (bs.unsafe_get(byte_index) & bit_mask) != 0 {
+      #|    -1
+      #|  } else {
+      #|    0
+      #|  }
+      #|}
+      #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
       #|pub fn ArrayView::unsafe_extract_byte(
       #|  bs : ArrayView[Byte],
       #|  offset : Int,
@@ -385,6 +401,7 @@ let moonbitlang_core_array_module : RuntimePackage = RuntimePackage::new(
       #|  }
       #|}
       #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
       #|pub fn ArrayView::unsafe_extract_uint_le(
       #|  bs : ArrayView[Byte],
       #|  offset : Int,
@@ -412,6 +429,7 @@ let moonbitlang_core_array_module : RuntimePackage = RuntimePackage::new(
       #|  }
       #|}
       #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
       #|pub fn ArrayView::unsafe_extract_uint_be(
       #|  bs : ArrayView[Byte],
       #|  offset : Int,
@@ -445,6 +463,7 @@ let moonbitlang_core_array_module : RuntimePackage = RuntimePackage::new(
       #|  }
       #|}
       #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
       #|pub fn ArrayView::unsafe_extract_uint64_le(
       #|  bs : ArrayView[Byte],
       #|  offset : Int,
@@ -495,6 +514,7 @@ let moonbitlang_core_array_module : RuntimePackage = RuntimePackage::new(
       #|  }
       #|}
       #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
       #|pub fn ArrayView::unsafe_extract_uint64_be(
       #|  bs : ArrayView[Byte],
       #|  offset : Int,
@@ -562,6 +582,7 @@ let moonbitlang_core_array_module : RuntimePackage = RuntimePackage::new(
       #|  }
       #|}
       #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
       #|pub fn ArrayView::unsafe_extract_bytesview(
       #|  bs : ArrayView[Byte],
       #|  offset : Int,
@@ -572,6 +593,57 @@ let moonbitlang_core_array_module : RuntimePackage = RuntimePackage::new(
       #|  bs[start:end]
       #|}
       #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
+      #|pub fn ArrayView::unsafe_extract_byte_signed(
+      #|  bs : ArrayView[Byte],
+      #|  offset : Int,
+      #|  len : Int,
+      #|) -> Int {
+      #|  let unsigned = bs.unsafe_extract_byte(offset, len)
+      #|  unsigned.extend_sign(len)
+      #|}
+      #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
+      #|pub fn ArrayView::unsafe_extract_int_le(
+      #|  bs : ArrayView[Byte],
+      #|  offset : Int,
+      #|  len : Int,
+      #|) -> Int {
+      #|  let unsigned = bs.unsafe_extract_uint_le(offset, len)
+      #|  unsigned.extend_sign(len)
+      #|}
+      #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
+      #|pub fn ArrayView::unsafe_extract_int_be(
+      #|  bs : ArrayView[Byte],
+      #|  offset : Int,
+      #|  len : Int,
+      #|) -> Int {
+      #|  let unsigned = bs.unsafe_extract_uint_be(offset, len)
+      #|  unsigned.extend_sign(len)
+      #|}
+      #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
+      #|pub fn ArrayView::unsafe_extract_int64_le(
+      #|  bs : ArrayView[Byte],
+      #|  offset : Int,
+      #|  len : Int,
+      #|) -> Int64 {
+      #|  let unsigned = bs.unsafe_extract_uint64_le(offset, len)
+      #|  unsigned.extend_sign(len)
+      #|}
+      #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
+      #|pub fn ArrayView::unsafe_extract_int64_be(
+      #|  bs : ArrayView[Byte],
+      #|  offset : Int,
+      #|  len : Int,
+      #|) -> Int64 {
+      #|  let unsigned = bs.unsafe_extract_uint64_be(offset, len)
+      #|  unsigned.extend_sign(len)
+      #|}
+      #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
       #|pub fn Array::unsafe_extract_bit(
       #|  bs : Array[Byte],
       #|  offset : Int,
@@ -580,6 +652,7 @@ let moonbitlang_core_array_module : RuntimePackage = RuntimePackage::new(
       #|  bs[:].unsafe_extract_bit(offset, len)
       #|}
       #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
       #|pub fn Array::unsafe_extract_byte(
       #|  bs : Array[Byte],
       #|  offset : Int,
@@ -588,6 +661,7 @@ let moonbitlang_core_array_module : RuntimePackage = RuntimePackage::new(
       #|  bs[:].unsafe_extract_byte(offset, len)
       #|}
       #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
       #|pub fn Array::unsafe_extract_uint_le(
       #|  bs : Array[Byte],
       #|  offset : Int,
@@ -596,6 +670,7 @@ let moonbitlang_core_array_module : RuntimePackage = RuntimePackage::new(
       #|  bs[:].unsafe_extract_uint_le(offset, len)
       #|}
       #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
       #|pub fn Array::unsafe_extract_uint_be(
       #|  bs : Array[Byte],
       #|  offset : Int,
@@ -604,6 +679,7 @@ let moonbitlang_core_array_module : RuntimePackage = RuntimePackage::new(
       #|  bs[:].unsafe_extract_uint_be(offset, len)
       #|}
       #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
       #|pub fn Array::unsafe_extract_uint64_le(
       #|  bs : Array[Byte],
       #|  offset : Int,
@@ -612,6 +688,7 @@ let moonbitlang_core_array_module : RuntimePackage = RuntimePackage::new(
       #|  bs[:].unsafe_extract_uint64_le(offset, len)
       #|}
       #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
       #|pub fn Array::unsafe_extract_uint64_be(
       #|  bs : Array[Byte],
       #|  offset : Int,
@@ -620,6 +697,7 @@ let moonbitlang_core_array_module : RuntimePackage = RuntimePackage::new(
       #|  bs[:].unsafe_extract_uint64_be(offset, len)
       #|}
       #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
       #|pub fn Array::unsafe_extract_bytesview(
       #|  bs : Array[Byte],
       #|  offset : Int,
@@ -628,6 +706,7 @@ let moonbitlang_core_array_module : RuntimePackage = RuntimePackage::new(
       #|  bs[:].unsafe_extract_bytesview(offset, len)
       #|}
       #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
       #|pub fn FixedArray::unsafe_extract_bit(
       #|  bs : FixedArray[Byte],
       #|  offset : Int,
@@ -636,6 +715,7 @@ let moonbitlang_core_array_module : RuntimePackage = RuntimePackage::new(
       #|  bs[:].unsafe_extract_bit(offset, len)
       #|}
       #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
       #|pub fn FixedArray::unsafe_extract_byte(
       #|  bs : FixedArray[Byte],
       #|  offset : Int,
@@ -644,6 +724,7 @@ let moonbitlang_core_array_module : RuntimePackage = RuntimePackage::new(
       #|  bs[:].unsafe_extract_byte(offset, len)
       #|}
       #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
       #|pub fn FixedArray::unsafe_extract_uint_le(
       #|  bs : FixedArray[Byte],
       #|  offset : Int,
@@ -652,6 +733,7 @@ let moonbitlang_core_array_module : RuntimePackage = RuntimePackage::new(
       #|  bs[:].unsafe_extract_uint_le(offset, len)
       #|}
       #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
       #|pub fn FixedArray::unsafe_extract_uint_be(
       #|  bs : FixedArray[Byte],
       #|  offset : Int,
@@ -660,6 +742,7 @@ let moonbitlang_core_array_module : RuntimePackage = RuntimePackage::new(
       #|  bs[:].unsafe_extract_uint_be(offset, len)
       #|}
       #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
       #|pub fn FixedArray::unsafe_extract_uint64_le(
       #|  bs : FixedArray[Byte],
       #|  offset : Int,
@@ -668,6 +751,7 @@ let moonbitlang_core_array_module : RuntimePackage = RuntimePackage::new(
       #|  bs[:].unsafe_extract_uint64_le(offset, len)
       #|}
       #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
       #|pub fn FixedArray::unsafe_extract_uint64_be(
       #|  bs : FixedArray[Byte],
       #|  offset : Int,
@@ -676,6 +760,7 @@ let moonbitlang_core_array_module : RuntimePackage = RuntimePackage::new(
       #|  bs[:].unsafe_extract_uint64_be(offset, len)
       #|}
       #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
       #|pub fn FixedArray::unsafe_extract_bytesview(
       #|  bs : FixedArray[Byte],
       #|  offset : Int,
@@ -728,796 +813,7 @@ let moonbitlang_core_array_module : RuntimePackage = RuntimePackage::new(
       #|  }
       #|}
     ),
-    "fixedarray.mbt": (
-      #|pub fn[T] FixedArray::each(
-      #|  self : FixedArray[T],
-      #|  f : (T) -> Unit raise?,
-      #|) -> Unit raise? {
-      #|  for v in self {
-      #|    f(v)
-      #|  }
-      #|}
-      #|test "each" {
-      #|  let mut i = 0
-      #|  let mut failed = false
-      #|  let f = elem => {
-      #|    if elem != i + 1 {
-      #|      failed = true
-      #|    }
-      #|    i = i + 1
-      #|  }
-      #|  {
-      #|    i = 0
-      #|    ([] : FixedArray[_]).each(f)
-      #|    assert_false(failed)
-      #|    inspect(i, content="0")
-      #|  }
-      #|  {
-      #|    i = 0
-      #|    ([1] : FixedArray[_]).each(f)
-      #|    assert_false(failed)
-      #|    inspect(i, content="1")
-      #|  }
-      #|  i = 0
-      #|  ([1, 2, 3, 4, 5] : FixedArray[_]).each(f)
-      #|  assert_false(failed)
-      #|  inspect(i, content="5")
-      #|}
-      #|pub fn[T] FixedArray::eachi(
-      #|  self : FixedArray[T],
-      #|  f : (Int, T) -> Unit raise?,
-      #|) -> Unit raise? {
-      #|  for i, v in self {
-      #|    f(i, v)
-      #|  }
-      #|}
-      #|test "eachi" {
-      #|  let mut i = 0
-      #|  let mut failed = false
-      #|  let f = (index, elem) => {
-      #|    if index != i || elem != i + 1 {
-      #|      failed = true
-      #|    }
-      #|    i = i + 1
-      #|  }
-      #|  {
-      #|    i = 0
-      #|    ([] : FixedArray[_]).eachi(f)
-      #|    assert_false(failed)
-      #|    inspect(i, content="0")
-      #|  }
-      #|  {
-      #|    i = 0
-      #|    ([1] : FixedArray[_]).eachi(f)
-      #|    assert_false(failed)
-      #|    inspect(i, content="1")
-      #|  }
-      #|  i = 0
-      #|  ([1, 2, 3, 4, 5] : FixedArray[_]).eachi(f)
-      #|  assert_false(failed)
-      #|  inspect(i, content="5")
-      #|}
-      #|pub fn[T] FixedArray::rev_each(
-      #|  self : FixedArray[T],
-      #|  f : (T) -> Unit raise?,
-      #|) -> Unit raise? {
-      #|  for i = self.length() - 1; i >= 0; i = i - 1 {
-      #|    f(self[i])
-      #|  }
-      #|}
-      #|test "rev_each" {
-      #|  let mut i = 6
-      #|  let mut failed = false
-      #|  let f = elem => {
-      #|    if elem != i - 1 {
-      #|      failed = true
-      #|    }
-      #|    i = i - 1
-      #|  }
-      #|  {
-      #|    i = 1
-      #|    ([] : FixedArray[_]).rev_each(f)
-      #|    assert_false(failed)
-      #|    inspect(i, content="1")
-      #|  }
-      #|  {
-      #|    i = 2
-      #|    ([1] : FixedArray[_]).rev_each(f)
-      #|    assert_false(failed)
-      #|    inspect(i, content="1")
-      #|  }
-      #|  i = 6
-      #|  ([1, 2, 3, 4, 5] : FixedArray[_]).rev_each(f)
-      #|  assert_false(failed)
-      #|  inspect(i, content="1")
-      #|}
-      #|pub fn[T] FixedArray::rev_eachi(
-      #|  self : FixedArray[T],
-      #|  f : (Int, T) -> Unit raise?,
-      #|) -> Unit raise? {
-      #|  let len = self.length()
-      #|  for i in 0..<len {
-      #|    f(i, self[len - i - 1])
-      #|  }
-      #|}
-      #|test "rev_eachi" {
-      #|  let mut i = 6
-      #|  let mut j = 0
-      #|  let mut failed = false
-      #|  let f = (index, elem) => {
-      #|    if index != j || elem != i - 1 {
-      #|      failed = true
-      #|    }
-      #|    i = i - 1
-      #|    j = j + 1
-      #|  }
-      #|  {
-      #|    i = 1
-      #|    j = 0
-      #|    ([] : FixedArray[_]).rev_eachi(f)
-      #|    assert_false(failed)
-      #|    inspect(i, content="1")
-      #|    inspect(j, content="0")
-      #|  }
-      #|  {
-      #|    i = 2
-      #|    j = 0
-      #|    ([1] : FixedArray[_]).rev_eachi(f)
-      #|    assert_false(failed)
-      #|    inspect(i, content="1")
-      #|    inspect(j, content="1")
-      #|  }
-      #|  i = 6
-      #|  j = 0
-      #|  ([1, 2, 3, 4, 5] : FixedArray[_]).rev_eachi(f)
-      #|  assert_false(failed)
-      #|  inspect(i, content="1")
-      #|  inspect(j, content="5")
-      #|}
-      #|pub fn[T, U] FixedArray::map(
-      #|  self : FixedArray[T],
-      #|  f : (T) -> U raise?,
-      #|) -> FixedArray[U] raise? {
-      #|  if self.length() == 0 {
-      #|    return []
-      #|  }
-      #|  let res = FixedArray::make(self.length(), f(self[0]))
-      #|  for i in 1..<self.length() {
-      #|    res[i] = f(self[i])
-      #|  }
-      #|  res
-      #|}
-      #|test "map" {
-      #|  let empty : FixedArray[Unit] = FixedArray::default().map(x => x)
-      #|  assert_eq(empty, [])
-      #|  let simple_arr : FixedArray[_] = [6]
-      #|  let simple_doubled = simple_arr.map(x => x * 2)
-      #|  assert_eq(simple_doubled, [12])
-      #|  let arr : FixedArray[_] = [1, 2, 3, 4, 5]
-      #|  let doubled = arr.map(x => x * 2)
-      #|  assert_eq(doubled, [2, 4, 6, 8, 10])
-      #|}
-      #|pub fn[T, U] FixedArray::mapi(
-      #|  self : FixedArray[T],
-      #|  f : (Int, T) -> U raise?,
-      #|) -> FixedArray[U] raise? {
-      #|  if self.length() == 0 {
-      #|    return []
-      #|  }
-      #|  let res = FixedArray::make(self.length(), f(0, self[0]))
-      #|  for i in 1..<self.length() {
-      #|    res[i] = f(i, self[i])
-      #|  }
-      #|  res
-      #|}
-      #|test "mapi" {
-      #|  let empty : FixedArray[Int] = FixedArray::default().mapi((i, x) => x + i)
-      #|  assert_eq(empty, [])
-      #|  let simple_arr : FixedArray[_] = [6]
-      #|  let simple_doubled = simple_arr.mapi((i, x) => x * 2 + i)
-      #|  assert_eq(simple_doubled, [12])
-      #|  let arr : FixedArray[_] = [1, 2, 3, 4, 5]
-      #|  let doubled = arr.mapi((i, x) => x * 2 + i)
-      #|  assert_eq(doubled, [2, 5, 8, 11, 14])
-      #|}
-      #|#locals(value)
-      #|pub fn[T] FixedArray::makei(
-      #|  length : Int,
-      #|  value : (Int) -> T raise?,
-      #|) -> FixedArray[T] raise? {
-      #|  if length <= 0 {
-      #|    []
-      #|  } else {
-      #|    let array = FixedArray::make(length, value(0))
-      #|    for i in 1..<length {
-      #|      array[i] = value(i)
-      #|    }
-      #|    array
-      #|  }
-      #|}
-      #|test "fixedarray_new_with_index" {
-      #|  let empty = FixedArray::makei(0, i => i)
-      #|  inspect(empty.length(), content="0")
-      #|  let simple_arr = FixedArray::makei(1, i => i)
-      #|  inspect(simple_arr.length(), content="1")
-      #|  inspect(simple_arr[0], content="0")
-      #|  let arr = FixedArray::makei(2, i => i)
-      #|  inspect(arr.length(), content="2")
-      #|  inspect(arr[0], content="0")
-      #|  inspect(arr[1], content="1")
-      #|}
-      #|pub fn[T] FixedArray::from_array(array : ArrayView[T]) -> FixedArray[T] {
-      #|  FixedArray::makei(array.length(), i => array.unsafe_get(i))
-      #|}
-      #|test "from_array" {
-      #|  let array = FixedArray::from_array([1, 2, 3, 4, 5])
-      #|  assert_eq(array, [1, 2, 3, 4, 5])
-      #|}
-      #|pub fn[A, B] FixedArray::fold(
-      #|  self : FixedArray[A],
-      #|  init~ : B,
-      #|  f : (B, A) -> B raise?,
-      #|) -> B raise? {
-      #|  for i = 0, acc = init; i < self.length(); {
-      #|    continue i + 1, f(acc, self[i])
-      #|  } else {
-      #|    acc
-      #|  }
-      #|}
-      #|test "fold" {
-      #|  let sum = ([] : FixedArray[_]).fold(init=1, (sum, elem) => sum + elem)
-      #|  inspect(sum, content="1")
-      #|  let sum = ([1] : FixedArray[_]).fold(init=2, (sum, elem) => sum + elem)
-      #|  inspect(sum, content="3")
-      #|  let sum = ([1, 2, 3, 4, 5] : FixedArray[_]).fold(init=0, (sum, elem) => sum +
-      #|    elem)
-      #|  inspect(sum, content="15")
-      #|}
-      #|pub fn[A, B] FixedArray::rev_fold(
-      #|  self : FixedArray[A],
-      #|  init~ : B,
-      #|  f : (B, A) -> B raise?,
-      #|) -> B raise? {
-      #|  for i = self.length() - 1, acc = init; i >= 0; {
-      #|    continue i - 1, f(acc, self[i])
-      #|  } else {
-      #|    acc
-      #|  }
-      #|}
-      #|test "rev_fold" {
-      #|  let sum = ([] : FixedArray[_]).rev_fold(init=1, (sum, elem) => sum + elem)
-      #|  inspect(sum, content="1")
-      #|  let sum = ([1] : FixedArray[_]).rev_fold(init=2, (sum, elem) => sum + elem)
-      #|  inspect(sum, content="3")
-      #|  let sum = ([1, 2, 3, 4, 5] : FixedArray[_]).rev_fold(init=0, (sum, elem) => sum +
-      #|    elem)
-      #|  inspect(sum, content="15")
-      #|}
-      #|pub fn[A, B] FixedArray::foldi(
-      #|  self : FixedArray[A],
-      #|  init~ : B,
-      #|  f : (Int, B, A) -> B raise?,
-      #|) -> B raise? {
-      #|  for i = 0, acc = init; i < self.length(); {
-      #|    continue i + 1, f(i, acc, self[i])
-      #|  } else {
-      #|    acc
-      #|  }
-      #|}
-      #|test "fold_lefti" {
-      #|  let f = (index, sum, elem) => index + sum + elem
-      #|  {
-      #|    let sum = ([] : FixedArray[_]).foldi(init=1, f)
-      #|    inspect(sum, content="1")
-      #|  }
-      #|  {
-      #|    let sum = ([1] : FixedArray[_]).foldi(init=2, f)
-      #|    inspect(sum, content="3")
-      #|  }
-      #|  let sum = ([1, 2, 3, 4, 5] : FixedArray[_]).foldi(init=0, f)
-      #|  inspect(sum, content="25")
-      #|}
-      #|pub fn[A, B] FixedArray::rev_foldi(
-      #|  self : FixedArray[A],
-      #|  init~ : B,
-      #|  f : (Int, B, A) -> B raise?,
-      #|) -> B raise? {
-      #|  let len = self.length()
-      #|  for i = len - 1, acc = init; i >= 0; {
-      #|    continue i - 1, f(len - i - 1, acc, self[i])
-      #|  } else {
-      #|    acc
-      #|  }
-      #|}
-      #|test "rev_foldi" {
-      #|  let f = (index, sum, elem) => index + sum + elem
-      #|  {
-      #|    let sum = ([] : FixedArray[_]).rev_foldi(init=1, f)
-      #|    inspect(sum, content="1")
-      #|  }
-      #|  {
-      #|    let sum = ([1] : FixedArray[_]).rev_foldi(init=2, f)
-      #|    inspect(sum, content="3")
-      #|  }
-      #|  let sum = ([1, 2, 3, 4, 5] : FixedArray[_]).rev_foldi(init=0, f)
-      #|  inspect(sum, content="25")
-      #|}
-      #|pub fn[T] FixedArray::rev_inplace(self : FixedArray[T]) -> Unit {
-      #|  let mid_len = self.length() / 2
-      #|  for i in 0..<mid_len {
-      #|    let j = self.length() - i - 1
-      #|    let temp = self[i]
-      #|    self[i] = self[j]
-      #|    self[j] = temp
-      #|  }
-      #|}
-      #|pub fn[T] FixedArray::rev(self : FixedArray[T]) -> FixedArray[T] {
-      #|  match self {
-      #|    [] => []
-      #|    [.., first] => {
-      #|      let res = FixedArray::make(self.length(), first)
-      #|      let len = self.length()
-      #|      for i in 1..<len {
-      #|        res[i] = self[len - 1 - i]
-      #|      }
-      #|      res
-      #|    }
-      #|  }
-      #|}
-      #|test "rev in place" {
-      #|  {
-      #|    let arr : FixedArray[Int] = []
-      #|    arr.rev_inplace()
-      #|    assert_eq(arr, [])
-      #|  }
-      #|  {
-      #|    let arr : FixedArray[_] = [1]
-      #|    arr.rev_inplace()
-      #|    assert_eq(arr, [1])
-      #|  }
-      #|  {
-      #|    let arr : FixedArray[_] = [1, 2]
-      #|    arr.rev_inplace()
-      #|    assert_eq(arr, [2, 1])
-      #|  }
-      #|  {
-      #|    let arr : FixedArray[_] = [1, 2, 3, 4, 5]
-      #|    arr.rev_inplace()
-      #|    assert_eq(arr, [5, 4, 3, 2, 1])
-      #|  }
-      #|  let arr : FixedArray[_] = [1, 2, 3, 4, 5, 6]
-      #|  arr.rev_inplace()
-      #|  assert_eq(arr, [6, 5, 4, 3, 2, 1])
-      #|}
-      #|test "rev" {
-      #|  {
-      #|    let arr : FixedArray[Int] = []
-      #|    assert_eq(arr.rev(), [])
-      #|  }
-      #|  {
-      #|    let arr : FixedArray[_] = [1]
-      #|    assert_eq(arr.rev(), [1])
-      #|  }
-      #|  {
-      #|    let arr : FixedArray[_] = [1, 2]
-      #|    assert_eq(arr.rev(), [2, 1])
-      #|  }
-      #|  {
-      #|    let arr : FixedArray[_] = [1, 2, 3, 4, 5]
-      #|    assert_eq(arr.rev(), [5, 4, 3, 2, 1])
-      #|  }
-      #|  let arr : FixedArray[_] = [1, 2, 3, 4, 5, 6]
-      #|  assert_eq(arr.rev(), [6, 5, 4, 3, 2, 1])
-      #|}
-      #|pub fn[T] FixedArray::swap(self : FixedArray[T], i : Int, j : Int) -> Unit {
-      #|  let temp = self[i]
-      #|  self[i] = self[j]
-      #|  self[j] = temp
-      #|}
-      #|test "swap" {
-      #|  {
-      #|    let arr : FixedArray[Int] = [1]
-      #|    arr.swap(0, 0)
-      #|    assert_eq(arr, [1])
-      #|  }
-      #|  {
-      #|    let arr : FixedArray[_] = [1, 2]
-      #|    arr.swap(0, 0)
-      #|    assert_eq(arr, [1, 2])
-      #|    arr.swap(0, 1)
-      #|    assert_eq(arr, [2, 1])
-      #|  }
-      #|  let arr : FixedArray[_] = [1, 2, 3, 4, 5]
-      #|  arr.swap(3, 3)
-      #|  assert_eq(arr, [1, 2, 3, 4, 5])
-      #|  arr.swap(1, 3)
-      #|  assert_eq(arr, [1, 4, 3, 2, 5])
-      #|}
-      #|pub fn[T] FixedArray::all(
-      #|  self : FixedArray[T],
-      #|  f : (T) -> Bool raise?,
-      #|) -> Bool raise? {
-      #|  for i in 0..<self.length() {
-      #|    if !f(self[i]) {
-      #|      return false
-      #|    }
-      #|  }
-      #|  true
-      #|}
-      #|test "all" {
-      #|  {
-      #|    let arr : FixedArray[Int] = []
-      #|    assert_true(arr.all(ele => ele < 6))
-      #|    assert_true(arr.all(ele => ele < 5))
-      #|  }
-      #|  {
-      #|    let arr : FixedArray[_] = [5]
-      #|    assert_true(arr.all(ele => ele < 6))
-      #|    assert_false(arr.all(ele => ele < 5))
-      #|  }
-      #|  let arr : FixedArray[_] = [1, 2, 3, 4, 5]
-      #|  assert_true(arr.all(ele => ele < 6))
-      #|  assert_false(arr.all(ele => ele < 5))
-      #|}
-      #|pub fn[T] FixedArray::any(
-      #|  self : FixedArray[T],
-      #|  f : (T) -> Bool raise?,
-      #|) -> Bool raise? {
-      #|  for i in 0..<self.length() {
-      #|    if f(self[i]) {
-      #|      return true
-      #|    }
-      #|  }
-      #|  false
-      #|}
-      #|test "any" {
-      #|  {
-      #|    let arr : FixedArray[Int] = []
-      #|    assert_false(arr.any(ele => ele < 6))
-      #|    assert_false(arr.any(ele => ele < 5))
-      #|  }
-      #|  {
-      #|    let arr : FixedArray[_] = [5]
-      #|    assert_true(arr.any(ele => ele < 6))
-      #|    assert_false(arr.any(ele => ele < 5))
-      #|  }
-      #|  let arr : FixedArray[_] = [1, 2, 3, 4, 5]
-      #|  assert_true(arr.any(ele => ele < 6))
-      #|  assert_true(arr.any(ele => ele < 5))
-      #|}
-      #|test "fill" {
-      #|  {
-      #|    let arr : FixedArray[Int] = []
-      #|    arr.fill(3)
-      #|    assert_eq(arr, [])
-      #|  }
-      #|  {
-      #|    let arr : FixedArray[_] = [6]
-      #|    arr.fill(5)
-      #|    assert_eq(arr, [5])
-      #|  }
-      #|  let arr : FixedArray[_] = [0, 0, 0, 0, 0]
-      #|  arr.fill(3)
-      #|  assert_eq(arr, [3, 3, 3, 3, 3])
-      #|}
-      #|pub fn[T : Eq] FixedArray::search(self : FixedArray[T], value : T) -> Int? {
-      #|  for i in 0..<self.length() {
-      #|    if self[i] == value {
-      #|      return Some(i)
-      #|    }
-      #|  }
-      #|  None
-      #|}
-      #|test "search" {
-      #|  {
-      #|    let arr : FixedArray[Int] = []
-      #|    assert_eq(arr.search(3), None)
-      #|    assert_eq(arr.search(-1), None)
-      #|  }
-      #|  {
-      #|    let arr : FixedArray[_] = [3]
-      #|    assert_eq(arr.search(3), Some(0))
-      #|    assert_eq(arr.search(-1), None)
-      #|  }
-      #|  let arr : FixedArray[_] = [1, 2, 3, 4, 5]
-      #|  assert_eq(arr.search(1), Some(0))
-      #|  assert_eq(arr.search(5), Some(4))
-      #|  assert_eq(arr.search(3), Some(2))
-      #|  assert_eq(arr.search(-1), None)
-      #|}
-      #|pub fn[T : Eq] FixedArray::contains(self : FixedArray[T], value : T) -> Bool {
-      #|  for i in 0..<self.length() {
-      #|    if self[i] == value {
-      #|      return true
-      #|    }
-      #|  }
-      #|  false
-      #|}
-      #|test "contains" {
-      #|  {
-      #|    let arr : FixedArray[Int] = []
-      #|    assert_false(arr.contains(3))
-      #|    assert_false(arr.contains(-1))
-      #|  }
-      #|  {
-      #|    let arr : FixedArray[_] = [3]
-      #|    assert_true(arr.contains(3))
-      #|    assert_false(arr.contains(-1))
-      #|  }
-      #|  let arr : FixedArray[_] = [3, 4, 5]
-      #|  assert_true(arr.contains(3))
-      #|  assert_true(arr.contains(4))
-      #|  assert_true(arr.contains(5))
-      #|  assert_false(arr.contains(6))
-      #|}
-      #|pub fn[T : Eq] FixedArray::starts_with(
-      #|  self : FixedArray[T],
-      #|  prefix : FixedArray[T],
-      #|) -> Bool {
-      #|  if prefix.length() > self.length() {
-      #|    return false
-      #|  }
-      #|  for i in 0..<prefix.length() {
-      #|    if self[i] != prefix[i] {
-      #|      return false
-      #|    }
-      #|  }
-      #|  true
-      #|}
-      #|test "starts_with" {
-      #|  {
-      #|    let arr : FixedArray[Int] = []
-      #|    assert_true(arr.starts_with([]))
-      #|    assert_false(arr.starts_with([1]))
-      #|  }
-      #|  {
-      #|    let arr : FixedArray[_] = [3]
-      #|    assert_true(arr.starts_with([]))
-      #|    assert_true(arr.starts_with([3]))
-      #|    assert_false(arr.starts_with([2]))
-      #|    assert_false(arr.starts_with([3, 1]))
-      #|  }
-      #|  let arr : FixedArray[_] = [3, 4, 5]
-      #|  assert_true(arr.starts_with([]))
-      #|  assert_true(arr.starts_with([3]))
-      #|  assert_false(arr.starts_with([2]))
-      #|  assert_true(arr.starts_with([3, 4]))
-      #|  assert_false(arr.starts_with([3, 2]))
-      #|  assert_true(arr.starts_with([3, 4, 5]))
-      #|  assert_false(arr.starts_with([3, 4, 2]))
-      #|  assert_false(arr.starts_with([3, 4, 5, 6]))
-      #|}
-      #|pub fn[T : Eq] FixedArray::ends_with(
-      #|  self : FixedArray[T],
-      #|  suffix : FixedArray[T],
-      #|) -> Bool {
-      #|  let self_len = self.length()
-      #|  let suf_len = suffix.length()
-      #|  if suf_len > self_len {
-      #|    return false
-      #|  }
-      #|  for i in 0..<suf_len {
-      #|    if self[self_len - suf_len + i] != suffix[i] {
-      #|      return false
-      #|    }
-      #|  }
-      #|  true
-      #|}
-      #|test "ends_with" {
-      #|  {
-      #|    let arr : FixedArray[Int] = []
-      #|    assert_true(arr.ends_with([]))
-      #|    assert_false(arr.ends_with([1]))
-      #|  }
-      #|  {
-      #|    let arr : FixedArray[_] = [3]
-      #|    assert_true(arr.ends_with([]))
-      #|    assert_true(arr.ends_with([3]))
-      #|    assert_false(arr.ends_with([2]))
-      #|    assert_false(arr.ends_with([3, 1]))
-      #|  }
-      #|  let arr : FixedArray[_] = [3, 4, 5]
-      #|  assert_true(arr.ends_with([]))
-      #|  assert_true(arr.ends_with([5]))
-      #|  assert_false(arr.ends_with([2]))
-      #|  assert_true(arr.ends_with([4, 5]))
-      #|  assert_false(arr.ends_with([4, 2]))
-      #|  assert_false(arr.ends_with([2, 5]))
-      #|  assert_true(arr.ends_with([3, 4, 5]))
-      #|  assert_false(arr.ends_with([3, 4, 2]))
-      #|  assert_false(arr.ends_with([3, 2, 5]))
-      #|  assert_false(arr.ends_with([2, 4, 5]))
-      #|  assert_false(arr.ends_with([3, 4, 5, 6]))
-      #|  assert_false(arr.ends_with([2, 3, 4, 5]))
-      #|}
-      #|pub impl[T : Eq] Eq for FixedArray[T] with equal(
-      #|  self : FixedArray[T],
-      #|  that : FixedArray[T],
-      #|) -> Bool {
-      #|  if self.length() != that.length() {
-      #|    return false
-      #|  }
-      #|  for i in 0..<self.length() {
-      #|    if self[i] != that[i] {
-      #|      return false
-      #|    }
-      #|  }
-      #|  true
-      #|}
-      #|pub impl[T : Hash] Hash for FixedArray[T] with hash_combine(self, hasher) {
-      #|  for v in self {
-      #|    v.hash_combine(hasher)
-      #|  }
-      #|}
-      #|test "equal" {
-      #|  {
-      #|    inspect(([] : FixedArray[Int]) == [], content="true")
-      #|    inspect(([] : FixedArray[_]) == [1], content="false")
-      #|    inspect(([1, 2] : FixedArray[_]) == [], content="false")
-      #|  }
-      #|  {
-      #|    inspect(([1] : FixedArray[_]) == [1], content="true")
-      #|    inspect(([1] : FixedArray[_]) == [2], content="false")
-      #|    inspect(([1, 2] : FixedArray[_]) == [1], content="false")
-      #|    inspect(([1] : FixedArray[_]) == [1, 2], content="false")
-      #|  }
-      #|  inspect(([1, 2, 3, 4, 5] : FixedArray[_]) == [1, 2, 3, 4, 5], content="true")
-      #|  inspect(([1, 2, 3, 4, 5] : FixedArray[_]) == [1, 2, 3, 4], content="false")
-      #|  inspect(([1, 2, 3, 4] : FixedArray[_]) == [1, 2, 3, 4, 5], content="false")
-      #|  inspect(([1, 2, 3, 4, 5] : FixedArray[_]) == [6, 2, 3, 4, 5], content="false")
-      #|  inspect(([1, 2, 3, 4, 5] : FixedArray[_]) == [1, 2, 6, 4, 5], content="false")
-      #|  inspect(([1, 2, 3, 4, 5] : FixedArray[_]) == [1, 2, 3, 4, 6], content="false")
-      #|}
-      #|pub impl[T : Compare] Compare for FixedArray[T] with compare(self, other) {
-      #|  let len_self = self.length()
-      #|  let len_other = other.length()
-      #|  let cmp = len_self.compare(len_other)
-      #|  guard cmp == 0 else { return cmp }
-      #|  for i in 0..<len_self {
-      #|    let cmp = self.unsafe_get(i).compare(other.unsafe_get(i))
-      #|    guard cmp == 0 else { break cmp }
-      #|  } else {
-      #|    0
-      #|  }
-      #|}
-      #|pub impl[T] Add for FixedArray[T] with add(self, other) {
-      #|  let slen = self.length()
-      #|  let nlen = other.length()
-      #|  FixedArray::makei(slen + nlen, i => if i < slen {
-      #|    self[i]
-      #|  } else {
-      #|    other[i - slen]
-      #|  })
-      #|}
-      #|test "add" {
-      #|  {
-      #|    inspect(([] : FixedArray[Int]) + [], content="[]")
-      #|    inspect(([] : FixedArray[_]) + [1, 2, 3, 4, 5], content="[1, 2, 3, 4, 5]")
-      #|    inspect(([1, 2, 3, 4, 5] : FixedArray[_]) + [], content="[1, 2, 3, 4, 5]")
-      #|  }
-      #|  {
-      #|    inspect(([1] : FixedArray[_]) + [2], content="[1, 2]")
-      #|    inspect(
-      #|      ([1] : FixedArray[_]) + [1, 2, 3, 4, 5],
-      #|      content="[1, 1, 2, 3, 4, 5]",
-      #|    )
-      #|    inspect(
-      #|      ([1, 2, 3, 4, 5] : FixedArray[_]) + [1],
-      #|      content="[1, 2, 3, 4, 5, 1]",
-      #|    )
-      #|  }
-      #|  inspect(
-      #|    ([1, 2, 3, 4, 5] : FixedArray[_]) + [6, 7, 8, 9, 10],
-      #|    content="[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",
-      #|  )
-      #|}
-      #|test "iter" {
-      #|  let arr : FixedArray[_] = [1, 2, 3, 4, 5]
-      #|  let iter = arr.iter()
-      #|  let exb = StringBuilder::new()
-      #|  let mut i = 0
-      #|  iter.each(x => {
-      #|    exb.write_string(x.to_string())
-      #|    exb.write_char('\n')
-      #|    i = i + 1
-      #|  })
-      #|  assert_eq(i, arr.length())
-      #|  inspect(
-      #|    exb,
-      #|    content=(
-      #|      #|1
-      #|      #|2
-      #|      #|3
-      #|      #|4
-      #|      #|5
-      #|      #|
-      #|    ),
-      #|  )
-      #|}
-      #|pub fn[T] FixedArray::from_iter(iter : Iter[T]) -> FixedArray[T] {
-      #|  FixedArray::from_array(iter.collect())
-      #|}
-      #|pub fn[T] FixedArray::from_iterator(iter : Iterator[T]) -> FixedArray[T] {
-      #|  FixedArray::from_array(iter.collect())
-      #|}
-      #|pub fn[A] FixedArray::last(self : FixedArray[A]) -> A? {
-      #|  match self {
-      #|    [] => None
-      #|    [.., last] => Some(last)
-      #|  }
-      #|}
-      #|pub fn FixedArray::join(
-      #|  self : FixedArray[String],
-      #|  separator : StringView,
-      #|) -> String {
-      #|  let len = self.length()
-      #|  if len == 0 {
-      #|    return ""
-      #|  }
-      #|  let first = self[0]
-      #|  let mut size_hint = first.length()
-      #|  for i in 1..<len {
-      #|    size_hint += separator.length() + self[i].length()
-      #|  }
-      #|  let string = StringBuilder::new(size_hint~)
-      #|  if separator.is_empty() {
-      #|    for i in 0..<len {
-      #|      string.write_string(self[i])
-      #|    }
-      #|  } else {
-      #|    string.write_string(self[0])
-      #|    for i in 1..<len {
-      #|      string.write_substring(
-      #|        separator.data(),
-      #|        separator.start_offset(),
-      #|        separator.length(),
-      #|      )
-      #|      string.write_string(self[i])
-      #|    }
-      #|  }
-      #|  string.to_string()
-      #|}
-      #|test "FixedArray::last/empty" {
-      #|  let empty : FixedArray[Int] = []
-      #|  inspect(empty.last(), content="None")
-      #|}
-      #|test "FixedArray::last/non_empty" {
-      #|  let array : FixedArray[_] = [1, 2, 3]
-      #|  inspect(array.last(), content="Some(3)")
-      #|  let single : FixedArray[_] = [42]
-      #|  inspect(single.last(), content="Some(42)")
-      #|}
-      #|test "FixedArray::last/empty_array" {
-      #|  let empty_array : FixedArray[Int] = []
-      #|  inspect(FixedArray::last(empty_array), content="None")
-      #|}
-      #|test "FixedArray::last/single_element" {
-      #|  let single_element_array : FixedArray[Int] = [42]
-      #|  inspect(FixedArray::last(single_element_array), content="Some(42)")
-      #|}
-      #|test "FixedArray::last/multiple_elements" {
-      #|  let multiple_elements_array : FixedArray[Int] = [1, 2, 3, 4, 5]
-      #|  inspect(FixedArray::last(multiple_elements_array), content="Some(5)")
-      #|}
-      #|test "FixedArray::join" {
-      #|  let fixed_array : FixedArray[String] = ["1", "2", "3"]
-      #|  inspect(fixed_array.join(","), content="1,2,3")
-      #|  inspect(fixed_array.join(""), content="123")
-      #|  inspect(fixed_array.join(" "), content="1 2 3")
-      #|  let fixed_array_empty : FixedArray[String] = []
-      #|  inspect(fixed_array_empty.join(","), content="")
-      #|}
-      #|pub impl[X : @quickcheck.Arbitrary] @quickcheck.Arbitrary for FixedArray[X] with arbitrary(
-      #|  size,
-      #|  rs,
-      #|) {
-      #|  let len = if size == 0 { 0 } else { rs.next_positive_int() % size }
-      #|  FixedArray::makei(len, i => X::arbitrary(i, rs))
-      #|}
-      #|pub fn[X] FixedArray::iterator(self : FixedArray[X]) -> Iterator[X] {
-      #|  self[:].iterator()
-      #|}
-    ),
+    "fixedarray.mbt": "",
     "fixedarray_sort.mbt": (
       #|pub fn[T : Compare] FixedArray::stable_sort(self : FixedArray[T]) -> Unit {
       #|  timsort({ array: self, start: 0, end: self.length() })
@@ -2229,205 +1525,6 @@ let moonbitlang_core_array_module : RuntimePackage = RuntimePackage::new(
       #|    (a, b) => if a < b { -1 } else { 1 },
       #|  )
       #|  assert_true(arr.is_sorted())
-      #|}
-    ),
-    "readonlyarray.mbt": (
-      #|fn[T] ReadOnlyArray::unsafe_reinterpret_to_fixed_array(
-      #|  self : ReadOnlyArray[T],
-      #|) -> FixedArray[T] = "%identity"
-      #|fn[T] unsafe_reinterpret_from_fixed_array(
-      #|  arr : FixedArray[T],
-      #|) -> ReadOnlyArray[T] = "%identity"
-      #|#alias("_[_]")
-      #|pub fn[T] ReadOnlyArray::at(self : ReadOnlyArray[T], index : Int) -> T {
-      #|  self.unsafe_reinterpret_to_fixed_array()[index]
-      #|}
-      #|pub fn[T] ReadOnlyArray::from_array(array : ArrayView[T]) -> ReadOnlyArray[T] {
-      #|  unsafe_reinterpret_from_fixed_array(FixedArray::from_array(array))
-      #|}
-      #|pub fn[T] ReadOnlyArray::from_iter(iter : Iter[T]) -> ReadOnlyArray[T] {
-      #|  unsafe_reinterpret_from_fixed_array(FixedArray::from_iter(iter))
-      #|}
-      #|pub fn[T] ReadOnlyArray::from_iterator(iter : Iterator[T]) -> ReadOnlyArray[T] {
-      #|  unsafe_reinterpret_from_fixed_array(FixedArray::from_iterator(iter))
-      #|}
-      #|pub fn[T] ReadOnlyArray::makei(
-      #|  length : Int,
-      #|  value : (Int) -> T raise?,
-      #|) -> ReadOnlyArray[T] raise? {
-      #|  unsafe_reinterpret_from_fixed_array(FixedArray::makei(length, value))
-      #|}
-      #|pub fn[T] ReadOnlyArray::get(self : ReadOnlyArray[T], index : Int) -> T? {
-      #|  self.unsafe_reinterpret_to_fixed_array().get(index)
-      #|}
-      #|pub fn[T] ReadOnlyArray::length(self : ReadOnlyArray[T]) -> Int {
-      #|  self.unsafe_reinterpret_to_fixed_array().length()
-      #|}
-      #|pub fn[T] ReadOnlyArray::is_empty(self : ReadOnlyArray[T]) -> Bool {
-      #|  self.unsafe_reinterpret_to_fixed_array().is_empty()
-      #|}
-      #|pub fn[T] ReadOnlyArray::last(self : ReadOnlyArray[T]) -> T? {
-      #|  self.unsafe_reinterpret_to_fixed_array().last()
-      #|}
-      #|pub fn[T] ReadOnlyArray::iter(self : ReadOnlyArray[T]) -> Iter[T] {
-      #|  self.unsafe_reinterpret_to_fixed_array().iter()
-      #|}
-      #|pub fn[T] ReadOnlyArray::iterator(self : ReadOnlyArray[T]) -> Iterator[T] {
-      #|  self.unsafe_reinterpret_to_fixed_array().iterator()
-      #|}
-      #|pub fn[T] ReadOnlyArray::iter2(self : ReadOnlyArray[T]) -> Iter2[Int, T] {
-      #|  self.unsafe_reinterpret_to_fixed_array().iter2()
-      #|}
-      #|pub fn[T] ReadOnlyArray::each(
-      #|  self : ReadOnlyArray[T],
-      #|  f : (T) -> Unit raise?,
-      #|) -> Unit raise? {
-      #|  self.unsafe_reinterpret_to_fixed_array().each(f)
-      #|}
-      #|pub fn[T] ReadOnlyArray::eachi(
-      #|  self : ReadOnlyArray[T],
-      #|  f : (Int, T) -> Unit raise?,
-      #|) -> Unit raise? {
-      #|  self.unsafe_reinterpret_to_fixed_array().eachi(f)
-      #|}
-      #|pub fn[T] ReadOnlyArray::rev_each(
-      #|  self : ReadOnlyArray[T],
-      #|  f : (T) -> Unit raise?,
-      #|) -> Unit raise? {
-      #|  self.unsafe_reinterpret_to_fixed_array().rev_each(f)
-      #|}
-      #|pub fn[T] ReadOnlyArray::rev_eachi(
-      #|  self : ReadOnlyArray[T],
-      #|  f : (Int, T) -> Unit raise?,
-      #|) -> Unit raise? {
-      #|  self.unsafe_reinterpret_to_fixed_array().rev_eachi(f)
-      #|}
-      #|pub fn[T, U] ReadOnlyArray::map(
-      #|  self : ReadOnlyArray[T],
-      #|  f : (T) -> U raise?,
-      #|) -> ReadOnlyArray[U] raise? {
-      #|  unsafe_reinterpret_from_fixed_array(
-      #|    self.unsafe_reinterpret_to_fixed_array().map(f),
-      #|  )
-      #|}
-      #|pub fn[T, U] ReadOnlyArray::mapi(
-      #|  self : ReadOnlyArray[T],
-      #|  f : (Int, T) -> U raise?,
-      #|) -> ReadOnlyArray[U] raise? {
-      #|  unsafe_reinterpret_from_fixed_array(
-      #|    self.unsafe_reinterpret_to_fixed_array().mapi(f),
-      #|  )
-      #|}
-      #|pub fn[A, B] ReadOnlyArray::fold(
-      #|  self : ReadOnlyArray[A],
-      #|  init~ : B,
-      #|  f : (B, A) -> B raise?,
-      #|) -> B raise? {
-      #|  self.unsafe_reinterpret_to_fixed_array().fold(init~, f)
-      #|}
-      #|pub fn[A, B] ReadOnlyArray::rev_fold(
-      #|  self : ReadOnlyArray[A],
-      #|  init~ : B,
-      #|  f : (B, A) -> B raise?,
-      #|) -> B raise? {
-      #|  self.unsafe_reinterpret_to_fixed_array().rev_fold(init~, f)
-      #|}
-      #|pub fn[A, B] ReadOnlyArray::foldi(
-      #|  self : ReadOnlyArray[A],
-      #|  init~ : B,
-      #|  f : (Int, B, A) -> B raise?,
-      #|) -> B raise? {
-      #|  self.unsafe_reinterpret_to_fixed_array().foldi(init~, f)
-      #|}
-      #|pub fn[A, B] ReadOnlyArray::rev_foldi(
-      #|  self : ReadOnlyArray[A],
-      #|  init~ : B,
-      #|  f : (Int, B, A) -> B raise?,
-      #|) -> B raise? {
-      #|  self.unsafe_reinterpret_to_fixed_array().rev_foldi(init~, f)
-      #|}
-      #|pub fn[T] ReadOnlyArray::rev(self : ReadOnlyArray[T]) -> ReadOnlyArray[T] {
-      #|  unsafe_reinterpret_from_fixed_array(
-      #|    self.unsafe_reinterpret_to_fixed_array().rev(),
-      #|  )
-      #|}
-      #|pub fn[T : Eq] ReadOnlyArray::search(
-      #|  self : ReadOnlyArray[T],
-      #|  value : T,
-      #|) -> Int? {
-      #|  self.unsafe_reinterpret_to_fixed_array().search(value)
-      #|}
-      #|pub fn[T : Eq] ReadOnlyArray::contains(
-      #|  self : ReadOnlyArray[T],
-      #|  value : T,
-      #|) -> Bool {
-      #|  self.unsafe_reinterpret_to_fixed_array().contains(value)
-      #|}
-      #|pub fn[T : Eq] ReadOnlyArray::starts_with(
-      #|  self : ReadOnlyArray[T],
-      #|  prefix : ReadOnlyArray[T],
-      #|) -> Bool {
-      #|  self
-      #|  .unsafe_reinterpret_to_fixed_array()
-      #|  .starts_with(prefix.unsafe_reinterpret_to_fixed_array())
-      #|}
-      #|pub fn[T : Eq] ReadOnlyArray::ends_with(
-      #|  self : ReadOnlyArray[T],
-      #|  suffix : ReadOnlyArray[T],
-      #|) -> Bool {
-      #|  self
-      #|  .unsafe_reinterpret_to_fixed_array()
-      #|  .ends_with(suffix.unsafe_reinterpret_to_fixed_array())
-      #|}
-      #|pub fn[T] ReadOnlyArray::all(
-      #|  self : ReadOnlyArray[T],
-      #|  f : (T) -> Bool raise?,
-      #|) -> Bool raise? {
-      #|  self.unsafe_reinterpret_to_fixed_array().all(f)
-      #|}
-      #|pub fn[T] ReadOnlyArray::any(
-      #|  self : ReadOnlyArray[T],
-      #|  f : (T) -> Bool raise?,
-      #|) -> Bool raise? {
-      #|  self.unsafe_reinterpret_to_fixed_array().any(f)
-      #|}
-      #|pub fn[T : Compare] ReadOnlyArray::binary_search(
-      #|  self : ReadOnlyArray[T],
-      #|  value : T,
-      #|) -> Result[Int, Int] {
-      #|  self.unsafe_reinterpret_to_fixed_array().binary_search(value)
-      #|}
-      #|pub fn[T] ReadOnlyArray::binary_search_by(
-      #|  self : ReadOnlyArray[T],
-      #|  cmp : (T) -> Int raise?,
-      #|) -> Result[Int, Int] raise? {
-      #|  self.unsafe_reinterpret_to_fixed_array().binary_search_by(cmp)
-      #|}
-      #|#alias("_[_:_]")
-      #|pub fn[T] ReadOnlyArray::sub(
-      #|  self : ReadOnlyArray[T],
-      #|  start? : Int = 0,
-      #|  end? : Int,
-      #|) -> ArrayView[T] {
-      #|  match end {
-      #|    None => self.unsafe_reinterpret_to_fixed_array().sub(start~)
-      #|    Some(e) => self.unsafe_reinterpret_to_fixed_array().sub(start~, end=e)
-      #|  }
-      #|}
-      #|pub fn ReadOnlyArray::join(
-      #|  self : ReadOnlyArray[String],
-      #|  separator : StringView,
-      #|) -> String {
-      #|  self.unsafe_reinterpret_to_fixed_array().join(separator)
-      #|}
-      #|pub impl[T] Default for ReadOnlyArray[T] with default() {
-      #|  unsafe_reinterpret_from_fixed_array(FixedArray::default())
-      #|}
-      #|pub impl[T : Show] Show for ReadOnlyArray[T] with output(self, logger) {
-      #|  self.unsafe_reinterpret_to_fixed_array().output(logger)
-      #|}
-      #|pub impl[T : ToJson] ToJson for ReadOnlyArray[T] with to_json(self) {
-      #|  self.unsafe_reinterpret_to_fixed_array().to_json()
       #|}
     ),
     "slice.mbt": (
@@ -3313,8 +2410,31 @@ let moonbitlang_core_array_module : RuntimePackage = RuntimePackage::new(
       #|test "sort_by" {
       #|  test_sort(arr => arr.sort_by((a, b) => a - b))
       #|}
+      #|test "sort_by - many duplicates" {
+      #|  let arr = []
+      #|  for i in 0..<20 {
+      #|    arr.push(5)
+      #|  }
+      #|  for i in 0..<20 {
+      #|    arr.push(3)
+      #|  }
+      #|  for i in 0..<20 {
+      #|    arr.push(5)
+      #|  }
+      #|  for i in 0..<20 {
+      #|    arr.push(1)
+      #|  }
+      #|  for i in 0..<20 {
+      #|    arr.push(5)
+      #|  }
+      #|  arr.sort_by((a, b) => a - b)
+      #|  for i in 1..<arr.length() {
+      #|    assert_true(arr[i - 1] <= arr[i])
+      #|  }
+      #|}
     ),
     "unsafe_bytes.mbt": (
+      #|#intrinsic("%bytes.unsafe_write_uint64_le")
       #|pub fn FixedArray::unsafe_write_uint64_le(
       #|  bytes : FixedArray[Byte],
       #|  index : Int,
@@ -3324,6 +2444,7 @@ let moonbitlang_core_array_module : RuntimePackage = RuntimePackage::new(
       #|    bytes.unsafe_set(i + index, (value >> (8 * i)).to_byte())
       #|  }
       #|}
+      #|#intrinsic("%bytes.unsafe_write_uint64_be")
       #|pub fn FixedArray::unsafe_write_uint64_be(
       #|  bytes : FixedArray[Byte],
       #|  index : Int,
@@ -3333,6 +2454,7 @@ let moonbitlang_core_array_module : RuntimePackage = RuntimePackage::new(
       #|    bytes.unsafe_set(i + index, (value >> (8 * (7 - i))).to_byte())
       #|  }
       #|}
+      #|#intrinsic("%bytes.unsafe_write_uint32_le")
       #|pub fn FixedArray::unsafe_write_uint32_le(
       #|  bytes : FixedArray[Byte],
       #|  index : Int,
@@ -3342,6 +2464,7 @@ let moonbitlang_core_array_module : RuntimePackage = RuntimePackage::new(
       #|    bytes.unsafe_set(i + index, (value >> (8 * i)).to_byte())
       #|  }
       #|}
+      #|#intrinsic("%bytes.unsafe_write_uint32_be")
       #|pub fn FixedArray::unsafe_write_uint32_be(
       #|  bytes : FixedArray[Byte],
       #|  index : Int,
@@ -3351,6 +2474,7 @@ let moonbitlang_core_array_module : RuntimePackage = RuntimePackage::new(
       #|    bytes.unsafe_set(i + index, (value >> (8 * (3 - i))).to_byte())
       #|  }
       #|}
+      #|#intrinsic("%bytes.unsafe_write_uint16_le")
       #|pub fn FixedArray::unsafe_write_uint16_le(
       #|  bytes : FixedArray[Byte],
       #|  index : Int,
@@ -3360,6 +2484,7 @@ let moonbitlang_core_array_module : RuntimePackage = RuntimePackage::new(
       #|    bytes.unsafe_set(i + index, (value >> (8 * i)).to_byte())
       #|  }
       #|}
+      #|#intrinsic("%bytes.unsafe_write_uint16_be")
       #|pub fn FixedArray::unsafe_write_uint16_be(
       #|  bytes : FixedArray[Byte],
       #|  index : Int,
@@ -3381,7 +2506,7 @@ let moonbitlang_core_array_module : RuntimePackage = RuntimePackage::new(
     ),
     "view.mbt": (
       #|#deprecated
-      #|pub typealias ArrayView as View
+      #|pub type View[T] = ArrayView[T]
       #|pub fn[T] ArrayView::each(
       #|  self : ArrayView[T],
       #|  f : (T) -> Unit raise?,
@@ -3434,15 +2559,6 @@ let moonbitlang_core_array_module : RuntimePackage = RuntimePackage::new(
       #|    guard yield_(v) is IterContinue else { break IterEnd }
       #|  } else {
       #|    IterContinue
-      #|  })
-      #|}
-      #|pub fn[X] ArrayView::iterator(self : ArrayView[X]) -> Iterator[X] {
-      #|  let mut i = 0
-      #|  Iterator::new(fn() {
-      #|    guard i < self.length() else { None }
-      #|    let elem = self.unsafe_get(i)
-      #|    i += 1
-      #|    Some(elem)
       #|  })
       #|}
       #|pub fn[X] ArrayView::rev_iterator(self : ArrayView[X]) -> Iterator[X] {
@@ -3622,12 +2738,6 @@ let moonbitlang_core_array_module : RuntimePackage = RuntimePackage::new(
       #|  for e in self {
       #|    hasher.combine(e)
       #|  }
-      #|}
-      #|pub impl[A : @quickcheck.Arbitrary] @quickcheck.Arbitrary for ArrayView[A] with arbitrary(
-      #|  size,
-      #|  rs,
-      #|) {
-      #|  Array::arbitrary(size, rs)[:]
       #|}
       #|fn[T] ArrayView::start(self : ArrayView[T]) -> Int = "%arrayview.start"
       #|pub fn[T] ArrayView::start_offset(self : Self[T]) -> Int {
@@ -4018,12 +3128,12 @@ let moonbitlang_core_bench_module : RuntimePackage = RuntimePackage::new(
     ),
     "types.mbt": (
       #|priv trait OpaqueValue {}
+      #|#alias(T)
       #|struct Bench {
       #|  buffer : StringBuilder
       #|  summaries : Array[Summary]
       #|  mut _storage : &OpaqueValue
       #|}
-      #|pub typealias Bench as T
       #|#as_free_fn
       #|pub fn Bench::new() -> Bench {
       #|  let buffer = StringBuilder::new()
@@ -5390,22 +4500,22 @@ let moonbitlang_core_bigint_module : RuntimePackage = RuntimePackage::new(
       #|}
     ),
     "deprecated.mbt": (
-      #|#deprecated("Use infix bitwise operator `>>` instead")
+      #|#deprecated("Use infix bitwise operator `>>` instead", skip_current_package=false)
       #|#coverage.skip
       #|pub fn BigInt::asr(self : BigInt, n : Int) -> BigInt {
       #|  self >> n
       #|}
-      #|#deprecated("Use infix bitwise operator `<<` instead")
+      #|#deprecated("Use infix bitwise operator `<<` instead", skip_current_package=false)
       #|#coverage.skip
       #|pub fn BigInt::shl(self : BigInt, n : Int) -> BigInt {
       #|  self << n
       #|}
-      #|#deprecated("Use infix bitwise operator `<<` instead")
+      #|#deprecated("Use infix bitwise operator `<<` instead", skip_current_package=false)
       #|#coverage.skip
       #|pub fn BigInt::lsl(self : BigInt, n : Int) -> BigInt {
       #|  self << n
       #|}
-      #|#deprecated("Use infix bitwise operator `>>` instead")
+      #|#deprecated("Use infix bitwise operator `>>` instead", skip_current_package=false)
       #|#coverage.skip
       #|pub fn BigInt::shr(self : BigInt, n : Int) -> BigInt {
       #|  self >> n
@@ -5483,6 +4593,7 @@ let moonbitlang_core_buffer_module : RuntimePackage = RuntimePackage::new(
     "moonbitlang/core/bytes": moonbitlang_core_bytes_module,
     "moonbitlang/core/array": moonbitlang_core_array_module,
     "moonbitlang/core/string": moonbitlang_core_string_module,
+    "moonbitlang/core/float": moonbitlang_core_float_module,
   },
   files={
     "moon.pkg.json": (
@@ -5491,12 +4602,14 @@ let moonbitlang_core_buffer_module : RuntimePackage = RuntimePackage::new(
       #|    "moonbitlang/core/builtin",
       #|    "moonbitlang/core/bytes",
       #|    "moonbitlang/core/array",
-      #|    "moonbitlang/core/string"
+      #|    "moonbitlang/core/string",
+      #|    "moonbitlang/core/float"
       #|  ],
       #|  "test-import": ["moonbitlang/core/int"]
       #|}
     ),
     "buffer.mbt": (
+      #|#alias(T, deprecated)
       #|struct Buffer {
       #|  mut data : FixedArray[Byte]
       #|  mut len : Int
@@ -5522,7 +4635,7 @@ let moonbitlang_core_buffer_module : RuntimePackage = RuntimePackage::new(
       #|  self.len == 0
       #|}
       #|pub fn Buffer::contents(self : Buffer) -> Bytes {
-      #|  @bytes.from_fixedarray(self.data, len=self.len)
+      #|  Bytes::from_array(self.data[0:self.len])
       #|}
       #|pub fn new(size_hint? : Int = 0) -> Buffer {
       #|  let initial = if size_hint < 1 { 1 } else { size_hint }
@@ -5808,16 +4921,13 @@ let moonbitlang_core_buffer_module : RuntimePackage = RuntimePackage::new(
       #|  self.len = 0
       #|}
       #|pub fn Buffer::to_bytes(self : Buffer) -> Bytes {
-      #|  @bytes.from_fixedarray(self.data, len=self.len)
+      #|  Bytes::from_array(self.data[0:self.len])
       #|}
       #|pub impl Show for Buffer with output(self, logger) {
       #|  logger.write_string(self.contents().to_unchecked_string())
       #|}
     ),
-    "deprecated.mbt": (
-      #|#deprecated("Use type `Buffer` instead")
-      #|pub typealias Buffer as T
-    ),
+    "deprecated.mbt": "",
     "sleb128.mbt": (
       #|trait Leb128 {
       #|  output(Self, Buffer) -> Unit
@@ -5912,7 +5022,9 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|    "moonbitlang/core/int64",
       #|    "moonbitlang/core/uint",
       #|    "moonbitlang/core/json",
-      #|    "moonbitlang/core/bigint"
+      #|    "moonbitlang/core/bigint",
+      #|    "moonbitlang/core/ref",
+      #|    "moonbitlang/core/float"
       #|  ],
       #|  "alert-list": "-test_import_all",
       #|  "targets": {
@@ -6496,6 +5608,12 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|  }
       #|  Array::makei(len, i => self[i:i + size])
       #|}
+      #|pub fn[T] Array::suffixes(
+      #|  self : Array[T],
+      #|  include_empty? : Bool = false,
+      #|) -> Iterator[ArrayView[T]] {
+      #|  self[:].suffixes(include_empty~)
+      #|}
       #|#locals(pred)
       #|pub fn[T] Array::split(
       #|  self : Array[T],
@@ -6539,6 +5657,7 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|  []
       #|}
       #|#internal(unsafe, "Panic if the array is empty on non-JS backend.")
+      #|#doc(hidden)
       #|pub fn[A] Array::unsafe_pop_back(self : Array[A]) -> Unit {
       #|  self.unsafe_pop() |> ignore
       #|}
@@ -6568,6 +5687,7 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
     ),
     "array_block.mbt": (
       #|#internal(unsafe, "Panic if the indices or length are out of bounds")
+      #|#doc(hidden)
       #|pub fn[A] Array::unsafe_blit(
       #|  dst : Array[A],
       #|  dst_offset : Int,
@@ -6784,6 +5904,7 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|  }
       #|}
       #|#internal(unsafe, "Panic if the array is empty.")
+      #|#doc(hidden)
       #|#alias(pop_exn, deprecated)
       #|pub fn[T] Array::unsafe_pop(self : Array[T]) -> T {
       #|  JSArray::ofAnyArray(self).pop().toAny()
@@ -6955,6 +6076,7 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|  }
       #|}
       #|#internal(unsafe, "Panic if the array is empty.")
+      #|#doc(hidden)
       #|#alias(pop_exn, deprecated)
       #|pub fn[T] Array::unsafe_pop(self : Array[T]) -> T {
       #|  let len = self.length()
@@ -7068,6 +6190,7 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|}
       #|#intrinsic("%arrayview.unsafe_get")
       #|#internal(unsafe, "Panic if index is out of bounds")
+      #|#doc(hidden)
       #|pub fn[T] ArrayView::unsafe_get(self : ArrayView[T], index : Int) -> T {
       #|  self.buf()[self.start() + index]
       #|}
@@ -7128,6 +6251,38 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|    start,
       #|    end - start,
       #|  )
+      #|}
+      #|pub fn[T] ArrayView::suffixes(
+      #|  self : Self[T],
+      #|  include_empty? : Bool = false,
+      #|) -> Iterator[ArrayView[T]] {
+      #|  let len = self.length()
+      #|  let mut i = 0
+      #|  Iterator::new(fn() -> ArrayView[T]? {
+      #|    if i < len {
+      #|      let suffix = self[i:]
+      #|      i += 1
+      #|      Some(suffix)
+      #|    } else if i == len {
+      #|      i += 1
+      #|      if include_empty {
+      #|        Some(self[len:])
+      #|      } else {
+      #|        None
+      #|      }
+      #|    } else {
+      #|      None
+      #|    }
+      #|  })
+      #|}
+      #|pub fn[X] ArrayView::iterator(self : ArrayView[X]) -> Iterator[X] {
+      #|  let mut i = 0
+      #|  Iterator::new(fn() {
+      #|    guard i < self.length() else { None }
+      #|    let elem = self.unsafe_get(i)
+      #|    i += 1
+      #|    Some(elem)
+      #|  })
       #|}
     ),
     "assert.mbt": (
@@ -7307,6 +6462,7 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
     ),
     "bytes.mbt": (
       #|#internal(unsafe, "Creating mutable Bytes")
+      #|#doc(hidden)
       #|pub fn FixedArray::unsafe_reinterpret_as_bytes(
       #|  self : FixedArray[Byte],
       #|) -> Bytes = "%identity"
@@ -7490,6 +6646,361 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|    0
       #|  }
       #|}
+      #|fn BytesView::len(self : BytesView) -> Int = "%bytesview.len"
+      #|fn BytesView::bytes(self : BytesView) -> Bytes = "%bytesview.bytes"
+      #|fn BytesView::start(self : BytesView) -> Int = "%bytesview.start"
+    ),
+    "char.mbt": (
+      #|fn Char::to_hex(char : Char) -> String {
+      #|  let code = char.to_int()
+      #|  match code {
+      #|    0..=0xFF => code.to_byte().to_hex()
+      #|    _..=0xFFFF => (code >> 8).to_byte().to_hex() + code.to_byte().to_hex()
+      #|    _ =>
+      #|      (code >> 16).to_byte().to_hex() +
+      #|      (code >> 8).to_byte().to_hex() +
+      #|      code.to_byte().to_hex()
+      #|  }
+      #|}
+      #|test "Char::to_hex" {
+      #|  inspect(Char::to_hex('A'), content="41")
+      #|  inspect(Char::to_hex('a'), content="61")
+      #|  inspect(Char::to_hex('0'), content="30")
+      #|  inspect(Char::to_hex('\n'), content="0a")
+      #|  inspect(Char::to_hex('\u{0}'), content="00")
+      #|  inspect(Char::to_hex('\u{FF}'), content="ff")
+      #|  inspect(Char::to_hex('\u{100}'), content="0100")
+      #|  inspect(Char::to_hex('\u{1000}'), content="1000")
+      #|  inspect(Char::to_hex('😀'), content="01f600")
+      #|}
+      #|pub impl Hash for Char with hash_combine(self, hasher) -> Unit {
+      #|  hasher.combine_char(self)
+      #|}
+      #|pub fn Char::is_ascii(self : Self) -> Bool {
+      #|  self is ('\u{00}'..='\u{7F}')
+      #|}
+      #|pub fn Char::is_ascii_alphabetic(self : Self) -> Bool {
+      #|  self is ('A'..='Z' | 'a'..='z')
+      #|}
+      #|pub fn Char::is_ascii_control(self : Self) -> Bool {
+      #|  self is ('\u{00}'..='\u{1F}' | '\u{7F}')
+      #|}
+      #|pub fn Char::is_ascii_digit(self : Self) -> Bool {
+      #|  self is ('0'..='9')
+      #|}
+      #|pub fn Char::is_ascii_graphic(self : Self) -> Bool {
+      #|  self is ('\u{21}'..='\u{7E}')
+      #|}
+      #|pub fn Char::is_ascii_hexdigit(self : Self) -> Bool {
+      #|  self is ('0'..='9' | 'A'..='F' | 'a'..='f')
+      #|}
+      #|pub fn Char::is_ascii_lowercase(self : Self) -> Bool {
+      #|  self is ('a'..='z')
+      #|}
+      #|pub fn Char::is_ascii_octdigit(self : Self) -> Bool {
+      #|  self is ('0'..='7')
+      #|}
+      #|pub fn Char::is_ascii_punctuation(self : Self) -> Bool {
+      #|  self
+      #|  is ('\u{21}'..='\u{2F}'
+      #|  | '\u{3A}'..='\u{40}'
+      #|  | '\u{5B}'..='\u{60}'
+      #|  | '\u{7B}'..='\u{7E}')
+      #|}
+      #|pub fn Char::is_ascii_uppercase(self : Self) -> Bool {
+      #|  self is ('A'..='Z')
+      #|}
+      #|pub fn Char::is_ascii_whitespace(self : Self) -> Bool {
+      #|  self is ('\u{20}' | '\u{09}' | '\u{0A}' | '\u{0B}' | '\u{0C}' | '\u{0D}')
+      #|}
+      #|pub fn Char::is_control(self : Self) -> Bool {
+      #|  self is ('\u0000'..='\u001F' | '\u007F'..='\u009F')
+      #|}
+      #|pub fn Char::is_digit(self : Self, radix : UInt) -> Bool {
+      #|  let v = self.to_uint()
+      #|  match radix {
+      #|    2..=10 => v >= 48 && v <= radix + 47
+      #|    11..=36 =>
+      #|      (v >= 48 && v <= 57) ||
+      #|      (v >= 65 && v <= radix + 54) ||
+      #|      (v >= 97 && v <= radix + 86)
+      #|    _ => panic()
+      #|  }
+      #|}
+      #|pub fn Char::is_whitespace(self : Self) -> Bool {
+      #|  self
+      #|  is ('\u0009'..='\u000D'
+      #|  | '\u0020'
+      #|  | '\u0085'
+      #|  | '\u00A0'
+      #|  | '\u1680'
+      #|  | '\u2000'..='\u200A'
+      #|  | '\u2028'
+      #|  | '\u2029'
+      #|  | '\u202F'
+      #|  | '\u205F'
+      #|  | '\u3000')
+      #|}
+      #|pub fn Char::is_numeric(self : Self) -> Bool {
+      #|  self
+      #|  is ('\u0030'..='\u0039'
+      #|  | '\u00B2'
+      #|  | '\u00B3'
+      #|  | '\u00B9'
+      #|  | '\u00BC'
+      #|  | '\u00BD'
+      #|  | '\u00BE'
+      #|  | '\u0660'..='\u0669'
+      #|  | '\u06F0'..='\u06F9'
+      #|  | '\u07C0'..='\u07F9'
+      #|  | '\u0966'..='\u096F'
+      #|  | '\u09E6'..='\u09EF'
+      #|  | '\u09F4'..='\u09F9'
+      #|  | '\u0A66'..='\u0A6F'
+      #|  | '\u0AE6'..='\u0AEF'
+      #|  | '\u0B66'..='\u0B6F'
+      #|  | '\u0B72'..='\u0B77'
+      #|  | '\u0BE6'..='\u0BEF'
+      #|  | '\u0BF0'..='\u0BF2'
+      #|  | '\u0C66'..='\u0C6F'
+      #|  | '\u0C78'..='\u0C7E'
+      #|  | '\u0CE6'..='\u0CEF'
+      #|  | '\u0D58'..='\u0D5E'
+      #|  | '\u0D66'..='\u0D6F'
+      #|  | '\u0D70'..='\u0D78'
+      #|  | '\u0DE6'..='\u0DEF'
+      #|  | '\u0E50'..='\u0E59'
+      #|  | '\u0ED0'..='\u0ED9'
+      #|  | '\u0F20'..='\u0F33'
+      #|  | '\u1040'..='\u1049'
+      #|  | '\u1090'..='\u1099'
+      #|  | '\u1369'..='\u137C'
+      #|  | '\u16EE'..='\u16F0'
+      #|  | '\u17E0'..='\u17E9'
+      #|  | '\u17F0'..='\u17F9'
+      #|  | '\u1810'..='\u1819'
+      #|  | '\u1946'..='\u194F'
+      #|  | '\u19D0'..='\u19DA'
+      #|  | '\u1A80'..='\u1A89'
+      #|  | '\u1A90'..='\u1A99'
+      #|  | '\u1B50'..='\u1B59'
+      #|  | '\u1BB0'..='\u1BB9'
+      #|  | '\u1C40'..='\u1C49'
+      #|  | '\u1C50'..='\u1C59'
+      #|  | '\u2070'
+      #|  | '\u2074'..='\u2079'
+      #|  | '\u2080'..='\u2089'
+      #|  | '\u2150'..='\u2189'
+      #|  | '\u2460'..='\u249B'
+      #|  | '\u24EA'..='\u24FF'
+      #|  | '\u2776'..='\u2793'
+      #|  | '\u2CFD'
+      #|  | '\u3007'
+      #|  | '\u3021'..='\u3029'
+      #|  | '\u3038'..='\u303A'
+      #|  | '\u3192'..='\u3195'
+      #|  | '\u3220'..='\u3229'
+      #|  | '\u3248'..='\u324F'
+      #|  | '\u3251'..='\u325F'
+      #|  | '\u3280'..='\u3289'
+      #|  | '\u32B1'..='\u32BF'
+      #|  | '\uA620'..='\uA629'
+      #|  | '\uA6E6'..='\uA6EF'
+      #|  | '\uA830'..='\uA835'
+      #|  | '\uA8D0'..='\uA8D9'
+      #|  | '\uA900'..='\uA909'
+      #|  | '\uA9D0'..='\uA9D9'
+      #|  | '\uA9F0'..='\uA9F9'
+      #|  | '\uAA50'..='\uAA59'
+      #|  | '\uABF0'..='\uABF9'
+      #|  | '\uFF10'..='\uFF19'
+      #|  | '\u{10107}'..='\u{10133}'
+      #|  | '\u{10140}'..='\u{10178}'
+      #|  | '\u{1018A}'..='\u{1018B}'
+      #|  | '\u{102E1}'..='\u{102FB}'
+      #|  | '\u{10320}'..='\u{10323}'
+      #|  | '\u{10341}'
+      #|  | '\u{1034A}'
+      #|  | '\u{103D1}'..='\u{103D5}'
+      #|  | '\u{104A0}'..='\u{104A9}'
+      #|  | '\u{10858}'..='\u{1085F}'
+      #|  | '\u{10879}'..='\u{1087F}'
+      #|  | '\u{108A7}'..='\u{108AF}'
+      #|  | '\u{108FB}'..='\u{108FF}'
+      #|  | '\u{10916}'..='\u{1091B}'
+      #|  | '\u{109BC}'..='\u{109BD}'
+      #|  | '\u{109C0}'..='\u{109CF}'
+      #|  | '\u{10A40}'..='\u{10A48}'
+      #|  | '\u{10A7D}'..='\u{10A7E}'
+      #|  | '\u{10A9D}'..='\u{10A9F}'
+      #|  | '\u{10AEB}'..='\u{10AEF}'
+      #|  | '\u{10B58}'..='\u{10B5F}'
+      #|  | '\u{10B78}'..='\u{10B7F}'
+      #|  | '\u{10BA9}'..='\u{10BAF}'
+      #|  | '\u{10CFA}'..='\u{10CFF}'
+      #|  | '\u{10D30}'..='\u{10D39}'
+      #|  | '\u{10D40}'..='\u{10D49}'
+      #|  | '\u{10E60}'..='\u{10E7E}'
+      #|  | '\u{10F1D}'..='\u{10F26}'
+      #|  | '\u{10F51}'..='\u{10F54}'
+      #|  | '\u{10FC5}'..='\u{10FCB}'
+      #|  | '\u{11052}'..='\u{1106F}'
+      #|  | '\u{110F0}'..='\u{110F9}'
+      #|  | '\u{11136}'..='\u{1113F}'
+      #|  | '\u{111D0}'..='\u{111D9}'
+      #|  | '\u{111E1}'..='\u{111F4}'
+      #|  | '\u{112F0}'..='\u{112F9}'
+      #|  | '\u{11450}'..='\u{11459}'
+      #|  | '\u{114D0}'..='\u{114D9}'
+      #|  | '\u{11650}'..='\u{11659}'
+      #|  | '\u{116C0}'..='\u{116C9}'
+      #|  | '\u{116D0}'..='\u{116E3}'
+      #|  | '\u{11730}'..='\u{1173B}'
+      #|  | '\u{118E0}'..='\u{118F2}'
+      #|  | '\u{11950}'..='\u{11959}'
+      #|  | '\u{11BF0}'..='\u{11BF9}'
+      #|  | '\u{11C50}'..='\u{11C6C}'
+      #|  | '\u{11D50}'..='\u{11D59}'
+      #|  | '\u{11DA0}'..='\u{11DA9}'
+      #|  | '\u{11F50}'..='\u{11F59}'
+      #|  | '\u{11FC0}'..='\u{11FD4}'
+      #|  | '\u{12400}'..='\u{1246E}'
+      #|  | '\u{16130}'..='\u{16139}'
+      #|  | '\u{16A60}'..='\u{16A69}'
+      #|  | '\u{16AC0}'..='\u{16AC9}'
+      #|  | '\u{16B50}'..='\u{16B59}'
+      #|  | '\u{16B5B}'..='\u{16B61}'
+      #|  | '\u{16D70}'..='\u{16D79}'
+      #|  | '\u{16D80}'..='\u{16E96}'
+      #|  | '\u{1CCF0}'..='\u{1CCF9}'
+      #|  | '\u{1D2C0}'..='\u{1D2F3}'
+      #|  | '\u{1D360}'..='\u{1D378}'
+      #|  | '\u{1D7CE}'..='\u{1D7FF}'
+      #|  | '\u{1E140}'..='\u{1E149}'
+      #|  | '\u{1E2F0}'..='\u{1E2F9}'
+      #|  | '\u{1E4F0}'..='\u{1E4F9}'
+      #|  | '\u{1E5F1}'..='\u{1E5FA}'
+      #|  | '\u{1E8C7}'..='\u{1E8CF}'
+      #|  | '\u{1E950}'..='\u{1E959}'
+      #|  | '\u{1EC71}'..='\u{1ECB4}'
+      #|  | '\u{1ED01}'..='\u{1ED3D}'
+      #|  | '\u{1F100}'..='\u{1F10C}'
+      #|  | '\u{1FBF0}'..='\u{1FBF9}')
+      #|}
+      #|pub fn Char::is_printable(self : Self) -> Bool {
+      #|  if self.is_control() {
+      #|    return false
+      #|  }
+      #|  let self = self.to_int()
+      #|  if self is (0xE000..=0xF8FF | 0xF0000..=0xFFFFD | 0x100000..=0x10FFFD) {
+      #|    return false
+      #|  }
+      #|  if self
+      #|    is ('\u{00AD}'
+      #|    | '\u{0600}'..='\u{0605}'
+      #|    | '\u{061C}'
+      #|    | '\u{06DD}'
+      #|    | '\u{070F}'
+      #|    | '\u{0890}'..='\u{0891}'
+      #|    | '\u{08E2}'
+      #|    | '\u{180E}'
+      #|    | '\u{200B}'..='\u{200F}'
+      #|    | '\u{202A}'..='\u{202E}'
+      #|    | '\u{2060}'..='\u{2064}'
+      #|    | '\u{2066}'..='\u{206F}'
+      #|    | '\u{feff}'
+      #|    | '\u{FFF9}'..='\u{FFFB}'
+      #|    | '\u{110BD}'
+      #|    | '\u{110CD}'
+      #|    | '\u{13430}'..='\u{1343F}'
+      #|    | '\u{1BCA0}'..='\u{1BCA3}'
+      #|    | '\u{1D173}'..='\u{1D17A}'
+      #|    | '\u{E0001}'
+      #|    | '\u{E0020}'..='\u{E007F}') {
+      #|    return false
+      #|  }
+      #|  if self.is_surrogate() {
+      #|    return false
+      #|  }
+      #|  if self == '\u{2028}' || self == '\u{2029}' {
+      #|    return false
+      #|  }
+      #|  if self
+      #|    is (0xFDD0..=0xFDEF
+      #|    | 0xFFFE..=0xFFFF
+      #|    | 0x1FFFE..=0x1FFFF
+      #|    | 0x2FFFE..=0x2FFFF
+      #|    | 0x3FFFE..=0x3FFFF
+      #|    | 0x4FFFE..=0x4FFFF
+      #|    | 0x5FFFE..=0x5FFFF
+      #|    | 0x6FFFE..=0x6FFFF
+      #|    | 0x7FFFE..=0x7FFFF
+      #|    | 0x8FFFE..=0x8FFFF
+      #|    | 0x9FFFE..=0x9FFFF
+      #|    | 0xAFFFE..=0xAFFFF
+      #|    | 0xBFFFE..=0xBFFFF
+      #|    | 0xCFFFE..=0xCFFFF
+      #|    | 0xDFFFE..=0xDFFFF
+      #|    | 0xEFFFE..=0xEFFFF
+      #|    | 0xFFFFE..=0xFFFFF
+      #|    | 0x10FFFE..=0x10FFFF) {
+      #|    return false
+      #|  }
+      #|  true
+      #|}
+      #|pub fn Char::to_ascii_lowercase(self : Self) -> Char {
+      #|  if self.is_ascii_uppercase() {
+      #|    return (self.to_int() + 32).unsafe_to_char()
+      #|  }
+      #|  self
+      #|}
+      #|pub fn Char::to_ascii_uppercase(self : Self) -> Char {
+      #|  if self.is_ascii_lowercase() {
+      #|    return (self.to_int() - 32).unsafe_to_char()
+      #|  }
+      #|  self
+      #|}
+      #|pub impl Show for Char with to_string(self : Char) -> String {
+      #|  char_to_string(self)
+      #|}
+      #|#intrinsic("%char.to_string")
+      #|fn char_to_string(char : Char) -> String {
+      #|  [char]
+      #|}
+      #|pub impl Show for Char with output(self, logger) {
+      #|  logger.write_char('\'')
+      #|  match self {
+      #|    '\'' | '\\' => logger..write_char('\\')..write_char(self)
+      #|    '\n' => logger.write_string("\\n")
+      #|    '\r' => logger.write_string("\\r")
+      #|    '\b' => logger.write_string("\\b")
+      #|    '\t' => logger.write_string("\\t")
+      #|    ' '..='~' => logger.write_char(self)
+      #|    _ =>
+      #|      if !self.is_printable() {
+      #|        logger.write_string("\\u{")
+      #|        logger.write_string(self.to_hex())
+      #|        logger.write_char('}')
+      #|      } else {
+      #|        logger.write_char(self)
+      #|      }
+      #|  }
+      #|  logger.write_char('\'')
+      #|}
+      #|pub impl ToJson for Char with to_json(self : Char) -> Json {
+      #|  Json::string(self.to_string())
+      #|}
+      #|pub fn Char::utf16_len(self : Self) -> Int {
+      #|  let code = self.to_int()
+      #|  if code <= 0xFFFF {
+      #|    1
+      #|  } else {
+      #|    2
+      #|  }
+      #|}
+      #|pub fn Char::is_bmp(self : Self) -> Bool {
+      #|  self.to_int() <= 0xFFFF
+      #|}
     ),
     "console.mbt": (
       #|fn println_mono(s : String) -> Unit = "%println"
@@ -7614,7 +7125,7 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|}
     ),
     "deprecated.mbt": (
-      #|#deprecated("Use `..<` in for loop or `until` method instead")
+      #|#deprecated("Use `..<` in for loop or `until` method instead", skip_current_package=false)
       #|#coverage.skip
       #|pub fn Int::upto(self : Int, end : Int, inclusive? : Bool = false) -> Iter[Int] {
       #|  yield_ => {
@@ -7632,7 +7143,7 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|    }
       #|  }
       #|}
-      #|#deprecated("Use `..<` in for loop or `until` method instead")
+      #|#deprecated("Use `..<` in for loop or `until` method instead", skip_current_package=false)
       #|#coverage.skip
       #|pub fn UInt::upto(
       #|  self : UInt,
@@ -7654,7 +7165,7 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|    }
       #|  }
       #|}
-      #|#deprecated("Use `..<` in for loop or `until` method instead")
+      #|#deprecated("Use `..<` in for loop or `until` method instead", skip_current_package=false)
       #|#coverage.skip
       #|pub fn UInt64::upto(
       #|  self : UInt64,
@@ -7676,7 +7187,7 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|    }
       #|  }
       #|}
-      #|#deprecated("Use `..<` in for loop or `until` method instead")
+      #|#deprecated("Use `..<` in for loop or `until` method instead", skip_current_package=false)
       #|#coverage.skip
       #|pub fn Int64::upto(
       #|  self : Int64,
@@ -7698,29 +7209,7 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|    }
       #|  }
       #|}
-      #|#deprecated("Use `..<` in for loop or `until` method instead")
-      #|#coverage.skip
-      #|pub fn Float::upto(
-      #|  self : Float,
-      #|  end : Float,
-      #|  inclusive? : Bool = false,
-      #|) -> Iter[Float] {
-      #|  yield_ => {
-      #|    let mut i = self
-      #|    while i < end || (inclusive && i == end) {
-      #|      if yield_(i) is IterEnd {
-      #|        break IterEnd
-      #|      }
-      #|      if i == end {
-      #|        break IterContinue
-      #|      }
-      #|      i += 1
-      #|    } else {
-      #|      IterContinue
-      #|    }
-      #|  }
-      #|}
-      #|#deprecated("Use `..<` in for loop or `until` method instead")
+      #|#deprecated("Use `..<` in for loop or `until` method instead", skip_current_package=false)
       #|#coverage.skip
       #|pub fn Double::upto(
       #|  self : Double,
@@ -7742,29 +7231,29 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|    }
       #|  }
       #|}
-      #|#deprecated("check `@encoding/utf8.encode`")
+      #|#deprecated("check `@encoding/utf8.encode`", skip_current_package=false)
       #|#coverage.skip
       #|pub fn Bytes::of_string(str : String) -> Bytes {
       #|  FixedArray::make(str.length() * 2, Byte::default())
       #|  ..blit_from_string(0, str, 0, str.length())
       #|  .unsafe_reinterpret_as_bytes()
       #|}
-      #|#deprecated("Bytes are immutable. Use `FixedArray::blit_from_bytes` if it's really necessary.")
+      #|#deprecated("Bytes are immutable. Use `FixedArray::blit_from_bytes` if it's really necessary.", skip_current_package=false)
       #|pub fn Bytes::copy(self : Bytes) -> Bytes {
       #|  Bytes::makei(self.length(), i => self[i])
       #|}
-      #|#deprecated("Use infix operator `<<` instead")
+      #|#deprecated("Use infix operator `<<` instead", skip_current_package=false)
       #|#coverage.skip
       #|pub fn Byte::lsl(self : Byte, count : Int) -> Byte {
       #|  (self.to_int() << count).to_byte()
       #|}
-      #|#deprecated("Use infix operator `>>` instead")
+      #|#deprecated("Use infix operator `>>` instead", skip_current_package=false)
       #|#coverage.skip
       #|pub fn Byte::lsr(self : Byte, count : Int) -> Byte {
       #|  (self.to_uint() >> count).reinterpret_as_int().to_byte()
       #|}
       #|#callsite(autofill(loc))
-      #|#deprecated("This function is for debugging only and should not be used in production")
+      #|#deprecated("This function is for debugging only and should not be used in production", skip_current_package=true)
       #|pub fn[T] dump(t : T, name? : String, loc~ : SourceLoc) -> T {
       #|  let name = match name {
       #|    Some(name) => name
@@ -7773,7 +7262,14 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|  println("dump(\{name}@\{loc}) = \{any_to_string(t)}")
       #|  t
       #|}
-      #|#deprecated("The index will be changed to utf16 index. If you want to access n-th character, use `str.iter().nth(n).unwrap()` instead.")
+      #|test "dump" {
+      #|  let x = 42
+      #|  if false {
+      #|    dump(()) // never reached here
+      #|    assert_eq(dump(x) + x, 84)
+      #|  }
+      #|}
+      #|#deprecated("The index will be changed to utf16 index. If you want to access n-th character, use `str.iter().nth(n).unwrap()` instead.", skip_current_package=false)
       #|pub fn String::codepoint_at(self : String, index : Int) -> Char {
       #|  let charcode_len = self.length()
       #|  guard index >= 0 && index < charcode_len else { abort("index out of bounds") }
@@ -7806,7 +7302,7 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|    }
       #|  }
       #|}
-      #|#deprecated("Use `s.get_char(i).unwrap()` instead")
+      #|#deprecated("Use `s.get_char(i).unwrap()` instead", skip_current_package=true)
       #|pub fn String::unsafe_char_at(self : String, index : Int) -> Char {
       #|  let c1 = self.unsafe_charcode_at(index)
       #|  if c1.is_leading_surrogate() {
@@ -8019,6 +7515,787 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|    }
       #|  }
       #|}
+      #|pub fn[T] FixedArray::each(
+      #|  self : FixedArray[T],
+      #|  f : (T) -> Unit raise?,
+      #|) -> Unit raise? {
+      #|  for v in self {
+      #|    f(v)
+      #|  }
+      #|}
+      #|test "each" {
+      #|  let mut i = 0
+      #|  let mut failed = false
+      #|  let f = elem => {
+      #|    if elem != i + 1 {
+      #|      failed = true
+      #|    }
+      #|    i = i + 1
+      #|  }
+      #|  {
+      #|    i = 0
+      #|    ([] : FixedArray[_]).each(f)
+      #|    assert_false(failed)
+      #|    inspect(i, content="0")
+      #|  }
+      #|  {
+      #|    i = 0
+      #|    ([1] : FixedArray[_]).each(f)
+      #|    assert_false(failed)
+      #|    inspect(i, content="1")
+      #|  }
+      #|  i = 0
+      #|  ([1, 2, 3, 4, 5] : FixedArray[_]).each(f)
+      #|  assert_false(failed)
+      #|  inspect(i, content="5")
+      #|}
+      #|pub fn[T] FixedArray::eachi(
+      #|  self : FixedArray[T],
+      #|  f : (Int, T) -> Unit raise?,
+      #|) -> Unit raise? {
+      #|  for i, v in self {
+      #|    f(i, v)
+      #|  }
+      #|}
+      #|test "eachi" {
+      #|  let mut i = 0
+      #|  let mut failed = false
+      #|  let f = (index, elem) => {
+      #|    if index != i || elem != i + 1 {
+      #|      failed = true
+      #|    }
+      #|    i = i + 1
+      #|  }
+      #|  {
+      #|    i = 0
+      #|    ([] : FixedArray[_]).eachi(f)
+      #|    assert_false(failed)
+      #|    inspect(i, content="0")
+      #|  }
+      #|  {
+      #|    i = 0
+      #|    ([1] : FixedArray[_]).eachi(f)
+      #|    assert_false(failed)
+      #|    inspect(i, content="1")
+      #|  }
+      #|  i = 0
+      #|  ([1, 2, 3, 4, 5] : FixedArray[_]).eachi(f)
+      #|  assert_false(failed)
+      #|  inspect(i, content="5")
+      #|}
+      #|pub fn[T] FixedArray::rev_each(
+      #|  self : FixedArray[T],
+      #|  f : (T) -> Unit raise?,
+      #|) -> Unit raise? {
+      #|  for i = self.length() - 1; i >= 0; i = i - 1 {
+      #|    f(self[i])
+      #|  }
+      #|}
+      #|test "rev_each" {
+      #|  let mut i = 6
+      #|  let mut failed = false
+      #|  let f = elem => {
+      #|    if elem != i - 1 {
+      #|      failed = true
+      #|    }
+      #|    i = i - 1
+      #|  }
+      #|  {
+      #|    i = 1
+      #|    ([] : FixedArray[_]).rev_each(f)
+      #|    assert_false(failed)
+      #|    inspect(i, content="1")
+      #|  }
+      #|  {
+      #|    i = 2
+      #|    ([1] : FixedArray[_]).rev_each(f)
+      #|    assert_false(failed)
+      #|    inspect(i, content="1")
+      #|  }
+      #|  i = 6
+      #|  ([1, 2, 3, 4, 5] : FixedArray[_]).rev_each(f)
+      #|  assert_false(failed)
+      #|  inspect(i, content="1")
+      #|}
+      #|pub fn[T] FixedArray::rev_eachi(
+      #|  self : FixedArray[T],
+      #|  f : (Int, T) -> Unit raise?,
+      #|) -> Unit raise? {
+      #|  let len = self.length()
+      #|  for i in 0..<len {
+      #|    f(i, self[len - i - 1])
+      #|  }
+      #|}
+      #|test "rev_eachi" {
+      #|  let mut i = 6
+      #|  let mut j = 0
+      #|  let mut failed = false
+      #|  let f = (index, elem) => {
+      #|    if index != j || elem != i - 1 {
+      #|      failed = true
+      #|    }
+      #|    i = i - 1
+      #|    j = j + 1
+      #|  }
+      #|  {
+      #|    i = 1
+      #|    j = 0
+      #|    ([] : FixedArray[_]).rev_eachi(f)
+      #|    assert_false(failed)
+      #|    inspect(i, content="1")
+      #|    inspect(j, content="0")
+      #|  }
+      #|  {
+      #|    i = 2
+      #|    j = 0
+      #|    ([1] : FixedArray[_]).rev_eachi(f)
+      #|    assert_false(failed)
+      #|    inspect(i, content="1")
+      #|    inspect(j, content="1")
+      #|  }
+      #|  i = 6
+      #|  j = 0
+      #|  ([1, 2, 3, 4, 5] : FixedArray[_]).rev_eachi(f)
+      #|  assert_false(failed)
+      #|  inspect(i, content="1")
+      #|  inspect(j, content="5")
+      #|}
+      #|pub fn[T, U] FixedArray::map(
+      #|  self : FixedArray[T],
+      #|  f : (T) -> U raise?,
+      #|) -> FixedArray[U] raise? {
+      #|  if self.length() == 0 {
+      #|    return []
+      #|  }
+      #|  let res = FixedArray::make(self.length(), f(self[0]))
+      #|  for i in 1..<self.length() {
+      #|    res[i] = f(self[i])
+      #|  }
+      #|  res
+      #|}
+      #|test "map" {
+      #|  let empty : FixedArray[Unit] = FixedArray::default().map(x => x)
+      #|  assert_eq(empty, [])
+      #|  let simple_arr : FixedArray[_] = [6]
+      #|  let simple_doubled = simple_arr.map(x => x * 2)
+      #|  assert_eq(simple_doubled, [12])
+      #|  let arr : FixedArray[_] = [1, 2, 3, 4, 5]
+      #|  let doubled = arr.map(x => x * 2)
+      #|  assert_eq(doubled, [2, 4, 6, 8, 10])
+      #|}
+      #|pub fn[T, U] FixedArray::mapi(
+      #|  self : FixedArray[T],
+      #|  f : (Int, T) -> U raise?,
+      #|) -> FixedArray[U] raise? {
+      #|  if self.length() == 0 {
+      #|    return []
+      #|  }
+      #|  let res = FixedArray::make(self.length(), f(0, self[0]))
+      #|  for i in 1..<self.length() {
+      #|    res[i] = f(i, self[i])
+      #|  }
+      #|  res
+      #|}
+      #|test "mapi" {
+      #|  let empty : FixedArray[Int] = FixedArray::default().mapi((i, x) => x + i)
+      #|  assert_eq(empty, [])
+      #|  let simple_arr : FixedArray[_] = [6]
+      #|  let simple_doubled = simple_arr.mapi((i, x) => x * 2 + i)
+      #|  assert_eq(simple_doubled, [12])
+      #|  let arr : FixedArray[_] = [1, 2, 3, 4, 5]
+      #|  let doubled = arr.mapi((i, x) => x * 2 + i)
+      #|  assert_eq(doubled, [2, 5, 8, 11, 14])
+      #|}
+      #|#locals(value)
+      #|pub fn[T] FixedArray::makei(
+      #|  length : Int,
+      #|  value : (Int) -> T raise?,
+      #|) -> FixedArray[T] raise? {
+      #|  if length <= 0 {
+      #|    []
+      #|  } else {
+      #|    let array = FixedArray::make(length, value(0))
+      #|    for i in 1..<length {
+      #|      array[i] = value(i)
+      #|    }
+      #|    array
+      #|  }
+      #|}
+      #|test "fixedarray_new_with_index" {
+      #|  let empty = FixedArray::makei(0, i => i)
+      #|  inspect(empty.length(), content="0")
+      #|  let simple_arr = FixedArray::makei(1, i => i)
+      #|  inspect(simple_arr.length(), content="1")
+      #|  inspect(simple_arr[0], content="0")
+      #|  let arr = FixedArray::makei(2, i => i)
+      #|  inspect(arr.length(), content="2")
+      #|  inspect(arr[0], content="0")
+      #|  inspect(arr[1], content="1")
+      #|}
+      #|pub fn[T] FixedArray::from_array(array : ArrayView[T]) -> FixedArray[T] {
+      #|  FixedArray::makei(array.length(), i => array.unsafe_get(i))
+      #|}
+      #|test "from_array" {
+      #|  let array = FixedArray::from_array([1, 2, 3, 4, 5])
+      #|  assert_eq(array, [1, 2, 3, 4, 5])
+      #|}
+      #|pub fn[A, B] FixedArray::fold(
+      #|  self : FixedArray[A],
+      #|  init~ : B,
+      #|  f : (B, A) -> B raise?,
+      #|) -> B raise? {
+      #|  for i = 0, acc = init; i < self.length(); {
+      #|    continue i + 1, f(acc, self[i])
+      #|  } else {
+      #|    acc
+      #|  }
+      #|}
+      #|test "fold" {
+      #|  let sum = ([] : FixedArray[_]).fold(init=1, (sum, elem) => sum + elem)
+      #|  inspect(sum, content="1")
+      #|  let sum = ([1] : FixedArray[_]).fold(init=2, (sum, elem) => sum + elem)
+      #|  inspect(sum, content="3")
+      #|  let sum = ([1, 2, 3, 4, 5] : FixedArray[_]).fold(init=0, (sum, elem) => sum +
+      #|    elem)
+      #|  inspect(sum, content="15")
+      #|}
+      #|pub fn[A, B] FixedArray::rev_fold(
+      #|  self : FixedArray[A],
+      #|  init~ : B,
+      #|  f : (B, A) -> B raise?,
+      #|) -> B raise? {
+      #|  for i = self.length() - 1, acc = init; i >= 0; {
+      #|    continue i - 1, f(acc, self[i])
+      #|  } else {
+      #|    acc
+      #|  }
+      #|}
+      #|test "rev_fold" {
+      #|  let sum = ([] : FixedArray[_]).rev_fold(init=1, (sum, elem) => sum + elem)
+      #|  inspect(sum, content="1")
+      #|  let sum = ([1] : FixedArray[_]).rev_fold(init=2, (sum, elem) => sum + elem)
+      #|  inspect(sum, content="3")
+      #|  let sum = ([1, 2, 3, 4, 5] : FixedArray[_]).rev_fold(init=0, (sum, elem) => sum +
+      #|    elem)
+      #|  inspect(sum, content="15")
+      #|}
+      #|pub fn[A, B] FixedArray::foldi(
+      #|  self : FixedArray[A],
+      #|  init~ : B,
+      #|  f : (Int, B, A) -> B raise?,
+      #|) -> B raise? {
+      #|  for i = 0, acc = init; i < self.length(); {
+      #|    continue i + 1, f(i, acc, self[i])
+      #|  } else {
+      #|    acc
+      #|  }
+      #|}
+      #|test "fold_lefti" {
+      #|  let f = (index, sum, elem) => index + sum + elem
+      #|  {
+      #|    let sum = ([] : FixedArray[_]).foldi(init=1, f)
+      #|    inspect(sum, content="1")
+      #|  }
+      #|  {
+      #|    let sum = ([1] : FixedArray[_]).foldi(init=2, f)
+      #|    inspect(sum, content="3")
+      #|  }
+      #|  let sum = ([1, 2, 3, 4, 5] : FixedArray[_]).foldi(init=0, f)
+      #|  inspect(sum, content="25")
+      #|}
+      #|pub fn[A, B] FixedArray::rev_foldi(
+      #|  self : FixedArray[A],
+      #|  init~ : B,
+      #|  f : (Int, B, A) -> B raise?,
+      #|) -> B raise? {
+      #|  let len = self.length()
+      #|  for i = len - 1, acc = init; i >= 0; {
+      #|    continue i - 1, f(len - i - 1, acc, self[i])
+      #|  } else {
+      #|    acc
+      #|  }
+      #|}
+      #|test "rev_foldi" {
+      #|  let f = (index, sum, elem) => index + sum + elem
+      #|  {
+      #|    let sum = ([] : FixedArray[_]).rev_foldi(init=1, f)
+      #|    inspect(sum, content="1")
+      #|  }
+      #|  {
+      #|    let sum = ([1] : FixedArray[_]).rev_foldi(init=2, f)
+      #|    inspect(sum, content="3")
+      #|  }
+      #|  let sum = ([1, 2, 3, 4, 5] : FixedArray[_]).rev_foldi(init=0, f)
+      #|  inspect(sum, content="25")
+      #|}
+      #|pub fn[T] FixedArray::rev_inplace(self : FixedArray[T]) -> Unit {
+      #|  let mid_len = self.length() / 2
+      #|  for i in 0..<mid_len {
+      #|    let j = self.length() - i - 1
+      #|    let temp = self[i]
+      #|    self[i] = self[j]
+      #|    self[j] = temp
+      #|  }
+      #|}
+      #|pub fn[T] FixedArray::rev(self : FixedArray[T]) -> FixedArray[T] {
+      #|  match self {
+      #|    [] => []
+      #|    [.., first] => {
+      #|      let res = FixedArray::make(self.length(), first)
+      #|      let len = self.length()
+      #|      for i in 1..<len {
+      #|        res[i] = self[len - 1 - i]
+      #|      }
+      #|      res
+      #|    }
+      #|  }
+      #|}
+      #|test "rev in place" {
+      #|  {
+      #|    let arr : FixedArray[Int] = []
+      #|    arr.rev_inplace()
+      #|    assert_eq(arr, [])
+      #|  }
+      #|  {
+      #|    let arr : FixedArray[_] = [1]
+      #|    arr.rev_inplace()
+      #|    assert_eq(arr, [1])
+      #|  }
+      #|  {
+      #|    let arr : FixedArray[_] = [1, 2]
+      #|    arr.rev_inplace()
+      #|    assert_eq(arr, [2, 1])
+      #|  }
+      #|  {
+      #|    let arr : FixedArray[_] = [1, 2, 3, 4, 5]
+      #|    arr.rev_inplace()
+      #|    assert_eq(arr, [5, 4, 3, 2, 1])
+      #|  }
+      #|  let arr : FixedArray[_] = [1, 2, 3, 4, 5, 6]
+      #|  arr.rev_inplace()
+      #|  assert_eq(arr, [6, 5, 4, 3, 2, 1])
+      #|}
+      #|test "rev" {
+      #|  {
+      #|    let arr : FixedArray[Int] = []
+      #|    assert_eq(arr.rev(), [])
+      #|  }
+      #|  {
+      #|    let arr : FixedArray[_] = [1]
+      #|    assert_eq(arr.rev(), [1])
+      #|  }
+      #|  {
+      #|    let arr : FixedArray[_] = [1, 2]
+      #|    assert_eq(arr.rev(), [2, 1])
+      #|  }
+      #|  {
+      #|    let arr : FixedArray[_] = [1, 2, 3, 4, 5]
+      #|    assert_eq(arr.rev(), [5, 4, 3, 2, 1])
+      #|  }
+      #|  let arr : FixedArray[_] = [1, 2, 3, 4, 5, 6]
+      #|  assert_eq(arr.rev(), [6, 5, 4, 3, 2, 1])
+      #|}
+      #|pub fn[T] FixedArray::swap(self : FixedArray[T], i : Int, j : Int) -> Unit {
+      #|  let temp = self[i]
+      #|  self[i] = self[j]
+      #|  self[j] = temp
+      #|}
+      #|test "swap" {
+      #|  {
+      #|    let arr : FixedArray[Int] = [1]
+      #|    arr.swap(0, 0)
+      #|    assert_eq(arr, [1])
+      #|  }
+      #|  {
+      #|    let arr : FixedArray[_] = [1, 2]
+      #|    arr.swap(0, 0)
+      #|    assert_eq(arr, [1, 2])
+      #|    arr.swap(0, 1)
+      #|    assert_eq(arr, [2, 1])
+      #|  }
+      #|  let arr : FixedArray[_] = [1, 2, 3, 4, 5]
+      #|  arr.swap(3, 3)
+      #|  assert_eq(arr, [1, 2, 3, 4, 5])
+      #|  arr.swap(1, 3)
+      #|  assert_eq(arr, [1, 4, 3, 2, 5])
+      #|}
+      #|pub fn[T] FixedArray::all(
+      #|  self : FixedArray[T],
+      #|  f : (T) -> Bool raise?,
+      #|) -> Bool raise? {
+      #|  for i in 0..<self.length() {
+      #|    if !f(self[i]) {
+      #|      return false
+      #|    }
+      #|  }
+      #|  true
+      #|}
+      #|test "all" {
+      #|  {
+      #|    let arr : FixedArray[Int] = []
+      #|    assert_true(arr.all(ele => ele < 6))
+      #|    assert_true(arr.all(ele => ele < 5))
+      #|  }
+      #|  {
+      #|    let arr : FixedArray[_] = [5]
+      #|    assert_true(arr.all(ele => ele < 6))
+      #|    assert_false(arr.all(ele => ele < 5))
+      #|  }
+      #|  let arr : FixedArray[_] = [1, 2, 3, 4, 5]
+      #|  assert_true(arr.all(ele => ele < 6))
+      #|  assert_false(arr.all(ele => ele < 5))
+      #|}
+      #|pub fn[T] FixedArray::any(
+      #|  self : FixedArray[T],
+      #|  f : (T) -> Bool raise?,
+      #|) -> Bool raise? {
+      #|  for i in 0..<self.length() {
+      #|    if f(self[i]) {
+      #|      return true
+      #|    }
+      #|  }
+      #|  false
+      #|}
+      #|test "any" {
+      #|  {
+      #|    let arr : FixedArray[Int] = []
+      #|    assert_false(arr.any(ele => ele < 6))
+      #|    assert_false(arr.any(ele => ele < 5))
+      #|  }
+      #|  {
+      #|    let arr : FixedArray[_] = [5]
+      #|    assert_true(arr.any(ele => ele < 6))
+      #|    assert_false(arr.any(ele => ele < 5))
+      #|  }
+      #|  let arr : FixedArray[_] = [1, 2, 3, 4, 5]
+      #|  assert_true(arr.any(ele => ele < 6))
+      #|  assert_true(arr.any(ele => ele < 5))
+      #|}
+      #|test "fill" {
+      #|  {
+      #|    let arr : FixedArray[Int] = []
+      #|    arr.fill(3)
+      #|    assert_eq(arr, [])
+      #|  }
+      #|  {
+      #|    let arr : FixedArray[_] = [6]
+      #|    arr.fill(5)
+      #|    assert_eq(arr, [5])
+      #|  }
+      #|  let arr : FixedArray[_] = [0, 0, 0, 0, 0]
+      #|  arr.fill(3)
+      #|  assert_eq(arr, [3, 3, 3, 3, 3])
+      #|}
+      #|pub fn[T : Eq] FixedArray::search(self : FixedArray[T], value : T) -> Int? {
+      #|  for i in 0..<self.length() {
+      #|    if self[i] == value {
+      #|      return Some(i)
+      #|    }
+      #|  }
+      #|  None
+      #|}
+      #|test "search" {
+      #|  {
+      #|    let arr : FixedArray[Int] = []
+      #|    assert_eq(arr.search(3), None)
+      #|    assert_eq(arr.search(-1), None)
+      #|  }
+      #|  {
+      #|    let arr : FixedArray[_] = [3]
+      #|    assert_eq(arr.search(3), Some(0))
+      #|    assert_eq(arr.search(-1), None)
+      #|  }
+      #|  let arr : FixedArray[_] = [1, 2, 3, 4, 5]
+      #|  assert_eq(arr.search(1), Some(0))
+      #|  assert_eq(arr.search(5), Some(4))
+      #|  assert_eq(arr.search(3), Some(2))
+      #|  assert_eq(arr.search(-1), None)
+      #|}
+      #|pub fn[T : Eq] FixedArray::contains(self : FixedArray[T], value : T) -> Bool {
+      #|  for i in 0..<self.length() {
+      #|    if self[i] == value {
+      #|      return true
+      #|    }
+      #|  }
+      #|  false
+      #|}
+      #|test "contains" {
+      #|  {
+      #|    let arr : FixedArray[Int] = []
+      #|    assert_false(arr.contains(3))
+      #|    assert_false(arr.contains(-1))
+      #|  }
+      #|  {
+      #|    let arr : FixedArray[_] = [3]
+      #|    assert_true(arr.contains(3))
+      #|    assert_false(arr.contains(-1))
+      #|  }
+      #|  let arr : FixedArray[_] = [3, 4, 5]
+      #|  assert_true(arr.contains(3))
+      #|  assert_true(arr.contains(4))
+      #|  assert_true(arr.contains(5))
+      #|  assert_false(arr.contains(6))
+      #|}
+      #|pub fn[T : Eq] FixedArray::starts_with(
+      #|  self : FixedArray[T],
+      #|  prefix : FixedArray[T],
+      #|) -> Bool {
+      #|  if prefix.length() > self.length() {
+      #|    return false
+      #|  }
+      #|  for i in 0..<prefix.length() {
+      #|    if self[i] != prefix[i] {
+      #|      return false
+      #|    }
+      #|  }
+      #|  true
+      #|}
+      #|test "starts_with" {
+      #|  {
+      #|    let arr : FixedArray[Int] = []
+      #|    assert_true(arr.starts_with([]))
+      #|    assert_false(arr.starts_with([1]))
+      #|  }
+      #|  {
+      #|    let arr : FixedArray[_] = [3]
+      #|    assert_true(arr.starts_with([]))
+      #|    assert_true(arr.starts_with([3]))
+      #|    assert_false(arr.starts_with([2]))
+      #|    assert_false(arr.starts_with([3, 1]))
+      #|  }
+      #|  let arr : FixedArray[_] = [3, 4, 5]
+      #|  assert_true(arr.starts_with([]))
+      #|  assert_true(arr.starts_with([3]))
+      #|  assert_false(arr.starts_with([2]))
+      #|  assert_true(arr.starts_with([3, 4]))
+      #|  assert_false(arr.starts_with([3, 2]))
+      #|  assert_true(arr.starts_with([3, 4, 5]))
+      #|  assert_false(arr.starts_with([3, 4, 2]))
+      #|  assert_false(arr.starts_with([3, 4, 5, 6]))
+      #|}
+      #|pub fn[T : Eq] FixedArray::ends_with(
+      #|  self : FixedArray[T],
+      #|  suffix : FixedArray[T],
+      #|) -> Bool {
+      #|  let self_len = self.length()
+      #|  let suf_len = suffix.length()
+      #|  if suf_len > self_len {
+      #|    return false
+      #|  }
+      #|  for i in 0..<suf_len {
+      #|    if self[self_len - suf_len + i] != suffix[i] {
+      #|      return false
+      #|    }
+      #|  }
+      #|  true
+      #|}
+      #|test "ends_with" {
+      #|  {
+      #|    let arr : FixedArray[Int] = []
+      #|    assert_true(arr.ends_with([]))
+      #|    assert_false(arr.ends_with([1]))
+      #|  }
+      #|  {
+      #|    let arr : FixedArray[_] = [3]
+      #|    assert_true(arr.ends_with([]))
+      #|    assert_true(arr.ends_with([3]))
+      #|    assert_false(arr.ends_with([2]))
+      #|    assert_false(arr.ends_with([3, 1]))
+      #|  }
+      #|  let arr : FixedArray[_] = [3, 4, 5]
+      #|  assert_true(arr.ends_with([]))
+      #|  assert_true(arr.ends_with([5]))
+      #|  assert_false(arr.ends_with([2]))
+      #|  assert_true(arr.ends_with([4, 5]))
+      #|  assert_false(arr.ends_with([4, 2]))
+      #|  assert_false(arr.ends_with([2, 5]))
+      #|  assert_true(arr.ends_with([3, 4, 5]))
+      #|  assert_false(arr.ends_with([3, 4, 2]))
+      #|  assert_false(arr.ends_with([3, 2, 5]))
+      #|  assert_false(arr.ends_with([2, 4, 5]))
+      #|  assert_false(arr.ends_with([3, 4, 5, 6]))
+      #|  assert_false(arr.ends_with([2, 3, 4, 5]))
+      #|}
+      #|pub impl[T : Eq] Eq for FixedArray[T] with equal(
+      #|  self : FixedArray[T],
+      #|  that : FixedArray[T],
+      #|) -> Bool {
+      #|  if self.length() != that.length() {
+      #|    return false
+      #|  }
+      #|  for i in 0..<self.length() {
+      #|    if self[i] != that[i] {
+      #|      return false
+      #|    }
+      #|  }
+      #|  true
+      #|}
+      #|pub impl[T : Hash] Hash for FixedArray[T] with hash_combine(self, hasher) {
+      #|  for v in self {
+      #|    v.hash_combine(hasher)
+      #|  }
+      #|}
+      #|test "equal" {
+      #|  {
+      #|    inspect(([] : FixedArray[Int]) == [], content="true")
+      #|    inspect(([] : FixedArray[_]) == [1], content="false")
+      #|    inspect(([1, 2] : FixedArray[_]) == [], content="false")
+      #|  }
+      #|  {
+      #|    inspect(([1] : FixedArray[_]) == [1], content="true")
+      #|    inspect(([1] : FixedArray[_]) == [2], content="false")
+      #|    inspect(([1, 2] : FixedArray[_]) == [1], content="false")
+      #|    inspect(([1] : FixedArray[_]) == [1, 2], content="false")
+      #|  }
+      #|  inspect(([1, 2, 3, 4, 5] : FixedArray[_]) == [1, 2, 3, 4, 5], content="true")
+      #|  inspect(([1, 2, 3, 4, 5] : FixedArray[_]) == [1, 2, 3, 4], content="false")
+      #|  inspect(([1, 2, 3, 4] : FixedArray[_]) == [1, 2, 3, 4, 5], content="false")
+      #|  inspect(([1, 2, 3, 4, 5] : FixedArray[_]) == [6, 2, 3, 4, 5], content="false")
+      #|  inspect(([1, 2, 3, 4, 5] : FixedArray[_]) == [1, 2, 6, 4, 5], content="false")
+      #|  inspect(([1, 2, 3, 4, 5] : FixedArray[_]) == [1, 2, 3, 4, 6], content="false")
+      #|}
+      #|pub impl[T : Compare] Compare for FixedArray[T] with compare(self, other) {
+      #|  let len_self = self.length()
+      #|  let len_other = other.length()
+      #|  let cmp = len_self.compare(len_other)
+      #|  guard cmp == 0 else { return cmp }
+      #|  for i in 0..<len_self {
+      #|    let cmp = self.unsafe_get(i).compare(other.unsafe_get(i))
+      #|    guard cmp == 0 else { break cmp }
+      #|  } else {
+      #|    0
+      #|  }
+      #|}
+      #|pub impl[T] Add for FixedArray[T] with add(self, other) {
+      #|  let slen = self.length()
+      #|  let nlen = other.length()
+      #|  FixedArray::makei(slen + nlen, i => if i < slen {
+      #|    self[i]
+      #|  } else {
+      #|    other[i - slen]
+      #|  })
+      #|}
+      #|test "add" {
+      #|  {
+      #|    inspect(([] : FixedArray[Int]) + [], content="[]")
+      #|    inspect(([] : FixedArray[_]) + [1, 2, 3, 4, 5], content="[1, 2, 3, 4, 5]")
+      #|    inspect(([1, 2, 3, 4, 5] : FixedArray[_]) + [], content="[1, 2, 3, 4, 5]")
+      #|  }
+      #|  {
+      #|    inspect(([1] : FixedArray[_]) + [2], content="[1, 2]")
+      #|    inspect(
+      #|      ([1] : FixedArray[_]) + [1, 2, 3, 4, 5],
+      #|      content="[1, 1, 2, 3, 4, 5]",
+      #|    )
+      #|    inspect(
+      #|      ([1, 2, 3, 4, 5] : FixedArray[_]) + [1],
+      #|      content="[1, 2, 3, 4, 5, 1]",
+      #|    )
+      #|  }
+      #|  inspect(
+      #|    ([1, 2, 3, 4, 5] : FixedArray[_]) + [6, 7, 8, 9, 10],
+      #|    content="[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",
+      #|  )
+      #|}
+      #|test "iter" {
+      #|  let arr : FixedArray[_] = [1, 2, 3, 4, 5]
+      #|  let iter = arr.iter()
+      #|  let exb = StringBuilder::new()
+      #|  let mut i = 0
+      #|  iter.each(x => {
+      #|    exb.write_string(x.to_string())
+      #|    exb.write_char('\n')
+      #|    i = i + 1
+      #|  })
+      #|  assert_eq(i, arr.length())
+      #|  inspect(
+      #|    exb,
+      #|    content=(
+      #|      #|1
+      #|      #|2
+      #|      #|3
+      #|      #|4
+      #|      #|5
+      #|      #|
+      #|    ),
+      #|  )
+      #|}
+      #|pub fn[T] FixedArray::from_iter(iter : Iter[T]) -> FixedArray[T] {
+      #|  FixedArray::from_array(iter.collect())
+      #|}
+      #|pub fn[T] FixedArray::from_iterator(iter : Iterator[T]) -> FixedArray[T] {
+      #|  FixedArray::from_array(iter.collect())
+      #|}
+      #|pub fn[A] FixedArray::last(self : FixedArray[A]) -> A? {
+      #|  match self {
+      #|    [] => None
+      #|    [.., last] => Some(last)
+      #|  }
+      #|}
+      #|pub fn FixedArray::join(
+      #|  self : FixedArray[String],
+      #|  separator : StringView,
+      #|) -> String {
+      #|  let len = self.length()
+      #|  if len == 0 {
+      #|    return ""
+      #|  }
+      #|  let first = self[0]
+      #|  let mut size_hint = first.length()
+      #|  for i in 1..<len {
+      #|    size_hint += separator.length() + self[i].length()
+      #|  }
+      #|  let string = StringBuilder::new(size_hint~)
+      #|  if separator.length() == 0 {
+      #|    for i in 0..<len {
+      #|      string.write_string(self[i])
+      #|    }
+      #|  } else {
+      #|    string.write_string(self[0])
+      #|    for i in 1..<len {
+      #|      string.write_substring(
+      #|        separator.data(),
+      #|        separator.start_offset(),
+      #|        separator.length(),
+      #|      )
+      #|      string.write_string(self[i])
+      #|    }
+      #|  }
+      #|  string.to_string()
+      #|}
+      #|test "FixedArray::last/empty" {
+      #|  let empty : FixedArray[Int] = []
+      #|  inspect(empty.last(), content="None")
+      #|}
+      #|test "FixedArray::last/non_empty" {
+      #|  let array : FixedArray[_] = [1, 2, 3]
+      #|  inspect(array.last(), content="Some(3)")
+      #|  let single : FixedArray[_] = [42]
+      #|  inspect(single.last(), content="Some(42)")
+      #|}
+      #|test "FixedArray::last/empty_array" {
+      #|  let empty_array : FixedArray[Int] = []
+      #|  inspect(FixedArray::last(empty_array), content="None")
+      #|}
+      #|test "FixedArray::last/single_element" {
+      #|  let single_element_array : FixedArray[Int] = [42]
+      #|  inspect(FixedArray::last(single_element_array), content="Some(42)")
+      #|}
+      #|test "FixedArray::last/multiple_elements" {
+      #|  let multiple_elements_array : FixedArray[Int] = [1, 2, 3, 4, 5]
+      #|  inspect(FixedArray::last(multiple_elements_array), content="Some(5)")
+      #|}
+      #|test "FixedArray::join" {
+      #|  let fixed_array : FixedArray[String] = ["1", "2", "3"]
+      #|  inspect(fixed_array.join(","), content="1,2,3")
+      #|  inspect(fixed_array.join(""), content="123")
+      #|  inspect(fixed_array.join(" "), content="1 2 3")
+      #|  let fixed_array_empty : FixedArray[String] = []
+      #|  inspect(fixed_array_empty.join(","), content="")
+      #|}
+      #|pub fn[X] FixedArray::iterator(self : FixedArray[X]) -> Iterator[X] {
+      #|  self[:].iterator()
+      #|}
     ),
     "fixedarray_block.mbt": (
       #|#intrinsic("%fixedarray.copy")
@@ -8125,9 +8402,11 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|pub fn Hasher::combine_double(self : Hasher, value : Double) -> Unit {
       #|  self.combine_int64(value.reinterpret_as_int64())
       #|}
+      #|#deprecated
       #|pub fn Hasher::combine_float(self : Hasher, value : Float) -> Unit {
       #|  self.combine_uint(value.reinterpret_as_uint())
       #|}
+      #|fn Float::reinterpret_as_uint(self : Float) -> UInt = "%f32.to_i32_reinterpret"
       #|pub fn Hasher::combine_byte(self : Hasher, value : Byte) -> Unit {
       #|  self.consume1(value)
       #|}
@@ -8185,6 +8464,15 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|pub impl Hash for String with hash_combine(self, hasher) {
       #|  hasher.combine_string(self)
       #|}
+      #|pub impl Hash for StringView with hash_combine(
+      #|  self : StringView,
+      #|  hasher : Hasher,
+      #|) -> Unit {
+      #|  let str = self.str()
+      #|  for i in self.start()..<self.end() {
+      #|    hasher.combine_uint(str.unsafe_charcode_at(i).reinterpret_as_uint())
+      #|  }
+      #|}
       #|pub impl Hash for Int with hash_combine(self, hasher) {
       #|  hasher.combine_int(self)
       #|}
@@ -8207,6 +8495,25 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|  match self {
       #|    Ok(x) => hasher..combine_int(0)..combine(x)
       #|    Err(x) => hasher..combine_int(1)..combine(x)
+      #|  }
+      #|}
+      #|pub impl Hash for BytesView with hash_combine(self : BytesView, hasher : Hasher) {
+      #|  let mut start = self.start()
+      #|  let data = self.bytes()
+      #|  let mut rest = self.len()
+      #|  while rest >= 4 {
+      #|    let mut result : UInt = 0
+      #|    for i in 0..=3 {
+      #|      result = result | (data.unsafe_get(i + start).to_uint() << (8 * i))
+      #|    }
+      #|    hasher.combine_uint(result)
+      #|    rest -= 4
+      #|    start += 4
+      #|  }
+      #|  while rest >= 1 {
+      #|    hasher.combine_byte(data.unsafe_get(start))
+      #|    rest -= 1
+      #|    start += 1
       #|  }
       #|}
     ),
@@ -8583,27 +8890,27 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|pub impl BitXOr for Int64 with lxor(self : Int64, other : Int64) -> Int64 {
       #|  MyInt64::from_int64(self).lxor(MyInt64::from_int64(other)).to_int64()
       #|}
-      #|#deprecated("Use infix operator `<<` instead")
+      #|#deprecated("Use infix operator `<<` instead", skip_current_package=false)
       #|#coverage.skip
       #|pub fn Int64::lsl(self : Int64, other : Int) -> Int64 {
       #|  MyInt64::from_int64(self).lsl(other).to_int64()
       #|}
-      #|#deprecated("Use infix operator `<<` instead")
+      #|#deprecated("Use infix operator `<<` instead", skip_current_package=false)
       #|#coverage.skip
       #|pub fn Int64::shl(self : Int64, other : Int) -> Int64 {
       #|  MyInt64::from_int64(self).lsl(other).to_int64()
       #|}
-      #|#deprecated("Use UInt64 type and infix operator `>>` instead")
+      #|#deprecated("Use UInt64 type and infix operator `>>` instead", skip_current_package=false)
       #|#coverage.skip
       #|pub fn Int64::lsr(self : Int64, other : Int) -> Int64 {
       #|  MyInt64::from_int64(self).lsr(other).to_int64()
       #|}
-      #|#deprecated("Use infix operator `>>` instead")
+      #|#deprecated("Use infix operator `>>` instead", skip_current_package=false)
       #|#coverage.skip
       #|pub fn Int64::shr(self : Int64, other : Int) -> Int64 {
       #|  MyInt64::from_int64(self).asr(other).to_int64()
       #|}
-      #|#deprecated("Use infix operator `>>` instead")
+      #|#deprecated("Use infix operator `>>` instead", skip_current_package=false)
       #|#coverage.skip
       #|pub fn Int64::asr(self : Int64, other : Int) -> Int64 {
       #|  MyInt64::from_int64(self).asr(other).to_int64()
@@ -8665,7 +8972,7 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|pub fn UInt16::to_int64(self : UInt16) -> Int64 {
       #|  MyInt64::from_int(self.to_int()).to_int64()
       #|}
-      #|#deprecated("Use `reinterpret_as_int64` instead")
+      #|#deprecated("Use `reinterpret_as_int64` instead", skip_current_package=false)
       #|#coverage.skip
       #|pub fn Double::reinterpret_as_i64(self : Double) -> Int64 {
       #|  MyInt64::reinterpret_double(self).to_int64()
@@ -8673,7 +8980,7 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|pub fn Double::reinterpret_as_int64(self : Double) -> Int64 {
       #|  MyInt64::reinterpret_double(self).to_int64()
       #|}
-      #|#deprecated("Use `reinterpret_as_uint64` instead")
+      #|#deprecated("Use `reinterpret_as_uint64` instead", skip_current_package=false)
       #|#coverage.skip
       #|pub fn Double::reinterpret_as_u64(self : Double) -> UInt64 {
       #|  MyInt64::reinterpret_double(self).to_uint64()
@@ -8689,7 +8996,7 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|}
       #|fn MyInt64::to_uint64(self : MyInt64) -> UInt64 = "%identity"
       #|fn MyInt64::from_uint64(value : UInt64) -> MyInt64 = "%identity"
-      #|#deprecated("Use `reinterpret_as_uint64` instead")
+      #|#deprecated("Use `reinterpret_as_uint64` instead", skip_current_package=false)
       #|#coverage.skip
       #|pub fn Int64::to_uint64(self : Int64) -> UInt64 = "%identity"
       #|pub fn Int64::reinterpret_as_uint64(self : Int64) -> UInt64 = "%identity"
@@ -8708,7 +9015,7 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|pub impl Mod for UInt64 with mod(self : UInt64, other : UInt64) -> UInt64 {
       #|  MyInt64::from_uint64(self).mod_u(MyInt64::from_uint64(other)).to_uint64()
       #|}
-      #|#deprecated("Use reinterpret_as_int64 instead")
+      #|#deprecated("Use reinterpret_as_int64 instead", skip_current_package=false)
       #|#coverage.skip
       #|pub fn UInt64::to_int64(self : UInt64) -> Int64 = "%identity"
       #|pub fn UInt64::reinterpret_as_int64(self : UInt64) -> Int64 = "%identity"
@@ -8745,22 +9052,22 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|pub fn UInt64::lnot(self : UInt64) -> UInt64 {
       #|  MyInt64::lnot(MyInt64::from_uint64(self)).to_uint64()
       #|}
-      #|#deprecated("Use infix operator `<<` instead")
+      #|#deprecated("Use infix operator `<<` instead", skip_current_package=false)
       #|#coverage.skip
       #|pub fn UInt64::lsl(self : UInt64, shift : Int) -> UInt64 {
       #|  MyInt64::lsl(MyInt64::from_uint64(self), shift).to_uint64()
       #|}
-      #|#deprecated("Use infix operator `<<` instead")
+      #|#deprecated("Use infix operator `<<` instead", skip_current_package=false)
       #|#coverage.skip
       #|pub fn UInt64::lsr(self : UInt64, shift : Int) -> UInt64 {
       #|  MyInt64::lsr(MyInt64::from_uint64(self), shift).to_uint64()
       #|}
-      #|#deprecated("Use infix operator `>>` instead")
+      #|#deprecated("Use infix operator `>>` instead", skip_current_package=false)
       #|#coverage.skip
       #|pub fn UInt64::shl(self : UInt64, shift : Int) -> UInt64 {
       #|  MyInt64::lsl(MyInt64::from_uint64(self), shift).to_uint64()
       #|}
-      #|#deprecated("Use infix operator `>>` instead")
+      #|#deprecated("Use infix operator `>>` instead", skip_current_package=false)
       #|#coverage.skip
       #|pub fn UInt64::shr(self : UInt64, shift : Int) -> UInt64 {
       #|  MyInt64::lsr(MyInt64::from_uint64(self), shift).to_uint64()
@@ -8798,19 +9105,19 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|pub impl BitAnd for Int64 with land(self, other) = "%i64_land"
       #|pub impl BitOr for Int64 with lor(self, other) = "%i64_lor"
       #|pub impl BitXOr for Int64 with lxor(self, other) = "%i64_lxor"
-      #|#deprecated("Use infix operator `<<` instead")
+      #|#deprecated("Use infix operator `<<` instead", skip_current_package=false)
       #|#coverage.skip
       #|pub fn Int64::lsl(self : Int64, other : Int) -> Int64 = "%i64_shl"
-      #|#deprecated("Use infix operator `<<` instead")
+      #|#deprecated("Use infix operator `<<` instead", skip_current_package=false)
       #|#coverage.skip
       #|pub fn Int64::shl(self : Int64, other : Int) -> Int64 = "%i64_shl"
-      #|#deprecated("Use UInt64 type and infix operator `>>` instead")
+      #|#deprecated("Use UInt64 type and infix operator `>>` instead", skip_current_package=false)
       #|#coverage.skip
       #|pub fn Int64::lsr(self : Int64, other : Int) -> Int64 = "%u64.shr"
-      #|#deprecated("Use infix operator `>>` instead")
+      #|#deprecated("Use infix operator `>>` instead", skip_current_package=false)
       #|#coverage.skip
       #|pub fn Int64::asr(self : Int64, other : Int) -> Int64 = "%i64_shr"
-      #|#deprecated("Use infix operator `>>` instead")
+      #|#deprecated("Use infix operator `>>` instead", skip_current_package=false)
       #|#coverage.skip
       #|pub fn Int64::shr(self : Int64, other : Int) -> Int64 = "%i64_shr"
       #|pub impl Shl for Int64 with shl(self, other) = "%i64_shl"
@@ -8838,20 +9145,20 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|pub fn Int::to_int64(self : Int) -> Int64 = "%i32_to_i64"
       #|pub fn Int16::to_int64(self : Int16) -> Int64 = "%i16_to_i64"
       #|pub fn UInt16::to_int64(self : UInt16) -> Int64 = "%u16_to_i64"
-      #|#deprecated("Use `reinterpret_as_int64` instead")
+      #|#deprecated("Use `reinterpret_as_int64` instead", skip_current_package=false)
       #|#coverage.skip
       #|pub fn Double::reinterpret_as_i64(self : Double) -> Int64 = "%f64_to_i64_reinterpret"
       #|pub fn Double::reinterpret_as_int64(self : Double) -> Int64 = "%f64_to_i64_reinterpret"
-      #|#deprecated("Use `reinterpret_as_uint64` instead")
+      #|#deprecated("Use `reinterpret_as_uint64` instead", skip_current_package=false)
       #|#coverage.skip
       #|pub fn Double::reinterpret_as_u64(self : Double) -> UInt64 = "%f64_to_i64_reinterpret"
       #|pub fn Double::reinterpret_as_uint64(self : Double) -> UInt64 = "%f64_to_i64_reinterpret"
       #|pub fn Double::convert_uint64(val : UInt64) -> Double = "%u64.to_f64"
-      #|#deprecated("Use `reinterpret_as_uint64` instead")
+      #|#deprecated("Use `reinterpret_as_uint64` instead", skip_current_package=false)
       #|#coverage.skip
       #|pub fn Int64::to_uint64(self : Int64) -> UInt64 = "%i64.to_u64_reinterpret"
       #|pub fn Int64::reinterpret_as_uint64(self : Int64) -> UInt64 = "%i64.to_u64_reinterpret"
-      #|#deprecated("Use `reinterpret_as_int64` instead")
+      #|#deprecated("Use `reinterpret_as_int64` instead", skip_current_package=false)
       #|#coverage.skip
       #|pub fn UInt64::to_int64(self : UInt64) -> Int64 = "%u64.to_i64_reinterpret"
       #|pub fn UInt64::reinterpret_as_int64(self : UInt64) -> Int64 = "%u64.to_i64_reinterpret"
@@ -8876,16 +9183,16 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|pub impl BitOr for UInt64 with lor(self, other) = "%u64.bitor"
       #|pub impl BitXOr for UInt64 with lxor(self, other) = "%u64.bitxor"
       #|pub fn UInt64::lnot(self : UInt64) -> UInt64 = "%u64.bitnot"
-      #|#deprecated("Use infix operator `<<` instead")
+      #|#deprecated("Use infix operator `<<` instead", skip_current_package=false)
       #|#coverage.skip
       #|pub fn UInt64::lsl(self : UInt64, shift : Int) -> UInt64 = "%u64.shl"
-      #|#deprecated("Use infix operator `<<` instead")
+      #|#deprecated("Use infix operator `<<` instead", skip_current_package=false)
       #|#coverage.skip
       #|pub fn UInt64::shl(self : UInt64, shift : Int) -> UInt64 = "%u64.shl"
-      #|#deprecated("Use infix operator `>>` instead")
+      #|#deprecated("Use infix operator `>>` instead", skip_current_package=false)
       #|#coverage.skip
       #|pub fn UInt64::shr(self : UInt64, shift : Int) -> UInt64 = "%u64.shr"
-      #|#deprecated("Use infix operator `>>` instead")
+      #|#deprecated("Use infix operator `>>` instead", skip_current_package=false)
       #|#coverage.skip
       #|pub fn UInt64::lsr(self : UInt64, shift : Int) -> UInt64 = "%u64.shr"
       #|pub impl Shl for UInt64 with shl(self, shift) = "%u64.shl"
@@ -8902,7 +9209,7 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|pub fn[T] panic() -> T = "%panic"
       #|pub fn not(x : Bool) -> Bool = "%bool_not"
       #|pub impl Eq for Bool with equal(self : Bool, other : Bool) -> Bool = "%bool_eq"
-      #|#deprecated("Use `compare` instead")
+      #|#deprecated("Use `compare` instead", skip_current_package=false)
       #|#coverage.skip
       #|pub fn Bool::op_compare(self : Bool, other : Bool) -> Int = "%bool_compare"
       #|pub impl Compare for Bool with compare(self, other) = "%bool_compare"
@@ -8919,21 +9226,21 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|pub impl BitXOr for Int with lxor(self : Int, other : Int) -> Int = "%i32_lxor"
       #|pub impl Shl for Int with shl(self, other) = "%i32_shl"
       #|pub impl Shr for Int with shr(self, other) = "%i32_shr"
-      #|#deprecated("Use infix operator `<<` instead")
+      #|#deprecated("Use infix operator `<<` instead", skip_current_package=false)
       #|#coverage.skip
       #|pub fn Int::lsl(self : Int, other : Int) -> Int = "%i32_shl"
-      #|#deprecated("Use infix operator `<<` instead")
+      #|#deprecated("Use infix operator `<<` instead", skip_current_package=false)
       #|#coverage.skip
       #|pub fn Int::shl(self : Int, other : Int) -> Int = "%i32_shl"
-      #|#deprecated("Use UInt type and infix operator `>>` instead")
+      #|#deprecated("Use UInt type and infix operator `>>` instead", skip_current_package=false)
       #|#coverage.skip
       #|pub fn Int::lsr(self : Int, other : Int) -> Int {
       #|  (self.reinterpret_as_uint() >> other).reinterpret_as_int()
       #|}
-      #|#deprecated("Use infix operator `>>` instead")
+      #|#deprecated("Use infix operator `>>` instead", skip_current_package=false)
       #|#coverage.skip
       #|pub fn Int::asr(self : Int, other : Int) -> Int = "%i32_shr"
-      #|#deprecated("Use infix operator `>>` instead")
+      #|#deprecated("Use infix operator `>>` instead", skip_current_package=false)
       #|#coverage.skip
       #|pub fn Int::shr(self : Int, other : Int) -> Int = "%i32_shr"
       #|pub fn Int::ctz(self : Int) -> Int = "%i32_ctz"
@@ -8953,7 +9260,7 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|pub fn Int::to_double(self : Int) -> Double = "%i32_to_f64"
       #|pub fn UInt::trunc_double(val : Double) -> UInt = "%f64.to_u32"
       #|pub fn Int::reinterpret_as_uint(self : Int) -> UInt = "%i32.to_u32_reinterpret"
-      #|#deprecated("Use `reinterpret_as_uint` instead")
+      #|#deprecated("Use `reinterpret_as_uint` instead", skip_current_package=false)
       #|#coverage.skip
       #|pub fn Int::to_uint(self : Int) -> UInt = "%i32.to_u32_reinterpret"
       #|pub fn Int::to_uint64(self : Int) -> UInt64 {
@@ -8978,7 +9285,7 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|pub fn Char::to_uint(self : Char) -> UInt {
       #|  self.to_int().reinterpret_as_uint()
       #|}
-      #|#deprecated("Use `Int::unsafe_to_char` instead, and use `Int::to_char` for safe conversion")
+      #|#deprecated("Use `Int::unsafe_to_char` instead, and use `Int::to_char` for safe conversion", skip_current_package=false)
       #|pub fn Char::from_int(val : Int) -> Char = "%char_from_int"
       #|pub impl Eq for Char with equal(self : Char, other : Char) -> Bool = "%char_eq"
       #|pub impl Compare for Char with compare(self, other) = "%char_compare"
@@ -8990,6 +9297,7 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|#alias("_[_]")
       #|pub fn Bytes::at(self : Bytes, idx : Int) -> Byte = "%bytes_get"
       #|#internal(unsafe, "Panic if index is out of bounds")
+      #|#doc(hidden)
       #|pub fn Bytes::unsafe_get(self : Bytes, idx : Int) -> Byte = "%bytes.unsafe_get"
       #|pub fn Bytes::length(self : Bytes) -> Int = "%bytes_length"
       #|pub fn Bytes::make(len : Int, init : Byte) -> Bytes {
@@ -9017,8 +9325,10 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|#alias("_[_]")
       #|pub fn[T] FixedArray::at(self : FixedArray[T], idx : Int) -> T = "%fixedarray.get"
       #|#internal(unsafe, "Panic if index is out of bounds")
+      #|#doc(hidden)
       #|pub fn[T] FixedArray::unsafe_get(self : FixedArray[T], idx : Int) -> T = "%fixedarray.unsafe_get"
       #|#internal(unsafe, "Panic if index is out of bounds")
+      #|#doc(hidden)
       #|pub fn[T] FixedArray::unsafe_set(
       #|  self : FixedArray[T],
       #|  idx : Int,
@@ -9034,6 +9344,7 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|#alias("_[_]")
       #|pub fn String::at(self : String, idx : Int) -> Int = "%string_get"
       #|#internal(unsafe, "Panic if index is out of bounds.")
+      #|#doc(hidden)
       #|pub fn String::unsafe_charcode_at(self : String, idx : Int) -> Int = "%string.unsafe_get"
       #|pub impl Add for String with add(self, other) = "%string_add"
       #|pub impl Eq for String with equal(self : String, other : String) -> Bool = "%string_eq"
@@ -9047,7 +9358,7 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|  self.to_int().to_int64()
       #|}
       #|pub fn UInt::reinterpret_as_int(self : UInt) -> Int = "%u32.to_i32_reinterpret"
-      #|#deprecated("Use `reinterpret_as_int` instead")
+      #|#deprecated("Use `reinterpret_as_int` instead", skip_current_package=false)
       #|#coverage.skip
       #|pub fn UInt::to_int(self : UInt) -> Int = "%u32.to_i32_reinterpret"
       #|pub impl Add for UInt with add(self, other) = "%u32.add"
@@ -9066,16 +9377,16 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|pub impl BitOr for UInt with lor(self : UInt, other : UInt) -> UInt = "%u32.bitor"
       #|pub impl BitXOr for UInt with lxor(self : UInt, other : UInt) -> UInt = "%u32.bitxor"
       #|pub fn UInt::lnot(self : UInt) -> UInt = "%u32.bitnot"
-      #|#deprecated("Use infix operator `<<` instead")
+      #|#deprecated("Use infix operator `<<` instead", skip_current_package=false)
       #|#coverage.skip
       #|pub fn UInt::lsl(self : UInt, shift : Int) -> UInt = "%u32.shl"
-      #|#deprecated("Use infix operator `<<` instead")
+      #|#deprecated("Use infix operator `<<` instead", skip_current_package=false)
       #|#coverage.skip
       #|pub fn UInt::shl(self : UInt, shift : Int) -> UInt = "%u32.shl"
-      #|#deprecated("Use infix operator `>>` instead")
+      #|#deprecated("Use infix operator `>>` instead", skip_current_package=false)
       #|#coverage.skip
       #|pub fn UInt::lsr(self : UInt, shift : Int) -> UInt = "%u32.shr"
-      #|#deprecated("Use infix operator `>>` instead")
+      #|#deprecated("Use infix operator `>>` instead", skip_current_package=false)
       #|#coverage.skip
       #|pub fn UInt::shr(self : UInt, shift : Int) -> UInt = "%u32.shr"
       #|pub impl Shl for UInt with shl(self, shift) = "%u32.shl"
@@ -9090,22 +9401,6 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|  self.reinterpret_as_int().to_byte()
       #|}
       #|pub fn UInt::to_double(self : UInt) -> Double = "%u32.to_f64"
-      #|pub impl Neg for Float with neg(self) = "%f32.neg"
-      #|pub impl Add for Float with add(self, other) = "%f32.add"
-      #|pub impl Sub for Float with sub(self, other) = "%f32.sub"
-      #|pub impl Mul for Float with mul(self, other) = "%f32.mul"
-      #|pub impl Div for Float with div(self, other) = "%f32.div"
-      #|pub fn Float::sqrt(self : Float) -> Float = "%f32.sqrt"
-      #|pub impl Eq for Float with equal(self : Float, other : Float) -> Bool = "%f32.eq"
-      #|pub fn Float::op_neq(self : Float, other : Float) -> Bool = "%f32.ne"
-      #|pub impl Compare for Float with compare(self, other) = "%f32.compare"
-      #|pub impl Compare for Float with op_lt(x, y) = "%f32.lt"
-      #|pub impl Compare for Float with op_le(x, y) = "%f32.le"
-      #|pub impl Compare for Float with op_gt(x, y) = "%f32.gt"
-      #|pub impl Compare for Float with op_ge(x, y) = "%f32.ge"
-      #|pub fn Float::to_double(self : Float) -> Double = "%f32.to_f64"
-      #|pub fn Float::reinterpret_as_int(self : Float) -> Int = "%f32.to_i32_reinterpret"
-      #|pub fn Float::reinterpret_as_uint(self : Float) -> UInt = "%f32.to_i32_reinterpret"
       #|pub fn Int::to_float(self : Int) -> Float = "%i32.to_f32"
       #|pub fn Int::reinterpret_as_float(self : Int) -> Float = "%i32.to_f32_reinterpret"
       #|pub fn UInt::reinterpret_as_float(self : UInt) -> Float = "%i32.to_f32_reinterpret"
@@ -9163,7 +9458,6 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|    i += 1
       #|  }
       #|}
-      #|#intrinsic("%iter.reduce")
       #|#locals(f)
       #|pub fn[T, B] Iter::fold(
       #|  self : Iter[T],
@@ -9251,34 +9545,6 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|    }
       #|  }
       #|}
-      #|pub fn Float::until(
-      #|  self : Float,
-      #|  end : Float,
-      #|  step? : Float = 1.0,
-      #|  inclusive? : Bool = false,
-      #|) -> Iter[Float] {
-      #|  if step == 0.0 {
-      #|    return Iter::empty()
-      #|  }
-      #|  yield_ => {
-      #|    let mut i = self
-      #|    while (step > 0.0 && i < end) ||
-      #|          (step < 0.0 && i > end) ||
-      #|          (inclusive && i == end) {
-      #|      if yield_(i) is IterEnd {
-      #|        break IterEnd
-      #|      }
-      #|      let next = i + step
-      #|      if (step > 0.0 && next >= i) || (step < 0.0 && next <= i) {
-      #|        i = next
-      #|      } else {
-      #|        break IterContinue
-      #|      }
-      #|    } else {
-      #|      IterContinue
-      #|    }
-      #|  }
-      #|}
       #|pub fn Double::until(
       #|  self : Double,
       #|  end : Double,
@@ -9324,15 +9590,12 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|    })
       #|  }
       #|}
+      #|#alias(map_option, deprecated)
       #|pub fn[A, B] Iter::filter_map(self : Iter[A], f : (A) -> B?) -> Iter[B] {
       #|  yield_ => self.run(a => match f(a) {
       #|    Some(b) => yield_(b)
       #|    None => IterContinue
       #|  })
-      #|}
-      #|#deprecated("Use `Iter::filter_map` instead")
-      #|pub fn[A, B] Iter::map_option(self : Iter[A], f : (A) -> B?) -> Iter[B] {
-      #|  self.filter_map(f)
       #|}
       #|#intrinsic("%iter.flat_map")
       #|pub fn[T, R] Iter::flat_map(self : Iter[T], f : (T) -> Iter[R]) -> Iter[R] {
@@ -9435,11 +9698,11 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|  })
       #|  first
       #|}
-      #|#deprecated("Use `Iter::singleton(a) + self` instead")
+      #|#deprecated("Use `Iter::singleton(a) + self` instead", skip_current_package=false)
       #|pub fn[T] Iter::prepend(self : Iter[T], a : T) -> Iter[T] {
       #|  yield_ => if yield_(a) is IterContinue { self.run(yield_) } else { IterEnd }
       #|}
-      #|#deprecated("Use `self + Iter::singleton(a)` instead")
+      #|#deprecated("Use `self + Iter::singleton(a)` instead", skip_current_package=false)
       #|pub fn[T] Iter::append(self : Iter[T], a : T) -> Iter[T] {
       #|  yield_ => if self.run(yield_) is IterContinue { yield_(a) } else { IterEnd }
       #|}
@@ -9642,7 +9905,7 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|  (self.0)()
       #|}
       #|#locals(f)
-      #|#deprecated("write a loop instead.")
+      #|#deprecated("write a loop instead.", skip_current_package=false)
       #|pub fn[X] Iterator::run(
       #|  self : Iterator[X],
       #|  f : (X) -> IterResult,
@@ -9653,9 +9916,13 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|    IterContinue
       #|  }
       #|}
-      #|#deprecated("write a loop instead.")
+      #|#deprecated("write a loop instead.", skip_current_package=false)
       #|pub fn[X] Iterator::just_run(self : Iterator[X], f : (X) -> IterResult) -> Unit {
-      #|  self.run(f) |> ignore
+      #|  while self.next() is Some(x) {
+      #|    if f(x) is IterEnd {
+      #|      break
+      #|    }
+      #|  }
       #|}
       #|pub impl[X : Show] Show for Iterator[X] with output(self, logger) {
       #|  logger.write_string("[")
@@ -9946,7 +10213,11 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|  result
       #|}
       #|pub fn[X] Iterator::iter(self : Iterator[X]) -> Iter[X] {
-      #|  Iter::new(self.run(_))
+      #|  Iter::new(yield_ => while self.next() is Some(x) {
+      #|    guard yield_(x) is IterContinue else { break IterEnd }
+      #|  } else {
+      #|    IterContinue
+      #|  })
       #|}
       #|pub fn[X] Iterator::iterator(self : Iterator[X]) -> Iterator[X] {
       #|  self
@@ -10172,9 +10443,6 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|    Json::number(self)
       #|  }
       #|}
-      #|pub impl ToJson for Float with to_json(self : Float) -> Json {
-      #|  Json::number(self.to_double())
-      #|}
       #|pub impl ToJson for String with to_json(self : String) -> Json {
       #|  String(self)
       #|}
@@ -10268,14 +10536,16 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|    tail: -1,
       #|  }
       #|}
-      #|pub fn[K : Hash + Eq, V] Map::from_array(arr : Array[(K, V)]) -> Map[K, V] {
+      #|pub fn[K : Hash + Eq, V] Map::from_array(arr : ArrayView[(K, V)]) -> Map[K, V] {
       #|  let length = arr.length()
       #|  let mut capacity = length.next_power_of_two()
       #|  if length > calc_grow_threshold(capacity) {
       #|    capacity *= 2
       #|  }
       #|  let m = Map::new(capacity~)
-      #|  arr.each(e => m.set(e.0, e.1))
+      #|  for e in arr {
+      #|    m.set(e.0, e.1)
+      #|  }
       #|  m
       #|}
       #|#alias("_[_]=_")
@@ -10760,6 +11030,20 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|  }
       #|  other
       #|}
+      #|pub fn[K : Hash + Eq, V] Map::merge(
+      #|  self : Map[K, V],
+      #|  other : Map[K, V],
+      #|) -> Map[K, V] {
+      #|  let result = self.copy()
+      #|  result.merge_in_place(other)
+      #|  result
+      #|}
+      #|pub fn[K : Hash + Eq, V] Map::merge_in_place(
+      #|  self : Map[K, V],
+      #|  other : Map[K, V],
+      #|) -> Unit {
+      #|  other.each((k, v) => self.set(k, v))
+      #|}
       #|#locals(f)
       #|pub fn[K, V] Map::retain(self : Map[K, V], f : (K, V) -> Bool) -> Unit {
       #|  loop (self.head, false) {
@@ -10830,6 +11114,60 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|      value: new_value,
       #|    }
       #|    self.add_entry_to_tail(idx, entry)
+      #|  }
+      #|}
+      #|fn StringView::equal_to_string(self : Self, other : String) -> Bool {
+      #|  let str = self.str()
+      #|  let start = self.start()
+      #|  let end = self.end()
+      #|  let len = end - start
+      #|  guard len == other.length() else { return false }
+      #|  if physical_equal(str, other) && self.start() == 0 {
+      #|    return true
+      #|  }
+      #|  for i in 0..<len {
+      #|    guard str.unsafe_charcode_at(self.start() + i) ==
+      #|      other.unsafe_charcode_at(i) else {
+      #|      return false
+      #|    }
+      #|  }
+      #|  true
+      #|}
+      #|fn BytesView::equal_to_bytes(self : Self, other : Bytes) -> Bool {
+      #|  let self_len = self.len()
+      #|  let start = self.start()
+      #|  guard self_len == other.length() else { return false }
+      #|  for i in 0..<self_len {
+      #|    guard self.bytes().unsafe_get(i + start) == other.unsafe_get(i) else {
+      #|      return false
+      #|    }
+      #|  }
+      #|  true
+      #|}
+      #|pub fn[V] Map::get_from_bytes(map : Self[Bytes, V], key : BytesView) -> V? {
+      #|  let hash = key.hash()
+      #|  for i = 0, idx = hash & map.capacity_mask {
+      #|    guard map.entries[idx] is Some(entry) else { break None }
+      #|    if entry.hash == hash && key.equal_to_bytes(entry.key) {
+      #|      break Some(entry.value)
+      #|    }
+      #|    if i > entry.psl {
+      #|      break None
+      #|    }
+      #|    continue i + 1, (idx + 1) & map.capacity_mask
+      #|  }
+      #|}
+      #|pub fn[V] Map::get_from_string(map : Self[String, V], key : StringView) -> V? {
+      #|  let hash = key.hash()
+      #|  for i = 0, idx = hash & map.capacity_mask {
+      #|    guard map.entries[idx] is Some(entry) else { break None }
+      #|    if entry.hash == hash && key.equal_to_string(entry.key) {
+      #|      break Some(entry.value)
+      #|    }
+      #|    if i > entry.psl {
+      #|      break None
+      #|    }
+      #|    continue i + 1, (idx + 1) & map.capacity_mask
       #|  }
       #|}
     ),
@@ -10982,77 +11320,328 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|    Some(x) => x
       #|  }
       #|}
+      #|#alias(or, deprecated)
+      #|pub fn[T] Option::unwrap_or(self : T?, default : T) -> T {
+      #|  match self {
+      #|    None => default
+      #|    Some(t) => t
+      #|  }
+      #|}
+      #|#alias(or_else, deprecated)
+      #|pub fn[T] Option::unwrap_or_else(
+      #|  self : T?,
+      #|  default : () -> T raise?,
+      #|) -> T raise? {
+      #|  match self {
+      #|    None => default()
+      #|    Some(t) => t
+      #|  }
+      #|}
+      #|#alias(or_default, deprecated)
+      #|pub fn[T : Default] Option::unwrap_or_default(self : T?) -> T {
+      #|  match self {
+      #|    None => T::default()
+      #|    Some(t) => t
+      #|  }
+      #|}
+      #|pub impl[X : Compare] Compare for X? with compare(self, other) {
+      #|  match (self, other) {
+      #|    (Some(x), Some(y)) => x.compare(y)
+      #|    (Some(_), None) => 1
+      #|    (None, Some(_)) => -1
+      #|    (None, None) => 0
+      #|  }
+      #|}
+      #|#alias(or_error, deprecated)
+      #|pub fn[T, Err : Error] Option::unwrap_or_error(
+      #|  self : T?,
+      #|  err : Err,
+      #|) -> T raise Err {
+      #|  match self {
+      #|    Some(v) => v
+      #|    None => raise err
+      #|  }
+      #|}
+      #|pub impl[X] Default for X? with default() {
+      #|  None
+      #|}
+      #|pub fn[T] Option::iter(self : T?) -> Iter[T] {
+      #|  match self {
+      #|    Some(v) => Iter::singleton(v)
+      #|    None => Iter::empty()
+      #|  }
+      #|}
+      #|pub fn[T] Option::iterator(self : T?) -> Iterator[T] {
+      #|  match self {
+      #|    Some(v) => Iterator::singleton(v)
+      #|    None => Iterator::empty()
+      #|  }
+      #|}
+      #|pub fn[T, U] Option::map(self : T?, f : (T) -> U raise?) -> U? raise? {
+      #|  match self {
+      #|    Some(t) => Some(f(t))
+      #|    None => None
+      #|  }
+      #|}
+      #|pub fn[T, U] Option::map_or(
+      #|  self : T?,
+      #|  default : U,
+      #|  f : (T) -> U raise?,
+      #|) -> U raise? {
+      #|  match self {
+      #|    None => default
+      #|    Some(x) => f(x)
+      #|  }
+      #|}
+      #|pub fn[T, U] Option::map_or_else(
+      #|  self : T?,
+      #|  default : () -> U raise?,
+      #|  f : (T) -> U raise?,
+      #|) -> U raise? {
+      #|  match self {
+      #|    None => default()
+      #|    Some(x) => f(x)
+      #|  }
+      #|}
+      #|pub fn[T, U] Option::bind(self : T?, f : (T) -> U? raise?) -> U? raise? {
+      #|  match self {
+      #|    Some(t) => f(t)
+      #|    None => None
+      #|  }
+      #|}
+      #|#deprecated("use `option.bind(x => x)` instead", skip_current_package=false)
+      #|pub fn[T] Option::flatten(self : T??) -> T? {
+      #|  match self {
+      #|    Some(inner) => inner
+      #|    None => None
+      #|  }
+      #|}
+      #|#deprecated("use `x is None` instead", skip_current_package=false)
+      #|pub fn[T] Option::is_empty(self : T?) -> Bool {
+      #|  self is None
+      #|}
+      #|pub fn[T] Option::filter(self : T?, f : (T) -> Bool raise?) -> T? raise? {
+      #|  match self {
+      #|    Some(t) => if f(t) { self } else { None }
+      #|    None => None
+      #|  }
+      #|}
+      #|#deprecated("use `x is Some(_)` instead", skip_current_package=false)
+      #|pub fn[T] Option::is_some(self : T?) -> Bool {
+      #|  self is Some(_)
+      #|}
+      #|#deprecated("use `x is None` instead", skip_current_package=false)
+      #|pub fn[T] Option::is_none(self : T?) -> Bool {
+      #|  self is None
+      #|}
     ),
-    "output.mbt": (
-      #|fn Int64::output(self : Int64, logger : &Logger, radix? : Int = 10) -> Unit {
-      #|  fn abs(n : Int64) -> Int64 {
-      #|    if n < 0L {
-      #|      0L - n
-      #|    } else {
-      #|      n
-      #|    }
-      #|  }
-      #|  if self < 0L {
-      #|    logger.write_char('-')
-      #|  }
-      #|  let radix : Int64 = radix.to_int64()
-      #|  fn write_digits(num : Int64) {
-      #|    let num2 = num / radix
-      #|    if num2 != 0L {
-      #|      write_digits(num2)
-      #|    }
-      #|    logger.write_char(ALPHABET.at(abs(num % radix).to_int()).unsafe_to_char())
-      #|  }
-      #|  write_digits(abs(self))
+    "readonlyarray.mbt": (
+      #|fn[T] ReadOnlyArray::unsafe_reinterpret_to_fixed_array(
+      #|  self : ReadOnlyArray[T],
+      #|) -> FixedArray[T] = "%identity"
+      #|fn[T] unsafe_reinterpret_from_fixed_array(
+      #|  arr : FixedArray[T],
+      #|) -> ReadOnlyArray[T] = "%identity"
+      #|#alias("_[_]")
+      #|pub fn[T] ReadOnlyArray::at(self : ReadOnlyArray[T], index : Int) -> T {
+      #|  self.unsafe_reinterpret_to_fixed_array()[index]
       #|}
-      #|fn Int::output(self : Int, logger : &Logger, radix? : Int = 10) -> Unit {
-      #|  logger.write_string(self.to_string(radix~))
+      #|pub fn[T] ReadOnlyArray::from_array(array : ArrayView[T]) -> ReadOnlyArray[T] {
+      #|  unsafe_reinterpret_from_fixed_array(FixedArray::from_array(array))
       #|}
-      #|fn UInt::output(self : UInt, logger : &Logger, radix? : Int = 10) -> Unit {
-      #|  let radix : UInt = radix.reinterpret_as_uint()
-      #|  fn write_digits(num : UInt) {
-      #|    let num2 = num / radix
-      #|    if num2 != 0U {
-      #|      write_digits(num2)
-      #|    }
-      #|    logger.write_char(
-      #|      ALPHABET.at((num % radix).reinterpret_as_int()).unsafe_to_char(),
-      #|    )
+      #|pub fn[T] ReadOnlyArray::from_iter(iter : Iter[T]) -> ReadOnlyArray[T] {
+      #|  unsafe_reinterpret_from_fixed_array(FixedArray::from_iter(iter))
+      #|}
+      #|pub fn[T] ReadOnlyArray::from_iterator(iter : Iterator[T]) -> ReadOnlyArray[T] {
+      #|  unsafe_reinterpret_from_fixed_array(FixedArray::from_iterator(iter))
+      #|}
+      #|pub fn[T] ReadOnlyArray::makei(
+      #|  length : Int,
+      #|  value : (Int) -> T raise?,
+      #|) -> ReadOnlyArray[T] raise? {
+      #|  unsafe_reinterpret_from_fixed_array(FixedArray::makei(length, value))
+      #|}
+      #|pub fn[T] ReadOnlyArray::get(self : ReadOnlyArray[T], index : Int) -> T? {
+      #|  self.unsafe_reinterpret_to_fixed_array().get(index)
+      #|}
+      #|pub fn[T] ReadOnlyArray::length(self : ReadOnlyArray[T]) -> Int {
+      #|  self.unsafe_reinterpret_to_fixed_array().length()
+      #|}
+      #|pub fn[T] ReadOnlyArray::is_empty(self : ReadOnlyArray[T]) -> Bool {
+      #|  self.unsafe_reinterpret_to_fixed_array().is_empty()
+      #|}
+      #|pub fn[T] ReadOnlyArray::last(self : ReadOnlyArray[T]) -> T? {
+      #|  self.unsafe_reinterpret_to_fixed_array().last()
+      #|}
+      #|pub fn[T] ReadOnlyArray::iter(self : ReadOnlyArray[T]) -> Iter[T] {
+      #|  self.unsafe_reinterpret_to_fixed_array().iter()
+      #|}
+      #|pub fn[T] ReadOnlyArray::iterator(self : ReadOnlyArray[T]) -> Iterator[T] {
+      #|  self.unsafe_reinterpret_to_fixed_array().iterator()
+      #|}
+      #|pub fn[T] ReadOnlyArray::iter2(self : ReadOnlyArray[T]) -> Iter2[Int, T] {
+      #|  self.unsafe_reinterpret_to_fixed_array().iter2()
+      #|}
+      #|pub fn[T] ReadOnlyArray::each(
+      #|  self : ReadOnlyArray[T],
+      #|  f : (T) -> Unit raise?,
+      #|) -> Unit raise? {
+      #|  self.unsafe_reinterpret_to_fixed_array().each(f)
+      #|}
+      #|pub fn[T] ReadOnlyArray::eachi(
+      #|  self : ReadOnlyArray[T],
+      #|  f : (Int, T) -> Unit raise?,
+      #|) -> Unit raise? {
+      #|  self.unsafe_reinterpret_to_fixed_array().eachi(f)
+      #|}
+      #|pub fn[T] ReadOnlyArray::rev_each(
+      #|  self : ReadOnlyArray[T],
+      #|  f : (T) -> Unit raise?,
+      #|) -> Unit raise? {
+      #|  self.unsafe_reinterpret_to_fixed_array().rev_each(f)
+      #|}
+      #|pub fn[T] ReadOnlyArray::rev_eachi(
+      #|  self : ReadOnlyArray[T],
+      #|  f : (Int, T) -> Unit raise?,
+      #|) -> Unit raise? {
+      #|  self.unsafe_reinterpret_to_fixed_array().rev_eachi(f)
+      #|}
+      #|pub fn[T, U] ReadOnlyArray::map(
+      #|  self : ReadOnlyArray[T],
+      #|  f : (T) -> U raise?,
+      #|) -> ReadOnlyArray[U] raise? {
+      #|  unsafe_reinterpret_from_fixed_array(
+      #|    self.unsafe_reinterpret_to_fixed_array().map(f),
+      #|  )
+      #|}
+      #|pub fn[T, U] ReadOnlyArray::mapi(
+      #|  self : ReadOnlyArray[T],
+      #|  f : (Int, T) -> U raise?,
+      #|) -> ReadOnlyArray[U] raise? {
+      #|  unsafe_reinterpret_from_fixed_array(
+      #|    self.unsafe_reinterpret_to_fixed_array().mapi(f),
+      #|  )
+      #|}
+      #|pub fn[A, B] ReadOnlyArray::fold(
+      #|  self : ReadOnlyArray[A],
+      #|  init~ : B,
+      #|  f : (B, A) -> B raise?,
+      #|) -> B raise? {
+      #|  self.unsafe_reinterpret_to_fixed_array().fold(init~, f)
+      #|}
+      #|pub fn[A, B] ReadOnlyArray::rev_fold(
+      #|  self : ReadOnlyArray[A],
+      #|  init~ : B,
+      #|  f : (B, A) -> B raise?,
+      #|) -> B raise? {
+      #|  self.unsafe_reinterpret_to_fixed_array().rev_fold(init~, f)
+      #|}
+      #|pub fn[A, B] ReadOnlyArray::foldi(
+      #|  self : ReadOnlyArray[A],
+      #|  init~ : B,
+      #|  f : (Int, B, A) -> B raise?,
+      #|) -> B raise? {
+      #|  self.unsafe_reinterpret_to_fixed_array().foldi(init~, f)
+      #|}
+      #|pub fn[A, B] ReadOnlyArray::rev_foldi(
+      #|  self : ReadOnlyArray[A],
+      #|  init~ : B,
+      #|  f : (Int, B, A) -> B raise?,
+      #|) -> B raise? {
+      #|  self.unsafe_reinterpret_to_fixed_array().rev_foldi(init~, f)
+      #|}
+      #|pub fn[T] ReadOnlyArray::rev(self : ReadOnlyArray[T]) -> ReadOnlyArray[T] {
+      #|  unsafe_reinterpret_from_fixed_array(
+      #|    self.unsafe_reinterpret_to_fixed_array().rev(),
+      #|  )
+      #|}
+      #|pub fn[T : Eq] ReadOnlyArray::search(
+      #|  self : ReadOnlyArray[T],
+      #|  value : T,
+      #|) -> Int? {
+      #|  self.unsafe_reinterpret_to_fixed_array().search(value)
+      #|}
+      #|pub fn[T : Eq] ReadOnlyArray::contains(
+      #|  self : ReadOnlyArray[T],
+      #|  value : T,
+      #|) -> Bool {
+      #|  self.unsafe_reinterpret_to_fixed_array().contains(value)
+      #|}
+      #|pub fn[T : Eq] ReadOnlyArray::starts_with(
+      #|  self : ReadOnlyArray[T],
+      #|  prefix : ReadOnlyArray[T],
+      #|) -> Bool {
+      #|  self
+      #|  .unsafe_reinterpret_to_fixed_array()
+      #|  .starts_with(prefix.unsafe_reinterpret_to_fixed_array())
+      #|}
+      #|pub fn[T : Eq] ReadOnlyArray::ends_with(
+      #|  self : ReadOnlyArray[T],
+      #|  suffix : ReadOnlyArray[T],
+      #|) -> Bool {
+      #|  self
+      #|  .unsafe_reinterpret_to_fixed_array()
+      #|  .ends_with(suffix.unsafe_reinterpret_to_fixed_array())
+      #|}
+      #|pub fn[T] ReadOnlyArray::all(
+      #|  self : ReadOnlyArray[T],
+      #|  f : (T) -> Bool raise?,
+      #|) -> Bool raise? {
+      #|  self.unsafe_reinterpret_to_fixed_array().all(f)
+      #|}
+      #|pub fn[T] ReadOnlyArray::any(
+      #|  self : ReadOnlyArray[T],
+      #|  f : (T) -> Bool raise?,
+      #|) -> Bool raise? {
+      #|  self.unsafe_reinterpret_to_fixed_array().any(f)
+      #|}
+      #|pub fn[T : Compare] ReadOnlyArray::binary_search(
+      #|  self : ReadOnlyArray[T],
+      #|  value : T,
+      #|) -> Result[Int, Int] {
+      #|  self.unsafe_reinterpret_to_fixed_array().binary_search(value)
+      #|}
+      #|pub fn[T] ReadOnlyArray::binary_search_by(
+      #|  self : ReadOnlyArray[T],
+      #|  cmp : (T) -> Int raise?,
+      #|) -> Result[Int, Int] raise? {
+      #|  self.unsafe_reinterpret_to_fixed_array().binary_search_by(cmp)
+      #|}
+      #|#alias("_[_:_]")
+      #|pub fn[T] ReadOnlyArray::sub(
+      #|  self : ReadOnlyArray[T],
+      #|  start? : Int = 0,
+      #|  end? : Int,
+      #|) -> ArrayView[T] {
+      #|  match end {
+      #|    None => self.unsafe_reinterpret_to_fixed_array().sub(start~)
+      #|    Some(e) => self.unsafe_reinterpret_to_fixed_array().sub(start~, end=e)
       #|  }
-      #|  write_digits(self)
       #|}
-      #|fn UInt64::output(self : UInt64, logger : &Logger, radix? : Int = 10) -> Unit {
-      #|  let radix : UInt64 = radix.to_uint64()
-      #|  fn write_digits(num : UInt64) {
-      #|    let num2 = num / radix
-      #|    if num2 != 0UL {
-      #|      write_digits(num2)
-      #|    }
-      #|    logger.write_char(ALPHABET.at((num % radix).to_int()).unsafe_to_char())
-      #|  }
-      #|  write_digits(self)
+      #|pub fn ReadOnlyArray::join(
+      #|  self : ReadOnlyArray[String],
+      #|  separator : StringView,
+      #|) -> String {
+      #|  self.unsafe_reinterpret_to_fixed_array().join(separator)
       #|}
-      #|fn Int64::output_size_hint(radix? : Int = 10) -> Int {
-      #|  match radix {
-      #|    2..<7 => 70 // max length is 64, 70 is enough
-      #|    8..<15 => 30 // max length is 23, 30 is enough
-      #|    16..=36 => 20 // max length is 17, 20 is enough
-      #|    _ => abort("radix must be between 2 and 36")
-      #|  }
+      #|pub impl[T] Default for ReadOnlyArray[T] with default() {
+      #|  unsafe_reinterpret_from_fixed_array(FixedArray::default())
       #|}
-      #|fn Int::output_size_hint(radix? : Int = 10) -> Int {
-      #|  match radix {
-      #|    2..<7 => 36 // max length is 32, 36 is enough
-      #|    8..<15 => 18 // max length is 12, 18 is enough
-      #|    16..=36 => 10 // max length is 8, 10 is enough
-      #|    _ => abort("radix must be between 2 and 36")
-      #|  }
+      #|pub impl[T : Show] Show for ReadOnlyArray[T] with output(self, logger) {
+      #|  self.unsafe_reinterpret_to_fixed_array().output(logger)
       #|}
-      #|fn UInt::output_size_hint(radix? : Int = 10) -> Int {
-      #|  Int::output_size_hint(radix~)
+      #|pub impl[T : ToJson] ToJson for ReadOnlyArray[T] with to_json(self) {
+      #|  self.unsafe_reinterpret_to_fixed_array().to_json()
       #|}
-      #|fn UInt64::output_size_hint(radix? : Int = 10) -> Int {
-      #|  Int64::output_size_hint(radix~)
+      #|pub impl[T : Eq] Eq for ReadOnlyArray[T] with equal(self, other) {
+      #|  self
+      #|  .unsafe_reinterpret_to_fixed_array()
+      #|  .equal(other.unsafe_reinterpret_to_fixed_array())
+      #|}
+      #|pub impl[T : Compare] Compare for ReadOnlyArray[T] with compare(self, other) {
+      #|  self
+      #|  .unsafe_reinterpret_to_fixed_array()
+      #|  .compare(other.unsafe_reinterpret_to_fixed_array())
       #|}
     ),
     "result.mbt": (
@@ -11076,16 +11665,16 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|  }
       #|}
       #|pub impl Show for Int with output(self, logger) {
-      #|  self.output(logger)
+      #|  logger.write_string(self.to_string())
       #|}
       #|pub impl Show for Int64 with output(self, logger) {
-      #|  self.output(logger)
+      #|  logger.write_string(self.to_string())
       #|}
       #|pub impl Show for UInt with output(self, logger) {
-      #|  self.output(logger)
+      #|  logger.write_string(self.to_string())
       #|}
       #|pub impl Show for UInt64 with output(self, logger) {
-      #|  self.output(logger)
+      #|  logger.write_string(self.to_string())
       #|}
       #|pub impl Show for Byte with output(self, logger) {
       #|  logger.write_string(self.to_string())
@@ -11094,7 +11683,7 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|  logger.write_string(self.to_string())
       #|}
       #|pub impl Show for UInt16 with output(self, logger) {
-      #|  self.to_int().output(logger)
+      #|  logger.write_string(self.to_string())
       #|}
       #|pub fn Byte::to_hex(b : Byte) -> String {
       #|  fn to_hex_digit(i : Byte) -> Char {
@@ -11186,9 +11775,6 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|    Err(e) => logger..write_string("Err(")..write_object(e)..write_string(")")
       #|  }
       #|}
-      #|pub impl[X : Show] Show for Ref[X] with output(self, logger) {
-      #|  logger..write_string("{val: ")..write_object(self.val)..write_string("}")
-      #|}
       #|pub impl[X : Show] Show for FixedArray[X] with output(self, logger) {
       #|  logger.write_iter(self.iter())
       #|}
@@ -11265,6 +11851,12 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|  guard start >= 0 && start <= end && end <= len
       #|  self.unsafe_substring(start~, end~)
       #|}
+      #|pub fn String::suffixes(
+      #|  self : String,
+      #|  include_empty? : Bool = false,
+      #|) -> Iterator[StringView] {
+      #|  self[:].suffixes(include_empty~)
+      #|}
       #|test "substring/empty" {
       #|  let s = "test"
       #|  inspect(s.substring(start=2, end=2), content="")
@@ -11295,6 +11887,1448 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|  ignore("hello".substring(start=6, end=4))
       #|  ignore("hello".substring(start=0, end=6))
       #|}
+      #|pub impl Compare for String with compare(self, other) {
+      #|  let len = self.length()
+      #|  match len.compare(other.length()) {
+      #|    0 => {
+      #|      for i in 0..<len {
+      #|        let order = self
+      #|          .unsafe_charcode_at(i)
+      #|          .compare(other.unsafe_charcode_at(i))
+      #|        if order != 0 {
+      #|          return order
+      #|        }
+      #|      }
+      #|      0
+      #|    }
+      #|    order => order
+      #|  }
+      #|}
+      #|pub impl Default for String with default() {
+      #|  ""
+      #|}
+      #|#deprecated("Check `@encoding/utf8.encode`", skip_current_package=false)
+      #|pub fn String::to_bytes(self : String) -> Bytes {
+      #|  let array = FixedArray::make(self.length() * 2, Byte::default())
+      #|  array.blit_from_string(0, self, 0, self.length())
+      #|  array |> unsafe_to_bytes
+      #|}
+      #|fn unsafe_to_bytes(array : FixedArray[Byte]) -> Bytes = "%identity"
+      #|pub fn String::to_array(self : String) -> Array[Char] {
+      #|  self
+      #|  .iter()
+      #|  .fold(init=Array::new(capacity=self.length()), (rv, c) => {
+      #|    rv.push(c)
+      #|    rv
+      #|  })
+      #|}
+      #|pub fn String::iter(self : String) -> Iter[Char] {
+      #|  Iter::new(yield_ => {
+      #|    let len = self.length()
+      #|    for index in 0..<len {
+      #|      let c1 = self.unsafe_charcode_at(index)
+      #|      if c1.is_leading_surrogate() && index + 1 < len {
+      #|        let c2 = self.unsafe_charcode_at(index + 1)
+      #|        if c2.is_trailing_surrogate() {
+      #|          let c = code_point_of_surrogate_pair(c1, c2)
+      #|          guard yield_(c) is IterContinue else { break IterEnd }
+      #|          continue index + 2
+      #|        }
+      #|      }
+      #|      guard yield_(c1.unsafe_to_char()) is IterContinue else { break IterEnd }
+      #|    } else {
+      #|      IterContinue
+      #|    }
+      #|  })
+      #|}
+      #|pub fn String::iterator(self : String) -> Iterator[Char] {
+      #|  let len = self.length()
+      #|  let mut index = 0
+      #|  Iterator::new(fn() {
+      #|    guard index < len else { None }
+      #|    let c1 = self.unsafe_charcode_at(index)
+      #|    if c1.is_leading_surrogate() && index + 1 < len {
+      #|      let c2 = self.unsafe_charcode_at(index + 1)
+      #|      if c2.is_trailing_surrogate() {
+      #|        let c = code_point_of_surrogate_pair(c1, c2)
+      #|        index += 2
+      #|        return Some(c)
+      #|      }
+      #|    }
+      #|    index += 1
+      #|    Some(c1.unsafe_to_char())
+      #|  })
+      #|}
+      #|pub fn String::iter2(self : String) -> Iter2[Int, Char] {
+      #|  Iter2::new(yield_ => {
+      #|    let len = self.length()
+      #|    for index = 0, n = 0; index < len; index = index + 1, n = n + 1 {
+      #|      let c1 = self.unsafe_charcode_at(index)
+      #|      if c1.is_leading_surrogate() && index + 1 < len {
+      #|        let c2 = self.unsafe_charcode_at(index + 1)
+      #|        if c2.is_trailing_surrogate() {
+      #|          let c = code_point_of_surrogate_pair(c1, c2)
+      #|          guard yield_(n, c) is IterContinue else { break IterEnd }
+      #|          continue index + 2, n + 1
+      #|        }
+      #|      }
+      #|      guard yield_(n, c1.unsafe_to_char()) is IterContinue else {
+      #|        break IterEnd
+      #|      }
+      #|    } else {
+      #|      IterContinue
+      #|    }
+      #|  })
+      #|}
+      #|pub fn String::iterator2(self : String) -> Iterator2[Int, Char] {
+      #|  self.iterator().iterator2()
+      #|}
+      #|pub fn String::rev_iter(self : String) -> Iter[Char] {
+      #|  Iter::new(yield_ => {
+      #|    let len = self.length()
+      #|    for index = len - 1; index >= 0; index = index - 1 {
+      #|      let c1 = self.unsafe_charcode_at(index)
+      #|      if c1.is_trailing_surrogate() && index - 1 >= 0 {
+      #|        let c2 = self.unsafe_charcode_at(index - 1)
+      #|        if c2.is_leading_surrogate() {
+      #|          let c = code_point_of_surrogate_pair(c2, c1)
+      #|          guard yield_(c) is IterContinue else { break IterEnd }
+      #|          continue index - 2
+      #|        }
+      #|      }
+      #|      guard yield_(c1.unsafe_to_char()) is IterContinue else { break IterEnd }
+      #|    } else {
+      #|      IterContinue
+      #|    }
+      #|  })
+      #|}
+      #|pub fn String::rev_iterator(self : String) -> Iterator[Char] {
+      #|  let len = self.length()
+      #|  let mut index = len
+      #|  Iterator::new(fn() {
+      #|    guard index > 0 else { None }
+      #|    index -= 1
+      #|    let c1 = self.unsafe_charcode_at(index)
+      #|    if c1.is_trailing_surrogate() && index - 1 >= 0 {
+      #|      let c2 = self.unsafe_charcode_at(index - 1)
+      #|      if c2.is_leading_surrogate() {
+      #|        index -= 1
+      #|        return Some(code_point_of_surrogate_pair(c2, c1))
+      #|      }
+      #|    }
+      #|    Some(c1.unsafe_to_char())
+      #|  })
+      #|}
+      #|fn String::offset_of_nth_char_forward(
+      #|  self : String,
+      #|  n : Int,
+      #|  start_offset~ : Int,
+      #|  end_offset~ : Int,
+      #|) -> Int? {
+      #|  guard start_offset >= 0 && start_offset <= end_offset else {
+      #|    abort("Invalid start index")
+      #|  }
+      #|  let mut utf16_offset = start_offset
+      #|  let mut char_count = 0
+      #|  while utf16_offset < end_offset && char_count < n {
+      #|    let c = self.unsafe_charcode_at(utf16_offset)
+      #|    if c.is_leading_surrogate() {
+      #|      utf16_offset = utf16_offset + 2
+      #|    } else {
+      #|      utf16_offset = utf16_offset + 1
+      #|    }
+      #|    char_count = char_count + 1
+      #|  }
+      #|  if char_count < n || utf16_offset >= end_offset {
+      #|    None
+      #|  } else {
+      #|    Some(utf16_offset)
+      #|  }
+      #|}
+      #|fn String::offset_of_nth_char_backward(
+      #|  self : String,
+      #|  n : Int,
+      #|  start_offset~ : Int,
+      #|  end_offset~ : Int,
+      #|) -> Int? {
+      #|  let mut char_count = 0
+      #|  let mut utf16_offset = end_offset
+      #|  while utf16_offset - 1 >= start_offset && char_count < n {
+      #|    let c = self.unsafe_charcode_at(utf16_offset - 1)
+      #|    if c.is_trailing_surrogate() {
+      #|      utf16_offset = utf16_offset - 2
+      #|    } else {
+      #|      utf16_offset = utf16_offset - 1
+      #|    }
+      #|    char_count = char_count + 1
+      #|  }
+      #|  if char_count < n || utf16_offset < start_offset {
+      #|    None
+      #|  } else {
+      #|    Some(utf16_offset)
+      #|  }
+      #|}
+      #|pub fn String::offset_of_nth_char(
+      #|  self : String,
+      #|  i : Int,
+      #|  start_offset? : Int = 0,
+      #|  end_offset? : Int,
+      #|) -> Int? {
+      #|  let end_offset = if end_offset is Some(o) { o } else { self.length() }
+      #|  if i >= 0 {
+      #|    self.offset_of_nth_char_forward(i, start_offset~, end_offset~)
+      #|  } else {
+      #|    self.offset_of_nth_char_backward(-i, start_offset~, end_offset~)
+      #|  }
+      #|}
+      #|pub fn String::char_length_eq(
+      #|  self : String,
+      #|  len : Int,
+      #|  start_offset? : Int = 0,
+      #|  end_offset? : Int,
+      #|) -> Bool {
+      #|  let end_offset = if end_offset is Some(o) { o } else { self.length() }
+      #|  for index = start_offset, count = 0
+      #|      index < end_offset && count < len
+      #|      index = index + 1, count = count + 1 {
+      #|    let c1 = self.unsafe_charcode_at(index)
+      #|    if c1.is_leading_surrogate() && index + 1 < end_offset {
+      #|      let c2 = self.unsafe_charcode_at(index + 1)
+      #|      if c2.is_trailing_surrogate() {
+      #|        continue index + 2, count + 1
+      #|      } else {
+      #|        abort("invalid surrogate pair")
+      #|      }
+      #|    }
+      #|  } else {
+      #|    count == len && index == end_offset
+      #|  }
+      #|}
+      #|pub fn String::char_length_ge(
+      #|  self : String,
+      #|  len : Int,
+      #|  start_offset? : Int = 0,
+      #|  end_offset? : Int,
+      #|) -> Bool {
+      #|  let end_offset = if end_offset is Some(o) { o } else { self.length() }
+      #|  for index = start_offset, count = 0
+      #|      index < end_offset && count < len
+      #|      index = index + 1, count = count + 1 {
+      #|    let c1 = self.unsafe_charcode_at(index)
+      #|    if c1.is_leading_surrogate() && index + 1 < end_offset {
+      #|      let c2 = self.unsafe_charcode_at(index + 1)
+      #|      if c2.is_trailing_surrogate() {
+      #|        continue index + 2, count + 1
+      #|      } else {
+      #|        abort("invalid surrogate pair")
+      #|      }
+      #|    }
+      #|  } else {
+      #|    count >= len
+      #|  }
+      #|}
+      #|pub fn String::lexical_compare(self : String, other : String) -> Int {
+      #|  self[:].lexical_compare(other[:])
+      #|}
+      #|pub fn String::from_array(chars : ArrayView[Char]) -> String {
+      #|  let buf = StringBuilder::new(size_hint=chars.length() * 4)
+      #|  for c in chars {
+      #|    buf.write_char(c)
+      #|  }
+      #|  buf.to_string()
+      #|}
+      #|pub fn String::from_iter(iter : Iter[Char]) -> String {
+      #|  let buf = StringBuilder::new()
+      #|  for c in iter {
+      #|    buf.write_char(c)
+      #|  }
+      #|  buf.to_string()
+      #|}
+      #|pub fn String::from_iterator(iter : Iterator[Char]) -> String {
+      #|  let buf = StringBuilder::new()
+      #|  for c in iter {
+      #|    buf.write_char(c)
+      #|  }
+      #|  buf.to_string()
+      #|}
+    ),
+    "string_methods.mbt": (
+      #|pub fn StringView::find(self : StringView, str : StringView) -> Int? {
+      #|  if str.length() <= 4 {
+      #|    brute_force_find(self, str)
+      #|  } else {
+      #|    boyer_moore_horspool_find(self, str)
+      #|  }
+      #|}
+      #|fn brute_force_find(haystack : StringView, needle : StringView) -> Int? {
+      #|  let haystack_len = haystack.length()
+      #|  let needle_len = needle.length()
+      #|  guard needle_len > 0 else { return Some(0) }
+      #|  guard haystack_len >= needle_len else { return None }
+      #|  let needle_first = needle.unsafe_charcode_at(0)
+      #|  let forward_len = haystack_len - needle_len
+      #|  let mut i = 0
+      #|  while i <= forward_len {
+      #|    while i <= forward_len && haystack.unsafe_charcode_at(i) != needle_first {
+      #|      i += 1
+      #|    }
+      #|    if i <= forward_len {
+      #|      for j in 1..<needle_len {
+      #|        if haystack.unsafe_charcode_at(i + j) != needle.unsafe_charcode_at(j) {
+      #|          break
+      #|        }
+      #|      } else {
+      #|        return Some(i)
+      #|      }
+      #|      i += 1
+      #|    }
+      #|  }
+      #|  None
+      #|}
+      #|fn boyer_moore_horspool_find(
+      #|  haystack : StringView,
+      #|  needle : StringView,
+      #|) -> Int? {
+      #|  let haystack_len = haystack.length()
+      #|  let needle_len = needle.length()
+      #|  guard needle_len > 0 else { return Some(0) }
+      #|  guard haystack_len >= needle_len else { return None }
+      #|  let skip_table = FixedArray::make(1 << 8, needle_len)
+      #|  for i in 0..<(needle_len - 1) {
+      #|    skip_table[needle.unsafe_charcode_at(i) & 0xFF] = needle_len - 1 - i
+      #|  }
+      #|  for i = 0
+      #|      i <= haystack_len - needle_len
+      #|      i = i + skip_table[haystack.unsafe_charcode_at(i + needle_len - 1) & 0xFF] {
+      #|    for j in 0..=(needle_len - 1) {
+      #|      if haystack.unsafe_charcode_at(i + j) != needle.unsafe_charcode_at(j) {
+      #|        break
+      #|      }
+      #|    } else {
+      #|      return Some(i)
+      #|    }
+      #|  }
+      #|  None
+      #|}
+      #|test "boyer_moore_horspool_find edge cases" {
+      #|  inspect(boyer_moore_horspool_find("abc"[:], ""[:]), content="Some(0)")
+      #|  inspect(boyer_moore_horspool_find("ab"[:], "abcd"[:]), content="None")
+      #|}
+      #|test "boyer_moore_horspool_rev_find edge cases" {
+      #|  inspect(boyer_moore_horspool_rev_find("abc"[:], ""[:]), content="Some(3)")
+      #|  inspect(boyer_moore_horspool_rev_find("ab"[:], "abcd"[:]), content="None")
+      #|}
+      #|pub fn String::find(self : String, str : StringView) -> Int? {
+      #|  self[:].find(str)
+      #|}
+      #|test "find" {
+      #|  inspect("hello".find("o"), content="Some(4)")
+      #|  inspect("hello".find("l"), content="Some(2)")
+      #|  inspect("hello".find("hello"), content="Some(0)")
+      #|  inspect("hello".find("h"), content="Some(0)")
+      #|  inspect("hello".find(""), content="Some(0)")
+      #|  inspect("hello".find("world"), content="None")
+      #|  inspect("".find(""), content="Some(0)")
+      #|  inspect("".find("a"), content="None")
+      #|  inspect("hello hello".find("hello"), content="Some(0)")
+      #|  inspect("aaa".find("aa"), content="Some(0)")
+      #|  inspect("😀😀".find("😀"), content="Some(0)")
+      #|  inspect(
+      #|    ("😀😀aa".repeat(20) + "😀😀😀😀").find("😀😀😀😀"),
+      #|    content="Some(120)",
+      #|  )
+      #|  inspect(
+      #|    ("😀😀😀😀" + "😀😀aa".repeat(20)).find("😀😀😀😀"),
+      #|    content="Some(0)",
+      #|  )
+      #|}
+      #|pub fn StringView::find_by(self : StringView, pred : (Char) -> Bool) -> Int? {
+      #|  for i, c in self {
+      #|    if pred(c) {
+      #|      return Some(i)
+      #|    }
+      #|  }
+      #|  None
+      #|}
+      #|pub fn String::find_by(self : String, pred : (Char) -> Bool) -> Int? {
+      #|  self[:].find_by(pred)
+      #|}
+      #|test "find_by" {
+      #|  inspect("hello".find_by(c => c == 'o'), content="Some(4)")
+      #|  inspect("hello".find_by(c => c == 'l'), content="Some(2)")
+      #|  inspect("hello".find_by(c => c == 'z'), content="None")
+      #|  inspect("".find_by(c => c == 'a'), content="None")
+      #|  inspect("hello".find_by(c => c is ('0'..='9')), content="None")
+      #|  inspect("hello123".find_by(c => c is ('0'..='9')), content="Some(5)")
+      #|  inspect("hello".find_by(c => c is ('A'..='Z')), content="None")
+      #|  inspect("Hello".find_by(c => c is ('A'..='Z')), content="Some(0)")
+      #|  inspect("αβγ".find_by(c => c == 'β'), content="Some(1)")
+      #|  inspect("😀😁😂".find_by(c => c == '😂'), content="Some(2)")
+      #|}
+      #|pub fn StringView::rev_find(self : StringView, str : StringView) -> Int? {
+      #|  if str.length() <= 4 {
+      #|    brute_force_rev_find(self, str)
+      #|  } else {
+      #|    boyer_moore_horspool_rev_find(self, str)
+      #|  }
+      #|}
+      #|fn brute_force_rev_find(haystack : StringView, needle : StringView) -> Int? {
+      #|  let haystack_len = haystack.length()
+      #|  let needle_len = needle.length()
+      #|  guard needle_len > 0 else { return Some(haystack_len) }
+      #|  guard haystack_len >= needle_len else { return None }
+      #|  let needle_first = needle.unsafe_charcode_at(0)
+      #|  let mut i = haystack_len - needle_len
+      #|  while i >= 0 {
+      #|    while i >= 0 && haystack.unsafe_charcode_at(i) != needle_first {
+      #|      i -= 1
+      #|    }
+      #|    if i >= 0 {
+      #|      for j in 1..<needle_len {
+      #|        if haystack.unsafe_charcode_at(i + j) != needle.unsafe_charcode_at(j) {
+      #|          break
+      #|        }
+      #|      } else {
+      #|        return Some(i)
+      #|      }
+      #|      i -= 1
+      #|    }
+      #|  }
+      #|  None
+      #|}
+      #|fn boyer_moore_horspool_rev_find(
+      #|  haystack : StringView,
+      #|  needle : StringView,
+      #|) -> Int? {
+      #|  let haystack_len = haystack.length()
+      #|  let needle_len = needle.length()
+      #|  guard needle_len > 0 else { return Some(haystack_len) }
+      #|  guard haystack_len >= needle_len else { return None }
+      #|  let skip_table = FixedArray::make(1 << 8, needle_len)
+      #|  for i = needle_len - 1; i > 0; i = i - 1 {
+      #|    skip_table[needle.unsafe_charcode_at(i) & 0xFF] = i
+      #|  }
+      #|  for i = haystack_len - needle_len
+      #|      i >= 0
+      #|      i = i - skip_table[haystack.unsafe_charcode_at(i) & 0xFF] {
+      #|    for j in 0..<needle_len {
+      #|      if haystack.unsafe_charcode_at(i + j) != needle.unsafe_charcode_at(j) {
+      #|        break
+      #|      }
+      #|    } else {
+      #|      return Some(i)
+      #|    }
+      #|  }
+      #|  None
+      #|}
+      #|pub fn String::rev_find(self : String, str : StringView) -> Int? {
+      #|  self[:].rev_find(str)
+      #|}
+      #|test "rev_find" {
+      #|  inspect("hello".rev_find("o"), content="Some(4)")
+      #|  inspect("hello".rev_find("l"), content="Some(3)")
+      #|  inspect("hello".rev_find("hello"), content="Some(0)")
+      #|  inspect("hello".rev_find("h"), content="Some(0)")
+      #|  inspect("hello".rev_find(""), content="Some(5)")
+      #|  inspect("hello".rev_find("world"), content="None")
+      #|  inspect("".rev_find(""), content="Some(0)")
+      #|  inspect("".rev_find("a"), content="None")
+      #|  inspect("hello hello".rev_find("hello"), content="Some(6)")
+      #|  inspect("aaa".rev_find("aa"), content="Some(1)")
+      #|  inspect("😀😀".rev_find("😀"), content="Some(2)")
+      #|  inspect(
+      #|    ("😀😀aa".repeat(20) + "😀😀😀😀").rev_find("😀😀😀😀"),
+      #|    content="Some(120)",
+      #|  )
+      #|  inspect(
+      #|    ("😀😀😀😀" + "😀😀aa".repeat(20)).rev_find("😀😀😀😀"),
+      #|    content="Some(4)",
+      #|  )
+      #|}
+      #|#alias(ends_with, deprecated)
+      #|pub fn StringView::has_suffix(self : StringView, str : StringView) -> Bool {
+      #|  self.rev_find(str) is Some(i) && i == self.length() - str.length()
+      #|}
+      #|#alias(ends_with, deprecated)
+      #|pub fn String::has_suffix(self : String, str : StringView) -> Bool {
+      #|  self[:].has_suffix(str)
+      #|}
+      #|test "has_suffix" {
+      #|  inspect("hello".has_suffix("lo"), content="true")
+      #|  inspect("hello".has_suffix("hello"), content="true")
+      #|  inspect("hello".has_suffix(""), content="true")
+      #|  inspect("hello".has_suffix("world"), content="false")
+      #|  inspect("hello".has_suffix("hel"), content="false")
+      #|  inspect("".has_suffix(""), content="true")
+      #|  inspect("".has_suffix("a"), content="false")
+      #|  inspect("hello world".has_suffix("world"), content="true")
+      #|  inspect("😀😀".has_suffix("😀"), content="true")
+      #|  inspect("😀😀".has_suffix("😀😀"), content="true")
+      #|}
+      #|#alias(starts_with, deprecated)
+      #|pub fn StringView::has_prefix(self : StringView, str : StringView) -> Bool {
+      #|  self.find(str) is Some(i) && i == 0
+      #|}
+      #|#alias(starts_with, deprecated)
+      #|pub fn String::has_prefix(self : String, str : StringView) -> Bool {
+      #|  self[:].has_prefix(str)
+      #|}
+      #|test "has_prefix" {
+      #|  inspect("hello".has_prefix("h"), content="true")
+      #|  inspect("hello".has_prefix("he"), content="true")
+      #|  inspect("hello".has_prefix(""), content="true")
+      #|  inspect("hello".has_prefix("world"), content="false")
+      #|  inspect("hello".has_prefix("lo"), content="false")
+      #|  inspect("".has_prefix(""), content="true")
+      #|  inspect("".has_prefix("a"), content="false")
+      #|  inspect("😀hello".has_prefix("😀"), content="true")
+      #|  inspect("😀😃hello".has_prefix("😀😃"), content="true")
+      #|  inspect("😀hello".has_prefix("😃"), content="false")
+      #|  inspect("hello😀".has_prefix("😀"), content="false")
+      #|}
+      #|pub fn String::strip_suffix(self : String, suffix : StringView) -> StringView? {
+      #|  if self.has_suffix(suffix) {
+      #|    Some(self.view(end_offset=self.length() - suffix.length()))
+      #|  } else {
+      #|    None
+      #|  }
+      #|}
+      #|test "strip_prefix" {
+      #|  inspect("hello world".strip_prefix("hello "), content="Some(\"world\")")
+      #|  inspect("hello world".strip_prefix("hi "), content="None")
+      #|  inspect("hello".strip_prefix("hello"), content="Some(\"\")")
+      #|  inspect("".strip_prefix(""), content="Some(\"\")")
+      #|  inspect("".strip_prefix("a"), content="None")
+      #|  inspect("abc".strip_prefix(""), content="Some(\"abc\")")
+      #|  inspect("😀hello".strip_prefix("😀"), content="Some(\"hello\")")
+      #|  inspect("😀😃hello".strip_prefix("😀😃"), content="Some(\"hello\")")
+      #|}
+      #|test "strip_suffix" {
+      #|  inspect("hello world".strip_suffix(" world"), content="Some(\"hello\")")
+      #|  inspect("hello world".strip_suffix(" moon"), content="None")
+      #|  inspect("hello".strip_suffix("hello"), content="Some(\"\")")
+      #|  inspect("".strip_suffix(""), content="Some(\"\")")
+      #|  inspect("".strip_suffix("a"), content="None")
+      #|  inspect("abc".strip_suffix(""), content="Some(\"abc\")")
+      #|  inspect("hello😀".strip_suffix("😀"), content="Some(\"hello\")")
+      #|  inspect("hello😀😃".strip_suffix("😀😃"), content="Some(\"hello\")")
+      #|}
+      #|pub fn String::strip_prefix(self : String, prefix : StringView) -> StringView? {
+      #|  if self.has_prefix(prefix) {
+      #|    Some(self.view(start_offset=prefix.length()))
+      #|  } else {
+      #|    None
+      #|  }
+      #|}
+      #|pub fn StringView::strip_prefix(
+      #|  self : StringView,
+      #|  prefix : StringView,
+      #|) -> StringView? {
+      #|  if self.has_prefix(prefix) {
+      #|    Some(self.view(start_offset=prefix.length()))
+      #|  } else {
+      #|    None
+      #|  }
+      #|}
+      #|pub fn StringView::strip_suffix(
+      #|  self : StringView,
+      #|  suffix : StringView,
+      #|) -> StringView? {
+      #|  if self.has_suffix(suffix) {
+      #|    Some(self.view(end_offset=self.length() - suffix.length()))
+      #|  } else {
+      #|    None
+      #|  }
+      #|}
+      #|pub fn StringView::to_array(self : StringView) -> Array[Char] {
+      #|  self
+      #|  .iter()
+      #|  .fold(init=Array::new(capacity=self.length()), (rv, c) => {
+      #|    rv.push(c)
+      #|    rv
+      #|  })
+      #|}
+      #|#deprecated("Check `@encoding/utf8.encode`", skip_current_package=false)
+      #|#coverage.skip
+      #|pub fn StringView::to_bytes(self : StringView) -> Bytes {
+      #|  let array = FixedArray::make(self.length() * 2, Byte::default())
+      #|  array.blit_from_string(0, self.data(), self.start_offset(), self.length())
+      #|  array |> unsafe_to_bytes
+      #|}
+      #|test "View::strip_prefix" {
+      #|  let view = "hello world"[:]
+      #|  inspect(view.strip_prefix("hello "), content="Some(\"world\")")
+      #|  inspect(view.strip_prefix("hi "), content="None")
+      #|  inspect(view.strip_prefix("hello world"), content="Some(\"\")")
+      #|  inspect(view.strip_prefix(""), content="Some(\"hello world\")")
+      #|  let empty_view = ""[:]
+      #|  inspect(empty_view.strip_prefix(""), content="Some(\"\")")
+      #|  inspect(empty_view.strip_prefix("a"), content="None")
+      #|  let unicode_view = "😀hello😃"[:]
+      #|  inspect(unicode_view.strip_prefix("😀"), content="Some(\"hello😃\")")
+      #|  inspect(unicode_view.strip_prefix("😃"), content="None")
+      #|}
+      #|test "View::strip_suffix" {
+      #|  let view = "hello world"[:]
+      #|  inspect(view.strip_suffix(" world"), content="Some(\"hello\")")
+      #|  inspect(view.strip_suffix(" moon"), content="None")
+      #|  inspect(view.strip_suffix("hello world"), content="Some(\"\")")
+      #|  inspect(view.strip_suffix(""), content="Some(\"hello world\")")
+      #|  let empty_view = ""[:]
+      #|  inspect(empty_view.strip_suffix(""), content="Some(\"\")")
+      #|  inspect(empty_view.strip_suffix("a"), content="None")
+      #|  let unicode_view = "😀hello😃"[:]
+      #|  inspect(unicode_view.strip_suffix("😃"), content="Some(\"😀hello\")")
+      #|  inspect(unicode_view.strip_suffix("😀"), content="None")
+      #|}
+      #|test "View::to_array" {
+      #|  let view = "Hello🤣"[:]
+      #|  let chars = view.to_array()
+      #|  assert_eq(chars, ['H', 'e', 'l', 'l', 'o', '🤣'])
+      #|  let empty_view = ""[:]
+      #|  let empty_chars = empty_view.to_array()
+      #|  assert_eq(empty_chars, [])
+      #|  let sub_view = "Hello World"[6:11] // "World"
+      #|  let sub_chars = sub_view.to_array()
+      #|  assert_eq(sub_chars, ['W', 'o', 'r', 'l', 'd'])
+      #|}
+      #|pub fn StringView::contains(self : StringView, str : StringView) -> Bool {
+      #|  self.find(str) is Some(_)
+      #|}
+      #|pub fn String::contains(self : String, str : StringView) -> Bool {
+      #|  self[:].contains(str)
+      #|}
+      #|pub fn StringView::contains_any(self : StringView, chars~ : StringView) -> Bool {
+      #|  match chars {
+      #|    [] => false
+      #|    [c] => self.contains_char(c) // specialize for single character
+      #|    _ =>
+      #|      for c in self {
+      #|        if chars.contains_char(c) {
+      #|          break true
+      #|        }
+      #|      } else {
+      #|        false
+      #|      }
+      #|  }
+      #|}
+      #|pub fn String::contains_any(self : String, chars~ : StringView) -> Bool {
+      #|  self[:].contains_any(chars~)
+      #|}
+      #|test "contains" {
+      #|  inspect("hello".contains("o"), content="true")
+      #|  inspect("hello".contains("l"), content="true")
+      #|  inspect("hello".contains("hello"), content="true")
+      #|  inspect("hello".contains("h"), content="true")
+      #|  inspect("hello".contains(""), content="true")
+      #|  inspect("hello".contains("world"), content="false")
+      #|  inspect("".contains(""), content="true")
+      #|  inspect("".contains("a"), content="false")
+      #|  inspect("hello hello".contains("hello"), content="true")
+      #|  inspect("aaa".contains("aa"), content="true")
+      #|  inspect("😀😀".contains("😀"), content="true")
+      #|}
+      #|test "contains_any" {
+      #|  inspect("hello".contains_any(chars="h"), content="true")
+      #|  inspect("hello".contains_any(chars="xyz"), content="false")
+      #|  inspect("hello".contains_any(chars=""), content="false")
+      #|  inspect("".contains_any(chars="abc"), content="false")
+      #|  inspect("😀😃".contains_any(chars="😄😀"), content="true")
+      #|  inspect("hello"[:].contains_any(chars="eo"), content="true")
+      #|}
+      #|pub fn StringView::contains_char(self : StringView, c : Char) -> Bool {
+      #|  let len = self.length()
+      #|  guard len > 0 else { return false }
+      #|  let c = c.to_int()
+      #|  if c <= 0xFFFF {
+      #|    for i in 0..<len {
+      #|      if self.unsafe_charcode_at(i) == c {
+      #|        return true
+      #|      }
+      #|    }
+      #|  } else {
+      #|    guard len >= 2 else { return false }
+      #|    let adj = c - 0x10000
+      #|    let high = 0xD800 + (adj >> 10)
+      #|    let low = 0xDC00 + (adj & 0x3FF)
+      #|    let mut i = 0
+      #|    while i < len - 1 {
+      #|      if self.unsafe_charcode_at(i) == high {
+      #|        i += 1
+      #|        if self.unsafe_charcode_at(i) == low {
+      #|          return true
+      #|        }
+      #|      }
+      #|      i += 1
+      #|    }
+      #|  }
+      #|  false
+      #|}
+      #|pub fn String::contains_char(self : String, c : Char) -> Bool {
+      #|  self[:].contains_char(c)
+      #|}
+      #|test "contains_char" {
+      #|  inspect("hello".contains_char('h'), content="true")
+      #|  inspect("hello".contains_char('e'), content="true")
+      #|  inspect("hello".contains_char('l'), content="true")
+      #|  inspect("hello".contains_char('o'), content="true")
+      #|  inspect("hello".contains_char('x'), content="false")
+      #|  inspect("".contains_char('a'), content="false")
+      #|  inspect("hello world".contains_char(' '), content="true")
+      #|  inspect("hello world".contains_char('w'), content="true")
+      #|  inspect("😀😀".contains_char('😀'), content="true")
+      #|  inspect("😀😀".contains_char('😃'), content="false")
+      #|  inspect("hello".contains_char((104).unsafe_to_char()), content="true") // 'h' is 104 in ASCII
+      #|}
+      #|#label_migration(chars, allow_positional=true)
+      #|#label_migration(chars, alias=char_set)
+      #|pub fn StringView::trim_start(
+      #|  self : StringView,
+      #|  chars~ : StringView,
+      #|) -> StringView {
+      #|  loop self {
+      #|    [] as v => v
+      #|    [c, .. rest] as v => if chars.contains_char(c) { continue rest } else { v }
+      #|  }
+      #|}
+      #|#label_migration(chars, allow_positional=true)
+      #|#label_migration(chars, alias=char_set)
+      #|pub fn String::trim_start(self : String, chars~ : StringView) -> StringView {
+      #|  self[:].trim_start(chars~)
+      #|}
+      #|test "trim_start" {
+      #|  inspect("hello".trim_start(chars="h"), content="ello")
+      #|  inspect("hello".trim_start(chars="he"), content="llo")
+      #|  inspect("hello".trim_start(chars="eh"), content="llo")
+      #|  inspect("hello".trim_start(chars="x"), content="hello")
+      #|  inspect("hello".trim_start(chars=""), content="hello")
+      #|  inspect("".trim_start(chars="a"), content="")
+      #|  inspect("   hello".trim_start(chars=" "), content="hello")
+      #|  inspect("hello world".trim_start(chars="helo"), content=" world")
+      #|  inspect("😀😀hello".trim_start(chars="😀"), content="hello")
+      #|  inspect("😀😃hello".trim_start(chars="😀😃"), content="hello")
+      #|  inspect("aaaabc".trim_start(chars="a"), content="bc")
+      #|  inspect("aaaa".trim_start(chars="a"), content="")
+      #|}
+      #|#label_migration(chars, allow_positional=true)
+      #|#label_migration(chars, alias=char_set)
+      #|pub fn StringView::trim_end(
+      #|  self : StringView,
+      #|  chars~ : StringView,
+      #|) -> StringView {
+      #|  loop self {
+      #|    [] as v => v
+      #|    [.. rest, c] as v => if chars.contains_char(c) { continue rest } else { v }
+      #|  }
+      #|}
+      #|#label_migration(chars, allow_positional=true)
+      #|#label_migration(chars, alias=char_set)
+      #|pub fn String::trim_end(self : String, chars~ : StringView) -> StringView {
+      #|  self[:].trim_end(chars~)
+      #|}
+      #|test "trim_end" {
+      #|  inspect("hello".trim_end(chars="o"), content="hell")
+      #|  inspect("hello".trim_end(chars="lo"), content="he")
+      #|  inspect("hello".trim_end(chars="x"), content="hello")
+      #|  inspect("hello".trim_end(chars=""), content="hello")
+      #|  inspect("".trim_end(chars="a"), content="")
+      #|  inspect("hello   ".trim_end(chars=" "), content="hello")
+      #|  inspect("hello world".trim_end(chars="dlrow "), content="he")
+      #|  inspect("hello😀😀".trim_end(chars="😀"), content="hello")
+      #|  inspect("hello😀😃".trim_end(chars="😀😃"), content="hello")
+      #|  inspect("abcccc".trim_end(chars="c"), content="ab")
+      #|  inspect("cccc".trim_end(chars="c"), content="")
+      #|}
+      #|#label_migration(chars, allow_positional=true)
+      #|#label_migration(chars, alias=char_set)
+      #|pub fn StringView::trim(self : StringView, chars~ : StringView) -> StringView {
+      #|  self.trim_start(chars~).trim_end(chars~)
+      #|}
+      #|#label_migration(chars, allow_positional=true)
+      #|#label_migration(chars, alias=char_set)
+      #|pub fn String::trim(self : String, chars~ : StringView) -> StringView {
+      #|  self[:].trim(chars~)
+      #|}
+      #|test "trim" {
+      #|  inspect("hello".trim(chars="h"), content="ello")
+      #|  inspect("hello".trim(chars="o"), content="hell")
+      #|  inspect("hello".trim(chars="ho"), content="ell")
+      #|  inspect("hello".trim(chars="oh"), content="ell")
+      #|  inspect("hello".trim(chars="x"), content="hello")
+      #|  inspect("hello".trim(chars=""), content="hello")
+      #|  inspect("".trim(chars="a"), content="")
+      #|  inspect("   hello   ".trim(chars=" "), content="hello")
+      #|  inspect("hello world".trim(chars="hd"), content="ello worl")
+      #|  inspect("😀hello😀".trim(chars="😀"), content="hello")
+      #|  inspect("😀😃hello😀😃".trim(chars="😀😃"), content="hello")
+      #|  inspect("aaaabcaaa".trim(chars="a"), content="bc")
+      #|  inspect("aaaa".trim(chars="a"), content="")
+      #|  inspect("  hello world  ".trim(chars=" "), content="hello world")
+      #|  inspect("abcabc".trim(chars="abc"), content="")
+      #|}
+      #|pub fn StringView::trim_space(self : StringView) -> StringView {
+      #|  self.trim(chars=" \n\r\t")
+      #|}
+      #|pub fn String::trim_space(self : String) -> StringView {
+      #|  self[:].trim_space()
+      #|}
+      #|test "trim_space" {
+      #|  inspect("hello".trim_space(), content="hello")
+      #|  inspect("  hello  ".trim_space(), content="hello")
+      #|  inspect("hello  ".trim_space(), content="hello")
+      #|  inspect("  hello".trim_space(), content="hello")
+      #|  inspect("\t\nhello\r\n".trim_space(), content="hello")
+      #|  inspect("  hello world  ".trim_space(), content="hello world")
+      #|  inspect("  ".trim_space(), content="")
+      #|  inspect("\n\r\t".trim_space(), content="")
+      #|  inspect("".trim_space(), content="")
+      #|  inspect("  hello\nworld\t".trim_space(), content="hello\nworld")
+      #|}
+      #|pub fn StringView::is_empty(self : StringView) -> Bool {
+      #|  self.length() == 0
+      #|}
+      #|pub fn String::is_empty(self : String) -> Bool {
+      #|  self == ""
+      #|}
+      #|test "is_empty" {
+      #|  inspect("".is_empty(), content="true")
+      #|  inspect("hello".is_empty(), content="false")
+      #|  inspect(" ".is_empty(), content="false")
+      #|  inspect("\n".is_empty(), content="false")
+      #|  inspect("\t".is_empty(), content="false")
+      #|  inspect("   ".is_empty(), content="false")
+      #|  let s = "hello"
+      #|  let empty_view = s[0:0]
+      #|  let non_empty_view = s[0:3]
+      #|  inspect(empty_view.is_empty(), content="true")
+      #|  inspect(non_empty_view.is_empty(), content="false")
+      #|}
+      #|pub fn StringView::is_blank(self : StringView) -> Bool {
+      #|  self.trim_space().is_empty()
+      #|}
+      #|pub fn String::is_blank(self : String) -> Bool {
+      #|  self[:].is_blank()
+      #|}
+      #|test "is_blank" {
+      #|  inspect("".is_blank(), content="true")
+      #|  inspect("hello".is_blank(), content="false")
+      #|  inspect(" ".is_blank(), content="true")
+      #|  inspect("\n".is_blank(), content="true")
+      #|  inspect("\t".is_blank(), content="true")
+      #|  inspect("   ".is_blank(), content="true")
+      #|  inspect(" \n\t\r ".is_blank(), content="true")
+      #|  inspect("hello world".is_blank(), content="false")
+      #|  inspect("  hello  ".is_blank(), content="false")
+      #|  let s = "   hello  "
+      #|  let blank_view = s[0:3] // "   "
+      #|  let non_blank_view = s[3:8] // "hello"
+      #|  inspect(blank_view.is_blank(), content="true")
+      #|  inspect(non_blank_view.is_blank(), content="false")
+      #|}
+      #|pub fn StringView::pad_start(
+      #|  self : StringView,
+      #|  total_width : Int,
+      #|  padding_char : Char,
+      #|) -> String {
+      #|  let len = self.length()
+      #|  guard len < total_width else { return self.to_string() }
+      #|  let padding = String::make(total_width - len, padding_char)
+      #|  [..padding, ..self]
+      #|}
+      #|pub fn String::pad_start(
+      #|  self : String,
+      #|  total_width : Int,
+      #|  padding_char : Char,
+      #|) -> String {
+      #|  let len = self.length()
+      #|  guard len < total_width else { return self }
+      #|  let padding = String::make(total_width - len, padding_char)
+      #|  [..padding, ..self]
+      #|}
+      #|test "pad_start" {
+      #|  inspect("2".pad_start(3, '0'), content="002")
+      #|  inspect("abc".pad_start(5, 'x'), content="xxabc")
+      #|  inspect("hello".pad_start(4, ' '), content="hello") // No padding needed
+      #|  inspect("".pad_start(3, '-'), content="---")
+      #|  inspect("test".pad_start(8, '*'), content="****test")
+      #|  inspect("123".pad_start(6, '0'), content="000123")
+      #|  let s = "hello"
+      #|  let view = s[2:5] // "llo"
+      #|  inspect(view.pad_start(5, 'x'), content="xxllo")
+      #|  inspect("🌟".pad_start(3, '✨'), content="✨🌟")
+      #|  inspect("abc".pad_start(0, 'x'), content="abc") // width less than string length
+      #|  inspect("abc".pad_start(3, 'x'), content="abc") // width equal to string length
+      #|}
+      #|pub fn StringView::pad_end(
+      #|  self : StringView,
+      #|  total_width : Int,
+      #|  padding_char : Char,
+      #|) -> String {
+      #|  let len = self.length()
+      #|  guard len < total_width else { return self.to_string() }
+      #|  let padding = String::make(total_width - len, padding_char)
+      #|  [..self, ..padding]
+      #|}
+      #|pub fn String::pad_end(
+      #|  self : String,
+      #|  total_width : Int,
+      #|  padding_char : Char,
+      #|) -> String {
+      #|  let len = self.length()
+      #|  guard len < total_width else { return self }
+      #|  let padding = String::make(total_width - len, padding_char)
+      #|  [..self, ..padding]
+      #|}
+      #|test "pad_end" {
+      #|  inspect("2".pad_end(3, '0'), content="200")
+      #|  inspect("abc".pad_end(5, 'x'), content="abcxx")
+      #|  inspect("hello".pad_end(4, ' '), content="hello") // No padding needed
+      #|  inspect("".pad_end(3, '-'), content="---")
+      #|  inspect("test".pad_end(8, '*'), content="test****")
+      #|  inspect("123".pad_end(6, '0'), content="123000")
+      #|  let s = "hello"
+      #|  let view = s[2:5] // "llo"
+      #|  inspect(view.pad_end(5, 'x'), content="lloxx")
+      #|  inspect("🌟".pad_end(3, '✨'), content="🌟✨")
+      #|  inspect("abc".pad_end(0, 'x'), content="abc") // width less than string length
+      #|  inspect("abc".pad_end(3, 'x'), content="abc") // width equal to string length
+      #|}
+      #|pub fn StringView::repeat(self : StringView, n : Int) -> StringView {
+      #|  match n {
+      #|    _..=0 => ""
+      #|    1 => self
+      #|    _ => {
+      #|      let len = self.length()
+      #|      let buf = StringBuilder::new(size_hint=len * n)
+      #|      let str = self.to_string()
+      #|      for _ in 0..<n {
+      #|        buf.write_string(str)
+      #|      }
+      #|      buf.to_string()
+      #|    }
+      #|  }
+      #|}
+      #|pub fn String::repeat(self : String, n : Int) -> String {
+      #|  match n {
+      #|    _..=0 => ""
+      #|    1 => self
+      #|    _ => {
+      #|      let len = self.length()
+      #|      let buf = StringBuilder::new(size_hint=len * n)
+      #|      let str = self.to_string()
+      #|      for _ in 0..<n {
+      #|        buf.write_string(str)
+      #|      }
+      #|      buf.to_string()
+      #|    }
+      #|  }
+      #|}
+      #|test "repeat" {
+      #|  inspect("abc".repeat(3), content="abcabcabc")
+      #|  inspect("x".repeat(5), content="xxxxx")
+      #|  inspect("hello ".repeat(2), content="hello hello ")
+      #|  inspect("".repeat(10), content="")
+      #|  let s = "hello world"
+      #|  let view = s[6:11] // "world"
+      #|  inspect(view.repeat(2), content="worldworld")
+      #|  inspect("🌟".repeat(3), content="🌟🌟🌟")
+      #|  inspect("✨🌟".repeat(2), content="✨🌟✨🌟")
+      #|  inspect("abc".repeat(0), content="")
+      #|  inspect("abc".repeat(-5), content="")
+      #|  inspect("abc".repeat(1), content="abc")
+      #|}
+      #|pub fn StringView::rev(self : StringView) -> String {
+      #|  let buf = StringBuilder::new(size_hint=self.length())
+      #|  for c in self.rev_iter() {
+      #|    buf.write_char(c)
+      #|  }
+      #|  buf.to_string()
+      #|}
+      #|pub fn String::rev(self : String) -> String {
+      #|  self[:].rev()
+      #|}
+      #|test "rev" {
+      #|  inspect("hello".rev(), content="olleh")
+      #|  inspect("".rev(), content="")
+      #|  inspect("abc".rev(), content="cba")
+      #|  inspect("😀😃".rev(), content="😃😀")
+      #|}
+      #|pub fn StringView::split(
+      #|  self : StringView,
+      #|  sep : StringView,
+      #|) -> Iter[StringView] {
+      #|  let sep_len = sep.length()
+      #|  if sep_len == 0 {
+      #|    return self.iter().map(c => c.to_string().view())
+      #|  }
+      #|  Iter::new(yield_ => {
+      #|    let mut view = self
+      #|    while view.find(sep) is Some(end) {
+      #|      guard yield_(view.view(end_offset=end)) is IterContinue else {
+      #|        break IterEnd
+      #|      }
+      #|      view = view.view(start_offset=end + sep_len)
+      #|    } else {
+      #|      yield_(view)
+      #|    }
+      #|  })
+      #|}
+      #|pub fn String::split(self : String, sep : StringView) -> Iter[StringView] {
+      #|  self[:].split(sep)
+      #|}
+      #|test "split" {
+      #|  assert_eq("a,b,c".split(",").map(StringView::to_string).collect(), [
+      #|    "a", "b", "c",
+      #|  ])
+      #|  assert_eq("a,b,c".split("").map(StringView::to_string).collect(), [
+      #|    "a", ",", "b", ",", "c",
+      #|  ])
+      #|  assert_eq(
+      #|    "apple::orange::banana".split("::").map(StringView::to_string).collect(),
+      #|    ["apple", "orange", "banana"],
+      #|  )
+      #|  assert_eq("abc".split("").map(StringView::to_string).collect(), [
+      #|    "a", "b", "c",
+      #|  ])
+      #|  assert_eq("hello".split(",").map(StringView::to_string).collect(), ["hello"])
+      #|  assert_eq(",a,b,c".split(",").map(StringView::to_string).collect(), [
+      #|    "", "a", "b", "c",
+      #|  ])
+      #|  assert_eq("a,b,c,".split(",").map(StringView::to_string).collect(), [
+      #|    "a", "b", "c", "",
+      #|  ])
+      #|  assert_eq("a,b,c".split("").map(StringView::to_string).collect(), [
+      #|    "a", ",", "b", ",", "c",
+      #|  ])
+      #|  assert_eq("".split("").map(StringView::to_string).collect(), [])
+      #|  assert_eq("".split(",").map(StringView::to_string).collect(), [""])
+      #|  assert_eq("😀,😃,😄".split(",").map(StringView::to_string).collect(), [
+      #|    "😀", "😃", "😄",
+      #|  ])
+      #|  assert_eq("a😀b😀c".split("😀").map(StringView::to_string).collect(), [
+      #|    "a", "b", "c",
+      #|  ])
+      #|}
+      #|pub fn StringView::replace(
+      #|  self : StringView,
+      #|  old~ : StringView,
+      #|  new~ : StringView,
+      #|) -> StringView {
+      #|  match self.find(old) {
+      #|    Some(end) =>
+      #|      [
+      #|        ..self.view(end_offset=end),
+      #|        ..new,
+      #|        ..self.view(start_offset=end + old.length()),
+      #|      ]
+      #|    None => self
+      #|  }
+      #|}
+      #|pub fn String::replace(
+      #|  self : String,
+      #|  old~ : StringView,
+      #|  new~ : StringView,
+      #|) -> String {
+      #|  match self.find(old) {
+      #|    Some(end) =>
+      #|      [
+      #|        ..self.view(end_offset=end),
+      #|        ..new,
+      #|        ..self.view(start_offset=end + old.length()),
+      #|      ]
+      #|    None => self
+      #|  }
+      #|}
+      #|test "replace" {
+      #|  inspect("hello".replace(old="o", new="a"), content="hella")
+      #|  inspect("hello".replace(old="l", new="a"), content="healo")
+      #|  inspect("hello".replace(old="hello", new="a"), content="a")
+      #|  inspect("hello".replace(old="h", new="a"), content="aello")
+      #|  inspect("hello".replace(old="", new="a"), content="ahello")
+      #|  inspect("hello".replace(old="world", new="a"), content="hello")
+      #|  inspect("".replace(old="", new="a"), content="a")
+      #|}
+      #|pub fn StringView::replace_all(
+      #|  self : StringView,
+      #|  old~ : StringView,
+      #|  new~ : StringView,
+      #|) -> StringView {
+      #|  let len = self.length()
+      #|  let buf = StringBuilder::new(size_hint=len)
+      #|  let old_len = old.length()
+      #|  let new = new.to_string()
+      #|  if old_len == 0 {
+      #|    buf.write_string(new)
+      #|    for c in self {
+      #|      buf.write_char(c)
+      #|      buf.write_string(new)
+      #|    }
+      #|    buf.to_string()
+      #|  } else {
+      #|    let first_end = self.find(old)
+      #|    if first_end is Some(end) {
+      #|      for view = self, end = end {
+      #|        let seg = view.view(end_offset=end)
+      #|        buf.write_substring(seg.data(), seg.start_offset(), seg.length())
+      #|        buf.write_string(new)
+      #|        guard end + old_len <= len else { break }
+      #|        let next_view = view.view(start_offset=end + old_len)
+      #|        guard next_view.find(old) is Some(next_end) else {
+      #|          buf.write_substring(
+      #|            next_view.data(),
+      #|            next_view.start_offset(),
+      #|            next_view.length(),
+      #|          )
+      #|          break
+      #|        }
+      #|        continue next_view, next_end
+      #|      }
+      #|      buf.to_string()
+      #|    } else {
+      #|      self
+      #|    }
+      #|  }
+      #|}
+      #|pub fn String::replace_all(
+      #|  self : String,
+      #|  old~ : StringView,
+      #|  new~ : StringView,
+      #|) -> String {
+      #|  let len = self.length()
+      #|  let buf = StringBuilder::new(size_hint=len)
+      #|  let old_len = old.length()
+      #|  let new = new.to_string()
+      #|  if old_len == 0 {
+      #|    buf.write_string(new)
+      #|    for c in self {
+      #|      buf.write_char(c)
+      #|      buf.write_string(new)
+      #|    }
+      #|    buf.to_string()
+      #|  } else {
+      #|    let first_end = self.find(old)
+      #|    if first_end is Some(end) {
+      #|      for view = self[:], end = end {
+      #|        let seg = view.view(end_offset=end)
+      #|        buf.write_substring(seg.data(), seg.start_offset(), seg.length())
+      #|        buf.write_string(new)
+      #|        guard end + old_len <= len else { break }
+      #|        let next_view = view.view(start_offset=end + old_len)
+      #|        guard next_view.find(old) is Some(next_end) else {
+      #|          buf.write_substring(
+      #|            next_view.data(),
+      #|            next_view.start_offset(),
+      #|            next_view.length(),
+      #|          )
+      #|          break
+      #|        }
+      #|        continue next_view, next_end
+      #|      }
+      #|      buf.to_string()
+      #|    } else {
+      #|      self
+      #|    }
+      #|  }
+      #|}
+      #|test "replace_all" {
+      #|  assert_eq("hello".replace_all(old="o", new="a"), "hella")
+      #|  assert_eq("hello".replace_all(old="l", new="a"), "heaao")
+      #|  assert_eq("hello".replace_all(old="ll", new="rr"), "herro")
+      #|  assert_eq("hello".replace_all(old="hello", new="world"), "world")
+      #|  assert_eq("hello hello hello".replace_all(old="hello", new="hi"), "hi hi hi")
+      #|  assert_eq(
+      #|    "hello hello helloi".replace_all(old="hello", new="hi"),
+      #|    "hi hi hii",
+      #|  )
+      #|  assert_eq(
+      #|    "hi hi hii".replace_all(old="hi", new="hello"),
+      #|    "hello hello helloi",
+      #|  )
+      #|  assert_eq("hello".replace_all(old="", new="a"), "ahaealalaoa")
+      #|  assert_eq("hello".replace_all(old="world", new="a"), "hello")
+      #|  assert_eq("".replace_all(old="", new="a"), "a")
+      #|  assert_eq("aaa".replace_all(old="a", new="b"), "bbb")
+      #|  assert_eq("aaa".replace_all(old="a", new="bb"), "bbbbbb")
+      #|  assert_eq("aaa".replace_all(old="aa", new="b"), "ba")
+      #|  assert_eq("🤣🤣🤣".replace_all(old="🤣", new="😊"), "😊😊😊")
+      #|  assert_eq("abc123abc".replace_all(old="abc", new="xyz"), "xyz123xyz")
+      #|  assert_eq("abcabcabc".replace_all(old="abc", new=""), "")
+      #|  assert_eq("abc".replace_all(old="abc", new=""), "")
+      #|  assert_eq("abc".replace_all(old="", new="x"), "xaxbxcx")
+      #|}
+      #|test "String::replace_all boundary cases" {
+      #|  assert_eq("helloworld".replace_all(old="world", new="X"), "helloX")
+      #|  assert_eq("abcdef".replace_all(old="def", new="XYZ"), "abcXYZ")
+      #|  assert_eq("abcabc".replace_all(old="abc", new="X"), "XX")
+      #|  assert_eq("test".replace_all(old="test", new="done"), "done")
+      #|  assert_eq("remove_me".replace_all(old="_me", new=""), "remove")
+      #|}
+      #|test "View::replace_all" {
+      #|  assert_eq("hello"[:].replace_all(old="o", new="a"), "hella")
+      #|  assert_eq("hello"[:].replace_all(old="l", new="a"), "heaao")
+      #|  assert_eq("hello"[:].replace_all(old="ll", new="rr"), "herro")
+      #|  assert_eq("hello"[:].replace_all(old="hello", new="world"), "world")
+      #|  assert_eq(
+      #|    "hello hello hello"[:].replace_all(old="hello", new="hi"),
+      #|    "hi hi hi",
+      #|  )
+      #|  assert_eq(
+      #|    "hello hello helloi"[:].replace_all(old="hello", new="hi"),
+      #|    "hi hi hii",
+      #|  )
+      #|  assert_eq(
+      #|    "hi hi hii"[:].replace_all(old="hi", new="hello"),
+      #|    "hello hello helloi",
+      #|  )
+      #|  assert_eq("hello"[:].replace_all(old="", new="a"), "ahaealalaoa")
+      #|  assert_eq("hello"[:].replace_all(old="world", new="a"), "hello")
+      #|  assert_eq(""[:].replace_all(old="", new="a"), "a")
+      #|  assert_eq("aaa"[:].replace_all(old="a", new="b"), "bbb")
+      #|  assert_eq("aaa"[:].replace_all(old="a", new="bb"), "bbbbbb")
+      #|  assert_eq("aaa"[:].replace_all(old="aa", new="b"), "ba")
+      #|  assert_eq(
+      #|    "🤣🤣🤣"[:].replace_all(old="🤣", new="😊"),
+      #|    "😊😊😊",
+      #|  )
+      #|  assert_eq("abc123abc"[:].replace_all(old="abc", new="xyz"), "xyz123xyz")
+      #|  assert_eq("abcabcabc"[:].replace_all(old="abc", new=""), "")
+      #|  assert_eq("abc"[:].replace_all(old="abc", new=""), "")
+      #|  assert_eq("abc"[:].replace_all(old="", new="x"), "xaxbxcx")
+      #|}
+      #|test "View::replace_all boundary cases" {
+      #|  assert_eq("abcabc"[:].replace_all(old="abc", new="X"), "XX")
+      #|  assert_eq("aaaa"[:].replace_all(old="aa", new="b"), "bb")
+      #|  assert_eq("hello"[:].replace_all(old="lo", new="X"), "helX")
+      #|  assert_eq("a"[:].replace_all(old="a", new=""), "")
+      #|  inspect("Testing boundary condition", content="Testing boundary condition")
+      #|}
+      #|pub fn StringView::to_lower(self : StringView) -> StringView {
+      #|  guard self.find_by(x => x.is_ascii_uppercase()) is Some(idx) else {
+      #|    return self
+      #|  }
+      #|  let buf = StringBuilder::new(size_hint=self.length())
+      #|  let head = self.view(end_offset=idx)
+      #|  buf.write_substring(head.data(), head.start_offset(), head.length())
+      #|  for c in self.view(start_offset=idx) {
+      #|    if c.is_ascii_uppercase() {
+      #|      buf.write_char((c.to_int() + 32).unsafe_to_char())
+      #|    } else {
+      #|      buf.write_char(c)
+      #|    }
+      #|  }
+      #|  buf.to_string()
+      #|}
+      #|pub fn String::to_lower(self : String) -> String {
+      #|  guard self.find_by(x => x.is_ascii_uppercase()) is Some(idx) else {
+      #|    return self
+      #|  }
+      #|  let buf = StringBuilder::new(size_hint=self.length())
+      #|  let head = self.view(end_offset=idx)
+      #|  buf.write_substring(head.data(), head.start_offset(), head.length())
+      #|  for c in self.view(start_offset=idx) {
+      #|    if c.is_ascii_uppercase() {
+      #|      buf.write_char((c.to_int() + 32).unsafe_to_char())
+      #|    } else {
+      #|      buf.write_char(c)
+      #|    }
+      #|  }
+      #|  buf.to_string()
+      #|}
+      #|test "to_lower" {
+      #|  assert_eq("Hello".to_lower(), "hello")
+      #|  assert_eq("HELLO".to_lower(), "hello")
+      #|  assert_eq("Hello, World!".to_lower(), "hello, world!")
+      #|}
+      #|test "View::to_lower" {
+      #|  assert_eq("Hello"[:].to_lower(), "hello")
+      #|  assert_eq("HELLO"[:].to_lower(), "hello")
+      #|  assert_eq("Hello, World!"[:].to_lower(), "hello, world!")
+      #|}
+      #|pub fn StringView::to_upper(self : StringView) -> StringView {
+      #|  guard self.find_by(_.is_ascii_lowercase()) is Some(idx) else { return self }
+      #|  let buf = StringBuilder::new(size_hint=self.length())
+      #|  let head = self.view(end_offset=idx)
+      #|  buf.write_substring(head.data(), head.start_offset(), head.length())
+      #|  for c in self.view(start_offset=idx) {
+      #|    if c.is_ascii_lowercase() {
+      #|      buf.write_char((c.to_int() - 32).unsafe_to_char())
+      #|    } else {
+      #|      buf.write_char(c)
+      #|    }
+      #|  }
+      #|  buf.to_string()
+      #|}
+      #|pub fn String::to_upper(self : String) -> String {
+      #|  guard self.find_by(_.is_ascii_lowercase()) is Some(idx) else { return self }
+      #|  let buf = StringBuilder::new(size_hint=self.length())
+      #|  let head = self.view(end_offset=idx)
+      #|  buf.write_substring(head.data(), head.start_offset(), head.length())
+      #|  for c in self.view(start_offset=idx) {
+      #|    if c.is_ascii_lowercase() {
+      #|      buf.write_char((c.to_int() - 32).unsafe_to_char())
+      #|    } else {
+      #|      buf.write_char(c)
+      #|    }
+      #|  }
+      #|  buf.to_string()
+      #|}
+      #|test "to_upper" {
+      #|  assert_eq("hello".to_upper(), "HELLO")
+      #|  assert_eq("HELLO".to_upper(), "HELLO")
+      #|  assert_eq("Hello, World!".to_upper(), "HELLO, WORLD!")
+      #|}
+      #|test "View::to_upper" {
+      #|  assert_eq("hello"[:].to_upper(), "HELLO")
+      #|  assert_eq("HELLO"[:].to_upper(), "HELLO")
+      #|  assert_eq("Hello, World!"[:].to_upper(), "HELLO, WORLD!")
+      #|}
+      #|pub fn[A] StringView::fold(
+      #|  self : StringView,
+      #|  init~ : A,
+      #|  f : (A, Char) -> A,
+      #|) -> A {
+      #|  let mut rv = init
+      #|  for c in self {
+      #|    rv = f(rv, c)
+      #|  }
+      #|  rv
+      #|}
+      #|pub fn[A] String::fold(self : String, init~ : A, f : (A, Char) -> A) -> A {
+      #|  self[:].fold(init~, f)
+      #|}
+      #|test "fold" {
+      #|  assert_eq(
+      #|    "hello".fold(init=[], (acc, c) => {
+      #|      acc.push(c)
+      #|      acc
+      #|    }),
+      #|    ['h', 'e', 'l', 'l', 'o'],
+      #|  )
+      #|  assert_eq(
+      #|    "hello".fold(init=0, (acc, c) => acc + c.to_int()),
+      #|    104 + 101 + 108 + 108 + 111,
+      #|  )
+      #|}
+      #|pub fn[A] StringView::rev_fold(
+      #|  self : StringView,
+      #|  init~ : A,
+      #|  f : (A, Char) -> A,
+      #|) -> A {
+      #|  let mut rv = init
+      #|  for c in self.rev_iter() {
+      #|    rv = f(rv, c)
+      #|  }
+      #|  rv
+      #|}
+      #|pub fn[A] String::rev_fold(self : String, init~ : A, f : (A, Char) -> A) -> A {
+      #|  self[:].rev_fold(init~, f)
+      #|}
+      #|test "rev_fold" {
+      #|  assert_eq(
+      #|    "hello".rev_fold(init=[], (acc, c) => {
+      #|      acc.push(c)
+      #|      acc
+      #|    }),
+      #|    ['o', 'l', 'l', 'e', 'h'],
+      #|  )
+      #|  assert_eq(
+      #|    "hello".rev_fold(init=0, (acc, c) => acc + c.to_int()),
+      #|    111 + 108 + 108 + 101 + 104,
+      #|  )
+      #|}
+      #|pub fn String::get(self : String, idx : Int) -> Int? {
+      #|  guard idx >= 0 && idx < self.length() else { return None }
+      #|  Some(self.unsafe_charcode_at(idx))
+      #|}
+      #|pub fn StringView::get(self : StringView, idx : Int) -> Int? {
+      #|  guard idx >= 0 && idx < self.length() else { return None }
+      #|  Some(self.unsafe_charcode_at(idx))
+      #|}
+      #|test "String::get supports emoji (surrogate pair)" {
+      #|  let s = "hello"
+      #|  inspect(s.get(0), content="Some(104)")
+      #|  inspect(s.get(4), content="Some(111)")
+      #|  inspect(s.get(5), content="None")
+      #|  inspect(s.get(-1), content="None")
+      #|  let s = "a🤣b"
+      #|  inspect(s.get(0), content="Some(97)")
+      #|  inspect(s.get(1), content="Some(55358)")
+      #|  inspect(s.get(2), content="Some(56611)")
+      #|  inspect(s.get(3), content="Some(98)")
+      #|  inspect(s.get(4), content="None")
+      #|}
+      #|test "View::get basic cases" {
+      #|  let v = "hello"[1:-1]
+      #|  inspect(v.get(0), content="Some(101)")
+      #|  inspect(v.get(2), content="Some(108)")
+      #|  inspect(v.get(3), content="None")
+      #|  inspect(v.get(-1), content="None")
+      #|  let v = "ab🤣cd"[1:-1]
+      #|  inspect(v.get(0), content="Some(98)")
+      #|  inspect(v.get(1), content="Some(55358)")
+      #|  inspect(v.get(2), content="Some(56611)")
+      #|}
+      #|pub fn String::get_char(self : String, idx : Int) -> Char? {
+      #|  guard idx >= 0 && idx < self.length() else { return None }
+      #|  let c = self.unsafe_charcode_at(idx)
+      #|  if c.is_leading_surrogate() {
+      #|    guard idx + 1 < self.length() else { return None }
+      #|    let next = self.unsafe_charcode_at(idx + 1)
+      #|    if next.is_trailing_surrogate() {
+      #|      Some(code_point_of_surrogate_pair(c, next))
+      #|    } else {
+      #|      None
+      #|    }
+      #|  } else if c.is_trailing_surrogate() {
+      #|    None
+      #|  } else {
+      #|    Some(c.unsafe_to_char())
+      #|  }
+      #|}
+      #|pub fn StringView::get_char(self : StringView, idx : Int) -> Char? {
+      #|  guard idx >= 0 && idx < self.length() else { return None }
+      #|  let c = self.unsafe_charcode_at(idx)
+      #|  if c.is_leading_surrogate() {
+      #|    guard idx + 1 < self.length() else { return None }
+      #|    let next = self.unsafe_charcode_at(idx + 1)
+      #|    if next.is_trailing_surrogate() {
+      #|      Some(code_point_of_surrogate_pair(c, next))
+      #|    } else {
+      #|      None
+      #|    }
+      #|  } else if c.is_trailing_surrogate() {
+      #|    None
+      #|  } else {
+      #|    Some(c.unsafe_to_char())
+      #|  }
+      #|}
+      #|test "String::get_char basic cases" {
+      #|  let s = "hello"
+      #|  inspect(s.get_char(0), content="Some('h')")
+      #|  inspect(s.get_char(1), content="Some('e')")
+      #|  inspect(s.get_char(4), content="Some('o')")
+      #|  inspect(s.get_char(5), content="None")
+      #|  inspect(s.get_char(-1), content="None")
+      #|  let s = "a🤣b"
+      #|  inspect(s.get_char(0), content="Some('a')")
+      #|  inspect(s.get_char(1), content="Some('🤣')")
+      #|  inspect(s.get_char(2), content="None") // Second half of surrogate pair is not a valid char
+      #|  inspect(s.get_char(3), content="Some('b')")
+      #|  inspect(s.get_char(4), content="None")
+      #|}
+      #|test "View::get_char basic cases" {
+      #|  let s = "a🤣b"
+      #|  let v = s[0:-1]
+      #|  inspect(v.get_char(0), content="Some('a')")
+      #|  inspect(v.get_char(1), content="Some('🤣')")
+      #|  inspect(v.get_char(2), content="None")
+      #|  inspect(v.get_char(3), content="None")
+      #|  inspect(v.get_char(4), content="None")
+      #|  let v2 = s[1:3] // Only contains the emoji surrogate pair
+      #|  inspect(v2.get_char(0), content="Some('🤣')")
+      #|  inspect(v2.get_char(1), content="None")
+      #|  inspect(v2.get_char(2), content="None")
+      #|}
     ),
     "stringbuilder.mbt": (
       #|pub fn[T : Show] StringBuilder::write_object(
@@ -11319,9 +13353,6 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|  let end = view.end()
       #|  self.write_substring(view.str(), start, end - start)
       #|}
-      #|fn StringView::str(self : StringView) -> String = "%stringview.str"
-      #|fn StringView::start(self : StringView) -> Int = "%stringview.start"
-      #|fn StringView::end(self : StringView) -> Int = "%stringview.end"
     ),
     "stringbuilder_buffer.mbt": (
       #|struct StringBuilder {
@@ -11401,10 +13432,6 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|pub impl Logger for StringBuilder with write_string(self, str) {
       #|  self.val += str
       #|}
-      #|#intrinsic("%char.to_string")
-      #|fn char_to_string(char : Char) -> String {
-      #|  [char]
-      #|}
       #|pub impl Logger for StringBuilder with write_char(self, ch) {
       #|  self.val += char_to_string(ch)
       #|}
@@ -11426,16 +13453,367 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|  self.val = ""
       #|}
     ),
+    "stringview.mbt": (
+      #|fn StringView::str(self : StringView) -> String = "%stringview.str"
+      #|fn StringView::start(self : StringView) -> Int = "%stringview.start"
+      #|fn StringView::end(self : StringView) -> Int = "%stringview.end"
+      #|fn StringView::make_view(str : String, start : Int, end : Int) -> StringView = "%stringview.make"
+      #|#alias("_[_]")
+      #|pub fn StringView::at(self : StringView, index : Int) -> Int {
+      #|  guard index >= 0 && index < self.length() else {
+      #|    abort("Index out of bounds")
+      #|  }
+      #|  self.str().unsafe_charcode_at(self.start() + index)
+      #|}
+      #|pub fn StringView::length(self : StringView) -> Int {
+      #|  self.end() - self.start()
+      #|}
+      #|pub fn StringView::suffixes(
+      #|  self : StringView,
+      #|  include_empty? : Bool = false,
+      #|) -> Iterator[StringView] {
+      #|  let str = self.str()
+      #|  let end = self.end()
+      #|  let mut next_start = self.start()
+      #|  let mut finished = false
+      #|  Iterator::new(fn() -> StringView? {
+      #|    if finished {
+      #|      None
+      #|    } else if next_start == end {
+      #|      finished = true
+      #|      if include_empty {
+      #|        Some(StringView::make_view(str, next_start, end))
+      #|      } else {
+      #|        None
+      #|      }
+      #|    } else {
+      #|      let suffix = StringView::make_view(str, next_start, end)
+      #|      let code = str.unsafe_charcode_at(next_start)
+      #|      if code.is_leading_surrogate() &&
+      #|        next_start + 1 < end &&
+      #|        str.unsafe_charcode_at(next_start + 1).is_trailing_surrogate() {
+      #|        next_start += 2
+      #|      } else {
+      #|        next_start += 1
+      #|      }
+      #|      Some(suffix)
+      #|    }
+      #|  })
+      #|}
+      #|pub fn StringView::data(self : StringView) -> String {
+      #|  self.str()
+      #|}
+      #|pub fn StringView::start_offset(self : StringView) -> Int {
+      #|  self.start()
+      #|}
+      #|pub fn StringView::view(
+      #|  self : StringView,
+      #|  start_offset? : Int = 0,
+      #|  end_offset? : Int,
+      #|) -> StringView {
+      #|  let end_offset = if end_offset is Some(o) { o } else { self.length() }
+      #|  guard start_offset >= 0 &&
+      #|    start_offset <= end_offset &&
+      #|    end_offset <= self.length() else {
+      #|    abort("Invalid index for View")
+      #|  }
+      #|  StringView::make_view(
+      #|    self.str(),
+      #|    self.start() + start_offset,
+      #|    self.start() + end_offset,
+      #|  )
+      #|}
+      #|pub fn StringView::unsafe_charcode_at(self : StringView, index : Int) -> Int {
+      #|  self.str().unsafe_charcode_at(self.start() + index)
+      #|}
+      #|pub fn StringView::char_length(self : StringView) -> Int {
+      #|  self.str().char_length(start_offset=self.start(), end_offset=self.end())
+      #|}
+      #|pub impl Show for StringView with output(self, logger) {
+      #|  let substr = self.str().unsafe_substring(start=self.start(), end=self.end())
+      #|  String::output(substr, logger)
+      #|}
+      #|pub impl Show for StringView with to_string(self) {
+      #|  self.str().unsafe_substring(start=self.start(), end=self.end())
+      #|}
+      #|pub fn StringView::iter(self : StringView) -> Iter[Char] {
+      #|  Iter::new(yield_ => for index in self.start()..<self.end() {
+      #|    let c1 = self.str().unsafe_charcode_at(index)
+      #|    if c1.is_leading_surrogate() && index + 1 < self.end() {
+      #|      let c2 = self.str().unsafe_charcode_at(index + 1)
+      #|      if c2.is_trailing_surrogate() {
+      #|        let c = code_point_of_surrogate_pair(c1, c2)
+      #|        guard yield_(c) is IterContinue else { break IterEnd }
+      #|        continue index + 2
+      #|      }
+      #|    }
+      #|    guard yield_(c1.unsafe_to_char()) is IterContinue else { break IterEnd }
+      #|  } else {
+      #|    IterContinue
+      #|  })
+      #|}
+      #|pub fn StringView::iterator(self : StringView) -> Iterator[Char] {
+      #|  let start = self.start()
+      #|  let end = self.end()
+      #|  let mut index = start
+      #|  Iterator::new(fn() {
+      #|    guard index < end else { None }
+      #|    let c1 = self.str().unsafe_charcode_at(index)
+      #|    if c1.is_leading_surrogate() && index + 1 < self.end() {
+      #|      let c2 = self.str().unsafe_charcode_at(index + 1)
+      #|      if c2.is_trailing_surrogate() {
+      #|        index += 2
+      #|        return Some(code_point_of_surrogate_pair(c1, c2))
+      #|      }
+      #|    }
+      #|    index += 1
+      #|    Some(c1.unsafe_to_char())
+      #|  })
+      #|}
+      #|pub fn StringView::iter2(self : StringView) -> Iter2[Int, Char] {
+      #|  Iter2::new(yield_ => {
+      #|    let len = self.length()
+      #|    for index = 0, n = 0; index < len; index = index + 1, n = n + 1 {
+      #|      let c1 = self.str().unsafe_charcode_at(self.start() + index)
+      #|      if c1.is_leading_surrogate() && index + 1 < len {
+      #|        let c2 = self.str().unsafe_charcode_at(self.start() + index + 1)
+      #|        if c2.is_trailing_surrogate() {
+      #|          let c = code_point_of_surrogate_pair(c1, c2)
+      #|          guard yield_(n, c) is IterContinue else { break IterEnd }
+      #|          continue index + 2, n + 1
+      #|        }
+      #|      }
+      #|      guard yield_(n, c1.unsafe_to_char()) is IterContinue else {
+      #|        break IterEnd
+      #|      }
+      #|    } else {
+      #|      IterContinue
+      #|    }
+      #|  })
+      #|}
+      #|pub fn StringView::iterator2(self : StringView) -> Iterator2[Int, Char] {
+      #|  let start = self.start()
+      #|  let end = self.end()
+      #|  let mut index = start
+      #|  let mut char_index = 0
+      #|  Iterator2::new(fn() {
+      #|    guard index < end else { None }
+      #|    let c1 = self.str().unsafe_charcode_at(index)
+      #|    if c1.is_leading_surrogate() && index + 1 < self.end() {
+      #|      let c2 = self.str().unsafe_charcode_at(index + 1)
+      #|      if c2.is_trailing_surrogate() {
+      #|        let result = (char_index, code_point_of_surrogate_pair(c1, c2))
+      #|        index += 2
+      #|        char_index += 1
+      #|        return Some(result)
+      #|      }
+      #|    }
+      #|    let result = (char_index, c1.unsafe_to_char())
+      #|    index += 1
+      #|    char_index += 1
+      #|    Some(result)
+      #|  })
+      #|}
+      #|pub fn StringView::rev_iter(self : StringView) -> Iter[Char] {
+      #|  Iter::new(yield_ => for index = self.end() - 1
+      #|                          index >= self.start()
+      #|                          index = index - 1 {
+      #|    let c1 = self.str().unsafe_charcode_at(index)
+      #|    if c1.is_trailing_surrogate() && index - 1 >= 0 {
+      #|      let c2 = self.str().unsafe_charcode_at(index - 1)
+      #|      if c2.is_leading_surrogate() {
+      #|        let c = code_point_of_surrogate_pair(c2, c1)
+      #|        guard yield_(c) is IterContinue else { break IterEnd }
+      #|        continue index - 2
+      #|      }
+      #|    }
+      #|    guard yield_(c1.unsafe_to_char()) is IterContinue else { break IterEnd }
+      #|  } else {
+      #|    IterContinue
+      #|  })
+      #|}
+      #|pub fn StringView::rev_iterator(self : StringView) -> Iterator[Char] {
+      #|  let start = self.start()
+      #|  let end = self.end()
+      #|  let mut index = end
+      #|  Iterator::new(fn() {
+      #|    guard index > start else { None }
+      #|    index -= 1
+      #|    let c1 = self.str().unsafe_charcode_at(index)
+      #|    if c1.is_trailing_surrogate() && index - 1 >= 0 {
+      #|      let c2 = self.str().unsafe_charcode_at(index - 1)
+      #|      if c2.is_leading_surrogate() {
+      #|        index -= 1
+      #|        return Some(code_point_of_surrogate_pair(c2, c1))
+      #|      }
+      #|    }
+      #|    Some(c1.unsafe_to_char())
+      #|  })
+      #|}
+      #|pub impl Eq for StringView with equal(self, other) {
+      #|  let len = self.length()
+      #|  guard len == other.length() else { return false }
+      #|  if physical_equal(self.str(), other.str()) && self.start() == other.start() {
+      #|    return true
+      #|  }
+      #|  for i in 0..<len {
+      #|    guard self.str().unsafe_charcode_at(self.start() + i) ==
+      #|      other.str().unsafe_charcode_at(other.start() + i) else {
+      #|      return false
+      #|    }
+      #|  }
+      #|  true
+      #|}
+      #|pub impl Compare for StringView with compare(self, other) {
+      #|  let self_len = self.length()
+      #|  let other_len = other.length()
+      #|  let cmp = self_len.compare(other_len)
+      #|  guard cmp == 0 else { return cmp }
+      #|  if physical_equal(self.str(), other.str()) && self.start() == other.start() {
+      #|    return 0
+      #|  }
+      #|  for i in 0..<self_len {
+      #|    let cmp = self
+      #|      .str()
+      #|      .unsafe_charcode_at(self.start() + i)
+      #|      .compare(other.str().unsafe_charcode_at(other.start() + i))
+      #|    guard cmp == 0 else { return cmp }
+      #|  }
+      #|  0
+      #|}
+      #|pub fn StringView::lexical_compare(
+      #|  self : StringView,
+      #|  other : StringView,
+      #|) -> Int {
+      #|  let self_len = self.length()
+      #|  let other_len = other.length()
+      #|  let min_len = if self_len < other_len { self_len } else { other_len }
+      #|  for i in 0..<min_len {
+      #|    let self_char = self.str().unsafe_charcode_at(self.start() + i)
+      #|    let other_char = other.str().unsafe_charcode_at(other.start() + i)
+      #|    let cmp = self_char.compare(other_char)
+      #|    if cmp != 0 {
+      #|      return cmp
+      #|    }
+      #|  }
+      #|  self_len.compare(other_len)
+      #|}
+      #|pub fn String::view(
+      #|  self : String,
+      #|  start_offset? : Int = 0,
+      #|  end_offset? : Int,
+      #|) -> StringView {
+      #|  let end_offset = if end_offset is Some(o) { o } else { self.length() }
+      #|  guard start_offset >= 0 &&
+      #|    start_offset <= end_offset &&
+      #|    end_offset <= self.length() else {
+      #|    abort("Invalid index for View")
+      #|  }
+      #|  StringView::make_view(self, start_offset, end_offset)
+      #|}
+      #|pub fn StringView::from_array(chars : ArrayView[Char]) -> StringView {
+      #|  String::from_array(chars)
+      #|}
+      #|pub fn StringView::from_iter(iter : Iter[Char]) -> StringView {
+      #|  String::from_iter(iter)
+      #|}
+      #|pub fn StringView::from_iterator(iter : Iterator[Char]) -> StringView {
+      #|  String::from_iterator(iter)
+      #|}
+      #|pub suberror CreatingViewError {
+      #|  IndexOutOfBounds
+      #|  InvalidIndex
+      #|} derive(Show)
+      #|#alias("_[_:_]")
+      #|pub fn String::sub(
+      #|  self : String,
+      #|  start? : Int = 0,
+      #|  end? : Int,
+      #|) -> StringView raise CreatingViewError {
+      #|  let len = self.length()
+      #|  let end = match end {
+      #|    None => len
+      #|    Some(end) => if end < 0 { len + end } else { end }
+      #|  }
+      #|  let start = if start < 0 { len + start } else { start }
+      #|  guard start >= 0 && start <= end && end <= len else { raise IndexOutOfBounds }
+      #|  if start < len && self.unsafe_charcode_at(start).is_trailing_surrogate() {
+      #|    raise InvalidIndex
+      #|  }
+      #|  if end < len && self.unsafe_charcode_at(end).is_trailing_surrogate() {
+      #|    raise InvalidIndex
+      #|  }
+      #|  StringView::make_view(self, start, end)
+      #|}
+      #|#alias("_[_:_]")
+      #|pub fn StringView::sub(
+      #|  self : StringView,
+      #|  start? : Int = 0,
+      #|  end? : Int,
+      #|) -> StringView raise CreatingViewError {
+      #|  let str_len = self.str().length()
+      #|  let abs_end = match end {
+      #|    None => self.end()
+      #|    Some(end) => if end < 0 { self.end() + end } else { self.start() + end }
+      #|  }
+      #|  let abs_start = if start < 0 {
+      #|    self.end() + start
+      #|  } else {
+      #|    self.start() + start
+      #|  }
+      #|  guard abs_start >= self.start() &&
+      #|    abs_start <= abs_end &&
+      #|    abs_end <= self.end() else {
+      #|    raise IndexOutOfBounds
+      #|  }
+      #|  if abs_start < str_len &&
+      #|    self.str().unsafe_charcode_at(abs_start).is_trailing_surrogate() {
+      #|    raise InvalidIndex
+      #|  }
+      #|  if abs_end < str_len &&
+      #|    self.str().unsafe_charcode_at(abs_end).is_trailing_surrogate() {
+      #|    raise InvalidIndex
+      #|  }
+      #|  StringView::make_view(self.str(), abs_start, abs_end)
+      #|}
+      #|pub fn StringView::char_length_eq(self : StringView, len : Int) -> Bool {
+      #|  self
+      #|  .str()
+      #|  .char_length_eq(len, start_offset=self.start(), end_offset=self.end())
+      #|}
+      #|pub fn StringView::char_length_ge(self : StringView, len : Int) -> Bool {
+      #|  self
+      #|  .str()
+      #|  .char_length_ge(len, start_offset=self.start(), end_offset=self.end())
+      #|}
+      #|pub fn StringView::offset_of_nth_char(self : StringView, i : Int) -> Int? {
+      #|  if self
+      #|    .str()
+      #|    .offset_of_nth_char(i, start_offset=self.start(), end_offset=self.end())
+      #|    is Some(index) {
+      #|    Some(index - self.start())
+      #|  } else {
+      #|    None
+      #|  }
+      #|}
+      #|pub impl Default for StringView with default() {
+      #|  ""
+      #|}
+      #|pub fn StringView::make(length : Int, value : Char) -> StringView {
+      #|  String::make(length, value)
+      #|}
+      #|pub impl ToJson for StringView with to_json(self) {
+      #|  String::to_json(self.to_string())
+      #|}
+      #|pub impl Add for StringView with add(self, other) {
+      #|  [..self, ..other]
+      #|}
+    ),
     "to_string.mbt": (
+      #|#cfg(not(target="js"))
       #|const ALPHABET : String = "0123456789abcdefghijklmnopqrstuvwxyz"
-      #|pub fn Int64::to_string(self : Int64, radix? : Int = 10) -> String {
-      #|  let buf = StringBuilder::new(size_hint=Int64::output_size_hint(radix~))
-      #|  self.output(buf, radix~)
-      #|  buf.to_string()
-      #|}
-      #|pub impl Show for Int64 with to_string(self) {
-      #|  self.to_string(radix=10)
-      #|}
+      #|#cfg(not(target="js"))
+      #|fn unsafe_fixedarray_uint16_to_string(buffer : FixedArray[UInt16]) -> String = "%string.unsafe_from_uint16_fixedarray"
       #|#cfg(not(target="js"))
       #|fn int_to_string_hex(
       #|  buffer : FixedArray[UInt16],
@@ -11458,7 +13836,7 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|      digit_start + offset + 1,
       #|      ALPHABET.unsafe_charcode_at(lo).to_uint16(),
       #|    )
-      #|    n = n.lsr(8)
+      #|    n = n >> 8
       #|  }
       #|  if offset == 1 {
       #|    let nibble = n.land(0xFU).reinterpret_as_int()
@@ -11489,7 +13867,7 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|        digit_start + offset,
       #|        ALPHABET.unsafe_charcode_at(digit).to_uint16(),
       #|      )
-      #|      n = n.lsr(shift)
+      #|      n = n >> shift
       #|    }
       #|  } else {
       #|    while n > 0U {
@@ -11553,20 +13931,32 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|}
       #|#cfg(not(target="js"))
       #|fn dec_count32(value : UInt) -> Int {
-      #|  if value < 100000U {
-      #|    if value < 100U {
-      #|      1 + (if value >= 10U { 1 } else { 0 })
+      #|  if value >= 100000U { // >= 10^5 means 6+ digits
+      #|    if value >= 10000000U { // >= 10^7 means 8+ digits
+      #|      if value >= 1000000000U { // >= 10^9 means 10 digits
+      #|        10
+      #|      } else if value >= 100000000U { // >= 10^8 means 9 digits
+      #|        9
+      #|      } else {
+      #|        8
+      #|      }
+      #|    } else if value >= 1000000U { // >= 10^6 means 7 digits
+      #|      7
       #|    } else {
-      #|      3 +
-      #|      (if value >= 10000U { 1 } else { 0 }) +
-      #|      (if value >= 1000U { 1 } else { 0 })
+      #|      6
       #|    }
-      #|  } else if value < 10000000U {
-      #|    6 + (if value >= 1000000U { 1 } else { 0 })
+      #|  } else if value >= 1000U { // >= 10^3 means 4+ digits
+      #|    if value >= 10000U { // >= 10^4 means 5 digits
+      #|      5
+      #|    } else {
+      #|      4
+      #|    }
+      #|  } else if value >= 100U { // >= 10^2 means 3 digits
+      #|    3
+      #|  } else if value >= 10U { // >= 10^1 means 2 digits
+      #|    2
       #|  } else {
-      #|    8 +
-      #|    (if value >= 1000000000U { 1 } else { 0 }) +
-      #|    (if value >= 100000000U { 1 } else { 0 })
+      #|    1
       #|  }
       #|}
       #|#cfg(not(target="js"))
@@ -11635,17 +14025,37 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|  if is_negative {
       #|    buffer.unsafe_set(0, 0x002D)
       #|  }
-      #|  unsafe_fixedarray_to_string(buffer)
+      #|  unsafe_fixedarray_uint16_to_string(buffer)
       #|}
-      #|#cfg(not(any(target="js", target="wasm-gc")))
-      #|fn unsafe_fixedarray_to_string(buffer : FixedArray[UInt16]) -> String = "%identity"
-      #|#cfg(target="wasm-gc")
-      #|fn unsafe_fixedarray_to_string(buffer : FixedArray[UInt16]) -> String {
-      #|  let sb = StringBuilder::new(size_hint=buffer.length() * 2)
-      #|  for u in buffer {
-      #|    sb.write_char(u.to_int().unsafe_to_char())
+      #|#cfg(not(target="js"))
+      #|pub fn UInt::to_string(self : UInt, radix? : Int = 10) -> String {
+      #|  if radix < 2 || radix > 36 {
+      #|    abort("radix must be between 2 and 36")
       #|  }
-      #|  sb.to_string()
+      #|  if self == 0U {
+      #|    return "0"
+      #|  }
+      #|  let buffer = match radix {
+      #|    10 => {
+      #|      let len = dec_count32(self)
+      #|      let buffer : FixedArray[UInt16] = FixedArray::make(len, 0)
+      #|      int_to_string_dec(buffer, self, 0, len)
+      #|      buffer
+      #|    }
+      #|    16 => {
+      #|      let len = hex_count32(self)
+      #|      let buffer : FixedArray[UInt16] = FixedArray::make(len, 0)
+      #|      int_to_string_hex(buffer, self, 0, len)
+      #|      buffer
+      #|    }
+      #|    _ => {
+      #|      let len = radix_count32(self, radix)
+      #|      let buffer : FixedArray[UInt16] = FixedArray::make(len, 0)
+      #|      int_to_string_generic(buffer, self, 0, len, radix)
+      #|      buffer
+      #|    }
+      #|  }
+      #|  unsafe_fixedarray_uint16_to_string(buffer)
       #|}
       #|#cfg(target="js")
       #|pub fn Int::to_string(self : Int, radix? : Int = 10) -> String {
@@ -11656,41 +14066,320 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|  #|(x, radix) => {
       #|  #|  return x.toString(radix);
       #|  #|}
-      #|pub impl Show for Int with to_string(self) {
-      #|  self.to_string(radix=10)
-      #|}
+      #|#cfg(target="js")
       #|pub fn UInt::to_string(self : UInt, radix? : Int = 10) -> String {
-      #|  let buf = StringBuilder::new(size_hint=UInt::output_size_hint(radix~))
-      #|  self.output(buf, radix~)
-      #|  buf.to_string()
+      #|  uint_to_string_js(self, radix)
       #|}
-      #|pub impl Show for UInt with to_string(self) {
-      #|  self.to_string(radix=10)
+      #|#cfg(target="js")
+      #|extern "js" fn uint_to_string_js(i : UInt, radix : Int) -> String =
+      #|  #|(x, radix) => {
+      #|  #|  return (x >>> 0).toString(radix);
+      #|  #|}
+      #|#cfg(not(target="js"))
+      #|fn dec_count64(value : UInt64) -> Int {
+      #|  if value >= 10000000000UL { // >= 10^10 means 11+ digits
+      #|    if value >= 100000000000000UL { // >= 10^14 means 15+ digits
+      #|      if value >= 10000000000000000UL { // >= 10^16 means 17+ digits
+      #|        if value >= 1000000000000000000UL { // >= 10^18 means 19+ digits
+      #|          if value >= 10000000000000000000UL { // >= 10^19 means 20 digits
+      #|            20
+      #|          } else {
+      #|            19
+      #|          }
+      #|        } else if value >= 100000000000000000UL { // >= 10^17 means 18 digits
+      #|          18
+      #|        } else {
+      #|          17
+      #|        }
+      #|      } else if value >= 1000000000000000UL { // >= 10^15 means 16 digits
+      #|        16
+      #|      } else {
+      #|        15
+      #|      }
+      #|    } else if value >= 1000000000000UL { // >= 10^12 means 13+ digits
+      #|      if value >= 10000000000000UL { // >= 10^13 means 14 digits
+      #|        14
+      #|      } else {
+      #|        13
+      #|      }
+      #|    } else if value >= 100000000000UL { // >= 10^11 means 12 digits
+      #|      12
+      #|    } else {
+      #|      11
+      #|    }
+      #|  } else if value >= 100000UL { // >= 10^5 means 6+ digits
+      #|    if value >= 10000000UL { // >= 10^7 means 8+ digits
+      #|      if value >= 1000000000UL { // >= 10^9 means 10 digits
+      #|        10
+      #|      } else if value >= 100000000UL { // >= 10^8 means 9 digits
+      #|        9
+      #|      } else {
+      #|        8
+      #|      }
+      #|    } else if value >= 1000000UL { // >= 10^6 means 7 digits
+      #|      7
+      #|    } else {
+      #|      6
+      #|    }
+      #|  } else if value >= 1000UL { // >= 10^3 means 4+ digits
+      #|    if value >= 10000UL { // >= 10^4 means 5 digits
+      #|      5
+      #|    } else {
+      #|      4
+      #|    }
+      #|  } else if value >= 100UL { // >= 10^2 means 3 digits
+      #|    3
+      #|  } else if value >= 10UL { // >= 10^1 means 2 digits
+      #|    2
+      #|  } else {
+      #|    1
+      #|  }
+      #|}
+      #|#cfg(not(target="js"))
+      #|fn hex_count64(value : UInt64) -> Int {
+      #|  if value == 0UL {
+      #|    1
+      #|  } else {
+      #|    let leading_zeros = value.clz()
+      #|    (63 - leading_zeros) / 4 + 1
+      #|  }
+      #|}
+      #|#cfg(not(target="js"))
+      #|fn radix_count64(value : UInt64, radix : Int) -> Int {
+      #|  if value == 0UL {
+      #|    return 1
+      #|  }
+      #|  let mut num = value
+      #|  let base = radix.to_uint64()
+      #|  let mut count = 0
+      #|  while num > 0UL {
+      #|    count = count + 1
+      #|    num = num / base
+      #|  }
+      #|  count
+      #|}
+      #|#cfg(not(target="js"))
+      #|fn int64_to_string_hex(
+      #|  buffer : FixedArray[UInt16],
+      #|  num : UInt64,
+      #|  digit_start : Int,
+      #|  total_len : Int,
+      #|) -> Unit {
+      #|  let mut offset = total_len - digit_start
+      #|  let mut n = num
+      #|  while offset >= 2 {
+      #|    offset = offset - 2
+      #|    let byte_val = n.land(0xFFUL).to_int()
+      #|    let hi = byte_val / 16
+      #|    let lo = byte_val % 16
+      #|    buffer.unsafe_set(
+      #|      digit_start + offset,
+      #|      ALPHABET.unsafe_charcode_at(hi).to_uint16(),
+      #|    )
+      #|    buffer.unsafe_set(
+      #|      digit_start + offset + 1,
+      #|      ALPHABET.unsafe_charcode_at(lo).to_uint16(),
+      #|    )
+      #|    n = n >> 8
+      #|  }
+      #|  if offset == 1 {
+      #|    let nibble = n.land(0xFUL).to_int()
+      #|    buffer.unsafe_set(
+      #|      digit_start,
+      #|      ALPHABET.unsafe_charcode_at(nibble).to_uint16(),
+      #|    )
+      #|  }
+      #|}
+      #|#cfg(not(target="js"))
+      #|fn int64_to_string_generic(
+      #|  buffer : FixedArray[UInt16],
+      #|  num : UInt64,
+      #|  digit_start : Int,
+      #|  total_len : Int,
+      #|  radix : Int,
+      #|) -> Unit {
+      #|  let mut offset = total_len - digit_start
+      #|  let mut n = num
+      #|  let base = radix.to_uint64()
+      #|  if (radix & (radix - 1)) == 0 {
+      #|    let shift = radix.ctz()
+      #|    let mask = base - 1UL
+      #|    while n > 0UL {
+      #|      offset = offset - 1
+      #|      let digit = n.land(mask).to_int()
+      #|      buffer.unsafe_set(
+      #|        digit_start + offset,
+      #|        ALPHABET.unsafe_charcode_at(digit).to_uint16(),
+      #|      )
+      #|      n = n >> shift
+      #|    }
+      #|  } else {
+      #|    while n > 0UL {
+      #|      offset = offset - 1
+      #|      let q = n / base
+      #|      let digit = (n - q * base).to_int()
+      #|      buffer.unsafe_set(
+      #|        digit_start + offset,
+      #|        ALPHABET.unsafe_charcode_at(digit).to_uint16(),
+      #|      )
+      #|      n = q
+      #|    }
+      #|  }
+      #|}
+      #|#cfg(not(target="js"))
+      #|fn int64_to_string_dec(
+      #|  buffer : FixedArray[UInt16],
+      #|  num : UInt64,
+      #|  digit_start : Int,
+      #|  total_len : Int,
+      #|) -> Unit {
+      #|  let mut num = num
+      #|  let mut offset = total_len - digit_start
+      #|  while num >= 10000UL {
+      #|    let t = num / 10000UL
+      #|    let r = (num % 10000UL).to_int()
+      #|    num = t
+      #|    let d1 = r / 100
+      #|    let d2 = r % 100
+      #|    offset = offset - 4
+      #|    let d1_hi = (0x30 + d1 / 10).to_uint16()
+      #|    let d1_lo = (0x30 + d1 % 10).to_uint16()
+      #|    let d2_hi = (0x30 + d2 / 10).to_uint16()
+      #|    let d2_lo = (0x30 + d2 % 10).to_uint16()
+      #|    buffer.unsafe_set(digit_start + offset, d1_hi)
+      #|    buffer.unsafe_set(digit_start + offset + 1, d1_lo)
+      #|    buffer.unsafe_set(digit_start + offset + 2, d2_hi)
+      #|    buffer.unsafe_set(digit_start + offset + 3, d2_lo)
+      #|  }
+      #|  let mut remaining = num.to_int()
+      #|  while remaining >= 100 {
+      #|    let t = remaining / 100
+      #|    let d = remaining % 100
+      #|    remaining = t
+      #|    offset = offset - 2
+      #|    let d_hi = (0x30 + d / 10).to_uint16()
+      #|    let d_lo = (0x30 + d % 10).to_uint16()
+      #|    buffer.unsafe_set(digit_start + offset, d_hi)
+      #|    buffer.unsafe_set(digit_start + offset + 1, d_lo)
+      #|  }
+      #|  if remaining >= 10 {
+      #|    offset = offset - 2
+      #|    let d_hi = (0x30 + remaining / 10).to_uint16()
+      #|    let d_lo = (0x30 + remaining % 10).to_uint16()
+      #|    buffer.unsafe_set(digit_start + offset, d_hi)
+      #|    buffer.unsafe_set(digit_start + offset + 1, d_lo)
+      #|  } else {
+      #|    offset = offset - 1
+      #|    buffer.unsafe_set(digit_start + offset, (0x30 + remaining).to_uint16())
+      #|  }
+      #|}
+      #|#cfg(not(target="js"))
+      #|pub fn Int64::to_string(self : Int64, radix? : Int = 10) -> String {
+      #|  if radix < 2 || radix > 36 {
+      #|    abort("radix must be between 2 and 36")
+      #|  }
+      #|  if self == 0L {
+      #|    return "0"
+      #|  }
+      #|  let is_negative = self < 0L
+      #|  let num : UInt64 = if is_negative {
+      #|    (-self).reinterpret_as_uint64()
+      #|  } else {
+      #|    self.reinterpret_as_uint64()
+      #|  }
+      #|  let buffer = match radix {
+      #|    10 => {
+      #|      let digit_len = dec_count64(num)
+      #|      let total_len = digit_len + (if is_negative { 1 } else { 0 })
+      #|      let buffer : FixedArray[UInt16] = FixedArray::make(total_len, 0)
+      #|      let digit_start = if is_negative { 1 } else { 0 }
+      #|      int64_to_string_dec(buffer, num, digit_start, total_len)
+      #|      buffer
+      #|    }
+      #|    16 => {
+      #|      let digit_len = hex_count64(num)
+      #|      let total_len = digit_len + (if is_negative { 1 } else { 0 })
+      #|      let buffer : FixedArray[UInt16] = FixedArray::make(total_len, 0)
+      #|      let digit_start = if is_negative { 1 } else { 0 }
+      #|      int64_to_string_hex(buffer, num, digit_start, total_len)
+      #|      buffer
+      #|    }
+      #|    _ => {
+      #|      let digit_len = radix_count64(num, radix)
+      #|      let total_len = digit_len + (if is_negative { 1 } else { 0 })
+      #|      let buffer : FixedArray[UInt16] = FixedArray::make(total_len, 0)
+      #|      let digit_start = if is_negative { 1 } else { 0 }
+      #|      int64_to_string_generic(buffer, num, digit_start, total_len, radix)
+      #|      buffer
+      #|    }
+      #|  }
+      #|  if is_negative {
+      #|    buffer.unsafe_set(0, 0x002D)
+      #|  }
+      #|  unsafe_fixedarray_uint16_to_string(buffer)
+      #|}
+      #|#cfg(not(target="js"))
+      #|pub fn UInt64::to_string(self : UInt64, radix? : Int = 10) -> String {
+      #|  if radix < 2 || radix > 36 {
+      #|    abort("radix must be between 2 and 36")
+      #|  }
+      #|  if self == 0UL {
+      #|    return "0"
+      #|  }
+      #|  let buffer = match radix {
+      #|    10 => {
+      #|      let len = dec_count64(self)
+      #|      let buffer : FixedArray[UInt16] = FixedArray::make(len, 0)
+      #|      int64_to_string_dec(buffer, self, 0, len)
+      #|      buffer
+      #|    }
+      #|    16 => {
+      #|      let len = hex_count64(self)
+      #|      let buffer : FixedArray[UInt16] = FixedArray::make(len, 0)
+      #|      int64_to_string_hex(buffer, self, 0, len)
+      #|      buffer
+      #|    }
+      #|    _ => {
+      #|      let len = radix_count64(self, radix)
+      #|      let buffer : FixedArray[UInt16] = FixedArray::make(len, 0)
+      #|      int64_to_string_generic(buffer, self, 0, len, radix)
+      #|      buffer
+      #|    }
+      #|  }
+      #|  unsafe_fixedarray_uint16_to_string(buffer)
+      #|}
+      #|#cfg(target="js")
+      #|pub fn Int64::to_string(self : Int64, radix? : Int = 10) -> String {
+      #|  int64_to_string_js(self, radix)
+      #|}
+      #|#cfg(target="js")
+      #|extern "js" fn int64_to_string_js(num : Int64, radix : Int) -> String =
+      #|  #|(num, radix) => {
+      #|  #|  let val = (BigInt(num.hi >>> 0) << 32n) | BigInt(num.lo >>> 0);
+      #|  #|  if (val & (1n << 63n)) {
+      #|  #|    val = val - (1n << 64n);
+      #|  #|  }
+      #|  #|  return val.toString(radix);
+      #|  #|}
+      #|#cfg(target="js")
+      #|pub fn UInt64::to_string(self : UInt64, radix? : Int = 10) -> String {
+      #|  uint64_to_string_js(self, radix)
+      #|}
+      #|#cfg(target="js")
+      #|extern "js" fn uint64_to_string_js(num : UInt64, radix : Int) -> String =
+      #|  #|(num, radix) => {
+      #|  #|  return (BigInt(num.hi >>> 0) << 32n | BigInt(num.lo >>> 0)).toString(radix);
+      #|  #|}
+      #|pub fn Int16::to_string(self : Int16, radix? : Int = 10) -> String {
+      #|  self.to_int().to_string(radix~)
+      #|}
+      #|pub fn UInt16::to_string(self : UInt16, radix? : Int = 10) -> String {
+      #|  self.to_int().to_string(radix~)
       #|}
       #|test "UInt::to_string" {
       #|  inspect(0U, content="0")
       #|  inspect(17U, content="17")
       #|  inspect(4294967295U, content="4294967295")
-      #|}
-      #|pub fn UInt64::to_string(self : UInt64, radix? : Int = 10) -> String {
-      #|  let buf = StringBuilder::new(size_hint=UInt64::output_size_hint(radix~))
-      #|  self.output(buf, radix~)
-      #|  buf.to_string()
-      #|}
-      #|pub impl Show for UInt64 with to_string(self) {
-      #|  self.to_string(radix=10)
-      #|}
-      #|pub fn Int16::to_string(self : Int16, radix? : Int = 10) -> String {
-      #|  self.to_int().to_string(radix~)
-      #|}
-      #|pub impl Show for Int16 with to_string(self) {
-      #|  self.to_string(radix=10)
-      #|}
-      #|pub fn UInt16::to_string(self : UInt16, radix? : Int = 10) -> String {
-      #|  self.to_int().to_string(radix~)
-      #|}
-      #|pub impl Show for UInt16 with to_string(self) {
-      #|  self.to_string(radix=10)
       #|}
       #|test "to_string" {
       #|  assert_eq((0x100).to_string(), "256")
@@ -11701,65 +14390,6 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|  assert_eq("\{0x300L}", "768")
       #|  assert_eq(0x400UL.to_string(), "1024")
       #|  assert_eq("\{0x400UL}", "1024")
-      #|}
-      #|test "to_string with radix" {
-      #|  inspect((0).to_string(radix=2), content="0")
-      #|  inspect((1).to_string(radix=2), content="1")
-      #|  inspect((2).to_string(radix=2), content="10")
-      #|  inspect((255).to_string(radix=2), content="11111111")
-      #|  inspect((-255).to_string(radix=2), content="-11111111")
-      #|  inspect((0).to_string(radix=8), content="0")
-      #|  inspect((8).to_string(radix=8), content="10")
-      #|  inspect((64).to_string(radix=8), content="100")
-      #|  inspect((-64).to_string(radix=8), content="-100")
-      #|  inspect((0).to_string(radix=10), content="0")
-      #|  inspect((123).to_string(radix=10), content="123")
-      #|  inspect((-123).to_string(radix=10), content="-123")
-      #|  inspect(
-      #|    0x7fff_ffff_ffff_ffffL.to_string(radix=10),
-      #|    content="9223372036854775807",
-      #|  )
-      #|  inspect(
-      #|    0x8000_0000_0000_0000L.to_string(radix=10),
-      #|    content="-9223372036854775808",
-      #|  )
-      #|  inspect((0).to_string(radix=16), content="0")
-      #|  inspect((0x11).to_string(radix=16), content="11")
-      #|  inspect((0x15ef).to_string(radix=16), content="15ef")
-      #|  inspect((-0xabcd).to_string(radix=16), content="-abcd")
-      #|  inspect(
-      #|    (1.0 : Float).reinterpret_as_int().to_string(radix=16),
-      #|    content="3f800000",
-      #|  )
-      #|  inspect(0U.to_string(radix=16), content="0")
-      #|  inspect(0x1AU.to_string(radix=16), content="1a")
-      #|  inspect(0xabcdU.to_string(radix=16), content="abcd")
-      #|  inspect(
-      #|    (-2.0 : Float).reinterpret_as_uint().to_string(radix=16),
-      #|    content="c0000000",
-      #|  )
-      #|  inspect((-1).reinterpret_as_uint().to_string(radix=16), content="ffffffff")
-      #|  inspect(0L.to_string(radix=16), content="0")
-      #|  inspect(0x2fL.to_string(radix=16), content="2f")
-      #|  inspect(0xf0aeL.to_string(radix=16), content="f0ae")
-      #|  inspect((-0x1234eacbL).to_string(radix=16), content="-1234eacb")
-      #|  inspect(
-      #|    1.0.reinterpret_as_uint64().to_string(radix=16),
-      #|    content="3ff0000000000000",
-      #|  )
-      #|  inspect(0b101L.to_string(radix=2), content="101")
-      #|  inspect(0o17L.to_string(radix=8), content="17")
-      #|  inspect(0UL.to_string(radix=16), content="0")
-      #|  inspect(0x11UL.to_string(radix=16), content="11")
-      #|  inspect(0x12bdUL.to_string(radix=16), content="12bd")
-      #|  inspect(
-      #|    (-1L).reinterpret_as_uint64().to_string(radix=16),
-      #|    content="ffffffffffffffff",
-      #|  )
-      #|  inspect(
-      #|    2.0.reinterpret_as_uint64().to_string(radix=16),
-      #|    content="4000000000000000",
-      #|  )
       #|}
       #|test "panic to_string_by_radix/illegal_radix" {
       #|  ignore((1).to_string(radix=1))
@@ -13524,6 +16154,7 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|  self.length()
       #|}
       #|#internal(unsafe, "For internal use only.")
+      #|#doc(hidden)
       #|pub fn[T] UninitializedArray::unsafe_blit(
       #|  dst : UninitializedArray[T],
       #|  dst_offset : Int,
@@ -13614,12 +16245,22 @@ let moonbitlang_core_bytes_module : RuntimePackage = RuntimePackage::new(
       #|    "moonbitlang/core/test",
       #|    "moonbitlang/core/quickcheck",
       #|    "moonbitlang/core/error",
-      #|    "moonbitlang/core/json"
+      #|    "moonbitlang/core/json",
+      #|    "moonbitlang/core/float"
       #|  ]
       #|}
     ),
     "bitstring.mbt": (
+      #|fn UInt::extend_sign(self : UInt, len : Int) -> Int {
+      #|  let b = 32 - len
+      #|  self.reinterpret_as_int() << b >> b
+      #|}
+      #|fn UInt64::extend_sign(self : UInt64, len : Int) -> Int64 {
+      #|  let b = 64 - len
+      #|  self.reinterpret_as_int64() << b >> b
+      #|}
       #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
       #|pub fn BytesView::unsafe_extract_bit(
       #|  bs : BytesView,
       #|  offset : Int,
@@ -13634,6 +16275,22 @@ let moonbitlang_core_bytes_module : RuntimePackage = RuntimePackage::new(
       #|  }
       #|}
       #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
+      #|pub fn BytesView::unsafe_extract_bit_signed(
+      #|  bs : BytesView,
+      #|  offset : Int,
+      #|  _len : Int,
+      #|) -> Int {
+      #|  let byte_index = offset >> 3
+      #|  let bit_mask = (1 << (7 - (offset & 7))).to_byte()
+      #|  if (bs.unsafe_get(byte_index) & bit_mask) != 0 {
+      #|    -1
+      #|  } else {
+      #|    0
+      #|  }
+      #|}
+      #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
       #|pub fn BytesView::unsafe_extract_byte(
       #|  bs : BytesView,
       #|  offset : Int,
@@ -13659,6 +16316,7 @@ let moonbitlang_core_bytes_module : RuntimePackage = RuntimePackage::new(
       #|  }
       #|}
       #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
       #|pub fn BytesView::unsafe_extract_uint_le(
       #|  bs : BytesView,
       #|  offset : Int,
@@ -13686,6 +16344,7 @@ let moonbitlang_core_bytes_module : RuntimePackage = RuntimePackage::new(
       #|  }
       #|}
       #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
       #|pub fn BytesView::unsafe_extract_uint_be(
       #|  bs : BytesView,
       #|  offset : Int,
@@ -13719,6 +16378,7 @@ let moonbitlang_core_bytes_module : RuntimePackage = RuntimePackage::new(
       #|  }
       #|}
       #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
       #|pub fn BytesView::unsafe_extract_uint64_le(
       #|  bs : BytesView,
       #|  offset : Int,
@@ -13769,6 +16429,7 @@ let moonbitlang_core_bytes_module : RuntimePackage = RuntimePackage::new(
       #|  }
       #|}
       #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
       #|pub fn BytesView::unsafe_extract_uint64_be(
       #|  bs : BytesView,
       #|  offset : Int,
@@ -13836,6 +16497,7 @@ let moonbitlang_core_bytes_module : RuntimePackage = RuntimePackage::new(
       #|  }
       #|}
       #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
       #|pub fn BytesView::unsafe_extract_bytesview(
       #|  bs : BytesView,
       #|  offset : Int,
@@ -13844,14 +16506,67 @@ let moonbitlang_core_bytes_module : RuntimePackage = RuntimePackage::new(
       #|  BytesView::make(bs.bytes(), bs.start() + (offset >> 3), len >> 3)
       #|}
       #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
+      #|pub fn BytesView::unsafe_extract_byte_signed(
+      #|  bs : BytesView,
+      #|  offset : Int,
+      #|  len : Int,
+      #|) -> Int {
+      #|  let unsigned = bs.unsafe_extract_byte(offset, len)
+      #|  unsigned.extend_sign(len)
+      #|}
+      #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
+      #|pub fn BytesView::unsafe_extract_int_le(
+      #|  bs : BytesView,
+      #|  offset : Int,
+      #|  len : Int,
+      #|) -> Int {
+      #|  let unsigned = bs.unsafe_extract_uint_le(offset, len)
+      #|  unsigned.extend_sign(len)
+      #|}
+      #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
+      #|pub fn BytesView::unsafe_extract_int_be(
+      #|  bs : BytesView,
+      #|  offset : Int,
+      #|  len : Int,
+      #|) -> Int {
+      #|  let unsigned = bs.unsafe_extract_uint_be(offset, len)
+      #|  unsigned.extend_sign(len)
+      #|}
+      #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
+      #|pub fn BytesView::unsafe_extract_int64_le(
+      #|  bs : BytesView,
+      #|  offset : Int,
+      #|  len : Int,
+      #|) -> Int64 {
+      #|  let unsigned = bs.unsafe_extract_uint64_le(offset, len)
+      #|  unsigned.extend_sign(len)
+      #|}
+      #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
+      #|pub fn BytesView::unsafe_extract_int64_be(
+      #|  bs : BytesView,
+      #|  offset : Int,
+      #|  len : Int,
+      #|) -> Int64 {
+      #|  let unsigned = bs.unsafe_extract_uint64_be(offset, len)
+      #|  unsigned.extend_sign(len)
+      #|}
+      #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
       #|pub fn Bytes::unsafe_extract_bit(bs : Bytes, offset : Int, len : Int) -> UInt {
       #|  bs[:].unsafe_extract_bit(offset, len)
       #|}
       #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
       #|pub fn Bytes::unsafe_extract_byte(bs : Bytes, offset : Int, len : Int) -> UInt {
       #|  bs[:].unsafe_extract_byte(offset, len)
       #|}
       #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
       #|pub fn Bytes::unsafe_extract_uint_le(
       #|  bs : Bytes,
       #|  offset : Int,
@@ -13860,6 +16575,7 @@ let moonbitlang_core_bytes_module : RuntimePackage = RuntimePackage::new(
       #|  bs[:].unsafe_extract_uint_le(offset, len)
       #|}
       #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
       #|pub fn Bytes::unsafe_extract_uint_be(
       #|  bs : Bytes,
       #|  offset : Int,
@@ -13868,6 +16584,7 @@ let moonbitlang_core_bytes_module : RuntimePackage = RuntimePackage::new(
       #|  bs[:].unsafe_extract_uint_be(offset, len)
       #|}
       #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
       #|pub fn Bytes::unsafe_extract_uint64_le(
       #|  bs : Bytes,
       #|  offset : Int,
@@ -13876,6 +16593,7 @@ let moonbitlang_core_bytes_module : RuntimePackage = RuntimePackage::new(
       #|  bs[:].unsafe_extract_uint64_le(offset, len)
       #|}
       #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
       #|pub fn Bytes::unsafe_extract_uint64_be(
       #|  bs : Bytes,
       #|  offset : Int,
@@ -13884,6 +16602,7 @@ let moonbitlang_core_bytes_module : RuntimePackage = RuntimePackage::new(
       #|  bs[:].unsafe_extract_uint64_be(offset, len)
       #|}
       #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
       #|pub fn Bytes::unsafe_extract_bytesview(
       #|  bs : Bytes,
       #|  offset : Int,
@@ -13893,13 +16612,14 @@ let moonbitlang_core_bytes_module : RuntimePackage = RuntimePackage::new(
       #|}
     ),
     "bytes.mbt": (
-      #|#as_free_fn
+      #|#as_free_fn(deprecated)
       #|#alias(of, deprecated="Use from_array instead")
       #|#as_free_fn(of, deprecated="Use from_array instead")
       #|pub fn Bytes::from_array(arr : ArrayView[Byte]) -> Bytes {
       #|  Bytes::makei(arr.length(), i => arr[i])
       #|}
-      #|#as_free_fn
+      #|#as_free_fn(deprecated)
+      #|#deprecated("Use Bytes::from_array instead")
       #|pub fn Bytes::from_fixedarray(arr : FixedArray[Byte], len? : Int) -> Bytes {
       #|  let len = match len {
       #|    None => arr.length()
@@ -13912,6 +16632,7 @@ let moonbitlang_core_bytes_module : RuntimePackage = RuntimePackage::new(
       #|  arr.blit_to(result, len~)
       #|  result.unsafe_reinterpret_as_bytes()
       #|}
+      #|#label_migration(len, fill=false)
       #|pub fn Bytes::to_fixedarray(self : Bytes, len? : Int) -> FixedArray[Byte] {
       #|  let len = match len {
       #|    None => self.length()
@@ -13924,15 +16645,29 @@ let moonbitlang_core_bytes_module : RuntimePackage = RuntimePackage::new(
       #|  arr.blit_from_bytes(0, self, 0, len)
       #|  arr
       #|}
-      #|#as_free_fn
+      #|pub fn BytesView::to_fixedarray(self : BytesView) -> FixedArray[Byte] {
+      #|  let len = self.length()
+      #|  let arr = unsafe_to_fixedarray(UninitializedArray::make(len))
+      #|  arr.blit_from_bytes(0, self.data(), self.start_offset(), len)
+      #|  arr
+      #|}
+      #|#as_free_fn(deprecated)
       #|pub fn Bytes::from_iter(iter : Iter[Byte]) -> Bytes {
       #|  Bytes::from_array(iter.collect())
       #|}
-      #|#as_free_fn
+      #|#as_free_fn(deprecated)
       #|pub fn Bytes::from_iterator(iter : Iterator[Byte]) -> Bytes {
       #|  Bytes::from_array(iter.collect())
       #|}
       #|pub fn Bytes::to_array(self : Bytes) -> Array[Byte] {
+      #|  let len = self.length()
+      #|  let rv = Array::make(len, b'0')
+      #|  for i in 0..<len {
+      #|    rv[i] = self[i]
+      #|  }
+      #|  rv
+      #|}
+      #|pub fn BytesView::to_array(self : BytesView) -> Array[Byte] {
       #|  let len = self.length()
       #|  let rv = Array::make(len, b'0')
       #|  for i in 0..<len {
@@ -14095,6 +16830,7 @@ let moonbitlang_core_bytes_module : RuntimePackage = RuntimePackage::new(
       #|  }
       #|  result
       #|}
+      #|#intrinsic("%bytes.unsafe_read_uint16_le")
       #|pub fn Bytes::unsafe_read_uint16_le(bytes : Bytes, index : Int) -> UInt16 {
       #|  let mut result : UInt16 = 0
       #|  for i in 0..=1 {
@@ -14102,6 +16838,7 @@ let moonbitlang_core_bytes_module : RuntimePackage = RuntimePackage::new(
       #|  }
       #|  result
       #|}
+      #|#intrinsic("%bytes.unsafe_read_uint16_be")
       #|pub fn Bytes::unsafe_read_uint16_be(bytes : Bytes, index : Int) -> UInt16 {
       #|  let mut result : UInt16 = 0
       #|  for i in 0..=1 {
@@ -14109,30 +16846,36 @@ let moonbitlang_core_bytes_module : RuntimePackage = RuntimePackage::new(
       #|  }
       #|  result
       #|}
+      #|#doc(hidden)
       #|pub fn BytesView::unsafe_read_uint64_le(
       #|  bytes : BytesView,
       #|  index : Int,
       #|) -> UInt64 {
       #|  bytes.bytes().unsafe_read_uint64_le(bytes.start() + index)
       #|}
+      #|#doc(hidden)
       #|pub fn BytesView::unsafe_read_uint64_be(
       #|  bytes : BytesView,
       #|  index : Int,
       #|) -> UInt64 {
       #|  bytes.bytes().unsafe_read_uint64_be(bytes.start() + index)
       #|}
+      #|#doc(hidden)
       #|pub fn BytesView::unsafe_read_uint32_le(bytes : BytesView, index : Int) -> UInt {
       #|  bytes.bytes().unsafe_read_uint32_le(bytes.start() + index)
       #|}
+      #|#doc(hidden)
       #|pub fn BytesView::unsafe_read_uint32_be(bytes : BytesView, index : Int) -> UInt {
       #|  bytes.bytes().unsafe_read_uint32_be(bytes.start() + index)
       #|}
+      #|#doc(hidden)
       #|pub fn BytesView::unsafe_read_uint16_le(
       #|  bytes : BytesView,
       #|  index : Int,
       #|) -> UInt16 {
       #|  bytes.bytes().unsafe_read_uint16_le(bytes.start() + index)
       #|}
+      #|#doc(hidden)
       #|pub fn BytesView::unsafe_read_uint16_be(
       #|  bytes : BytesView,
       #|  index : Int,
@@ -14142,8 +16885,8 @@ let moonbitlang_core_bytes_module : RuntimePackage = RuntimePackage::new(
     ),
     "view.mbt": (
       #|#builtin.valtype
-      #|#deprecated("Use `BytesView` instead")
-      #|pub typealias BytesView as View
+      #|#deprecated("Use `BytesView` instead", skip_current_package=false)
+      #|pub type View = BytesView
       #|fn BytesView::bytes(self : BytesView) -> Bytes = "%bytesview.bytes"
       #|fn BytesView::start(self : BytesView) -> Int = "%bytesview.start"
       #|fn BytesView::make(b : Bytes, start : Int, len : Int) -> BytesView = "%bytesview.make"
@@ -14165,6 +16908,7 @@ let moonbitlang_core_bytes_module : RuntimePackage = RuntimePackage::new(
       #|  Some(self.bytes().unsafe_get(self.start() + index))
       #|}
       #|#internal(unsafe, "Panic if index is out of bounds")
+      #|#doc(hidden)
       #|pub fn BytesView::unsafe_get(self : BytesView, index : Int) -> Byte {
       #|  self.bytes()[self.start() + index]
       #|}
@@ -14205,6 +16949,15 @@ let moonbitlang_core_bytes_module : RuntimePackage = RuntimePackage::new(
       #|    IterContinue
       #|  })
       #|}
+      #|pub fn BytesView::iter2(self : BytesView) -> Iter2[Int, Byte] {
+      #|  Iter2::new(yield_ => for i in 0..<self.length() {
+      #|    if yield_(i, self[i]) is IterEnd {
+      #|      break IterEnd
+      #|    }
+      #|  } else {
+      #|    IterContinue
+      #|  })
+      #|}
       #|pub fn BytesView::iterator(self : BytesView) -> Iterator[Byte] {
       #|  let mut i = 0
       #|  let len = self.length()
@@ -14225,18 +16978,21 @@ let moonbitlang_core_bytes_module : RuntimePackage = RuntimePackage::new(
       #|    Some(result)
       #|  })
       #|}
+      #|#deprecated(skip_current_package=false, "Use bits pattern directly")
       #|pub fn BytesView::to_uint_be(self : BytesView) -> UInt {
       #|  (self[0].to_uint() << 24) +
       #|  (self[1].to_uint() << 16) +
       #|  (self[2].to_uint() << 8) +
       #|  self[3].to_uint()
       #|}
+      #|#deprecated(skip_current_package=false, "Use bits pattern directly")
       #|pub fn BytesView::to_uint_le(self : BytesView) -> UInt {
       #|  self[0].to_uint() +
       #|  (self[1].to_uint() << 8) +
       #|  (self[2].to_uint() << 16) +
       #|  (self[3].to_uint() << 24)
       #|}
+      #|#deprecated(skip_current_package=false, "Use bits pattern directly")
       #|pub fn BytesView::to_uint64_be(self : BytesView) -> UInt64 {
       #|  (self[0].to_uint().to_uint64() << 56) +
       #|  (self[1].to_uint().to_uint64() << 48) +
@@ -14247,6 +17003,7 @@ let moonbitlang_core_bytes_module : RuntimePackage = RuntimePackage::new(
       #|  (self[6].to_uint().to_uint64() << 8) +
       #|  self[7].to_uint().to_uint64()
       #|}
+      #|#deprecated(skip_current_package=false, "Use bits pattern directly")
       #|pub fn BytesView::to_uint64_le(self : BytesView) -> UInt64 {
       #|  self[0].to_uint().to_uint64() +
       #|  (self[1].to_uint().to_uint64() << 8) +
@@ -14269,15 +17026,19 @@ let moonbitlang_core_bytes_module : RuntimePackage = RuntimePackage::new(
       #|pub fn BytesView::to_int64_le(self : BytesView) -> Int64 {
       #|  self.to_uint64_le().reinterpret_as_int64()
       #|}
+      #|#deprecated(skip_current_package=false, "Use bits pattern directly")
       #|pub fn BytesView::to_float_be(self : BytesView) -> Float {
       #|  self.to_uint_be().reinterpret_as_float()
       #|}
+      #|#deprecated(skip_current_package=false, "Use bits pattern directly")
       #|pub fn BytesView::to_float_le(self : BytesView) -> Float {
       #|  self.to_uint_le().reinterpret_as_float()
       #|}
+      #|#deprecated(skip_current_package=false, "Use bits pattern directly")
       #|pub fn BytesView::to_double_be(self : BytesView) -> Double {
       #|  self.to_uint64_be().reinterpret_as_double()
       #|}
+      #|#deprecated(skip_current_package=false, "Use bits pattern directly")
       #|pub fn BytesView::to_double_le(self : BytesView) -> Double {
       #|  self.to_uint64_le().reinterpret_as_double()
       #|}
@@ -14329,17 +17090,6 @@ let moonbitlang_core_bytes_module : RuntimePackage = RuntimePackage::new(
       #|  bytes.blit_from_bytes(0, self.bytes(), self.start_offset(), self.length())
       #|  unsafe_to_bytes(bytes)
       #|}
-      #|pub impl Hash for BytesView with hash_combine(self : BytesView, hasher : Hasher) {
-      #|  let mut data = self
-      #|  while data.length() >= 4 {
-      #|    hasher.combine_uint(data.to_uint_le())
-      #|    data = data[4:]
-      #|  }
-      #|  while data.length() >= 1 {
-      #|    hasher.combine_byte(data[0])
-      #|    data = data[1:]
-      #|  }
-      #|}
       #|pub impl ToJson for BytesView with to_json(self) -> Json {
       #|  let sb = StringBuilder::new()
       #|  for byte in self {
@@ -14368,360 +17118,7 @@ let moonbitlang_core_char_module : RuntimePackage = RuntimePackage::new(
       #|  "import": ["moonbitlang/core/builtin"]
       #|}
     ),
-    "char.mbt": (
-      #|pub impl Hash for Char with hash_combine(self, hasher) -> Unit {
-      #|  hasher.combine_char(self)
-      #|}
-      #|pub fn Char::is_ascii(self : Self) -> Bool {
-      #|  self is ('\u{00}'..='\u{7F}')
-      #|}
-      #|pub fn Char::is_ascii_alphabetic(self : Self) -> Bool {
-      #|  self is ('A'..='Z' | 'a'..='z')
-      #|}
-      #|pub fn Char::is_ascii_control(self : Self) -> Bool {
-      #|  self is ('\u{00}'..='\u{1F}' | '\u{7F}')
-      #|}
-      #|pub fn Char::is_ascii_digit(self : Self) -> Bool {
-      #|  self is ('0'..='9')
-      #|}
-      #|pub fn Char::is_ascii_graphic(self : Self) -> Bool {
-      #|  self is ('\u{21}'..='\u{7E}')
-      #|}
-      #|pub fn Char::is_ascii_hexdigit(self : Self) -> Bool {
-      #|  self is ('0'..='9' | 'A'..='F' | 'a'..='f')
-      #|}
-      #|pub fn Char::is_ascii_lowercase(self : Self) -> Bool {
-      #|  self is ('a'..='z')
-      #|}
-      #|pub fn Char::is_ascii_octdigit(self : Self) -> Bool {
-      #|  self is ('0'..='7')
-      #|}
-      #|pub fn Char::is_ascii_punctuation(self : Self) -> Bool {
-      #|  self
-      #|  is ('\u{21}'..='\u{2F}'
-      #|  | '\u{3A}'..='\u{40}'
-      #|  | '\u{5B}'..='\u{60}'
-      #|  | '\u{7B}'..='\u{7E}')
-      #|}
-      #|pub fn Char::is_ascii_uppercase(self : Self) -> Bool {
-      #|  self is ('A'..='Z')
-      #|}
-      #|pub fn Char::is_ascii_whitespace(self : Self) -> Bool {
-      #|  self is ('\u{20}' | '\u{09}' | '\u{0A}' | '\u{0B}' | '\u{0C}' | '\u{0D}')
-      #|}
-      #|pub fn Char::is_control(self : Self) -> Bool {
-      #|  self is ('\u0000'..='\u001F' | '\u007F'..='\u009F')
-      #|}
-      #|pub fn Char::is_digit(self : Self, radix : UInt) -> Bool {
-      #|  let v = self.to_uint()
-      #|  match radix {
-      #|    2..=10 => v >= 48 && v <= radix + 47
-      #|    11..=36 =>
-      #|      (v >= 48 && v <= 57) ||
-      #|      (v >= 65 && v <= radix + 54) ||
-      #|      (v >= 97 && v <= radix + 86)
-      #|    _ => panic()
-      #|  }
-      #|}
-      #|pub fn Char::is_whitespace(self : Self) -> Bool {
-      #|  self
-      #|  is ('\u0009'..='\u000D'
-      #|  | '\u0020'
-      #|  | '\u0085'
-      #|  | '\u00A0'
-      #|  | '\u1680'
-      #|  | '\u2000'..='\u200A'
-      #|  | '\u2028'
-      #|  | '\u2029'
-      #|  | '\u202F'
-      #|  | '\u205F'
-      #|  | '\u3000')
-      #|}
-      #|pub fn Char::is_numeric(self : Self) -> Bool {
-      #|  self
-      #|  is ('\u0030'..='\u0039'
-      #|  | '\u00B2'
-      #|  | '\u00B3'
-      #|  | '\u00B9'
-      #|  | '\u00BC'
-      #|  | '\u00BD'
-      #|  | '\u00BE'
-      #|  | '\u0660'..='\u0669'
-      #|  | '\u06F0'..='\u06F9'
-      #|  | '\u07C0'..='\u07F9'
-      #|  | '\u0966'..='\u096F'
-      #|  | '\u09E6'..='\u09EF'
-      #|  | '\u09F4'..='\u09F9'
-      #|  | '\u0A66'..='\u0A6F'
-      #|  | '\u0AE6'..='\u0AEF'
-      #|  | '\u0B66'..='\u0B6F'
-      #|  | '\u0B72'..='\u0B77'
-      #|  | '\u0BE6'..='\u0BEF'
-      #|  | '\u0BF0'..='\u0BF2'
-      #|  | '\u0C66'..='\u0C6F'
-      #|  | '\u0C78'..='\u0C7E'
-      #|  | '\u0CE6'..='\u0CEF'
-      #|  | '\u0D58'..='\u0D5E'
-      #|  | '\u0D66'..='\u0D6F'
-      #|  | '\u0D70'..='\u0D78'
-      #|  | '\u0DE6'..='\u0DEF'
-      #|  | '\u0E50'..='\u0E59'
-      #|  | '\u0ED0'..='\u0ED9'
-      #|  | '\u0F20'..='\u0F33'
-      #|  | '\u1040'..='\u1049'
-      #|  | '\u1090'..='\u1099'
-      #|  | '\u1369'..='\u137C'
-      #|  | '\u16EE'..='\u16F0'
-      #|  | '\u17E0'..='\u17E9'
-      #|  | '\u17F0'..='\u17F9'
-      #|  | '\u1810'..='\u1819'
-      #|  | '\u1946'..='\u194F'
-      #|  | '\u19D0'..='\u19DA'
-      #|  | '\u1A80'..='\u1A89'
-      #|  | '\u1A90'..='\u1A99'
-      #|  | '\u1B50'..='\u1B59'
-      #|  | '\u1BB0'..='\u1BB9'
-      #|  | '\u1C40'..='\u1C49'
-      #|  | '\u1C50'..='\u1C59'
-      #|  | '\u2070'
-      #|  | '\u2074'..='\u2079'
-      #|  | '\u2080'..='\u2089'
-      #|  | '\u2150'..='\u2189'
-      #|  | '\u2460'..='\u249B'
-      #|  | '\u24EA'..='\u24FF'
-      #|  | '\u2776'..='\u2793'
-      #|  | '\u2CFD'
-      #|  | '\u3007'
-      #|  | '\u3021'..='\u3029'
-      #|  | '\u3038'..='\u303A'
-      #|  | '\u3192'..='\u3195'
-      #|  | '\u3220'..='\u3229'
-      #|  | '\u3248'..='\u324F'
-      #|  | '\u3251'..='\u325F'
-      #|  | '\u3280'..='\u3289'
-      #|  | '\u32B1'..='\u32BF'
-      #|  | '\uA620'..='\uA629'
-      #|  | '\uA6E6'..='\uA6EF'
-      #|  | '\uA830'..='\uA835'
-      #|  | '\uA8D0'..='\uA8D9'
-      #|  | '\uA900'..='\uA909'
-      #|  | '\uA9D0'..='\uA9D9'
-      #|  | '\uA9F0'..='\uA9F9'
-      #|  | '\uAA50'..='\uAA59'
-      #|  | '\uABF0'..='\uABF9'
-      #|  | '\uFF10'..='\uFF19'
-      #|  | '\u{10107}'..='\u{10133}'
-      #|  | '\u{10140}'..='\u{10178}'
-      #|  | '\u{1018A}'..='\u{1018B}'
-      #|  | '\u{102E1}'..='\u{102FB}'
-      #|  | '\u{10320}'..='\u{10323}'
-      #|  | '\u{10341}'
-      #|  | '\u{1034A}'
-      #|  | '\u{103D1}'..='\u{103D5}'
-      #|  | '\u{104A0}'..='\u{104A9}'
-      #|  | '\u{10858}'..='\u{1085F}'
-      #|  | '\u{10879}'..='\u{1087F}'
-      #|  | '\u{108A7}'..='\u{108AF}'
-      #|  | '\u{108FB}'..='\u{108FF}'
-      #|  | '\u{10916}'..='\u{1091B}'
-      #|  | '\u{109BC}'..='\u{109BD}'
-      #|  | '\u{109C0}'..='\u{109CF}'
-      #|  | '\u{10A40}'..='\u{10A48}'
-      #|  | '\u{10A7D}'..='\u{10A7E}'
-      #|  | '\u{10A9D}'..='\u{10A9F}'
-      #|  | '\u{10AEB}'..='\u{10AEF}'
-      #|  | '\u{10B58}'..='\u{10B5F}'
-      #|  | '\u{10B78}'..='\u{10B7F}'
-      #|  | '\u{10BA9}'..='\u{10BAF}'
-      #|  | '\u{10CFA}'..='\u{10CFF}'
-      #|  | '\u{10D30}'..='\u{10D39}'
-      #|  | '\u{10D40}'..='\u{10D49}'
-      #|  | '\u{10E60}'..='\u{10E7E}'
-      #|  | '\u{10F1D}'..='\u{10F26}'
-      #|  | '\u{10F51}'..='\u{10F54}'
-      #|  | '\u{10FC5}'..='\u{10FCB}'
-      #|  | '\u{11052}'..='\u{1106F}'
-      #|  | '\u{110F0}'..='\u{110F9}'
-      #|  | '\u{11136}'..='\u{1113F}'
-      #|  | '\u{111D0}'..='\u{111D9}'
-      #|  | '\u{111E1}'..='\u{111F4}'
-      #|  | '\u{112F0}'..='\u{112F9}'
-      #|  | '\u{11450}'..='\u{11459}'
-      #|  | '\u{114D0}'..='\u{114D9}'
-      #|  | '\u{11650}'..='\u{11659}'
-      #|  | '\u{116C0}'..='\u{116C9}'
-      #|  | '\u{116D0}'..='\u{116E3}'
-      #|  | '\u{11730}'..='\u{1173B}'
-      #|  | '\u{118E0}'..='\u{118F2}'
-      #|  | '\u{11950}'..='\u{11959}'
-      #|  | '\u{11BF0}'..='\u{11BF9}'
-      #|  | '\u{11C50}'..='\u{11C6C}'
-      #|  | '\u{11D50}'..='\u{11D59}'
-      #|  | '\u{11DA0}'..='\u{11DA9}'
-      #|  | '\u{11F50}'..='\u{11F59}'
-      #|  | '\u{11FC0}'..='\u{11FD4}'
-      #|  | '\u{12400}'..='\u{1246E}'
-      #|  | '\u{16130}'..='\u{16139}'
-      #|  | '\u{16A60}'..='\u{16A69}'
-      #|  | '\u{16AC0}'..='\u{16AC9}'
-      #|  | '\u{16B50}'..='\u{16B59}'
-      #|  | '\u{16B5B}'..='\u{16B61}'
-      #|  | '\u{16D70}'..='\u{16D79}'
-      #|  | '\u{16D80}'..='\u{16E96}'
-      #|  | '\u{1CCF0}'..='\u{1CCF9}'
-      #|  | '\u{1D2C0}'..='\u{1D2F3}'
-      #|  | '\u{1D360}'..='\u{1D378}'
-      #|  | '\u{1D7CE}'..='\u{1D7FF}'
-      #|  | '\u{1E140}'..='\u{1E149}'
-      #|  | '\u{1E2F0}'..='\u{1E2F9}'
-      #|  | '\u{1E4F0}'..='\u{1E4F9}'
-      #|  | '\u{1E5F1}'..='\u{1E5FA}'
-      #|  | '\u{1E8C7}'..='\u{1E8CF}'
-      #|  | '\u{1E950}'..='\u{1E959}'
-      #|  | '\u{1EC71}'..='\u{1ECB4}'
-      #|  | '\u{1ED01}'..='\u{1ED3D}'
-      #|  | '\u{1F100}'..='\u{1F10C}'
-      #|  | '\u{1FBF0}'..='\u{1FBF9}')
-      #|}
-      #|pub fn Char::is_printable(self : Self) -> Bool {
-      #|  if self.is_control() {
-      #|    return false
-      #|  }
-      #|  let self = self.to_int()
-      #|  if self is (0xE000..=0xF8FF | 0xF0000..=0xFFFFD | 0x100000..=0x10FFFD) {
-      #|    return false
-      #|  }
-      #|  if self
-      #|    is ('\u{00AD}'
-      #|    | '\u{0600}'..='\u{0605}'
-      #|    | '\u{061C}'
-      #|    | '\u{06DD}'
-      #|    | '\u{070F}'
-      #|    | '\u{0890}'..='\u{0891}'
-      #|    | '\u{08E2}'
-      #|    | '\u{180E}'
-      #|    | '\u{200B}'..='\u{200F}'
-      #|    | '\u{202A}'..='\u{202E}'
-      #|    | '\u{2060}'..='\u{2064}'
-      #|    | '\u{2066}'..='\u{206F}'
-      #|    | '\u{feff}'
-      #|    | '\u{FFF9}'..='\u{FFFB}'
-      #|    | '\u{110BD}'
-      #|    | '\u{110CD}'
-      #|    | '\u{13430}'..='\u{1343F}'
-      #|    | '\u{1BCA0}'..='\u{1BCA3}'
-      #|    | '\u{1D173}'..='\u{1D17A}'
-      #|    | '\u{E0001}'
-      #|    | '\u{E0020}'..='\u{E007F}') {
-      #|    return false
-      #|  }
-      #|  if self.is_surrogate() {
-      #|    return false
-      #|  }
-      #|  if self == '\u{2028}' || self == '\u{2029}' {
-      #|    return false
-      #|  }
-      #|  if self
-      #|    is (0xFDD0..=0xFDEF
-      #|    | 0xFFFE..=0xFFFF
-      #|    | 0x1FFFE..=0x1FFFF
-      #|    | 0x2FFFE..=0x2FFFF
-      #|    | 0x3FFFE..=0x3FFFF
-      #|    | 0x4FFFE..=0x4FFFF
-      #|    | 0x5FFFE..=0x5FFFF
-      #|    | 0x6FFFE..=0x6FFFF
-      #|    | 0x7FFFE..=0x7FFFF
-      #|    | 0x8FFFE..=0x8FFFF
-      #|    | 0x9FFFE..=0x9FFFF
-      #|    | 0xAFFFE..=0xAFFFF
-      #|    | 0xBFFFE..=0xBFFFF
-      #|    | 0xCFFFE..=0xCFFFF
-      #|    | 0xDFFFE..=0xDFFFF
-      #|    | 0xEFFFE..=0xEFFFF
-      #|    | 0xFFFFE..=0xFFFFF
-      #|    | 0x10FFFE..=0x10FFFF) {
-      #|    return false
-      #|  }
-      #|  true
-      #|}
-      #|pub fn Char::to_ascii_lowercase(self : Self) -> Char {
-      #|  if self.is_ascii_uppercase() {
-      #|    return (self.to_int() + 32).unsafe_to_char()
-      #|  }
-      #|  self
-      #|}
-      #|pub fn Char::to_ascii_uppercase(self : Self) -> Char {
-      #|  if self.is_ascii_lowercase() {
-      #|    return (self.to_int() - 32).unsafe_to_char()
-      #|  }
-      #|  self
-      #|}
-      #|pub impl Show for Char with to_string(self : Char) -> String {
-      #|  char_to_string(self)
-      #|}
-      #|#intrinsic("%char.to_string")
-      #|fn char_to_string(char : Char) -> String {
-      #|  [char]
-      #|}
-      #|pub impl Show for Char with output(self, logger) {
-      #|  logger.write_char('\'')
-      #|  match self {
-      #|    '\'' | '\\' => logger..write_char('\\')..write_char(self)
-      #|    '\n' => logger.write_string("\\n")
-      #|    '\r' => logger.write_string("\\r")
-      #|    '\b' => logger.write_string("\\b")
-      #|    '\t' => logger.write_string("\\t")
-      #|    ' '..='~' => logger.write_char(self)
-      #|    _ =>
-      #|      if !self.is_printable() {
-      #|        logger.write_string("\\u{")
-      #|        logger.write_string(self.to_hex())
-      #|        logger.write_char('}')
-      #|      } else {
-      #|        logger.write_char(self)
-      #|      }
-      #|  }
-      #|  logger.write_char('\'')
-      #|}
-      #|pub impl ToJson for Char with to_json(self : Char) -> Json {
-      #|  Json::string(self.to_string())
-      #|}
-      #|pub fn Char::utf16_len(self : Self) -> Int {
-      #|  let code = self.to_int()
-      #|  if code <= 0xFFFF {
-      #|    1
-      #|  } else {
-      #|    2
-      #|  }
-      #|}
-      #|pub fn Char::is_bmp(self : Self) -> Bool {
-      #|  self.to_int() <= 0xFFFF
-      #|}
-    ),
-    "char_util.mbt": (
-      #|fn Char::to_hex(char : Char) -> String {
-      #|  let code = char.to_int()
-      #|  match code {
-      #|    0..=0xFF => code.to_byte().to_hex()
-      #|    _..=0xFFFF => (code >> 8).to_byte().to_hex() + code.to_byte().to_hex()
-      #|    _ =>
-      #|      (code >> 16).to_byte().to_hex() +
-      #|      (code >> 8).to_byte().to_hex() +
-      #|      code.to_byte().to_hex()
-      #|  }
-      #|}
-      #|test "Char::to_hex" {
-      #|  inspect(Char::to_hex('A'), content="41")
-      #|  inspect(Char::to_hex('a'), content="61")
-      #|  inspect(Char::to_hex('0'), content="30")
-      #|  inspect(Char::to_hex('\n'), content="0a")
-      #|  inspect(Char::to_hex('\u{0}'), content="00")
-      #|  inspect(Char::to_hex('\u{FF}'), content="ff")
-      #|  inspect(Char::to_hex('\u{100}'), content="0100")
-      #|  inspect(Char::to_hex('\u{1000}'), content="1000")
-      #|  inspect(Char::to_hex('😀'), content="01f600")
-      #|}
-    ),
+    "char_util.mbt": "",
   },
 )
 
@@ -14814,24 +17211,7 @@ let moonbitlang_core_deque_module : RuntimePackage = RuntimePackage::new(
       #|  }
       #|}
     ),
-    "deprecated.mbt": (
-      #|#deprecated("Use `unsafe_pop_front` instead")
-      #|#coverage.skip
-      #|pub fn[A] Deque::pop_front_exn(self : Deque[A]) -> Unit {
-      #|  self.unsafe_pop_front()
-      #|}
-      #|#deprecated("Use `unsafe_pop_back` instead")
-      #|#coverage.skip
-      #|pub fn[A] Deque::pop_back_exn(self : Deque[A]) -> Unit {
-      #|  self.unsafe_pop_back()
-      #|}
-      #|#deprecated("Use `@deque.retain_map` instead")
-      #|pub fn[A] Deque::filter_map_inplace(self : Deque[A], f : (A) -> A?) -> Unit {
-      #|  self.retain_map(f)
-      #|}
-      #|#deprecated("Use `Deque` instead of `T`")
-      #|pub typealias Deque as T
-    ),
+    "deprecated.mbt": "",
     "deque.mbt": (
       #|fn[T] set_null(buffer : UninitializedArray[T], index : Int) = "%fixedarray.set_null"
       #|#as_free_fn
@@ -15059,6 +17439,8 @@ let moonbitlang_core_deque_module : RuntimePackage = RuntimePackage::new(
       #|  self.len += 1
       #|}
       #|#internal(unsafe, "Panic if the deque is empty.")
+      #|#doc(hidden)
+      #|#alias(pop_front_exn, deprecated)
       #|pub fn[A] Deque::unsafe_pop_front(self : Deque[A]) -> Unit {
       #|  match self.len {
       #|    0 => abort("The deque is empty!")
@@ -15078,6 +17460,8 @@ let moonbitlang_core_deque_module : RuntimePackage = RuntimePackage::new(
       #|  }
       #|}
       #|#internal(unsafe, "Panic if the deque is empty.")
+      #|#doc(hidden)
+      #|#alias(pop_back_exn, deprecated)
       #|pub fn[A] Deque::unsafe_pop_back(self : Deque[A]) -> Unit {
       #|  match self.len {
       #|    0 => abort("The deque is empty!")
@@ -15365,6 +17749,7 @@ let moonbitlang_core_deque_module : RuntimePackage = RuntimePackage::new(
       #|    }
       #|  }
       #|}
+      #|#alias(filter_map_inplace, deprecated)
       #|pub fn[A] Deque::retain_map(self : Deque[A], f : (A) -> A?) -> Unit {
       #|  guard !self.is_empty() else { return }
       #|  let { head, buf, .. } = self
@@ -15806,6 +18191,7 @@ let moonbitlang_core_deque_module : RuntimePackage = RuntimePackage::new(
       #|}
     ),
     "types.mbt": (
+      #|#alias(T, deprecated)
       #|struct Deque[A] {
       #|  mut buf : UninitializedArray[A]
       #|  mut len : Int
@@ -15862,12 +18248,12 @@ let moonbitlang_core_double_module : RuntimePackage = RuntimePackage::new(
       #|}
     ),
     "deprecated.mbt": (
-      #|#deprecated("Use `@double.not_a_number` instead")
+      #|#deprecated("Use `@double.not_a_number` instead", skip_current_package=false)
       #|#coverage.skip
       #|pub fn Double::nan() -> Double {
       #|  not_a_number
       #|}
-      #|#deprecated("Use `@double.infinity` and `@double.neg_infinity` instead")
+      #|#deprecated("Use `@double.infinity` and `@double.neg_infinity` instead", skip_current_package=false)
       #|#coverage.skip
       #|pub fn Double::inf(sign : Int) -> Double {
       #|  if sign >= 0 {
@@ -15876,26 +18262,18 @@ let moonbitlang_core_double_module : RuntimePackage = RuntimePackage::new(
       #|    neg_infinity
       #|  }
       #|}
-      #|#deprecated("Use `@double.min_positive` instead")
+      #|#deprecated("Use `@double.min_positive` instead", skip_current_package=false)
       #|#coverage.skip
       #|pub fn Double::min_normal() -> Double {
       #|  min_positive
       #|}
     ),
     "double.mbt": (
-      #|pub let not_a_number : Double = 0x7FF8000000000001L.reinterpret_as_double()
-      #|pub let infinity : Double = 0x7FF0000000000000L.reinterpret_as_double()
-      #|pub let neg_infinity : Double = 0xFFF0000000000000L.reinterpret_as_double()
-      #|pub let max_value : Double = 0x7FEFFFFFFFFFFFFFL.reinterpret_as_double()
-      #|pub let min_value : Double = 0xFFEFFFFFFFFFFFFFL.reinterpret_as_double()
-      #|pub let min_positive : Double = 0x0010000000000000L.reinterpret_as_double()
+      #|#as_free_fn(deprecated)
       #|pub fn Double::from_int(i : Int) -> Double {
       #|  i.to_double()
       #|}
-      #|pub fn from_int(i : Int) -> Double {
-      #|  i.to_double()
-      #|}
-      #|#as_free_fn
+      #|#as_free_fn(deprecated)
       #|pub fn Double::abs(self : Double) -> Double = "%f64.abs"
       #|pub fn Double::signum(self : Double) -> Double {
       #|  if self < 0.0 {
@@ -15918,62 +18296,16 @@ let moonbitlang_core_double_module : RuntimePackage = RuntimePackage::new(
       #|pub fn Double::is_neg_inf(self : Double) -> Bool {
       #|  self < min_value
       #|}
-      #|test "from_int" {
-      #|  assert_eq(from_int(1), 1.0)
-      #|  assert_eq(from_int(0), 0.0)
-      #|  assert_eq(from_int(100000), 1.0e5)
-      #|}
-      #|test "abs" {
-      #|  let d = -1.0
-      #|  assert_eq(d.abs(), 1.0)
-      #|  assert_eq(1.0.abs(), 1.0)
-      #|}
-      #|test "signum" {
-      #|  let d = -2.0
-      #|  assert_eq(d.signum(), -1.0)
-      #|  assert_eq(1.0.signum(), 1.0)
-      #|  assert_eq(0.0.signum(), 0.0)
-      #|  assert_true(not_a_number.signum().is_nan())
-      #|}
-      #|test "is_nan" {
-      #|  assert_true(not_a_number.is_nan())
-      #|  assert_false(0.0.is_nan())
-      #|  assert_false(12345.678.is_nan())
-      #|  assert_false(infinity.is_nan())
-      #|  assert_false(neg_infinity.is_nan())
-      #|}
-      #|test "is_inf" {
-      #|  assert_true(infinity.is_inf())
-      #|  assert_true(neg_infinity.is_inf())
-      #|  assert_false(0.0.is_inf())
-      #|  assert_false(12345.678.is_inf())
-      #|}
-      #|test "is_pos_inf" {
-      #|  assert_true(infinity.is_pos_inf())
-      #|  assert_false(neg_infinity.is_pos_inf())
-      #|  assert_false(0.0.is_pos_inf())
-      #|  assert_false(12345.678.is_pos_inf())
-      #|}
-      #|test "is_neg_inf" {
-      #|  assert_false(infinity.is_neg_inf())
-      #|  assert_true(neg_infinity.is_neg_inf())
-      #|  assert_false(0.0.is_neg_inf())
-      #|  assert_false(12345.678.is_neg_inf())
-      #|}
-      #|test "min equal to neg max" {
-      #|  assert_true(min_value == -max_value)
-      #|}
       #|pub impl Hash for Double with hash_combine(self, hasher) {
       #|  hasher.combine_double(self)
       #|}
-      #|#intrinsic("%f64.to_string")
       #|pub fn Double::to_string(self : Double) -> String {
       #|  @ryu.ryu_to_string(self)
       #|}
       #|pub impl Show for Double with output(self, logger) {
       #|  logger.write_string(self.to_string())
       #|}
-      #|#as_free_fn
+      #|#as_free_fn(deprecated)
       #|pub fn Double::is_close(
       #|  self : Self,
       #|  other : Self,
@@ -16002,6 +18334,14 @@ let moonbitlang_core_double_module : RuntimePackage = RuntimePackage::new(
       #|pub fn Double::to_le_bytes(self : Double) -> Bytes {
       #|  self.reinterpret_as_uint64().to_le_bytes()
       #|}
+    ),
+    "limits.mbt": (
+      #|pub let not_a_number : Double = 0x7FF8000000000001L.reinterpret_as_double()
+      #|pub let infinity : Double = 0x7FF0000000000000L.reinterpret_as_double()
+      #|pub let neg_infinity : Double = 0xFFF0000000000000L.reinterpret_as_double()
+      #|pub let max_value : Double = 0x7FEFFFFFFFFFFFFFL.reinterpret_as_double()
+      #|pub let min_value : Double = 0xFFEFFFFFFFFFFFFFL.reinterpret_as_double()
+      #|pub let min_positive : Double = 0x0010000000000000L.reinterpret_as_double()
     ),
     "mod_js.mbt": (
       #|extern "js" fn Double::mod_ffi(self : Double, other : Double) -> Double =
@@ -16086,11 +18426,12 @@ let moonbitlang_core_double_module : RuntimePackage = RuntimePackage::new(
     "pow_js.mbt": (
       #|#as_free_fn
       #|pub fn Double::pow(self : Double, other : Double) -> Double = "Math" "pow"
+      #|let _j : (FixedArray[String], StringView) -> String = FixedArray::join
     ),
     "pow_nonjs.mbt": (
-      #|let pow_bp : FixedArray[Double] = [1.0, 1.5]
-      #|let pow_dp_h : FixedArray[Double] = [0.0, 5.84962487220764160156e-01]
-      #|let pow_dp_l : FixedArray[Double] = [0.0, 1.35003920212974897128e-08]
+      #|let pow_bp : ReadOnlyArray[Double] = [1.0, 1.5]
+      #|let pow_dp_h : ReadOnlyArray[Double] = [0.0, 5.84962487220764160156e-01]
+      #|let pow_dp_l : ReadOnlyArray[Double] = [0.0, 1.35003920212974897128e-08]
       #|const ZERO = 0.0
       #|const ONE = 1.0
       #|const TWO = 2.0
@@ -16550,7 +18891,13 @@ let moonbitlang_core_double_internal_ryu_module : RuntimePackage = RuntimePackag
       #|  }
       #|  buf.to_string()
       #|}
-      #|fn umul128(a : UInt64, b : UInt64) -> (UInt64, UInt64) {
+      #|#valtype
+      #|priv struct Umul128(UInt64, UInt64)
+      #|#valtype
+      #|priv struct Pow5Pair(UInt64, UInt64)
+      #|#valtype
+      #|priv struct MulShiftAll64Result(UInt64, UInt64, UInt64)
+      #|fn umul128(a : UInt64, b : UInt64) -> Umul128 {
       #|  let aLo = a & 0xffffffff
       #|  let aHi = a >> 32
       #|  let bLo = b & 0xffffffff
@@ -16561,7 +18908,7 @@ let moonbitlang_core_double_internal_ryu_module : RuntimePackage = RuntimePackag
       #|  let w = aHi * bHi + (y >> 32) + (z >> 32)
       #|  let lo = a * b
       #|  let hi = w
-      #|  (lo, hi)
+      #|  Umul128(lo, hi)
       #|}
       #|fn shiftright128(lo : UInt64, hi : UInt64, dist : Int) -> UInt64 {
       #|  (hi << (64 - dist)) | (lo >> dist)
@@ -16598,36 +18945,37 @@ let moonbitlang_core_double_internal_ryu_module : RuntimePackage = RuntimePackag
       #|}
       #|fn mulShiftAll64(
       #|  m : UInt64,
-      #|  mul : (UInt64, UInt64),
+      #|  mul : Pow5Pair,
       #|  j : Int,
       #|  mmShift : Bool,
-      #|) -> (UInt64, UInt64, UInt64) {
+      #|) -> MulShiftAll64Result {
+      #|  let Pow5Pair(mul0, mul1) = mul
       #|  let m = m << 1
-      #|  let (lo, tmp) = umul128(m, mul.0)
-      #|  let (lo2, hi2) = umul128(m, mul.1)
+      #|  let Umul128(lo, tmp) = umul128(m, mul0)
+      #|  let Umul128(lo2, hi2) = umul128(m, mul1)
       #|  let mid = tmp + lo2
-      #|  let hi = hi2 + (if mid < tmp { 1 } else { 0 })
-      #|  let lo2 = lo + mul.0
-      #|  let mid2 = mid + mul.1 + (if lo2 < lo { 1 } else { 0 })
-      #|  let hi2 = hi + (if mid2 < mid { 1 } else { 0 })
-      #|  let vp = shiftright128(mid2, hi2, j - 64 - 1)
+      #|  let hi = hi2 + (if mid < tmp { 1UL } else { 0UL })
+      #|  let lo2 = lo + mul0
+      #|  let mid2 = mid + mul1 + (if lo2 < lo { 1UL } else { 0UL })
+      #|  let hi2 = hi + (if mid2 < mid { 1UL } else { 0UL })
+      #|  let vp : UInt64 = shiftright128(mid2, hi2, j - 64 - 1)
       #|  let mut vm : UInt64 = 0UL
       #|  if mmShift {
-      #|    let lo3 = lo - mul.0
-      #|    let mid3 = mid - mul.1 - (if lo < lo3 { 1 } else { 0 })
-      #|    let hi3 = hi - (if mid < mid3 { 1 } else { 0 })
+      #|    let lo3 = lo - mul0
+      #|    let mid3 = mid - mul1 - (if lo < lo3 { 1UL } else { 0UL })
+      #|    let hi3 = hi - (if mid < mid3 { 1UL } else { 0UL })
       #|    vm = shiftright128(mid3, hi3, j - 64 - 1)
       #|  } else {
       #|    let lo3 : UInt64 = lo + lo
-      #|    let mid3 : UInt64 = mid + mid + (if lo3 < lo { 1 } else { 0 })
-      #|    let hi3 : UInt64 = hi + hi + (if mid3 < mid { 1 } else { 0 })
-      #|    let lo4 : UInt64 = lo3 - mul.0
-      #|    let mid4 : UInt64 = mid3 - mul.1 - (if lo3 < lo4 { 1 } else { 0 })
-      #|    let hi4 : UInt64 = hi3 - (if mid3 < mid4 { 1 } else { 0 })
+      #|    let mid3 : UInt64 = mid + mid + (if lo3 < lo { 1UL } else { 0UL })
+      #|    let hi3 : UInt64 = hi + hi + (if mid3 < mid { 1UL } else { 0UL })
+      #|    let lo4 : UInt64 = lo3 - mul0
+      #|    let mid4 : UInt64 = mid3 - mul1 - (if lo3 < lo4 { 1UL } else { 0UL })
+      #|    let hi4 : UInt64 = hi3 - (if mid3 < mid4 { 1UL } else { 0UL })
       #|    vm = shiftright128(mid4, hi4, j - 64)
       #|  }
-      #|  let vr = shiftright128(mid, hi, j - 64 - 1)
-      #|  (vr, vp, vm)
+      #|  let vr : UInt64 = shiftright128(mid, hi, j - 64 - 1)
+      #|  MulShiftAll64Result(vr, vp, vm)
       #|}
       #|let gPOW5_TABLE_SIZE = 26
       #|let gDOUBLE_POW5_INV_SPLIT2 : ReadOnlyArray[UInt64] = [
@@ -16664,52 +19012,52 @@ let moonbitlang_core_double_internal_ryu_module : RuntimePackage = RuntimePackag
       #|  19073486328125, 95367431640625, 476837158203125, 2384185791015625, 11920928955078125,
       #|  59604644775390625, 298023223876953125,
       #|]
-      #|fn double_computePow5(i : Int) -> (UInt64, UInt64) {
+      #|fn double_computePow5(i : Int) -> Pow5Pair {
       #|  let base = i / gPOW5_TABLE_SIZE
       #|  let base2 = base * gPOW5_TABLE_SIZE
       #|  let offset = i - base2
       #|  let mul0 = gDOUBLE_POW5_SPLIT2[base * 2]
       #|  let mul1 = gDOUBLE_POW5_SPLIT2[base * 2 + 1]
       #|  if offset == 0 {
-      #|    return (mul0, mul1)
+      #|    return Pow5Pair(mul0, mul1)
       #|  }
       #|  let m : UInt64 = gDOUBLE_POW5_TABLE[offset]
-      #|  let (low1, high1) = umul128(m, mul1)
-      #|  let (low0, high0) = umul128(m, mul0)
+      #|  let Umul128(low1, high1) = umul128(m, mul1)
+      #|  let Umul128(low0, high0) = umul128(m, mul0)
       #|  let sum : UInt64 = high0 + low1
       #|  let mut high1 = high1
       #|  if sum < high0 {
       #|    high1 = high1 + 1UL
       #|  }
       #|  let delta : Int = pow5bits(i) - pow5bits(base2)
-      #|  let a = shiftright128(low0, sum, delta) +
+      #|  let a : UInt64 = shiftright128(low0, sum, delta) +
       #|    ((gPOW5_OFFSETS[i / 16] >> ((i % 16) << 1)) & 3).to_uint64()
-      #|  let b = shiftright128(sum, high1, delta)
-      #|  (a, b)
+      #|  let b : UInt64 = shiftright128(sum, high1, delta)
+      #|  Pow5Pair(a, b)
       #|}
-      #|fn double_computeInvPow5(i : Int) -> (UInt64, UInt64) {
+      #|fn double_computeInvPow5(i : Int) -> Pow5Pair {
       #|  let base = (i + gPOW5_TABLE_SIZE - 1) / gPOW5_TABLE_SIZE
       #|  let base2 = base * gPOW5_TABLE_SIZE
       #|  let offset = base2 - i
       #|  let mul0 = gDOUBLE_POW5_INV_SPLIT2[base * 2]
       #|  let mul1 = gDOUBLE_POW5_INV_SPLIT2[base * 2 + 1]
       #|  if offset == 0 {
-      #|    return (mul0, mul1)
+      #|    return Pow5Pair(mul0, mul1)
       #|  }
       #|  let m = gDOUBLE_POW5_TABLE[offset]
-      #|  let (low1, high1) = umul128(m, mul1)
-      #|  let (low0, high0) = umul128(m, mul0)
+      #|  let Umul128(low1, high1) = umul128(m, mul1)
+      #|  let Umul128(low0, high0) = umul128(m, mul0)
       #|  let sum = high0 + low1
       #|  let mut high1 = high1
       #|  if sum < high0 {
-      #|    high1 = high1 + 1
+      #|    high1 = high1 + 1UL
       #|  }
       #|  let delta : Int = pow5bits(base2) - pow5bits(i)
-      #|  let a = shiftright128(low0, sum, delta) +
-      #|    1 +
+      #|  let a : UInt64 = shiftright128(low0, sum, delta) +
+      #|    1UL +
       #|    ((gPOW5_INV_OFFSETS[i / 16] >> ((i % 16) << 1)) & 3).to_uint64()
-      #|  let b = shiftright128(sum, high1, delta)
-      #|  (a, b)
+      #|  let b : UInt64 = shiftright128(sum, high1, delta)
+      #|  Pow5Pair(a, b)
       #|}
       #|let gDOUBLE_MANTISSA_BITS : Int = 52
       #|let gDOUBLE_EXPONENT_BITS : Int = 11
@@ -16799,11 +19147,13 @@ let moonbitlang_core_double_internal_ryu_module : RuntimePackage = RuntimePackag
       #|    e10 = q
       #|    let k = gDOUBLE_POW5_INV_BITCOUNT + pow5bits(q) - 1
       #|    let i = -e2 + q + k
-      #|    let pow5 = double_computeInvPow5(q)
-      #|    let vs = mulShiftAll64(m2, pow5, i, mmShift)
-      #|    vr = vs.0
-      #|    vp = vs.1
-      #|    vm = vs.2
+      #|    let pow5 : Pow5Pair = double_computeInvPow5(q)
+      #|    let MulShiftAll64Result(vrOut, vpOut, vmOut) = mulShiftAll64(
+      #|      m2, pow5, i, mmShift,
+      #|    )
+      #|    vr = vrOut
+      #|    vp = vpOut
+      #|    vm = vmOut
       #|    if q <= 21 {
       #|      let mvMod5 : Int = mv.to_int() - 5 * (mv / 5UL).to_int()
       #|      if mvMod5 == 0 {
@@ -16823,11 +19173,13 @@ let moonbitlang_core_double_internal_ryu_module : RuntimePackage = RuntimePackag
       #|    let i : Int = -e2 - q
       #|    let k = pow5bits(i) - gDOUBLE_POW5_BITCOUNT
       #|    let j = q - k
-      #|    let pow5 = double_computePow5(i)
-      #|    let vs = mulShiftAll64(m2, pow5, j, mmShift)
-      #|    vr = vs.0
-      #|    vp = vs.1
-      #|    vm = vs.2
+      #|    let pow5 : Pow5Pair = double_computePow5(i)
+      #|    let MulShiftAll64Result(vrOut, vpOut, vmOut) = mulShiftAll64(
+      #|      m2, pow5, j, mmShift,
+      #|    )
+      #|    vr = vrOut
+      #|    vp = vpOut
+      #|    vm = vmOut
       #|    if q <= 1 {
       #|      vrIsTrailingZeros = true
       #|      if even {
@@ -17069,7 +19421,7 @@ let moonbitlang_core_double_internal_ryu_module : RuntimePackage = RuntimePackag
       #|test "double/ryu.mbt:205" {
       #|  let m = 123456789UL
       #|  let mul0 = 987654321UL
-      #|  let (_, high0) = umul128(m, mul0)
+      #|  let Umul128(_, high0) = umul128(m, mul0)
       #|  let low1 = 111111111UL
       #|  let high1 = 222222222UL
       #|  let sum = high0 + low1
@@ -17082,7 +19434,7 @@ let moonbitlang_core_double_internal_ryu_module : RuntimePackage = RuntimePackag
       #|test "double/ryu.mbt:230" {
       #|  let m = 123456789UL
       #|  let mul0 = 987654321UL
-      #|  let (_, high0) = umul128(m, mul0)
+      #|  let Umul128(_, high0) = umul128(m, mul0)
       #|  let low1 = 111111111UL
       #|  let high1 = 222222222UL
       #|  let sum = high0 + low1
@@ -17591,9 +19943,6 @@ let moonbitlang_core_env_module : RuntimePackage = RuntimePackage::new(
       #|  "import": [
       #|    "moonbitlang/core/builtin"
       #|  ],
-      #|  "test-import": [
-      #|    "moonbitlang/core/option"
-      #|  ],
       #|  "targets": {
       #|    "env_wasm.mbt": ["wasm", "wasm-gc"],
       #|    "env_js.mbt": ["js"],
@@ -17823,19 +20172,22 @@ let moonbitlang_core_float_module : RuntimePackage = RuntimePackage::new(
       #|pub let max_value : Float = (0x7F7FFFFF).reinterpret_as_float()
       #|pub let min_value : Float = (0xFF7FFFFF).reinterpret_as_float()
       #|pub let min_positive : Float = (0x00800000).reinterpret_as_float()
-      #|#as_free_fn
+      #|#as_free_fn(deprecated)
       #|pub fn Float::abs(self : Float) -> Float = "%f32.abs"
+      #|#deprecated(skip_current_package=false)
+      #|pub fn default() -> Float {
+      #|  0.0
+      #|}
+    ),
+    "methods.mbt": (
       #|pub impl Show for Float with output(self, logger) {
       #|  logger.write_string(self.to_double().to_string())
       #|}
       #|pub impl Default for Float with default() {
-      #|  0.0
-      #|}
-      #|pub fn default() -> Float {
-      #|  0.0
+      #|  0
       #|}
       #|pub impl Hash for Float with hash_combine(self, hasher) {
-      #|  hasher.combine_float(self)
+      #|  hasher.combine_uint(self.reinterpret_as_uint())
       #|}
       #|pub fn Float::to_be_bytes(self : Float) -> Bytes {
       #|  self.reinterpret_as_uint().to_be_bytes()
@@ -17877,11 +20229,79 @@ let moonbitlang_core_float_module : RuntimePackage = RuntimePackage::new(
       #|    ) ||
       #|    diff <= absolute_tolerance
       #|}
-    ),
-    "mod.mbt": (
       #|pub impl Mod for Float with mod(self : Float, other : Float) -> Float {
       #|  (self.to_double() % other.to_double()).to_float()
       #|}
+      #|#deprecated("Use `..<` in for loop or `until` method instead", skip_current_package=false)
+      #|#coverage.skip
+      #|pub fn Float::upto(
+      #|  self : Float,
+      #|  end : Float,
+      #|  inclusive? : Bool = false,
+      #|) -> Iter[Float] {
+      #|  Iter::new(yield_ => {
+      #|    let mut i = self
+      #|    while i < end || (inclusive && i == end) {
+      #|      if yield_(i) is IterEnd {
+      #|        break IterEnd
+      #|      }
+      #|      if i == end {
+      #|        break IterContinue
+      #|      }
+      #|      i += 1
+      #|    } else {
+      #|      IterContinue
+      #|    }
+      #|  })
+      #|}
+      #|pub fn Float::until(
+      #|  self : Float,
+      #|  end : Float,
+      #|  step? : Float = 1.0,
+      #|  inclusive? : Bool = false,
+      #|) -> Iter[Float] {
+      #|  if step == 0.0 {
+      #|    return Iter::empty()
+      #|  }
+      #|  Iter::new(yield_ => {
+      #|    let mut i = self
+      #|    while (step > 0.0 && i < end) ||
+      #|          (step < 0.0 && i > end) ||
+      #|          (inclusive && i == end) {
+      #|      if yield_(i) is IterEnd {
+      #|        break IterEnd
+      #|      }
+      #|      let next = i + step
+      #|      if (step > 0.0 && next >= i) || (step < 0.0 && next <= i) {
+      #|        i = next
+      #|      } else {
+      #|        break IterContinue
+      #|      }
+      #|    } else {
+      #|      IterContinue
+      #|    }
+      #|  })
+      #|}
+      #|pub fn Float::to_double(self : Float) -> Double = "%f32.to_f64"
+      #|pub impl ToJson for Float with to_json(self : Float) -> Json {
+      #|  Json::number(self.to_double())
+      #|}
+      #|pub fn Float::from_uint64(value : UInt64) -> Float = "%u64.to_f32"
+      #|pub fn Float::sqrt(self : Float) -> Float = "%f32.sqrt"
+      #|pub fn Float::reinterpret_as_int(self : Float) -> Int = "%f32.to_i32_reinterpret"
+      #|pub impl Neg for Float with neg(self) = "%f32.neg"
+      #|pub impl Add for Float with add(self, other) = "%f32.add"
+      #|pub impl Sub for Float with sub(self, other) = "%f32.sub"
+      #|pub impl Mul for Float with mul(self, other) = "%f32.mul"
+      #|pub impl Div for Float with div(self, other) = "%f32.div"
+      #|pub impl Eq for Float with equal(self : Float, other : Float) -> Bool = "%f32.eq"
+      #|pub fn Float::op_neq(self : Float, other : Float) -> Bool = "%f32.ne"
+      #|pub impl Compare for Float with compare(self, other) = "%f32.compare"
+      #|pub impl Compare for Float with op_lt(x, y) = "%f32.lt"
+      #|pub impl Compare for Float with op_le(x, y) = "%f32.le"
+      #|pub impl Compare for Float with op_gt(x, y) = "%f32.gt"
+      #|pub impl Compare for Float with op_ge(x, y) = "%f32.ge"
+      #|pub fn Float::reinterpret_as_uint(self : Float) -> UInt = "%f32.to_i32_reinterpret"
     ),
     "pow.mbt": (
       #|#as_free_fn
@@ -17994,13 +20414,10 @@ let moonbitlang_core_hashmap_module : RuntimePackage = RuntimePackage::new(
       #|    "moonbitlang/core/quickcheck",
       #|    "moonbitlang/core/int"
       #|  ],
-      #|  "test-import": ["moonbitlang/core/string"]
+      #|  "test-import": ["moonbitlang/core/string", "moonbitlang/core/json"]
       #|}
     ),
-    "deprecated.mbt": (
-      #|#deprecated("Use `HashMap` instead of `T`")
-      #|pub typealias HashMap as T
-    ),
+    "deprecated.mbt": "",
     "hashmap.mbt": (
       #|#as_free_fn
       #|pub fn[K, V] HashMap::new(capacity? : Int = 8) -> HashMap[K, V] {
@@ -18302,6 +20719,24 @@ let moonbitlang_core_hashmap_module : RuntimePackage = RuntimePackage::new(
       #|  }
       #|  other
       #|}
+      #|pub fn[K : Eq, V] HashMap::merge(
+      #|  self : HashMap[K, V],
+      #|  other : HashMap[K, V],
+      #|) -> HashMap[K, V] {
+      #|  let result = self.copy()
+      #|  result.merge_in_place(other)
+      #|  result
+      #|}
+      #|pub fn[K : Eq, V] HashMap::merge_in_place(
+      #|  self : HashMap[K, V],
+      #|  other : HashMap[K, V],
+      #|) -> Unit {
+      #|  for entry in other.entries {
+      #|    if entry is Some({ key, value, hash, .. }) {
+      #|      self.set_with_hash(key, value, hash)
+      #|    }
+      #|  }
+      #|}
       #|priv struct MyString(String) derive(Eq)
       #|#coverage.skip
       #|impl Hash for MyString with hash(self) {
@@ -18473,6 +20908,7 @@ let moonbitlang_core_hashmap_module : RuntimePackage = RuntimePackage::new(
       #|  key : K
       #|  mut value : V
       #|} derive(Show)
+      #|#alias(T, deprecated)
       #|struct HashMap[K, V] {
       #|  mut entries : FixedArray[Entry[K, V]?]
       #|  mut capacity : Int
@@ -18723,15 +21159,7 @@ let moonbitlang_core_hashset_module : RuntimePackage = RuntimePackage::new(
       #|  ]
       #|}
     ),
-    "deprecated.mbt": (
-      #|#deprecated("Use `add` instead.")
-      #|#coverage.skip
-      #|pub fn[K : Hash + Eq] HashSet::insert(self : HashSet[K], key : K) -> Unit {
-      #|  self.add(key)
-      #|}
-      #|#deprecated("Use `HashSet` instead of `T`")
-      #|pub typealias HashSet as T
-    ),
+    "deprecated.mbt": "",
     "hashset.mbt": (
       #|let default_init_capacity = 8
       #|#as_free_fn
@@ -18753,6 +21181,7 @@ let moonbitlang_core_hashset_module : RuntimePackage = RuntimePackage::new(
       #|  arr.each(e => m.add(e))
       #|  m
       #|}
+      #|#alias(insert, deprecated)
       #|pub fn[K : Hash + Eq] HashSet::add(self : HashSet[K], key : K) -> Unit {
       #|  self.add_with_hash(key, key.hash())
       #|}
@@ -19185,6 +21614,7 @@ let moonbitlang_core_hashset_module : RuntimePackage = RuntimePackage::new(
       #|  hash : Int
       #|  key : K
       #|} derive(Show)
+      #|#alias(T, deprecated)
       #|struct HashSet[K] {
       #|  mut entries : FixedArray[Entry[K]?]
       #|  mut size : Int // active key count
@@ -19408,6 +21838,7 @@ let moonbitlang_core_immut_array_module : RuntimePackage = RuntimePackage::new(
       #|pub fn[A] T::eachi(self : T[A], f : (Int, A) -> Unit raise?) -> Unit raise? {
       #|  self.tree.eachi(f, self.shift, 0)
       #|}
+      #|#alias(fold_left, deprecated)
       #|pub fn[A, B] T::fold(
       #|  self : T[A],
       #|  init~ : B,
@@ -19415,6 +21846,7 @@ let moonbitlang_core_immut_array_module : RuntimePackage = RuntimePackage::new(
       #|) -> B raise? {
       #|  self.tree.fold(init, f)
       #|}
+      #|#alias(fold_right, deprecated)
       #|pub fn[A, B] T::rev_fold(
       #|  self : T[A],
       #|  init~ : B,
@@ -19501,7 +21933,7 @@ let moonbitlang_core_immut_array_module : RuntimePackage = RuntimePackage::new(
       #|}
     ),
     "deprecated.mbt": (
-      #|#deprecated("We don't copy immutable array")
+      #|#deprecated("We don't copy immutable array", skip_current_package=false)
       #|#coverage.skip
       #|pub fn[A] T::copy(self : T[A]) -> T[A] {
       #|  fn copy(t : Tree[A]) -> Tree[A] {
@@ -19519,24 +21951,6 @@ let moonbitlang_core_immut_array_module : RuntimePackage = RuntimePackage::new(
       #|    }
       #|  }
       #|  { tree: copy(self.tree), size: self.size, shift: self.shift }
-      #|}
-      #|#deprecated("Use `fold` instead")
-      #|#coverage.skip
-      #|pub fn[A] T::fold_left(
-      #|  self : T[A],
-      #|  f : (A, A) -> A raise?,
-      #|  init~ : A,
-      #|) -> A raise? {
-      #|  self.fold(init~, f)
-      #|}
-      #|#deprecated("Use `rev_fold` instead")
-      #|#coverage.skip
-      #|pub fn[A] T::fold_right(
-      #|  self : T[A],
-      #|  f : (A, A) -> A raise?,
-      #|  init~ : A,
-      #|) -> A raise? {
-      #|  self.rev_fold(init~, f)
       #|}
     ),
     "tree.mbt": (
@@ -20467,7 +22881,8 @@ let moonbitlang_core_immut_hashmap_module : RuntimePackage = RuntimePackage::new
       #|    }
       #|  }
       #|}
-      #|pub fn[K, V] HashMap::filter_with_key(
+      #|#alias(filter_with_key, deprecated)
+      #|pub fn[K, V] HashMap::filter(
       #|  self : HashMap[K, V],
       #|  pred : (K, V) -> Bool raise?,
       #|) -> HashMap[K, V] raise? {
@@ -20502,7 +22917,8 @@ let moonbitlang_core_immut_hashmap_module : RuntimePackage = RuntimePackage::new
       #|    Some(node) => go(node)
       #|  }
       #|}
-      #|pub fn[K, V, A] HashMap::fold_with_key(
+      #|#alias(fold_with_key, deprecated)
+      #|pub fn[K, V, A] HashMap::fold(
       #|  self : HashMap[K, V],
       #|  init~ : A,
       #|  f : (A, K, V) -> A raise?,
@@ -20520,7 +22936,8 @@ let moonbitlang_core_immut_hashmap_module : RuntimePackage = RuntimePackage::new
       #|    Some(node) => go(init, node)
       #|  }
       #|}
-      #|pub fn[K, V, A] HashMap::map_with_key(
+      #|#alias(map_with_key, deprecated)
+      #|pub fn[K, V, A] HashMap::map(
       #|  self : HashMap[K, V],
       #|  f : (K, V) -> A raise?,
       #|) -> HashMap[K, A] raise? {
@@ -20625,6 +23042,7 @@ let moonbitlang_core_immut_hashmap_module : RuntimePackage = RuntimePackage::new
       #|    Some(node) => node_size(node)
       #|  }
       #|}
+      #|#alias(merge)
       #|pub fn[K : Eq, V] HashMap::union(
       #|  self : HashMap[K, V],
       #|  other : HashMap[K, V],
@@ -20995,39 +23413,12 @@ let moonbitlang_core_immut_hashmap_module : RuntimePackage = RuntimePackage::new
       #|  hasher,
       #|) {
       #|  hasher.combine(
-      #|    self.fold_with_key(init=0, (acc, k, v) => acc ^
+      #|    self.fold(init=0, (acc, k, v) => acc ^
       #|      Hasher::new()..combine((k, v)).finalize()),
       #|  )
       #|}
     ),
-    "deprecated.mbt": (
-      #|#deprecated("Use `filter_with_key` instead. `filter` will accept `(K, V) -> Bool` in the future.")
-      #|#coverage.skip
-      #|pub fn[K, V] HashMap::filter(
-      #|  self : HashMap[K, V],
-      #|  pred : (V) -> Bool raise?,
-      #|) -> HashMap[K, V] raise? {
-      #|  self.filter_with_key((_, v) => pred(v))
-      #|}
-      #|#deprecated("Use `fold_with_key` instead. `fold` will accept `(A, K, V) -> A` in the future.")
-      #|pub fn[K, V, A] HashMap::fold(
-      #|  self : HashMap[K, V],
-      #|  init~ : A,
-      #|  f : (A, V) -> A raise?,
-      #|) -> A raise? {
-      #|  self.fold_with_key((acc, _k, v) => f(acc, v), init~)
-      #|}
-      #|#deprecated("Use `map_with_key` instead. `map` will accept `(K, V) -> A` in the future.")
-      #|#coverage.skip
-      #|pub fn[K, V, A] HashMap::map(
-      #|  self : HashMap[K, V],
-      #|  f : (V) -> A raise?,
-      #|) -> HashMap[K, A] raise? {
-      #|  self.map_with_key((_k, v) => f(v))
-      #|}
-      #|#deprecated("Use `HashMap` instead of `T`")
-      #|pub typealias HashMap as T
-    ),
+    "deprecated.mbt": "",
     "types.mbt": (
       #|using @path {type Path}
       #|priv enum Node[K, V] {
@@ -21035,6 +23426,7 @@ let moonbitlang_core_immut_hashmap_module : RuntimePackage = RuntimePackage::new
       #|  Leaf(K, V, @list.List[(K, V)]) // use a list of buckets to resolve collision
       #|  Branch(@sparse_array.SparseArray[Node[K, V]])
       #|}
+      #|#alias(T, deprecated)
       #|struct HashMap[K, V](Node[K, V]?) derive(Eq)
     ),
   },
@@ -21448,10 +23840,7 @@ let moonbitlang_core_immut_hashset_module : RuntimePackage = RuntimePackage::new
       #|  assert_not_eq(from_array([1, 2, 3]), from_array([1, 2, 4]))
       #|}
     ),
-    "deprecated.mbt": (
-      #|#deprecated("Use `Set` instead of `T`")
-      #|pub typealias HashSet as T
-    ),
+    "deprecated.mbt": "",
     "types.mbt": (
       #|using @path {type Path}
       #|priv enum Node[A] {
@@ -21459,6 +23848,7 @@ let moonbitlang_core_immut_hashset_module : RuntimePackage = RuntimePackage::new
       #|  Leaf(A, @list.List[A]) // use a list of buckets to resolve collision
       #|  Branch(@sparse_array.SparseArray[Node[A]])
       #|}
+      #|#alias(T, deprecated)
       #|struct HashSet[A](Node[A]?) derive(Eq)
     ),
   },
@@ -21866,12 +24256,12 @@ let moonbitlang_core_immut_list_module : RuntimePackage = RuntimePackage::new(
       #|}
     ),
     "deprecated.mbt": (
-      #|#deprecated("use `@list` instead")
+      #|#deprecated("use `@list` instead", skip_current_package=false)
       #|pub(all) enum T[A] {
       #|  Nil
       #|  Cons(A, T[A])
       #|} derive(Eq)
-      #|#deprecated("use `@immut/list.from_json` instead")
+      #|#deprecated("use `@immut/list.from_json` instead", skip_current_package=false)
       #|#coverage.skip
       #|pub fn[A : @json.FromJson] T::from_json(
       #|  json : Json,
@@ -21890,7 +24280,7 @@ let moonbitlang_core_immut_list_module : RuntimePackage = RuntimePackage::new(
       #|  }
       #|  aux(self)
       #|}
-      #|#deprecated("use `==` instead")
+      #|#deprecated("use `==` instead", skip_current_package=false)
       #|pub fn[A : Eq] T::equal(self : T[A], other : T[A]) -> Bool {
       #|  loop (self, other) {
       #|    (Nil, Nil) => true
@@ -21898,29 +24288,29 @@ let moonbitlang_core_immut_list_module : RuntimePackage = RuntimePackage::new(
       #|    (_, _) => false
       #|  }
       #|}
-      #|#deprecated("use `@immut/list.from_array` instead")
+      #|#deprecated("use `@immut/list.from_array` instead", skip_current_package=false)
       #|#coverage.skip
       #|pub fn[A] T::from_array(arr : ArrayView[A]) -> T[A] {
       #|  from_array(arr)
       #|}
-      #|#deprecated("use `@immut/list.default` instead")
+      #|#deprecated("use `@immut/list.default` instead", skip_current_package=false)
       #|#coverage.skip
       #|pub fn[X] T::default() -> T[X] {
       #|  Nil
       #|}
-      #|#deprecated("use `@immut/list.from_iter` instead")
+      #|#deprecated("use `@immut/list.from_iter` instead", skip_current_package=false)
       #|#coverage.skip
       #|pub fn[A] T::from_iter(iter : Iter[A]) -> T[A] {
       #|  from_iter(iter)
       #|}
-      #|#deprecated("use `@immut/list.of` instead")
+      #|#deprecated("use `@immut/list.of` instead", skip_current_package=false)
       #|#coverage.skip
       #|pub fn[A] T::of(arr : ArrayView[A]) -> T[A] {
       #|  of(arr)
       #|}
     ),
     "list.mbt": (
-      #|#deprecated("use `@list` instead")
+      #|#deprecated("use `@list` instead", skip_current_package=false)
       #|pub fn[A] T::add(self : T[A], head : A) -> T[A] {
       #|  Cons(head, self)
       #|}
@@ -21936,7 +24326,7 @@ let moonbitlang_core_immut_list_module : RuntimePackage = RuntimePackage::new(
       #|  }
       #|  Json::array(jsons)
       #|}
-      #|#deprecated("use `@list` instead")
+      #|#deprecated("use `@list` instead", skip_current_package=false)
       #|pub fn[A : ToJson] T::to_json(self : T[A]) -> Json {
       #|  ToJson::to_json(self)
       #|}
@@ -21950,13 +24340,13 @@ let moonbitlang_core_immut_list_module : RuntimePackage = RuntimePackage::new(
       #|    list
       #|  }
       #|}
-      #|#deprecated("use `@list` instead")
+      #|#deprecated("use `@list` instead", skip_current_package=false)
       #|pub fn[A : @json.FromJson] from_json(
       #|  json : Json,
       #|) -> T[A] raise @json.JsonDecodeError {
       #|  @json.from_json(json)
       #|}
-      #|#deprecated("use `@list` instead")
+      #|#deprecated("use `@list` instead", skip_current_package=false)
       #|pub fn[A] from_array(arr : ArrayView[A]) -> T[A] {
       #|  for i = arr.length() - 1, list = Nil; i >= 0; {
       #|    continue i - 1, Cons(arr[i], list)
@@ -21964,14 +24354,14 @@ let moonbitlang_core_immut_list_module : RuntimePackage = RuntimePackage::new(
       #|    list
       #|  }
       #|}
-      #|#deprecated("use `@list` instead")
+      #|#deprecated("use `@list` instead", skip_current_package=false)
       #|pub fn[A] T::length(self : T[A]) -> Int {
       #|  loop (self, 0) {
       #|    (Nil, len) => len
       #|    (Cons(_, rest), acc) => continue (rest, acc + 1)
       #|  }
       #|}
-      #|#deprecated("use `@list` instead")
+      #|#deprecated("use `@list` instead", skip_current_package=false)
       #|pub fn[A] T::each(self : T[A], f : (A) -> Unit raise?) -> Unit raise? {
       #|  loop self {
       #|    Nil => ()
@@ -21981,7 +24371,7 @@ let moonbitlang_core_immut_list_module : RuntimePackage = RuntimePackage::new(
       #|    }
       #|  }
       #|}
-      #|#deprecated("use `@list` instead")
+      #|#deprecated("use `@list` instead", skip_current_package=false)
       #|pub fn[A] T::eachi(self : T[A], f : (Int, A) -> Unit raise?) -> Unit raise? {
       #|  loop (self, 0) {
       #|    (Nil, _) => ()
@@ -21991,14 +24381,14 @@ let moonbitlang_core_immut_list_module : RuntimePackage = RuntimePackage::new(
       #|    }
       #|  }
       #|}
-      #|#deprecated("use `@list` instead")
+      #|#deprecated("use `@list` instead", skip_current_package=false)
       #|pub fn[A, B] T::map(self : T[A], f : (A) -> B) -> T[B] {
       #|  match self {
       #|    Nil => Nil
       #|    Cons(head, tail) => Cons(f(head), tail.map(f))
       #|  }
       #|}
-      #|#deprecated("use `@list` instead")
+      #|#deprecated("use `@list` instead", skip_current_package=false)
       #|pub fn[A, B] T::mapi(self : T[A], f : (Int, A) -> B raise?) -> T[B] raise? {
       #|  fn go(xs : T[A], i : Int, f : (Int, A) -> B raise?) -> T[B] raise? {
       #|    match xs {
@@ -22008,14 +24398,14 @@ let moonbitlang_core_immut_list_module : RuntimePackage = RuntimePackage::new(
       #|  }
       #|  go(self, 0, f)
       #|}
-      #|#deprecated("use `@list` instead")
+      #|#deprecated("use `@list` instead", skip_current_package=false)
       #|pub fn[A, B] T::rev_map(self : T[A], f : (A) -> B raise?) -> T[B] raise? {
       #|  loop (Nil, self) {
       #|    (acc, Nil) => acc
       #|    (acc, Cons(x, xs)) => continue (Cons(f(x), acc), xs)
       #|  }
       #|}
-      #|#deprecated("use `@list` instead")
+      #|#deprecated("use `@list` instead", skip_current_package=false)
       #|pub fn[A] T::to_array(self : T[A]) -> Array[A] {
       #|  match self {
       #|    Nil => []
@@ -22032,7 +24422,7 @@ let moonbitlang_core_immut_list_module : RuntimePackage = RuntimePackage::new(
       #|    }
       #|  }
       #|}
-      #|#deprecated("use `@list` instead")
+      #|#deprecated("use `@list` instead", skip_current_package=false)
       #|pub fn[A] T::filter(self : T[A], f : (A) -> Bool raise?) -> T[A] raise? {
       #|  match self {
       #|    Nil => Nil
@@ -22044,21 +24434,21 @@ let moonbitlang_core_immut_list_module : RuntimePackage = RuntimePackage::new(
       #|      }
       #|  }
       #|}
-      #|#deprecated("use `@list` instead")
+      #|#deprecated("use `@list` instead", skip_current_package=false)
       #|pub fn[A] T::all(self : T[A], f : (A) -> Bool raise?) -> Bool raise? {
       #|  loop self {
       #|    Nil => true
       #|    Cons(head, tail) => if f(head) { continue tail } else { false }
       #|  }
       #|}
-      #|#deprecated("use `@list` instead")
+      #|#deprecated("use `@list` instead", skip_current_package=false)
       #|pub fn[A] T::any(self : T[A], f : (A) -> Bool raise?) -> Bool raise? {
       #|  match self {
       #|    Nil => false
       #|    Cons(head, tail) => f(head) || tail.any(f)
       #|  }
       #|}
-      #|#deprecated("use `@list` instead")
+      #|#deprecated("use `@list` instead", skip_current_package=false)
       #|pub fn[A] T::tail(self : T[A]) -> T[A] {
       #|  match self {
       #|    Nil => Nil
@@ -22066,7 +24456,8 @@ let moonbitlang_core_immut_list_module : RuntimePackage = RuntimePackage::new(
       #|  }
       #|}
       #|#internal(unsafe, "Panic if the list is empty")
-      #|#deprecated("use `@list` instead")
+      #|#doc(hidden)
+      #|#deprecated("use `@list` instead", skip_current_package=false)
       #|pub fn[A] T::unsafe_head(self : T[A]) -> A {
       #|  match self {
       #|    Nil => abort("head of empty list")
@@ -22074,11 +24465,11 @@ let moonbitlang_core_immut_list_module : RuntimePackage = RuntimePackage::new(
       #|  }
       #|}
       #|#coverage.skip
-      #|#deprecated("use `@list` instead")
+      #|#deprecated("use `@list` instead", skip_current_package=false)
       #|pub fn[A] T::head_exn(self : T[A]) -> A {
       #|  self.unsafe_head()
       #|}
-      #|#deprecated("use `@list` instead")
+      #|#deprecated("use `@list` instead", skip_current_package=false)
       #|pub fn[A] T::head(self : T[A]) -> A? {
       #|  match self {
       #|    Nil => None
@@ -22086,7 +24477,8 @@ let moonbitlang_core_immut_list_module : RuntimePackage = RuntimePackage::new(
       #|  }
       #|}
       #|#internal(unsafe, "Panic if the list is empty")
-      #|#deprecated("use `@list` instead")
+      #|#doc(hidden)
+      #|#deprecated("use `@list` instead", skip_current_package=false)
       #|pub fn[A] T::unsafe_last(self : T[A]) -> A {
       #|  loop self {
       #|    Nil => abort("last of empty list")
@@ -22094,7 +24486,7 @@ let moonbitlang_core_immut_list_module : RuntimePackage = RuntimePackage::new(
       #|    Cons(_, tail) => continue tail
       #|  }
       #|}
-      #|#deprecated("use `@list` instead")
+      #|#deprecated("use `@list` instead", skip_current_package=false)
       #|pub fn[A] T::last(self : T[A]) -> A? {
       #|  loop self {
       #|    Nil => None
@@ -22102,25 +24494,25 @@ let moonbitlang_core_immut_list_module : RuntimePackage = RuntimePackage::new(
       #|    Cons(_, tail) => continue tail
       #|  }
       #|}
-      #|#deprecated("use `@list` instead")
+      #|#deprecated("use `@list` instead", skip_current_package=false)
       #|pub fn[A] T::concat(self : T[A], other : T[A]) -> T[A] {
       #|  match self {
       #|    Nil => other
       #|    Cons(head, tail) => Cons(head, tail.concat(other))
       #|  }
       #|}
-      #|#deprecated("use `@list` instead")
+      #|#deprecated("use `@list` instead", skip_current_package=false)
       #|pub fn[A] T::rev_concat(self : T[A], other : T[A]) -> T[A] {
       #|  loop (self, other) {
       #|    (Nil, other) => other
       #|    (Cons(head, tail), other) => continue (tail, Cons(head, other))
       #|  }
       #|}
-      #|#deprecated("use `@list` instead")
+      #|#deprecated("use `@list` instead", skip_current_package=false)
       #|pub fn[A] T::rev(self : T[A]) -> T[A] {
       #|  self.rev_concat(Nil)
       #|}
-      #|#deprecated("use `@list` instead")
+      #|#deprecated("use `@list` instead", skip_current_package=false)
       #|pub fn[A, B] T::fold(
       #|  self : T[A],
       #|  init~ : B,
@@ -22131,7 +24523,7 @@ let moonbitlang_core_immut_list_module : RuntimePackage = RuntimePackage::new(
       #|    Cons(head, tail) => tail.fold(f, init=f(init, head))
       #|  }
       #|}
-      #|#deprecated("use `@list` instead")
+      #|#deprecated("use `@list` instead", skip_current_package=false)
       #|pub fn[A, B] T::rev_fold(
       #|  self : T[A],
       #|  init~ : B,
@@ -22145,7 +24537,7 @@ let moonbitlang_core_immut_list_module : RuntimePackage = RuntimePackage::new(
       #|  acc
       #|}
       #|#coverage.skip
-      #|#deprecated("use `@list` instead")
+      #|#deprecated("use `@list` instead", skip_current_package=false)
       #|pub fn[A, B] T::fold_left(
       #|  self : T[A],
       #|  f : (B, A) -> B raise?,
@@ -22154,7 +24546,7 @@ let moonbitlang_core_immut_list_module : RuntimePackage = RuntimePackage::new(
       #|  self.fold(init~, f)
       #|}
       #|#coverage.skip
-      #|#deprecated("use `@list.rev_fold` instead")
+      #|#deprecated("use `@list.rev_fold` instead", skip_current_package=false)
       #|pub fn[A, B] T::fold_right(
       #|  self : T[A],
       #|  f : (A, B) -> B raise?,
@@ -22165,7 +24557,7 @@ let moonbitlang_core_immut_list_module : RuntimePackage = RuntimePackage::new(
       #|    Cons(head, tail) => f(head, tail.rev_fold(f, init~))
       #|  }
       #|}
-      #|#deprecated("use `@list` instead")
+      #|#deprecated("use `@list` instead", skip_current_package=false)
       #|pub fn[A, B] T::foldi(
       #|  self : T[A],
       #|  init~ : B,
@@ -22179,7 +24571,7 @@ let moonbitlang_core_immut_list_module : RuntimePackage = RuntimePackage::new(
       #|  }
       #|  go(self, 0, f, init)
       #|}
-      #|#deprecated("use `@list` instead")
+      #|#deprecated("use `@list` instead", skip_current_package=false)
       #|pub fn[A, B] T::rev_foldi(
       #|  self : T[A],
       #|  init~ : B,
@@ -22193,7 +24585,7 @@ let moonbitlang_core_immut_list_module : RuntimePackage = RuntimePackage::new(
       #|  }
       #|  go(self, 0, f, init)
       #|}
-      #|#deprecated("use `@list.foldi` instead")
+      #|#deprecated("use `@list.foldi` instead", skip_current_package=false)
       #|pub fn[A, B] T::fold_lefti(
       #|  self : T[A],
       #|  f : (Int, B, A) -> B raise?,
@@ -22207,7 +24599,7 @@ let moonbitlang_core_immut_list_module : RuntimePackage = RuntimePackage::new(
       #|  }
       #|  go(self, 0, f, init)
       #|}
-      #|#deprecated("use `@list.rev_foldi` instead")
+      #|#deprecated("use `@list.rev_foldi` instead", skip_current_package=false)
       #|pub fn[A, B] T::fold_righti(
       #|  self : T[A],
       #|  f : (Int, A, B) -> B raise?,
@@ -22221,7 +24613,7 @@ let moonbitlang_core_immut_list_module : RuntimePackage = RuntimePackage::new(
       #|  }
       #|  go(self, 0, f, init)
       #|}
-      #|#deprecated("use `@list` instead")
+      #|#deprecated("use `@list` instead", skip_current_package=false)
       #|pub fn[A, B] T::zip(self : T[A], other : T[B]) -> T[(A, B)]? {
       #|  let mut acc = Nil
       #|  let res = loop (self, other) {
@@ -22234,18 +24626,18 @@ let moonbitlang_core_immut_list_module : RuntimePackage = RuntimePackage::new(
       #|  }
       #|  res.map(T::rev)
       #|}
-      #|#deprecated("use `@list` instead")
+      #|#deprecated("use `@list` instead", skip_current_package=false)
       #|pub fn[A, B] T::concat_map(self : T[A], f : (A) -> T[B]) -> T[B] {
       #|  self.flat_map(f)
       #|}
-      #|#deprecated("use `@list` instead")
+      #|#deprecated("use `@list` instead", skip_current_package=false)
       #|pub fn[A, B] T::flat_map(self : T[A], f : (A) -> T[B] raise?) -> T[B] raise? {
       #|  match self {
       #|    Nil => Nil
       #|    Cons(head, tail) => f(head).concat(tail.flat_map(f))
       #|  }
       #|}
-      #|#deprecated("use `@list` instead")
+      #|#deprecated("use `@list` instead", skip_current_package=false)
       #|pub fn[A, B] T::filter_map(self : T[A], f : (A) -> B?) -> T[B] {
       #|  loop (Nil, self) {
       #|    (acc, Nil) => acc.rev()
@@ -22257,7 +24649,8 @@ let moonbitlang_core_immut_list_module : RuntimePackage = RuntimePackage::new(
       #|  }
       #|}
       #|#internal(unsafe, "Panic if the index is out of bounds")
-      #|#deprecated("use `@list` instead")
+      #|#doc(hidden)
+      #|#deprecated("use `@list` instead", skip_current_package=false)
       #|pub fn[A] T::unsafe_nth(self : T[A], n : Int) -> A {
       #|  loop (self, n) {
       #|    (Nil, _) => abort("nth: index out of bounds")
@@ -22265,11 +24658,11 @@ let moonbitlang_core_immut_list_module : RuntimePackage = RuntimePackage::new(
       #|    (Cons(_, tail), n) => continue (tail, n - 1)
       #|  }
       #|}
-      #|#deprecated("use `@list` instead")
+      #|#deprecated("use `@list` instead", skip_current_package=false)
       #|pub fn[A] T::nth_exn(self : T[A], n : Int) -> A {
       #|  self.unsafe_nth(n)
       #|}
-      #|#deprecated("use `@list` instead")
+      #|#deprecated("use `@list` instead", skip_current_package=false)
       #|pub fn[A] T::nth(self : T[A], n : Int) -> A? {
       #|  loop (self, n) {
       #|    (Nil, _) => None
@@ -22277,7 +24670,7 @@ let moonbitlang_core_immut_list_module : RuntimePackage = RuntimePackage::new(
       #|    (Cons(_, tail), n) => continue (tail, n - 1)
       #|  }
       #|}
-      #|#deprecated("use `@list` instead")
+      #|#deprecated("use `@list` instead", skip_current_package=false)
       #|pub fn[A] repeat(n : Int, x : A) -> T[A] {
       #|  if n == 0 {
       #|    Nil
@@ -22285,7 +24678,7 @@ let moonbitlang_core_immut_list_module : RuntimePackage = RuntimePackage::new(
       #|    Cons(x, repeat(n - 1, x))
       #|  }
       #|}
-      #|#deprecated("use `@list` instead")
+      #|#deprecated("use `@list` instead", skip_current_package=false)
       #|pub fn[A] T::intersperse(self : T[A], separator : A) -> T[A] {
       #|  match self {
       #|    Nil => Nil
@@ -22293,11 +24686,11 @@ let moonbitlang_core_immut_list_module : RuntimePackage = RuntimePackage::new(
       #|    Cons(head, tail) => Cons(head, Cons(separator, tail.intersperse(separator)))
       #|  }
       #|}
-      #|#deprecated("use `@list` instead")
+      #|#deprecated("use `@list` instead", skip_current_package=false)
       #|pub fn[A] T::is_empty(self : T[A]) -> Bool {
       #|  self is Nil
       #|}
-      #|#deprecated("use `@list` instead")
+      #|#deprecated("use `@list` instead", skip_current_package=false)
       #|pub fn[A, B] T::unzip(self : T[(A, B)]) -> (T[A], T[B]) {
       #|  let mut xs = Nil
       #|  let mut ys = Nil
@@ -22310,7 +24703,7 @@ let moonbitlang_core_immut_list_module : RuntimePackage = RuntimePackage::new(
       #|    }
       #|  }
       #|}
-      #|#deprecated("use `@list` instead")
+      #|#deprecated("use `@list` instead", skip_current_package=false)
       #|pub fn[A] T::flatten(self : T[T[A]]) -> T[A] {
       #|  match self {
       #|    Nil => Nil
@@ -22318,7 +24711,8 @@ let moonbitlang_core_immut_list_module : RuntimePackage = RuntimePackage::new(
       #|  }
       #|}
       #|#internal(unsafe, "Panic if the list is empty")
-      #|#deprecated("use `@list` instead")
+      #|#doc(hidden)
+      #|#deprecated("use `@list` instead", skip_current_package=false)
       #|pub fn[A : Compare] T::unsafe_maximum(self : T[A]) -> A {
       #|  match self {
       #|    Nil => abort("maximum: empty list")
@@ -22333,7 +24727,7 @@ let moonbitlang_core_immut_list_module : RuntimePackage = RuntimePackage::new(
       #|    }
       #|  }
       #|}
-      #|#deprecated("use `@list` instead")
+      #|#deprecated("use `@list` instead", skip_current_package=false)
       #|pub fn[A : Compare] T::maximum(self : T[A]) -> A? {
       #|  match self {
       #|    Nil => None
@@ -22346,7 +24740,8 @@ let moonbitlang_core_immut_list_module : RuntimePackage = RuntimePackage::new(
       #|  }
       #|}
       #|#internal(unsafe, "Panic if the list is empty")
-      #|#deprecated("use `@list` instead")
+      #|#doc(hidden)
+      #|#deprecated("use `@list` instead", skip_current_package=false)
       #|pub fn[A : Compare] T::unsafe_minimum(self : T[A]) -> A {
       #|  match self {
       #|    Nil => abort("minimum: empty list")
@@ -22361,7 +24756,7 @@ let moonbitlang_core_immut_list_module : RuntimePackage = RuntimePackage::new(
       #|    }
       #|  }
       #|}
-      #|#deprecated("use `@list` instead")
+      #|#deprecated("use `@list` instead", skip_current_package=false)
       #|pub fn[A : Compare] T::minimum(self : T[A]) -> A? {
       #|  match self {
       #|    Nil => None
@@ -22373,7 +24768,7 @@ let moonbitlang_core_immut_list_module : RuntimePackage = RuntimePackage::new(
       #|      }
       #|  }
       #|}
-      #|#deprecated("use `@list` instead")
+      #|#deprecated("use `@list` instead", skip_current_package=false)
       #|pub fn[A : Compare] T::sort(self : T[A]) -> T[A] {
       #|  match self {
       #|    Nil => Nil
@@ -22387,21 +24782,21 @@ let moonbitlang_core_immut_list_module : RuntimePackage = RuntimePackage::new(
       #|pub impl[A] Add for T[A] with add(self, other) {
       #|  self.concat(other)
       #|}
-      #|#deprecated("use `@list` instead")
+      #|#deprecated("use `@list` instead", skip_current_package=false)
       #|pub fn[A : Eq] T::contains(self : T[A], value : A) -> Bool {
       #|  loop self {
       #|    Nil => false
       #|    Cons(x, xs) => if x == value { true } else { continue xs }
       #|  }
       #|}
-      #|#deprecated("use `@list` instead")
+      #|#deprecated("use `@list` instead", skip_current_package=false)
       #|pub fn[A, S] unfold(f : (S) -> (A, S)? raise?, init~ : S) -> T[A] raise? {
       #|  match f(init) {
       #|    Some((element, new_state)) => Cons(element, unfold(init=new_state, f))
       #|    None => Nil
       #|  }
       #|}
-      #|#deprecated("use `@list` instead")
+      #|#deprecated("use `@list` instead", skip_current_package=false)
       #|pub fn[A] T::take(self : T[A], n : Int) -> T[A] {
       #|  fn go(n, t) {
       #|    match (n, t) {
@@ -22416,7 +24811,7 @@ let moonbitlang_core_immut_list_module : RuntimePackage = RuntimePackage::new(
       #|    go(n, self)
       #|  }
       #|}
-      #|#deprecated("use `@list` instead")
+      #|#deprecated("use `@list` instead", skip_current_package=false)
       #|pub fn[A] T::drop(self : T[A], n : Int) -> T[A] {
       #|  if n <= 0 {
       #|    self
@@ -22428,21 +24823,21 @@ let moonbitlang_core_immut_list_module : RuntimePackage = RuntimePackage::new(
       #|    }
       #|  }
       #|}
-      #|#deprecated("use `@list` instead")
+      #|#deprecated("use `@list` instead", skip_current_package=false)
       #|pub fn[A] T::take_while(self : T[A], p : (A) -> Bool) -> T[A] {
       #|  match self {
       #|    Nil => Nil
       #|    Cons(x, xs) => if p(x) { Cons(x, xs.take_while(p)) } else { Nil }
       #|  }
       #|}
-      #|#deprecated("use `@list` instead")
+      #|#deprecated("use `@list` instead", skip_current_package=false)
       #|pub fn[A] T::drop_while(self : T[A], p : (A) -> Bool raise?) -> T[A] raise? {
       #|  loop self {
       #|    Nil => Nil
       #|    Cons(x, xs) => if p(x) { continue xs } else { Cons(x, xs) }
       #|  }
       #|}
-      #|#deprecated("use `@list` instead")
+      #|#deprecated("use `@list` instead", skip_current_package=false)
       #|pub fn[A, E] T::scan_left(
       #|  self : T[A],
       #|  f : (E, A) -> E raise?,
@@ -22456,7 +24851,7 @@ let moonbitlang_core_immut_list_module : RuntimePackage = RuntimePackage::new(
       #|    },
       #|  )
       #|}
-      #|#deprecated("use `@list` instead")
+      #|#deprecated("use `@list` instead", skip_current_package=false)
       #|pub fn[A, B] T::scan_right(
       #|  self : T[A],
       #|  f : (A, B) -> B raise?,
@@ -22470,14 +24865,14 @@ let moonbitlang_core_immut_list_module : RuntimePackage = RuntimePackage::new(
       #|    }
       #|  }
       #|}
-      #|#deprecated("use `@list` instead")
+      #|#deprecated("use `@list` instead", skip_current_package=false)
       #|pub fn[A : Eq, B] T::lookup(self : T[(A, B)], v : A) -> B? {
       #|  loop self {
       #|    Nil => None
       #|    Cons((x, y), xs) => if x == v { Some(y) } else { continue xs }
       #|  }
       #|}
-      #|#deprecated("use `@list` instead")
+      #|#deprecated("use `@list` instead", skip_current_package=false)
       #|pub fn[A] T::find(self : T[A], f : (A) -> Bool raise?) -> A? raise? {
       #|  loop self {
       #|    Nil => None
@@ -22489,7 +24884,7 @@ let moonbitlang_core_immut_list_module : RuntimePackage = RuntimePackage::new(
       #|      }
       #|  }
       #|}
-      #|#deprecated("use `@list` instead")
+      #|#deprecated("use `@list` instead", skip_current_package=false)
       #|pub fn[A] T::findi(self : T[A], f : (A, Int) -> Bool raise?) -> A? raise? {
       #|  loop (self, 0) {
       #|    (list, index) =>
@@ -22504,7 +24899,7 @@ let moonbitlang_core_immut_list_module : RuntimePackage = RuntimePackage::new(
       #|      }
       #|  }
       #|}
-      #|#deprecated("use `@list` instead")
+      #|#deprecated("use `@list` instead", skip_current_package=false)
       #|pub fn[A] T::remove_at(self : T[A], index : Int) -> T[A] {
       #|  match (index, self) {
       #|    (0, Cons(_, tail)) => tail
@@ -22512,7 +24907,7 @@ let moonbitlang_core_immut_list_module : RuntimePackage = RuntimePackage::new(
       #|    (_, Nil) => Nil
       #|  }
       #|}
-      #|#deprecated("use `@list` instead")
+      #|#deprecated("use `@list` instead", skip_current_package=false)
       #|pub fn[A : Eq] T::remove(self : T[A], elem : A) -> T[A] {
       #|  match self {
       #|    Nil => Nil
@@ -22524,7 +24919,7 @@ let moonbitlang_core_immut_list_module : RuntimePackage = RuntimePackage::new(
       #|      }
       #|  }
       #|}
-      #|#deprecated("use `@list` instead")
+      #|#deprecated("use `@list` instead", skip_current_package=false)
       #|pub fn[A : Eq] T::is_prefix(self : T[A], prefix : T[A]) -> Bool {
       #|  loop (self, prefix) {
       #|    (_, Nil) => true
@@ -22537,22 +24932,22 @@ let moonbitlang_core_immut_list_module : RuntimePackage = RuntimePackage::new(
       #|      }
       #|  }
       #|}
-      #|#deprecated("use `@list` instead")
+      #|#deprecated("use `@list` instead", skip_current_package=false)
       #|pub fn[A : Eq] T::is_suffix(self : T[A], suffix : T[A]) -> Bool {
       #|  self.rev().is_prefix(suffix.rev())
       #|}
-      #|#deprecated("use `@list` instead")
+      #|#deprecated("use `@list` instead", skip_current_package=false)
       #|pub fn[A] T::intercalate(self : T[T[A]], sep : T[A]) -> T[A] {
       #|  self.intersperse(sep).flatten()
       #|}
       #|pub impl[X] Default for T[X] with default() {
       #|  Nil
       #|}
-      #|#deprecated("use `@list` instead")
+      #|#deprecated("use `@list` instead", skip_current_package=false)
       #|pub fn[X] default() -> T[X] {
       #|  Nil
       #|}
-      #|#deprecated("use `@list` instead")
+      #|#deprecated("use `@list` instead", skip_current_package=false)
       #|pub fn[A] T::iter(self : T[A]) -> Iter[A] {
       #|  Iter::new(yield_ => loop self {
       #|    Nil => IterContinue
@@ -22564,7 +24959,7 @@ let moonbitlang_core_immut_list_module : RuntimePackage = RuntimePackage::new(
       #|    }
       #|  })
       #|}
-      #|#deprecated("use `@list` instead")
+      #|#deprecated("use `@list` instead", skip_current_package=false)
       #|pub fn[A] T::iter2(self : T[A]) -> Iter2[Int, A] {
       #|  Iter2::new(yield_ => loop (self, 0) {
       #|    (Nil, _) => IterEnd
@@ -22576,15 +24971,15 @@ let moonbitlang_core_immut_list_module : RuntimePackage = RuntimePackage::new(
       #|    }
       #|  })
       #|}
-      #|#deprecated("use `@list` instead")
+      #|#deprecated("use `@list` instead", skip_current_package=false)
       #|pub fn[A] from_iter(iter : Iter[A]) -> T[A] {
       #|  iter.fold(init=Nil, (acc, e) => Cons(e, acc)).rev()
       #|}
-      #|#deprecated("use `@list` instead")
+      #|#deprecated("use `@list` instead", skip_current_package=false)
       #|pub fn[A] from_iter_rev(iter : Iter[A]) -> T[A] {
       #|  iter.fold(init=Nil, (acc, e) => Cons(e, acc))
       #|}
-      #|#deprecated("use `@list` instead")
+      #|#deprecated("use `@list` instead", skip_current_package=false)
       #|pub fn[A] of(arr : ArrayView[A]) -> T[A] {
       #|  for i = arr.length() - 1, list = Nil; i >= 0; {
       #|    continue i - 1, Cons(arr[i], list)
@@ -22598,7 +24993,7 @@ let moonbitlang_core_immut_list_module : RuntimePackage = RuntimePackage::new(
       #|) {
       #|  @quickcheck.Arbitrary::arbitrary(size, rs) |> from_array
       #|}
-      #|#deprecated("use `@list` instead")
+      #|#deprecated("use `@list` instead", skip_current_package=false)
       #|pub fn[A] singleton(x : A) -> T[A] {
       #|  Cons(x, Nil)
       #|}
@@ -22648,17 +25043,7 @@ let moonbitlang_core_immut_priority_queue_module : RuntimePackage = RuntimePacka
       #|  }
       #|}
     ),
-    "deprecated.mbt": (
-      #|#deprecated("Use `unsafe_pop` instead")
-      #|#coverage.skip
-      #|pub fn[A : Compare] PriorityQueue::pop_exn(
-      #|  self : PriorityQueue[A],
-      #|) -> PriorityQueue[A] {
-      #|  self.unsafe_pop()
-      #|}
-      #|#deprecated("Use `PriorityQueue` instead of `T`")
-      #|pub typealias PriorityQueue as T
-    ),
+    "deprecated.mbt": "",
     "priority_queue.mbt": (
       #|#as_free_fn
       #|pub fn[A] PriorityQueue::new() -> PriorityQueue[A] {
@@ -22788,6 +25173,8 @@ let moonbitlang_core_immut_priority_queue_module : RuntimePackage = RuntimePacka
       #|  }
       #|}
       #|#internal(unsafe, "Panics if the queue is empty.")
+      #|#doc(hidden)
+      #|#alias(pop_exn, deprecated)
       #|pub fn[A : Compare] PriorityQueue::unsafe_pop(
       #|  self : PriorityQueue[A],
       #|) -> PriorityQueue[A] {
@@ -22883,6 +25270,7 @@ let moonbitlang_core_immut_priority_queue_module : RuntimePackage = RuntimePacka
       #|}
     ),
     "types.mbt": (
+      #|#alias(T, deprecated)
       #|struct PriorityQueue[A] {
       #|  node : Node[A]
       #|  size : Int
@@ -22933,29 +25321,15 @@ let moonbitlang_core_immut_sorted_map_module : RuntimePackage = RuntimePackage::
       #|}
     ),
     "deprecated.mbt": (
-      #|#deprecated("Use `new()` instead")
-      #|#coverage.skip
-      #|pub fn[K, V] SortedMap::empty() -> SortedMap[K, V] {
-      #|  Empty
-      #|}
-      #|#deprecated("Use `get` instead")
-      #|#coverage.skip
-      #|pub fn[K : Compare, V] SortedMap::lookup(self : SortedMap[K, V], key : K) -> V? {
-      #|  self.get(key)
-      #|}
-      #|#deprecated("Use `map_with_key` instead. `map` will accept `(K, X) -> Y` in the future.")
+      #|#deprecated("Use `map_with_key` instead. `map` will accept `(K, X) -> Y` in the future.", skip_current_package=false)
       #|#coverage.skip
       #|pub fn[K, X, Y] SortedMap::map(
       #|  self : SortedMap[K, X],
       #|  f : (X) -> Y,
       #|) -> SortedMap[K, Y] {
-      #|  match self {
-      #|    Empty => Empty
-      #|    Tree(k, value~, size~, l, r) =>
-      #|      Tree(k, value=f(value), size~, l.map(f), r.map(f))
-      #|  }
+      #|  self.map_with_key((_, value) => f(value))
       #|}
-      #|#deprecated("Use `foldl_with_key` instead. `fold` will accept `(A, K, V) -> A` in the future.")
+      #|#deprecated("Use `foldl_with_key` instead. `fold` will accept `(A, K, V) -> A` in the future.", skip_current_package=false)
       #|pub fn[K, V, A] SortedMap::fold(
       #|  self : SortedMap[K, V],
       #|  init~ : A,
@@ -22963,17 +25337,17 @@ let moonbitlang_core_immut_sorted_map_module : RuntimePackage = RuntimePackage::
       #|) -> A {
       #|  self.foldl_with_key((acc, _k, v) => f(acc, v), init~)
       #|}
-      #|#deprecated("Use `keys_as_iter` instead. `keys` will return `Iter[K]` instead of `Array[K]` in the future.")
+      #|#deprecated("Use `keys_as_iter` instead. `keys` will return `Iter[K]` instead of `Array[K]` in the future.", skip_current_package=false)
       #|#coverage.skip
       #|pub fn[K, V] SortedMap::keys(self : SortedMap[K, V]) -> Array[K] {
       #|  self.iter().map(p => p.0).collect()
       #|}
-      #|#deprecated("Use `values` instead")
+      #|#deprecated("Use `values` instead", skip_current_package=false)
       #|#coverage.skip
       #|pub fn[K, V] SortedMap::elems(self : SortedMap[K, V]) -> Array[V] {
       #|  self.values().collect()
       #|}
-      #|#deprecated("Use `filter_with_key` instead. `filter` will accept `(K, V) -> Bool` in the future.")
+      #|#deprecated("Use `filter_with_key` instead. `filter` will accept `(K, V) -> Bool` in the future.", skip_current_package=false)
       #|#coverage.skip
       #|pub fn[K, V] SortedMap::filter(
       #|  self : SortedMap[K, V],
@@ -22981,8 +25355,6 @@ let moonbitlang_core_immut_sorted_map_module : RuntimePackage = RuntimePackage::
       #|) -> SortedMap[K, V] raise? {
       #|  self.filter_with_key((_, v) => pred(v))
       #|}
-      #|#deprecated("Use `SortedMap` instead of `T`")
-      #|pub typealias SortedMap as T
     ),
     "map.mbt": (
       #|#alias(insert, deprecated)
@@ -23079,6 +25451,14 @@ let moonbitlang_core_immut_sorted_map_module : RuntimePackage = RuntimePackage::
       #|  let arr = []
       #|  self.each((k, v) => arr.push((k, v)))
       #|  arr
+      #|}
+      #|pub fn[K : Compare, V] SortedMap::merge(
+      #|  self : SortedMap[K, V],
+      #|  other : SortedMap[K, V],
+      #|) -> SortedMap[K, V] {
+      #|  let mut result = self
+      #|  other.each((k, v) => result = result.add(k, v))
+      #|  result
       #|}
       #|let ratio = 5
       #|fn[K, V] balance(
@@ -23197,7 +25577,7 @@ let moonbitlang_core_immut_sorted_map_module : RuntimePackage = RuntimePackage::
       #|    (2, "two"),
       #|    (0, "zero"),
       #|  ])
-      #|  let n = m.map(v => v + "X")
+      #|  let n = m.map_with_key((_, v) => v + "X")
       #|  assert_eq(
       #|    n.debug_tree(),
       #|    "(3,threeX,(1,oneX,(0,zeroX,_,_),(2,twoX,_,_)),(8,eightX,_,_))",
@@ -23225,7 +25605,7 @@ let moonbitlang_core_immut_sorted_map_module : RuntimePackage = RuntimePackage::
       #|    (2, "two"),
       #|    (0, "zero"),
       #|  ])
-      #|  let fm = m.filter(v => v.length() > 3)
+      #|  let fm = m.filter_with_key((_, v) => v.length() > 3)
       #|  inspect(fm.debug_tree(), content="(3,three,(0,zero,_,_),(8,eight,_,_))")
       #|}
       #|test "filter_with_key" {
@@ -23407,6 +25787,7 @@ let moonbitlang_core_immut_sorted_map_module : RuntimePackage = RuntimePackage::
       #|}
     ),
     "types.mbt": (
+      #|#alias(T, deprecated)
       #|enum SortedMap[K, V] {
       #|  Empty
       #|  Tree(K, value~ : V, size~ : Int, SortedMap[K, V], SortedMap[K, V])
@@ -23414,6 +25795,7 @@ let moonbitlang_core_immut_sorted_map_module : RuntimePackage = RuntimePackage::
     ),
     "utils.mbt": (
       #|#as_free_fn
+      #|#alias(empty, deprecated)
       #|pub fn[K, V] SortedMap::new() -> SortedMap[K, V] {
       #|  Empty
       #|}
@@ -23458,6 +25840,7 @@ let moonbitlang_core_immut_sorted_map_module : RuntimePackage = RuntimePackage::
       #|  let size = l.length() + r.length() + 1
       #|  Tree(key, value~, size~, l, r)
       #|}
+      #|#alias(lookup, deprecated)
       #|pub fn[K : Compare, V] SortedMap::get(self : SortedMap[K, V], key : K) -> V? {
       #|  loop self {
       #|    Empty => None
@@ -23686,26 +26069,7 @@ let moonbitlang_core_immut_sorted_set_module : RuntimePackage = RuntimePackage::
       #|  }
       #|}
     ),
-    "deprecated.mbt": (
-      #|#deprecated("Use `intersection` instead")
-      #|#coverage.skip
-      #|pub fn[A : Compare] SortedSet::inter(
-      #|  self : SortedSet[A],
-      #|  other : SortedSet[A],
-      #|) -> SortedSet[A] {
-      #|  self.intersection(other)
-      #|}
-      #|#deprecated("Use `difference` instead")
-      #|#coverage.skip
-      #|pub fn[A : Compare] SortedSet::diff(
-      #|  self : SortedSet[A],
-      #|  other : SortedSet[A],
-      #|) -> SortedSet[A] {
-      #|  self.difference(other)
-      #|}
-      #|#deprecated("Use `SortedSet` instead of `T`")
-      #|pub typealias SortedSet as T
-    ),
+    "deprecated.mbt": "",
     "generic.mbt": (
       #|pub fn[A] SortedSet::iter(self : SortedSet[A]) -> Iter[A] {
       #|  Iter::new(yield_ => {
@@ -24038,6 +26402,7 @@ let moonbitlang_core_immut_sorted_set_module : RuntimePackage = RuntimePackage::
       #|pub impl[A : Compare] Add for SortedSet[A] with add(self, other) {
       #|  return self.union(other)
       #|}
+      #|#alias(inter, deprecated)
       #|pub fn[A : Compare] SortedSet::intersection(
       #|  self : SortedSet[A],
       #|  other : SortedSet[A],
@@ -24051,6 +26416,7 @@ let moonbitlang_core_immut_sorted_set_module : RuntimePackage = RuntimePackage::
       #|      }
       #|  }
       #|}
+      #|#alias(diff, deprecated)
       #|pub fn[A : Compare] SortedSet::difference(
       #|  self : SortedSet[A],
       #|  other : SortedSet[A],
@@ -24443,6 +26809,7 @@ let moonbitlang_core_immut_sorted_set_module : RuntimePackage = RuntimePackage::
       #|}
     ),
     "types.mbt": (
+      #|#alias(T, deprecated)
       #|enum SortedSet[A] {
       #|  Empty
       #|  Node(left~ : SortedSet[A], right~ : SortedSet[A], size~ : Int, value~ : A)
@@ -24645,10 +27012,7 @@ let moonbitlang_core_json_module : RuntimePackage = RuntimePackage::new(
       #|  ]
       #|}
     ),
-    "deprecated.mbt": (
-      #|#deprecated("Definition of json is moved to builtin package, use `Json` instead")
-      #|pub typealias Json as JsonValue
-    ),
+    "deprecated.mbt": "",
     "from_json.mbt": (
       #|pub(all) suberror JsonDecodeError (JsonPath, String) derive(Eq, Show, ToJson)
       #|pub(open) trait FromJson {
@@ -25139,7 +27503,8 @@ let moonbitlang_core_json_module : RuntimePackage = RuntimePackage::new(
       #|      })
       #|      |> Map::from_iterator()
       #|      |> Object
-      #|    _ => self
+      #|    Array(members) => Array(members.map(m => m.transform(replacer)))
+      #|    value => value
       #|  }
       #|}
       #|pub impl ToJson for Json with to_json(self) {
@@ -26408,7 +28773,7 @@ let moonbitlang_core_list_module : RuntimePackage = RuntimePackage::new(
       #|}
     ),
     "deprecated.mbt": (
-      #|#deprecated("use `_.to_array().rev_fold(...)` instead")
+      #|#deprecated("use `_.to_array().rev_fold(...)` instead", skip_current_package=false)
       #|pub fn[A, B] List::rev_fold(self : List[A], init~ : B, f : (B, A) -> B) -> B {
       #|  let xs = self.to_array()
       #|  let mut acc = init
@@ -26417,7 +28782,7 @@ let moonbitlang_core_list_module : RuntimePackage = RuntimePackage::new(
       #|  }
       #|  acc
       #|}
-      #|#deprecated("use `_.rev().foldi(...)` instead")
+      #|#deprecated("use `_.rev().foldi(...)` instead", skip_current_package=false)
       #|pub fn[A, B] List::rev_foldi(
       #|  self : List[A],
       #|  init~ : B,
@@ -26425,15 +28790,13 @@ let moonbitlang_core_list_module : RuntimePackage = RuntimePackage::new(
       #|) -> B {
       #|  self.rev().foldi(init~, (i, b, a) => f(i, b, a))
       #|}
-      #|#deprecated("use `unsafe_tail` instead")
+      #|#deprecated("use `unsafe_tail` instead", skip_current_package=false)
       #|pub fn[A] List::tail(self : List[A]) -> List[A] {
       #|  match self {
       #|    Empty => Empty
       #|    More(_, tail~) => tail
       #|  }
       #|}
-      #|#deprecated("Use List instead of T")
-      #|pub typealias List as T
     ),
     "list.mbt": (
       #|#alias(empty)
@@ -26625,6 +28988,7 @@ let moonbitlang_core_list_module : RuntimePackage = RuntimePackage::new(
       #|  }
       #|}
       #|#internal(unsafe, "Panic if the list is empty")
+      #|#doc(hidden)
       #|pub fn[A] List::unsafe_head(self : List[A]) -> A {
       #|  match self {
       #|    Empty => abort("head of empty list")
@@ -26644,6 +29008,7 @@ let moonbitlang_core_list_module : RuntimePackage = RuntimePackage::new(
       #|  }
       #|}
       #|#internal(unsafe, "Panic if the list is empty")
+      #|#doc(hidden)
       #|pub fn[A] List::unsafe_last(self : List[A]) -> A {
       #|  loop self {
       #|    Empty => abort("last of empty list")
@@ -26789,6 +29154,7 @@ let moonbitlang_core_list_module : RuntimePackage = RuntimePackage::new(
       #|  }
       #|}
       #|#internal(unsafe, "Panic if the index is out of bounds")
+      #|#doc(hidden)
       #|pub fn[A] List::unsafe_nth(self : List[A], n : Int) -> A {
       #|  loop (self, n) {
       #|    (Empty, _) => abort("nth: index out of bounds")
@@ -26885,6 +29251,7 @@ let moonbitlang_core_list_module : RuntimePackage = RuntimePackage::new(
       #|  }
       #|}
       #|#internal(unsafe, "Panic if the list is empty")
+      #|#doc(hidden)
       #|pub fn[A : Compare] List::unsafe_maximum(self : List[A]) -> A {
       #|  match self {
       #|    Empty => abort("maximum: empty list")
@@ -26908,6 +29275,7 @@ let moonbitlang_core_list_module : RuntimePackage = RuntimePackage::new(
       #|  }
       #|}
       #|#internal(unsafe, "Panic if the list is empty")
+      #|#doc(hidden)
       #|pub fn[A : Compare] List::unsafe_minimum(self : List[A]) -> A {
       #|  match self {
       #|    Empty => abort("minimum: empty list")
@@ -27313,6 +29681,7 @@ let moonbitlang_core_list_module : RuntimePackage = RuntimePackage::new(
       #|}
     ),
     "types.mbt": (
+      #|#alias(T, deprecated)
       #|pub enum List[A] {
       #|  Empty
       #|  More(A, mut tail~ : List[A])
@@ -27469,9 +29838,9 @@ let moonbitlang_core_math_module : RuntimePackage = RuntimePackage::new(
       #|}
     ),
     "deprecated.mbt": (
-      #|#deprecated("Use `PI` instead")
+      #|#deprecated("Use `PI` instead", skip_current_package=false)
       #|pub let pi = 0x3.243F6A8885A308CA8A54
-      #|#deprecated("Use @cmp.maximum instead")
+      #|#deprecated("Use @cmp.maximum instead", skip_current_package=false)
       #|pub fn[T : Compare] maximum(x : T, y : T) -> T {
       #|  if x > y {
       #|    x
@@ -27479,7 +29848,7 @@ let moonbitlang_core_math_module : RuntimePackage = RuntimePackage::new(
       #|    y
       #|  }
       #|}
-      #|#deprecated("Use @cmp.minimum instead")
+      #|#deprecated("Use @cmp.minimum instead", skip_current_package=false)
       #|pub fn[T : Compare] minimum(x : T, y : T) -> T {
       #|  if x > y {
       #|    y
@@ -28698,9 +31067,9 @@ let moonbitlang_core_math_module : RuntimePackage = RuntimePackage::new(
       #|pub fn pow(base : Double, exponent : Double) -> Double = "Math" "pow"
     ),
     "pow_double_nonjs.mbt": (
-      #|let pow_bp : FixedArray[Double] = [1.0, 1.5]
-      #|let pow_dp_h : FixedArray[Double] = [0.0, 5.84962487220764160156e-01]
-      #|let pow_dp_l : FixedArray[Double] = [0.0, 1.35003920212974897128e-08]
+      #|let pow_bp : ReadOnlyArray[Double] = [1.0, 1.5]
+      #|let pow_dp_h : ReadOnlyArray[Double] = [0.0, 5.84962487220764160156e-01]
+      #|let pow_dp_l : ReadOnlyArray[Double] = [0.0, 1.35003920212974897128e-08]
       #|const ZERO = 0.0
       #|const ONE = 1.0
       #|const TWO = 2.0
@@ -30491,7 +32860,7 @@ let moonbitlang_core_math_module : RuntimePackage = RuntimePackage::new(
       #|    x
       #|  }
       #|}
-      #|let two_over_pi : FixedArray[Int] = [
+      #|let two_over_pi : ReadOnlyArray[Int] = [
       #|  0xA2F983, 0x6E4E44, 0x1529FC, 0x2757D1, 0xF534DD, 0xC0DB62, 0x95993C, 0x439041,
       #|  0xFE5163, 0xABDEBB, 0xC561B7, 0x246E3A, 0x424DD2, 0xE00649, 0x2EEA09, 0xD1921C,
       #|  0xFE1DEB, 0x1CB129, 0xA73EE8, 0x8235F5, 0x2EBB44, 0x84E99C, 0x7026B4, 0x5F7E41,
@@ -30502,7 +32871,7 @@ let moonbitlang_core_math_module : RuntimePackage = RuntimePackage::new(
       #|  0x659985, 0x5F14A0, 0x68408D, 0xFFD880, 0x4D7327, 0x310606, 0x1556CA, 0x73A8C9,
       #|  0x60E27B, 0xC08C6B,
       #|]
-      #|let pi_over_2 : FixedArray[Double] = [
+      #|let pi_over_2 : ReadOnlyArray[Double] = [
       #|  1.57079625129699707031e+00, // 0x3FF921FB, 0x40000000 */
       #|   7.54978941586159635335e-08, // 0x3E74442D, 0x00000000 */
       #|   5.39030252995776476554e-15, // 0x3CF84698, 0x80000000 */
@@ -30512,7 +32881,7 @@ let moonbitlang_core_math_module : RuntimePackage = RuntimePackage::new(
       #|   2.73370053816464559624e-44, // 0x36E38222, 0x80000000 */
       #|   2.16741683877804819444e-51, // 0x3569F31D, 0x00000000 */
       #|]
-      #|let npio2_hw : FixedArray[Int] = [
+      #|let npio2_hw : ReadOnlyArray[Int] = [
       #|  0x3FF921FB, 0x400921FB, 0x4012D97C, 0x401921FB, 0x401F6A7A, 0x4022D97C, 0x4025FDBB,
       #|  0x402921FB, 0x402C463A, 0x402F6A7A, 0x4031475C, 0x4032D97C, 0x40346B9C, 0x4035FDBB,
       #|  0x40378FDB, 0x403921FB, 0x403AB41B, 0x403C463A, 0x403DD85A, 0x403F6A7A, 0x40407E4C,
@@ -30574,18 +32943,15 @@ let moonbitlang_core_math_module : RuntimePackage = RuntimePackage::new(
 ///|
 let moonbitlang_core_option_module : RuntimePackage = RuntimePackage::new(
   "moonbitlang/core/option",
-  deps={
-    "moonbitlang/core/builtin": moonbitlang_core_builtin_module,
-    "moonbitlang/core/quickcheck": moonbitlang_core_quickcheck_module,
-    "moonbitlang/core/quickcheck/splitmix": moonbitlang_core_quickcheck_splitmix_module,
-  },
+  deps={ "moonbitlang/core/builtin": moonbitlang_core_builtin_module },
   files={
     "moon.pkg.json": (
       #|{
       #|  "import": [
-      #|    "moonbitlang/core/builtin",
-      #|    "moonbitlang/core/quickcheck",
-      #|    "moonbitlang/core/quickcheck/splitmix"
+      #|    "moonbitlang/core/builtin"    
+      #|  ],
+      #|  "test-import" : [
+      #|    "moonbitlang/core/quickcheck"
       #|  ],
       #|  "targets": {
       #|    "panic_test.mbt": ["not", "native", "llvm"]
@@ -30593,7 +32959,7 @@ let moonbitlang_core_option_module : RuntimePackage = RuntimePackage::new(
       #|}
     ),
     "deprecated.mbt": (
-      #|#deprecated("Use `if condition { Some(value()) } else { None }` instead")
+      #|#deprecated("Use `if condition { Some(value()) } else { None }` instead", skip_current_package=false)
       #|pub fn[T] when(condition : Bool, value : () -> T) -> T? {
       #|  if condition {
       #|    Some(value())
@@ -30601,277 +32967,25 @@ let moonbitlang_core_option_module : RuntimePackage = RuntimePackage::new(
       #|    None
       #|  }
       #|}
-      #|#deprecated("Use `if !condition { Some(value()) } else { None }` instead")
+      #|#deprecated("Use `if !condition { Some(value()) } else { None }` instead", skip_current_package=false)
       #|pub fn[T] unless(condition : Bool, value : () -> T) -> T? {
-      #|  when(!condition, value)
+      #|  if !condition {
+      #|    Some(value())
+      #|  } else {
+      #|    None
+      #|  }
       #|}
-      #|#deprecated("Use `None` instead")
+      #|#deprecated("Use `None` instead", skip_current_package=false)
       #|pub fn[T] empty() -> T? {
       #|  None
       #|}
-      #|#deprecated("Use `Some(value)` instead")
+      #|#deprecated("Use `Some(value)` instead", skip_current_package=false)
       #|pub fn[T] some(value : T) -> T? {
       #|  Some(value)
       #|}
-      #|#deprecated("use unwrap_or instead")
-      #|pub fn[T] Option::or(self : T?, default : T) -> T {
-      #|  match self {
-      #|    None => default
-      #|    Some(t) => t
-      #|  }
-      #|}
-      #|#deprecated("use unwrap_or_else instead")
-      #|pub fn[T] Option::or_else(self : T?, default : () -> T) -> T {
-      #|  match self {
-      #|    None => default()
-      #|    Some(t) => t
-      #|  }
-      #|}
-      #|#deprecated("use unwrap_or_default instead")
-      #|pub fn[T : Default] Option::or_default(self : T?) -> T {
-      #|  match self {
-      #|    None => T::default()
-      #|    Some(t) => t
-      #|  }
-      #|}
-      #|#deprecated("use `x is Some(_)` instead")
-      #|pub fn[T] Option::is_some(self : T?) -> Bool {
-      #|  self is Some(_)
-      #|}
-      #|#deprecated("use `x is None` instead")
-      #|pub fn[T] Option::is_none(self : T?) -> Bool {
-      #|  self is None
-      #|}
     ),
-    "option.mbt": (
-      #|test "some equals to Some" {
-      #|  let x : Int? = Some(5)
-      #|  let y : Int? = some(5)
-      #|  assert_eq(x, y)
-      #|}
-      #|pub fn[T, U] Option::map(self : T?, f : (T) -> U raise?) -> U? raise? {
-      #|  match self {
-      #|    Some(t) => Some(f(t))
-      #|    None => None
-      #|  }
-      #|}
-      #|test "map" {
-      #|  let a = Some(5)
-      #|  let b : Int? = None
-      #|  assert_eq(a.map(x => x * 2), Some(10))
-      #|  assert_eq(b.map(x => x * 2), None)
-      #|}
-      #|pub fn[T, U] Option::map_or(
-      #|  self : T?,
-      #|  default : U,
-      #|  f : (T) -> U raise?,
-      #|) -> U raise? {
-      #|  match self {
-      #|    None => default
-      #|    Some(x) => f(x)
-      #|  }
-      #|}
-      #|test "map_or" {
-      #|  let a = Option::Some("foo")
-      #|  let b : String? = Option::None
-      #|  assert_eq(a.map_or(42, x => x.length()), 3)
-      #|  assert_eq(b.map_or(42, x => x.length()), 42)
-      #|}
-      #|pub fn[T, U] Option::map_or_else(
-      #|  self : T?,
-      #|  default : () -> U raise?,
-      #|  f : (T) -> U raise?,
-      #|) -> U raise? {
-      #|  match self {
-      #|    None => default()
-      #|    Some(x) => f(x)
-      #|  }
-      #|}
-      #|test "map_or_else" {
-      #|  let k = 21
-      #|  let a = Option::Some("foo")
-      #|  let b : String? = Option::None
-      #|  assert_eq(a.map_or_else(() => 2 * k, x => x.length()), 3)
-      #|  assert_eq(b.map_or_else(() => 2 * k, x => x.length()), 42)
-      #|}
-      #|pub fn[T, U] Option::bind(self : T?, f : (T) -> U? raise?) -> U? raise? {
-      #|  match self {
-      #|    Some(t) => f(t)
-      #|    None => None
-      #|  }
-      #|}
-      #|test "bind" {
-      #|  let a = Option::Some(5)
-      #|  let b : Int? = None
-      #|  assert_eq(a.bind(x => Some(x * 2)), Some(10))
-      #|  assert_eq(b.bind(x => Some(x * 2)), None)
-      #|}
-      #|pub fn[T] Option::flatten(self : T??) -> T? {
-      #|  match self {
-      #|    Some(inner) => inner
-      #|    None => None
-      #|  }
-      #|}
-      #|test "flatten" {
-      #|  let a : Int?? = Some(Some(42))
-      #|  assert_eq(a.flatten(), Some(42))
-      #|  let b : Int?? = Some(None)
-      #|  assert_eq(b.flatten(), None)
-      #|}
-      #|pub fn[T] Option::is_empty(self : T?) -> Bool {
-      #|  self is None
-      #|}
-      #|test "is_empty" {
-      #|  let x = Option::Some(3)
-      #|  let y : Int? = None
-      #|  assert_false(x.is_empty())
-      #|  assert_true(y.is_empty())
-      #|}
-      #|pub fn[T] Option::filter(self : T?, f : (T) -> Bool raise?) -> T? raise? {
-      #|  match self {
-      #|    Some(t) => if f(t) { self } else { None }
-      #|    None => None
-      #|  }
-      #|}
-      #|test "filter" {
-      #|  let x = Option::Some(3)
-      #|  assert_eq(x.filter(x => x > 5), None)
-      #|  assert_eq(x.filter(x => x < 5), Some(3))
-      #|}
-      #|pub fn[T] Option::unwrap_or(self : T?, default : T) -> T {
-      #|  match self {
-      #|    None => default
-      #|    Some(t) => t
-      #|  }
-      #|}
-      #|test "unwrap_or" {
-      #|  let x = Option::Some(3)
-      #|  assert_eq(x.unwrap_or(5), 3)
-      #|  assert_eq((None : Int?).unwrap_or(5), 5)
-      #|}
-      #|pub fn[T] Option::unwrap_or_else(
-      #|  self : T?,
-      #|  default : () -> T raise?,
-      #|) -> T raise? {
-      #|  match self {
-      #|    None => default()
-      #|    Some(t) => t
-      #|  }
-      #|}
-      #|test "or else" {
-      #|  let x = Option::Some(3)
-      #|  assert_eq(x.unwrap_or_else(() => 5), 3)
-      #|  assert_eq(None.unwrap_or_else(() => 5), 5)
-      #|}
-      #|pub fn[T : Default] Option::unwrap_or_default(self : T?) -> T {
-      #|  match self {
-      #|    None => T::default()
-      #|    Some(t) => t
-      #|  }
-      #|}
-      #|test "or default" {
-      #|  let x = Option::Some(3)
-      #|  assert_eq(x.unwrap_or_default(), 3)
-      #|  assert_eq((None : Int?).unwrap_or_default(), 0)
-      #|}
-      #|pub impl[X : Compare] Compare for X? with compare(self, other) {
-      #|  match (self, other) {
-      #|    (Some(x), Some(y)) => x.compare(y)
-      #|    (Some(_), None) => 1
-      #|    (None, Some(_)) => -1
-      #|    (None, None) => 0
-      #|  }
-      #|}
-      #|test "compare" {
-      #|  let some1 = Option::Some(1)
-      #|  let some2 = Option::Some(2)
-      #|  let none = Option::None
-      #|  assert_eq(0, some1.compare(Option::Some(1)))
-      #|  assert_eq(-1, some1.compare(some2))
-      #|  assert_eq(1, some2.compare(some1))
-      #|  assert_eq(0, none.compare(none))
-      #|  assert_eq(-1, none.compare(some1))
-      #|  assert_eq(1, some2.compare(none))
-      #|}
-      #|pub impl[X] Default for X? with default() {
-      #|  None
-      #|}
-      #|pub fn[T] Option::iter(self : T?) -> Iter[T] {
-      #|  match self {
-      #|    Some(v) => Iter::singleton(v)
-      #|    None => Iter::empty()
-      #|  }
-      #|}
-      #|pub fn[T] Option::iterator(self : T?) -> Iterator[T] {
-      #|  match self {
-      #|    Some(v) => Iterator::singleton(v)
-      #|    None => Iterator::empty()
-      #|  }
-      #|}
-      #|test "iter" {
-      #|  let x = Option::Some(42)
-      #|  let exb = StringBuilder::new(size_hint=0)
-      #|  x
-      #|  .iter()
-      #|  .each(x => {
-      #|    exb.write_string(x.to_string())
-      #|    exb.write_char('\n')
-      #|  })
-      #|  inspect(
-      #|    exb,
-      #|    content=(
-      #|      #|42
-      #|      #|
-      #|    ),
-      #|  )
-      #|  exb.reset()
-      #|  let y : Int? = None
-      #|  y
-      #|  .iter()
-      #|  .each(x => {
-      #|    exb.write_string(x.to_string())
-      #|    exb.write_char('\n')
-      #|  })
-      #|  inspect(exb, content="")
-      #|}
-      #|pub fn[T, Err : Error] Option::or_error(self : T?, err : Err) -> T raise Err {
-      #|  match self {
-      #|    Some(v) => v
-      #|    None => raise err
-      #|  }
-      #|}
-      #|test "or error" {
-      #|  assert_eq(
-      #|    (None : String?).or_error(Failure("This is serious")) catch {
-      #|      Failure(err) => err
-      #|    },
-      #|    "This is serious",
-      #|  )
-      #|  assert_eq(
-      #|    Some("This is ok").or_error(Failure("This is serious")) catch {
-      #|      Failure(err) => err
-      #|    },
-      #|    "This is ok",
-      #|  )
-      #|}
-      #|pub impl[X : @quickcheck.Arbitrary] @quickcheck.Arbitrary for X? with arbitrary(
-      #|  i,
-      #|  rs,
-      #|) {
-      #|  if rs.next_double() < 0.3 {
-      #|    None
-      #|  } else {
-      #|    Some(@quickcheck.Arbitrary::arbitrary(i, rs))
-      #|  }
-      #|}
-      #|test "arbitrary" {
-      #|  let samples : Array[Int?] = @quickcheck.samples(10)
-      #|  inspect(
-      #|    samples,
-      #|    content="[None, None, Some(-1), Some(0), None, Some(0), Some(-5), Some(2), None, Some(4)]",
-      #|  )
-      #|}
-    ),
+    "methods.mbt": "",
+    "option.mbt": "",
   },
 )
 
@@ -30946,7 +33060,7 @@ let moonbitlang_core_prelude_module : RuntimePackage = RuntimePackage::new(
       #|  type InspectError,
       #|  type SnapshotError,
       #|  type SourceLoc,
-      #|  type StringBuilder
+      #|  type StringBuilder,
       #|}
       #|pub fn[T] tap(value : T, f : (T) -> Unit) -> T {
       #|  f(value)
@@ -31108,6 +33222,7 @@ let moonbitlang_core_priority_queue_module : RuntimePackage = RuntimePackage::ne
       #|  self.len
       #|}
       #|#internal(unsafe, "Panic if the queue is empty.")
+      #|#doc(hidden)
       #|pub fn[A : Compare] T::unsafe_pop(self : T[A]) -> Unit {
       #|  self.top = match self.top {
       #|    None => abort("The PriorityQueue is empty!")
@@ -31214,20 +33329,7 @@ let moonbitlang_core_queue_module : RuntimePackage = RuntimePackage::new(
       #|  }
       #|}
     ),
-    "deprecated.mbt": (
-      #|#deprecated("Use `unsafe_peek` instead")
-      #|#coverage.skip
-      #|pub fn[A] Queue::peek_exn(self : Queue[A]) -> A {
-      #|  self.unsafe_peek()
-      #|}
-      #|#deprecated("Use `unsafe_pop` instead")
-      #|#coverage.skip
-      #|pub fn[A] Queue::pop_exn(self : Queue[A]) -> A {
-      #|  self.unsafe_pop()
-      #|}
-      #|#deprecated("use `Queue` instead of `T`")
-      #|pub typealias Queue as T
-    ),
+    "deprecated.mbt": "",
     "queue.mbt": (
       #|#as_free_fn
       #|pub fn[A] Queue::new() -> Queue[A] {
@@ -31280,6 +33382,8 @@ let moonbitlang_core_queue_module : RuntimePackage = RuntimePackage::new(
       #|  }
       #|}
       #|#internal(unsafe, "Panics if the queue is empty.")
+      #|#doc(hidden)
+      #|#alias(peek_exn, deprecated)
       #|pub fn[A] Queue::unsafe_peek(self : Queue[A]) -> A {
       #|  match self.first {
       #|    None => abort("Queue is empty")
@@ -31293,6 +33397,8 @@ let moonbitlang_core_queue_module : RuntimePackage = RuntimePackage::new(
       #|  }
       #|}
       #|#internal(unsafe, "Panics if the queue is empty.")
+      #|#doc(hidden)
+      #|#alias(pop_exn, deprecated)
       #|pub fn[A] Queue::unsafe_pop(self : Queue[A]) -> A {
       #|  match self.first {
       #|    None => abort("Queue is empty")
@@ -31477,6 +33583,7 @@ let moonbitlang_core_queue_module : RuntimePackage = RuntimePackage::new(
       #|  content : A
       #|  mut next : Cons[A]?
       #|} derive(Eq)
+      #|#alias(T, deprecated)
       #|struct Queue[A] {
       #|  mut length : Int
       #|  mut first : Cons[A]?
@@ -31493,6 +33600,7 @@ let moonbitlang_core_quickcheck_module : RuntimePackage = RuntimePackage::new(
     "moonbitlang/core/quickcheck/splitmix": moonbitlang_core_quickcheck_splitmix_module,
     "moonbitlang/core/builtin": moonbitlang_core_builtin_module,
     "moonbitlang/core/char": moonbitlang_core_char_module,
+    "moonbitlang/core/array": moonbitlang_core_array_module,
   },
   files={
     "moon.pkg.json": (
@@ -31500,10 +33608,10 @@ let moonbitlang_core_quickcheck_module : RuntimePackage = RuntimePackage::new(
       #|  "import": [
       #|    "moonbitlang/core/quickcheck/splitmix",
       #|    "moonbitlang/core/builtin",
-      #|    "moonbitlang/core/char"
+      #|    "moonbitlang/core/char",
+      #|    "moonbitlang/core/array"
       #|  ],
       #|  "test-import": [
-      #|    "moonbitlang/core/array",
       #|    "moonbitlang/core/bigint",
       #|    "moonbitlang/core/float",
       #|    "moonbitlang/core/double",
@@ -31600,6 +33708,25 @@ let moonbitlang_core_quickcheck_module : RuntimePackage = RuntimePackage::new(
       #|  }
       #|  Arbitrary::arbitrary(size, state)
       #|}
+      #|pub impl[X : Arbitrary] Arbitrary for X? with arbitrary(i, rs) {
+      #|  if rs.next_double() < 0.3 {
+      #|    None
+      #|  } else {
+      #|    Some(Arbitrary::arbitrary(i, rs))
+      #|  }
+      #|}
+      #|pub impl[X : Arbitrary] Arbitrary for FixedArray[X] with arbitrary(size, rs) {
+      #|  let len = if size == 0 { 0 } else { rs.next_positive_int() % size }
+      #|  FixedArray::makei(len, i => X::arbitrary(i, rs))
+      #|}
+      #|pub impl[A : Arbitrary] Arbitrary for ArrayView[A] with arbitrary(size, rs) {
+      #|  let arr : Array[A] = Arbitrary::arbitrary(size, rs)
+      #|  arr[:]
+      #|}
+      #|pub impl[X : Arbitrary] Arbitrary for Array[X] with arbitrary(size, rs) {
+      #|  let len = if size == 0 { 0 } else { rs.next_positive_int() % size }
+      #|  Array::makei(len, x => X::arbitrary(x, rs))
+      #|}
     ),
     "utils.mbt": (
       #|pub fn[X : Arbitrary] samples(x : Int) -> Array[X] {
@@ -31625,7 +33752,7 @@ let moonbitlang_core_quickcheck_splitmix_module : RuntimePackage = RuntimePackag
       #|}
     ),
     "deprecated.mbt": (
-      #|#deprecated("use `@splitmix.new` instead")
+      #|#deprecated("use `@splitmix.new` instead", skip_current_package=false)
       #|pub fn RandomState::new(seed? : UInt64 = 37) -> RandomState {
       #|  new(seed~)
       #|}
@@ -31749,14 +33876,14 @@ let moonbitlang_core_random_module : RuntimePackage = RuntimePackage::new(
       #|}
     ),
     "deprecated.mbt": (
-      #|#deprecated("Use `Rand::new()` instead")
+      #|#deprecated("Use `Rand::new()` instead", skip_current_package=false)
       #|pub fn new(seed? : Bytes = b"ABCDEFGHIJKLMNOPQRSTUVWXYZ123456") -> Rand {
       #|  if seed.length() != 32 {
       #|    abort("seed must be 32 bytes long")
       #|  }
       #|  @random_source.ChaCha8::new(seed) as &Source
       #|}
-      #|#deprecated("You may use `Rand::chacha8(seed~)` instead of `Rand::new(chacha8(seed~))")
+      #|#deprecated("You may use `Rand::chacha8(seed~)` instead of `Rand::new(chacha8(seed~))", skip_current_package=false)
       #|pub fn chacha8(seed? : Bytes = b"ABCDEFGHIJKLMNOPQRSTUVWXYZ123456") -> &Source {
       #|  @random_source.ChaCha8::new(seed)
       #|}
@@ -31784,7 +33911,7 @@ let moonbitlang_core_random_module : RuntimePackage = RuntimePackage::new(
       #|}
       #|pub fn Rand::new(generator? : &Source) -> Rand {
       #|  match generator {
-      #|    None => chacha8()
+      #|    None => Rand::chacha8()
       #|    Some(gen) => Rand(gen)
       #|  }
       #|}
@@ -31793,7 +33920,7 @@ let moonbitlang_core_random_module : RuntimePackage = RuntimePackage::new(
       #|  s.next()
       #|}
       #|test "next" {
-      #|  let r = new()
+      #|  let r = Rand::new()
       #|  let n = r.next()
       #|  let exp = 13219109469176600229UL
       #|  assert_eq(n, exp)
@@ -31820,7 +33947,7 @@ let moonbitlang_core_random_module : RuntimePackage = RuntimePackage::new(
       #|  self.uint64(limit=limit.to_uint64()).to_uint()
       #|}
       #|test "uint" {
-      #|  let r = new()
+      #|  let r = Rand::new()
       #|  let n = r.uint(limit=10U)
       #|  inspect(n, content="7")
       #|  let n = r.uint(limit=10U)
@@ -31844,11 +33971,11 @@ let moonbitlang_core_random_module : RuntimePackage = RuntimePackage::new(
       #|  r.hi
       #|}
       #|test "UInt64" {
-      #|  let r = new()
+      #|  let r = Rand::new()
       #|  let n = r.uint64()
       #|  let exp = 13219109469176600229UL
       #|  assert_eq(n, exp)
-      #|  let r = new()
+      #|  let r = Rand::new()
       #|  let n = r.uint64(limit=10UL)
       #|  inspect(n, content="7")
       #|  let n = r.uint64(limit=10UL)
@@ -31861,7 +33988,7 @@ let moonbitlang_core_random_module : RuntimePackage = RuntimePackage::new(
       #|  Double::convert_uint64(1UL << 53)
       #|}
       #|test "double" {
-      #|  let r = new()
+      #|  let r = Rand::new()
       #|  let n = r.double()
       #|  inspect(n, content="0.615969772029264")
       #|}
@@ -31883,7 +34010,7 @@ let moonbitlang_core_random_module : RuntimePackage = RuntimePackage::new(
       #|  @bigint.BigInt::from_octets(bytes)
       #|}
       #|test "bigint" {
-      #|  let r = new()
+      #|  let r = Rand::new()
       #|  inspect(r.bigint(1), content="1")
       #|  inspect(r.bigint(3), content="4")
       #|  inspect(r.bigint(7), content="124")
@@ -31943,7 +34070,7 @@ let moonbitlang_core_random_module : RuntimePackage = RuntimePackage::new(
       #|  }
       #|}
       #|test "shuffle" {
-      #|  let r = new()
+      #|  let r = Rand::new()
       #|  let a = [1, 2, 3, 4, 5]
       #|  r.shuffle(a.length(), (i : Int, j : Int) => {
       #|    let t = a[i]
@@ -31983,7 +34110,10 @@ let moonbitlang_core_random_internal_random_source_module : RuntimePackage = Run
       #|  mut counter : UInt
       #|}
       #|pub fn ChaCha8::new(seed : Bytes) -> ChaCha8 {
-      #|  let seed = FixedArray::makei(SEED_CHUNK_NUM * 2, i => seed[i * 4:i * 4 + 4].to_uint_le())
+      #|  let seed = FixedArray::makei(SEED_CHUNK_NUM * 2, i => match seed[i * 4:] {
+      #|    [u32le(x), ..] => x
+      #|    _ => abort("seed must be 32 bytes long")
+      #|  })
       #|  let buffer = FixedArray::make(BUFFER_CHUNK_NUM * 2, 0U)
       #|  chacha_block(seed, buffer, 0)
       #|  { seed, buffer, counter: 0, i: 0, n: BUFFER_CHUNK_NUM.reinterpret_as_uint() }
@@ -32022,22 +34152,14 @@ let moonbitlang_core_random_internal_random_source_module : RuntimePackage = Run
       #|  }
       #|}
       #|#valtype
-      #|priv struct Quadruple {
-      #|  _0 : UInt
-      #|  _1 : UInt
-      #|  _2 : UInt
-      #|  _3 : UInt
-      #|}
+      #|priv struct Quadruple(UInt, UInt, UInt, UInt)
       #|fn chacha_block(
       #|  seed : FixedArray[UInt],
       #|  buf : FixedArray[UInt],
       #|  counter : UInt,
       #|) -> Unit {
       #|  fn qr(t : Quadruple) -> Quadruple {
-      #|    let a = t._0
-      #|    let b = t._1
-      #|    let c = t._2
-      #|    let d = t._3
+      #|    let Quadruple(a, b, c, d) = t
       #|    let a = a + b
       #|    let d = d ^ a
       #|    let d = (d << 16) | (d >> 16)
@@ -32050,7 +34172,7 @@ let moonbitlang_core_random_internal_random_source_module : RuntimePackage = Run
       #|    let c = c + d
       #|    let b = b ^ c
       #|    let b = (b << 7) | (b >> 25)
-      #|    { _0: a, _1: b, _2: c, _3: d }
+      #|    Quadruple(a, b, c, d)
       #|  }
       #|  setup(seed, buf, counter)
       #|  for i in 0..<4 {
@@ -32071,46 +34193,54 @@ let moonbitlang_core_random_internal_random_source_module : RuntimePackage = Run
       #|    let mut b14 = buf[14 * 4 + i]
       #|    let mut b15 = buf[15 * 4 + i]
       #|    for round in 0..<4 {
-      #|      let tb1 = qr({ _0: b0, _1: b4, _2: b8, _3: b12 })
-      #|      b0 = tb1._0
-      #|      b4 = tb1._1
-      #|      b8 = tb1._2
-      #|      b12 = tb1._3
-      #|      let tb2 = qr({ _0: b1, _1: b5, _2: b9, _3: b13 })
-      #|      b1 = tb2._0
-      #|      b5 = tb2._1
-      #|      b9 = tb2._2
-      #|      b13 = tb2._3
-      #|      let tb3 = qr({ _0: b2, _1: b6, _2: b10, _3: b14 })
-      #|      b2 = tb3._0
-      #|      b6 = tb3._1
-      #|      b10 = tb3._2
-      #|      b14 = tb3._3
-      #|      let tb4 = qr({ _0: b3, _1: b7, _2: b11, _3: b15 })
-      #|      b3 = tb4._0
-      #|      b7 = tb4._1
-      #|      b11 = tb4._2
-      #|      b15 = tb4._3
-      #|      let tb5 = qr({ _0: b0, _1: b5, _2: b10, _3: b15 })
-      #|      b0 = tb5._0
-      #|      b5 = tb5._1
-      #|      b10 = tb5._2
-      #|      b15 = tb5._3
-      #|      let tb6 = qr({ _0: b1, _1: b6, _2: b11, _3: b12 })
-      #|      b1 = tb6._0
-      #|      b6 = tb6._1
-      #|      b11 = tb6._2
-      #|      b12 = tb6._3
-      #|      let tb7 = qr({ _0: b2, _1: b7, _2: b8, _3: b13 })
-      #|      b2 = tb7._0
-      #|      b7 = tb7._1
-      #|      b8 = tb7._2
-      #|      b13 = tb7._3
-      #|      let tb8 = qr({ _0: b3, _1: b4, _2: b9, _3: b14 })
-      #|      b3 = tb8._0
-      #|      b4 = tb8._1
-      #|      b9 = tb8._2
-      #|      b14 = tb8._3
+      #|      let Quadruple(tb1_0, tb1_1, tb1_2, tb1_3) = qr(Quadruple(b0, b4, b8, b12))
+      #|      b0 = tb1_0
+      #|      b4 = tb1_1
+      #|      b8 = tb1_2
+      #|      b12 = tb1_3
+      #|      let Quadruple(tb2_0, tb2_1, tb2_2, tb2_3) = qr(Quadruple(b1, b5, b9, b13))
+      #|      b1 = tb2_0
+      #|      b5 = tb2_1
+      #|      b9 = tb2_2
+      #|      b13 = tb2_3
+      #|      let Quadruple(tb3_0, tb3_1, tb3_2, tb3_3) = qr(
+      #|        Quadruple(b2, b6, b10, b14),
+      #|      )
+      #|      b2 = tb3_0
+      #|      b6 = tb3_1
+      #|      b10 = tb3_2
+      #|      b14 = tb3_3
+      #|      let Quadruple(tb4_0, tb4_1, tb4_2, tb4_3) = qr(
+      #|        Quadruple(b3, b7, b11, b15),
+      #|      )
+      #|      b3 = tb4_0
+      #|      b7 = tb4_1
+      #|      b11 = tb4_2
+      #|      b15 = tb4_3
+      #|      let Quadruple(tb5_0, tb5_1, tb5_2, tb5_3) = qr(
+      #|        Quadruple(b0, b5, b10, b15),
+      #|      )
+      #|      b0 = tb5_0
+      #|      b5 = tb5_1
+      #|      b10 = tb5_2
+      #|      b15 = tb5_3
+      #|      let Quadruple(tb6_0, tb6_1, tb6_2, tb6_3) = qr(
+      #|        Quadruple(b1, b6, b11, b12),
+      #|      )
+      #|      b1 = tb6_0
+      #|      b6 = tb6_1
+      #|      b11 = tb6_2
+      #|      b12 = tb6_3
+      #|      let Quadruple(tb7_0, tb7_1, tb7_2, tb7_3) = qr(Quadruple(b2, b7, b8, b13))
+      #|      b2 = tb7_0
+      #|      b7 = tb7_1
+      #|      b8 = tb7_2
+      #|      b13 = tb7_3
+      #|      let Quadruple(tb8_0, tb8_1, tb8_2, tb8_3) = qr(Quadruple(b3, b4, b9, b14))
+      #|      b3 = tb8_0
+      #|      b4 = tb8_1
+      #|      b9 = tb8_2
+      #|      b14 = tb8_3
       #|    }
       #|    buf[0 * 4 + i] = b0
       #|    buf[1 * 4 + i] = b1
@@ -32613,10 +34743,14 @@ let moonbitlang_core_ref_module : RuntimePackage = RuntimePackage::new(
   files={
     "moon.pkg.json": (
       #|{
-      #|  "import": ["moonbitlang/core/builtin", "moonbitlang/core/quickcheck"]
+      #|  "import": ["moonbitlang/core/builtin", "moonbitlang/core/quickcheck"],
+      #|  "test-import": []
       #|}
     ),
     "ref.mbt": (
+      #|pub impl[X : Show] Show for Ref[X] with output(self, logger) {
+      #|  logger..write_string("{val: ")..write_object(self.val)..write_string("}")
+      #|}
       #|pub fn[T] Ref::new(x : T) -> Ref[T] {
       #|  { val: x }
       #|}
@@ -32701,23 +34835,23 @@ let moonbitlang_core_result_module : RuntimePackage = RuntimePackage::new(
       #|}
     ),
     "deprecated.mbt": (
-      #|#deprecated("Use `Ok(value)` instead")
+      #|#deprecated("Use `Ok(value)` instead", skip_current_package=false)
       #|pub fn[T, E] ok(value : T) -> Result[T, E] {
       #|  Ok(value)
       #|}
-      #|#deprecated("Use `Err(value)` instead")
+      #|#deprecated("Use `Err(value)` instead", skip_current_package=false)
       #|pub fn[T, E] err(value : E) -> Result[T, E] {
       #|  Err(value)
       #|}
-      #|#deprecated("use `x is Ok(_)` instead")
+      #|#deprecated("use `x is Ok(_)` instead", skip_current_package=false)
       #|pub fn[T, E] Result::is_ok(self : Result[T, E]) -> Bool {
       #|  self is Ok(_)
       #|}
-      #|#deprecated("use `x is Err(_)` instead")
+      #|#deprecated("use `x is Err(_)` instead", skip_current_package=false)
       #|pub fn[T, E] Result::is_err(self : Result[T, E]) -> Bool {
       #|  self is Err(_)
       #|}
-      #|#deprecated("use `match result { Ok(value) => ok(value); Err(error) => err(error) }` instead")
+      #|#deprecated("use `match result { Ok(value) => ok(value); Err(error) => err(error) }` instead", skip_current_package=false)
       #|pub fn[T, E, V] Result::fold(
       #|  self : Result[T, E],
       #|  ok : (T) -> V,
@@ -32976,13 +35110,7 @@ let moonbitlang_core_set_module : RuntimePackage = RuntimePackage::new(
       #|  ]
       #|}
     ),
-    "deprecated.mbt": (
-      #|#deprecated("Use `add` instead.")
-      #|#coverage.skip
-      #|pub fn[K : Hash + Eq] Set::insert(self : Set[K], key : K) -> Unit {
-      #|  self.add(key)
-      #|}
-    ),
+    "deprecated.mbt": "",
     "grow_heuristic.mbt": (
       #|fn calc_grow_threshold(capacity : Int) -> Int {
       #|  capacity * 13 / 16
@@ -33033,6 +35161,7 @@ let moonbitlang_core_set_module : RuntimePackage = RuntimePackage::new(
       #|  }
       #|  m
       #|}
+      #|#alias(insert, deprecated)
       #|pub fn[K : Hash + Eq] Set::add(self : Set[K], key : K) -> Unit {
       #|  self.add_with_hash(key, key.hash())
       #|}
@@ -33452,22 +35581,20 @@ let moonbitlang_core_sorted_map_module : RuntimePackage = RuntimePackage::new(
       #|}
     ),
     "deprecated.mbt": (
-      #|#deprecated("Use `keys_as_iter` instead. `keys` will return `Iter[K]` instead of `Array[K]` in the future.")
+      #|#deprecated("Use `keys_as_iter` instead. `keys` will return `Iter[K]` instead of `Array[K]` in the future.", skip_current_package=false)
       #|#coverage.skip
       #|pub fn[K, V] SortedMap::keys(self : SortedMap[K, V]) -> Array[K] {
       #|  let keys = Array::new(capacity=self.size)
       #|  self.each(fn(k, _v) { keys.push(k) })
       #|  keys
       #|}
-      #|#deprecated("Use `values_as_iter` instead. `values` will return `Iter[V]` instead of `Array[V]` in the future.")
+      #|#deprecated("Use `values_as_iter` instead. `values` will return `Iter[V]` instead of `Array[V]` in the future.", skip_current_package=false)
       #|#coverage.skip
       #|pub fn[K, V] SortedMap::values(self : SortedMap[K, V]) -> Array[V] {
       #|  let values = Array::new(capacity=self.size)
       #|  self.each(fn(_k, v) { values.push(v) })
       #|  values
       #|}
-      #|#deprecated("Use `SortedMap` instead of `T`")
-      #|pub typealias SortedMap as T
     ),
     "map.mbt": (
       #|pub impl[K : Eq, V : Eq] Eq for SortedMap[K, V] with equal(self, other) {
@@ -33749,6 +35876,36 @@ let moonbitlang_core_sorted_map_module : RuntimePackage = RuntimePackage::new(
       #|    go(self.root)
       #|  })
       #|}
+      #|pub fn[K, V] SortedMap::copy(self : SortedMap[K, V]) -> SortedMap[K, V] {
+      #|  fn copy_node(node : Node[K, V]?) -> Node[K, V]? {
+      #|    match node {
+      #|      None => None
+      #|      Some({ key, value, left, right, height }) =>
+      #|        Some({
+      #|          key,
+      #|          value,
+      #|          left: copy_node(left),
+      #|          right: copy_node(right),
+      #|          height,
+      #|        })
+      #|    }
+      #|  }
+      #|  { root: copy_node(self.root), size: self.size }
+      #|}
+      #|pub fn[K : Compare, V] SortedMap::merge(
+      #|  self : SortedMap[K, V],
+      #|  other : SortedMap[K, V],
+      #|) -> SortedMap[K, V] {
+      #|  let result = self.copy()
+      #|  other.each((k, v) => result.set(k, v))
+      #|  result
+      #|}
+      #|pub fn[K : Compare, V] SortedMap::merge_in_place(
+      #|  self : SortedMap[K, V],
+      #|  other : SortedMap[K, V],
+      #|) -> Unit {
+      #|  other.each((k, v) => self.set(k, v))
+      #|}
       #|fn[K, V] replace_root_with_min(
       #|  root : Node[K, V],
       #|  node : Node[K, V],
@@ -34022,6 +36179,30 @@ let moonbitlang_core_sorted_map_module : RuntimePackage = RuntimePackage::new(
       #|  inspect(map.debug_tree(), content="_")
       #|  inspect(map.length(), content="0")
       #|}
+      #|test "copy" {
+      #|  let map1 = from_array([
+      #|    (1, "a"),
+      #|    (2, "b"),
+      #|    (3, "c"),
+      #|    (4, "d"),
+      #|    (5, "e"),
+      #|    (6, "f"),
+      #|  ])
+      #|  let map2 = map1.copy()
+      #|  inspect(map1.debug_tree(), content=map2.debug_tree())
+      #|  inspect(map1.length(), content="6")
+      #|  inspect(map2.length(), content="6")
+      #|  map2.set(7, "g")
+      #|  inspect(map1.length(), content="6")
+      #|  inspect(map2.length(), content="7")
+      #|  inspect(map1.get(7), content="None")
+      #|  inspect(map2.get(7), content="Some(\"g\")")
+      #|  map1.remove(1)
+      #|  inspect(map1.length(), content="5")
+      #|  inspect(map2.length(), content="7")
+      #|  inspect(map1.get(1), content="None")
+      #|  inspect(map2.get(1), content="Some(\"a\")")
+      #|}
       #|pub impl[K, V] Default for SortedMap[K, V] with default() {
       #|  new()
       #|}
@@ -34034,6 +36215,7 @@ let moonbitlang_core_sorted_map_module : RuntimePackage = RuntimePackage::new(
       #|  mut right : Node[K, V]?
       #|  mut height : Int
       #|}
+      #|#alias(T, deprecated)
       #|struct SortedMap[K, V] {
       #|  mut root : Node[K, V]?
       #|  mut size : Int
@@ -34120,33 +36302,7 @@ let moonbitlang_core_sorted_set_module : RuntimePackage = RuntimePackage::new(
       #|  "test-import": ["moonbitlang/core/array"]
       #|}
     ),
-    "deprecated.mbt": (
-      #|#deprecated("Use `copy` instead")
-      #|#coverage.skip
-      #|pub fn[V] SortedSet::deep_clone(self : SortedSet[V]) -> SortedSet[V] {
-      #|  self.copy()
-      #|}
-      #|#deprecated("Use `difference` instead")
-      #|#coverage.skip
-      #|pub fn[V : Compare] SortedSet::diff(
-      #|  self : SortedSet[V],
-      #|  src : SortedSet[V],
-      #|) -> SortedSet[V] {
-      #|  let ret = new()
-      #|  self.each(x => if !src.contains(x) { ret.add(x) })
-      #|  ret
-      #|}
-      #|#deprecated("Use `intersection` instead")
-      #|#coverage.skip
-      #|pub fn[V : Compare] SortedSet::intersect(
-      #|  self : SortedSet[V],
-      #|  src : SortedSet[V],
-      #|) -> SortedSet[V] {
-      #|  self.intersection(src)
-      #|}
-      #|#deprecated("Use `SortedSet` instead of `T`")
-      #|pub typealias SortedSet as T
-    ),
+    "deprecated.mbt": "",
     "set.mbt": (
       #|#as_free_fn
       #|pub fn[V] SortedSet::new() -> SortedSet[V] {
@@ -34166,6 +36322,7 @@ let moonbitlang_core_sorted_set_module : RuntimePackage = RuntimePackage::new(
       #|  }
       #|  set
       #|}
+      #|#alias(deep_clone, deprecated)
       #|pub fn[V] SortedSet::copy(self : SortedSet[V]) -> SortedSet[V] {
       #|  match self.root {
       #|    None => new()
@@ -34337,6 +36494,7 @@ let moonbitlang_core_sorted_set_module : RuntimePackage = RuntimePackage::new(
       #|  node.update_height()
       #|  node
       #|}
+      #|#alias(diff, deprecated)
       #|pub fn[V : Compare] SortedSet::difference(
       #|  self : SortedSet[V],
       #|  src : SortedSet[V],
@@ -34353,6 +36511,7 @@ let moonbitlang_core_sorted_set_module : RuntimePackage = RuntimePackage::new(
       #|  let set2 = other.difference(self)
       #|  set1.union(set2)
       #|}
+      #|#alias(intersect, deprecated)
       #|pub fn[V : Compare] SortedSet::intersection(
       #|  self : SortedSet[V],
       #|  src : SortedSet[V],
@@ -35005,6 +37164,7 @@ let moonbitlang_core_sorted_set_module : RuntimePackage = RuntimePackage::new(
       #|}
     ),
     "types.mbt": (
+      #|#alias(T, deprecated)
       #|struct SortedSet[V] {
       #|  mut root : Node[V]?
       #|  mut size : Int
@@ -35118,7 +37278,7 @@ let moonbitlang_core_strconv_module : RuntimePackage = RuntimePackage::new(
     ),
     "decimal.mbt": (
       #|let max_shift = 59
-      #|let powtab = [
+      #|let powtab : ReadOnlyArray[Int] = [
       #|  1, 3, 6, 9, 13, 16, 19, 23, 26, 29, 33, 36, 39, 43, 46, 49, 53, 56, 59,
       #|]
       #|fn Decimal::new_priv() -> Decimal {
@@ -36717,1466 +38877,21 @@ let moonbitlang_core_string_module : RuntimePackage = RuntimePackage::new(
       #|  }
       #|}
     ),
-    "methods.mbt": (
-      #|pub fn StringView::find(self : StringView, str : StringView) -> Int? {
-      #|  if str.length() <= 4 {
-      #|    brute_force_find(self, str)
-      #|  } else {
-      #|    boyer_moore_horspool_find(self, str)
-      #|  }
-      #|}
-      #|fn brute_force_find(haystack : StringView, needle : StringView) -> Int? {
-      #|  let haystack_len = haystack.length()
-      #|  let needle_len = needle.length()
-      #|  guard needle_len > 0 else { return Some(0) }
-      #|  guard haystack_len >= needle_len else { return None }
-      #|  let needle_first = needle.unsafe_charcode_at(0)
-      #|  let forward_len = haystack_len - needle_len
-      #|  let mut i = 0
-      #|  while i <= forward_len {
-      #|    while i <= forward_len && haystack.unsafe_charcode_at(i) != needle_first {
-      #|      i += 1
-      #|    }
-      #|    if i <= forward_len {
-      #|      for j in 1..<needle_len {
-      #|        if haystack.unsafe_charcode_at(i + j) != needle.unsafe_charcode_at(j) {
-      #|          break
-      #|        }
-      #|      } else {
-      #|        return Some(i)
-      #|      }
-      #|      i += 1
-      #|    }
-      #|  }
-      #|  None
-      #|}
-      #|fn boyer_moore_horspool_find(
-      #|  haystack : StringView,
-      #|  needle : StringView,
-      #|) -> Int? {
-      #|  let haystack_len = haystack.length()
-      #|  let needle_len = needle.length()
-      #|  guard needle_len > 0 else { return Some(0) }
-      #|  guard haystack_len >= needle_len else { return None }
-      #|  let skip_table = FixedArray::make(1 << 8, needle_len)
-      #|  for i in 0..<(needle_len - 1) {
-      #|    skip_table[needle.unsafe_charcode_at(i) & 0xFF] = needle_len - 1 - i
-      #|  }
-      #|  for i = 0
-      #|      i <= haystack_len - needle_len
-      #|      i = i + skip_table[haystack.unsafe_charcode_at(i + needle_len - 1) & 0xFF] {
-      #|    for j in 0..=(needle_len - 1) {
-      #|      if haystack.unsafe_charcode_at(i + j) != needle.unsafe_charcode_at(j) {
-      #|        break
-      #|      }
-      #|    } else {
-      #|      return Some(i)
-      #|    }
-      #|  }
-      #|  None
-      #|}
-      #|test "boyer_moore_horspool_find edge cases" {
-      #|  inspect(boyer_moore_horspool_find("abc"[:], ""[:]), content="Some(0)")
-      #|  inspect(boyer_moore_horspool_find("ab"[:], "abcd"[:]), content="None")
-      #|}
-      #|test "boyer_moore_horspool_rev_find edge cases" {
-      #|  inspect(boyer_moore_horspool_rev_find("abc"[:], ""[:]), content="Some(3)")
-      #|  inspect(boyer_moore_horspool_rev_find("ab"[:], "abcd"[:]), content="None")
-      #|}
-      #|pub fn String::find(self : String, str : StringView) -> Int? {
-      #|  self[:].find(str)
-      #|}
-      #|test "find" {
-      #|  inspect("hello".find("o"), content="Some(4)")
-      #|  inspect("hello".find("l"), content="Some(2)")
-      #|  inspect("hello".find("hello"), content="Some(0)")
-      #|  inspect("hello".find("h"), content="Some(0)")
-      #|  inspect("hello".find(""), content="Some(0)")
-      #|  inspect("hello".find("world"), content="None")
-      #|  inspect("".find(""), content="Some(0)")
-      #|  inspect("".find("a"), content="None")
-      #|  inspect("hello hello".find("hello"), content="Some(0)")
-      #|  inspect("aaa".find("aa"), content="Some(0)")
-      #|  inspect("😀😀".find("😀"), content="Some(0)")
-      #|  inspect(
-      #|    ("😀😀aa".repeat(20) + "😀😀😀😀").find("😀😀😀😀"),
-      #|    content="Some(120)",
-      #|  )
-      #|  inspect(
-      #|    ("😀😀😀😀" + "😀😀aa".repeat(20)).find("😀😀😀😀"),
-      #|    content="Some(0)",
-      #|  )
-      #|}
-      #|pub fn StringView::find_by(self : StringView, pred : (Char) -> Bool) -> Int? {
-      #|  for i, c in self {
-      #|    if pred(c) {
-      #|      return Some(i)
-      #|    }
-      #|  }
-      #|  None
-      #|}
-      #|pub fn String::find_by(self : String, pred : (Char) -> Bool) -> Int? {
-      #|  self[:].find_by(pred)
-      #|}
-      #|test "find_by" {
-      #|  inspect("hello".find_by(c => c == 'o'), content="Some(4)")
-      #|  inspect("hello".find_by(c => c == 'l'), content="Some(2)")
-      #|  inspect("hello".find_by(c => c == 'z'), content="None")
-      #|  inspect("".find_by(c => c == 'a'), content="None")
-      #|  inspect("hello".find_by(c => c is ('0'..='9')), content="None")
-      #|  inspect("hello123".find_by(c => c is ('0'..='9')), content="Some(5)")
-      #|  inspect("hello".find_by(c => c is ('A'..='Z')), content="None")
-      #|  inspect("Hello".find_by(c => c is ('A'..='Z')), content="Some(0)")
-      #|  inspect("αβγ".find_by(c => c == 'β'), content="Some(1)")
-      #|  inspect("😀😁😂".find_by(c => c == '😂'), content="Some(2)")
-      #|}
-      #|pub fn StringView::rev_find(self : StringView, str : StringView) -> Int? {
-      #|  if str.length() <= 4 {
-      #|    brute_force_rev_find(self, str)
-      #|  } else {
-      #|    boyer_moore_horspool_rev_find(self, str)
-      #|  }
-      #|}
-      #|fn brute_force_rev_find(haystack : StringView, needle : StringView) -> Int? {
-      #|  let haystack_len = haystack.length()
-      #|  let needle_len = needle.length()
-      #|  guard needle_len > 0 else { return Some(haystack_len) }
-      #|  guard haystack_len >= needle_len else { return None }
-      #|  let needle_first = needle.unsafe_charcode_at(0)
-      #|  let mut i = haystack_len - needle_len
-      #|  while i >= 0 {
-      #|    while i >= 0 && haystack.unsafe_charcode_at(i) != needle_first {
-      #|      i -= 1
-      #|    }
-      #|    if i >= 0 {
-      #|      for j in 1..<needle_len {
-      #|        if haystack.unsafe_charcode_at(i + j) != needle.unsafe_charcode_at(j) {
-      #|          break
-      #|        }
-      #|      } else {
-      #|        return Some(i)
-      #|      }
-      #|      i -= 1
-      #|    }
-      #|  }
-      #|  None
-      #|}
-      #|fn boyer_moore_horspool_rev_find(
-      #|  haystack : StringView,
-      #|  needle : StringView,
-      #|) -> Int? {
-      #|  let haystack_len = haystack.length()
-      #|  let needle_len = needle.length()
-      #|  guard needle_len > 0 else { return Some(haystack_len) }
-      #|  guard haystack_len >= needle_len else { return None }
-      #|  let skip_table = FixedArray::make(1 << 8, needle_len)
-      #|  for i = needle_len - 1; i > 0; i = i - 1 {
-      #|    skip_table[needle.unsafe_charcode_at(i) & 0xFF] = i
-      #|  }
-      #|  for i = haystack_len - needle_len
-      #|      i >= 0
-      #|      i = i - skip_table[haystack.unsafe_charcode_at(i) & 0xFF] {
-      #|    for j in 0..<needle_len {
-      #|      if haystack.unsafe_charcode_at(i + j) != needle.unsafe_charcode_at(j) {
-      #|        break
-      #|      }
-      #|    } else {
-      #|      return Some(i)
-      #|    }
-      #|  }
-      #|  None
-      #|}
-      #|pub fn String::rev_find(self : String, str : StringView) -> Int? {
-      #|  self[:].rev_find(str)
-      #|}
-      #|test "rev_find" {
-      #|  inspect("hello".rev_find("o"), content="Some(4)")
-      #|  inspect("hello".rev_find("l"), content="Some(3)")
-      #|  inspect("hello".rev_find("hello"), content="Some(0)")
-      #|  inspect("hello".rev_find("h"), content="Some(0)")
-      #|  inspect("hello".rev_find(""), content="Some(5)")
-      #|  inspect("hello".rev_find("world"), content="None")
-      #|  inspect("".rev_find(""), content="Some(0)")
-      #|  inspect("".rev_find("a"), content="None")
-      #|  inspect("hello hello".rev_find("hello"), content="Some(6)")
-      #|  inspect("aaa".rev_find("aa"), content="Some(1)")
-      #|  inspect("😀😀".rev_find("😀"), content="Some(2)")
-      #|  inspect(
-      #|    ("😀😀aa".repeat(20) + "😀😀😀😀").rev_find("😀😀😀😀"),
-      #|    content="Some(120)",
-      #|  )
-      #|  inspect(
-      #|    ("😀😀😀😀" + "😀😀aa".repeat(20)).rev_find("😀😀😀😀"),
-      #|    content="Some(4)",
-      #|  )
-      #|}
-      #|#alias(ends_with, deprecated)
-      #|pub fn StringView::has_suffix(self : StringView, str : StringView) -> Bool {
-      #|  self.rev_find(str) is Some(i) && i == self.length() - str.length()
-      #|}
-      #|#alias(ends_with, deprecated)
-      #|pub fn String::has_suffix(self : String, str : StringView) -> Bool {
-      #|  self[:].has_suffix(str)
-      #|}
-      #|test "has_suffix" {
-      #|  inspect("hello".has_suffix("lo"), content="true")
-      #|  inspect("hello".has_suffix("hello"), content="true")
-      #|  inspect("hello".has_suffix(""), content="true")
-      #|  inspect("hello".has_suffix("world"), content="false")
-      #|  inspect("hello".has_suffix("hel"), content="false")
-      #|  inspect("".has_suffix(""), content="true")
-      #|  inspect("".has_suffix("a"), content="false")
-      #|  inspect("hello world".has_suffix("world"), content="true")
-      #|  inspect("😀😀".has_suffix("😀"), content="true")
-      #|  inspect("😀😀".has_suffix("😀😀"), content="true")
-      #|}
-      #|#alias(starts_with, deprecated)
-      #|pub fn StringView::has_prefix(self : StringView, str : StringView) -> Bool {
-      #|  self.find(str) is Some(i) && i == 0
-      #|}
-      #|#alias(starts_with, deprecated)
-      #|pub fn String::has_prefix(self : String, str : StringView) -> Bool {
-      #|  self[:].has_prefix(str)
-      #|}
-      #|test "has_prefix" {
-      #|  inspect("hello".has_prefix("h"), content="true")
-      #|  inspect("hello".has_prefix("he"), content="true")
-      #|  inspect("hello".has_prefix(""), content="true")
-      #|  inspect("hello".has_prefix("world"), content="false")
-      #|  inspect("hello".has_prefix("lo"), content="false")
-      #|  inspect("".has_prefix(""), content="true")
-      #|  inspect("".has_prefix("a"), content="false")
-      #|  inspect("😀hello".has_prefix("😀"), content="true")
-      #|  inspect("😀😃hello".has_prefix("😀😃"), content="true")
-      #|  inspect("😀hello".has_prefix("😃"), content="false")
-      #|  inspect("hello😀".has_prefix("😀"), content="false")
-      #|}
-      #|pub fn String::strip_suffix(self : String, suffix : StringView) -> StringView? {
-      #|  if self.has_suffix(suffix) {
-      #|    Some(self.view(end_offset=self.length() - suffix.length()))
-      #|  } else {
-      #|    None
-      #|  }
-      #|}
-      #|test "strip_prefix" {
-      #|  inspect("hello world".strip_prefix("hello "), content="Some(\"world\")")
-      #|  inspect("hello world".strip_prefix("hi "), content="None")
-      #|  inspect("hello".strip_prefix("hello"), content="Some(\"\")")
-      #|  inspect("".strip_prefix(""), content="Some(\"\")")
-      #|  inspect("".strip_prefix("a"), content="None")
-      #|  inspect("abc".strip_prefix(""), content="Some(\"abc\")")
-      #|  inspect("😀hello".strip_prefix("😀"), content="Some(\"hello\")")
-      #|  inspect("😀😃hello".strip_prefix("😀😃"), content="Some(\"hello\")")
-      #|}
-      #|test "strip_suffix" {
-      #|  inspect("hello world".strip_suffix(" world"), content="Some(\"hello\")")
-      #|  inspect("hello world".strip_suffix(" moon"), content="None")
-      #|  inspect("hello".strip_suffix("hello"), content="Some(\"\")")
-      #|  inspect("".strip_suffix(""), content="Some(\"\")")
-      #|  inspect("".strip_suffix("a"), content="None")
-      #|  inspect("abc".strip_suffix(""), content="Some(\"abc\")")
-      #|  inspect("hello😀".strip_suffix("😀"), content="Some(\"hello\")")
-      #|  inspect("hello😀😃".strip_suffix("😀😃"), content="Some(\"hello\")")
-      #|}
-      #|pub fn String::strip_prefix(self : String, prefix : StringView) -> StringView? {
-      #|  if self.has_prefix(prefix) {
-      #|    Some(self.view(start_offset=prefix.length()))
-      #|  } else {
-      #|    None
-      #|  }
-      #|}
-      #|pub fn StringView::strip_prefix(
-      #|  self : StringView,
-      #|  prefix : StringView,
-      #|) -> StringView? {
-      #|  if self.has_prefix(prefix) {
-      #|    Some(self.view(start_offset=prefix.length()))
-      #|  } else {
-      #|    None
-      #|  }
-      #|}
-      #|pub fn StringView::strip_suffix(
-      #|  self : StringView,
-      #|  suffix : StringView,
-      #|) -> StringView? {
-      #|  if self.has_suffix(suffix) {
-      #|    Some(self.view(end_offset=self.length() - suffix.length()))
-      #|  } else {
-      #|    None
-      #|  }
-      #|}
-      #|pub fn StringView::to_array(self : StringView) -> Array[Char] {
-      #|  self
-      #|  .iter()
-      #|  .fold(init=Array::new(capacity=self.length()), (rv, c) => {
-      #|    rv.push(c)
-      #|    rv
-      #|  })
-      #|}
-      #|#deprecated("Check `@encoding/utf8.encode`")
-      #|#coverage.skip
-      #|pub fn StringView::to_bytes(self : StringView) -> Bytes {
-      #|  let array = FixedArray::make(self.length() * 2, Byte::default())
-      #|  array.blit_from_string(0, self.data(), self.start_offset(), self.length())
-      #|  array |> unsafe_to_bytes
-      #|}
-      #|test "View::strip_prefix" {
-      #|  let view = "hello world"[:]
-      #|  inspect(view.strip_prefix("hello "), content="Some(\"world\")")
-      #|  inspect(view.strip_prefix("hi "), content="None")
-      #|  inspect(view.strip_prefix("hello world"), content="Some(\"\")")
-      #|  inspect(view.strip_prefix(""), content="Some(\"hello world\")")
-      #|  let empty_view = ""[:]
-      #|  inspect(empty_view.strip_prefix(""), content="Some(\"\")")
-      #|  inspect(empty_view.strip_prefix("a"), content="None")
-      #|  let unicode_view = "😀hello😃"[:]
-      #|  inspect(unicode_view.strip_prefix("😀"), content="Some(\"hello😃\")")
-      #|  inspect(unicode_view.strip_prefix("😃"), content="None")
-      #|}
-      #|test "View::strip_suffix" {
-      #|  let view = "hello world"[:]
-      #|  inspect(view.strip_suffix(" world"), content="Some(\"hello\")")
-      #|  inspect(view.strip_suffix(" moon"), content="None")
-      #|  inspect(view.strip_suffix("hello world"), content="Some(\"\")")
-      #|  inspect(view.strip_suffix(""), content="Some(\"hello world\")")
-      #|  let empty_view = ""[:]
-      #|  inspect(empty_view.strip_suffix(""), content="Some(\"\")")
-      #|  inspect(empty_view.strip_suffix("a"), content="None")
-      #|  let unicode_view = "😀hello😃"[:]
-      #|  inspect(unicode_view.strip_suffix("😃"), content="Some(\"😀hello\")")
-      #|  inspect(unicode_view.strip_suffix("😀"), content="None")
-      #|}
-      #|test "View::to_array" {
-      #|  let view = "Hello🤣"[:]
-      #|  let chars = view.to_array()
-      #|  assert_eq(chars, ['H', 'e', 'l', 'l', 'o', '🤣'])
-      #|  let empty_view = ""[:]
-      #|  let empty_chars = empty_view.to_array()
-      #|  assert_eq(empty_chars, [])
-      #|  let sub_view = "Hello World"[6:11] // "World"
-      #|  let sub_chars = sub_view.to_array()
-      #|  assert_eq(sub_chars, ['W', 'o', 'r', 'l', 'd'])
-      #|}
-      #|test "View::to_bytes" {
-      #|  let view = "Hello"[:]
-      #|  let bytes = view.to_bytes()
-      #|  assert_eq(bytes.to_unchecked_string(), "Hello")
-      #|  let unicode_view = "🤣🤔"[:]
-      #|  let unicode_bytes = unicode_view.to_bytes()
-      #|  assert_eq(unicode_bytes.to_unchecked_string(), "🤣🤔")
-      #|  let sub_view = "Hello World"[0:5] // "Hello"
-      #|  let sub_bytes = sub_view.to_bytes()
-      #|  assert_eq(sub_bytes.to_unchecked_string(), "Hello")
-      #|}
-      #|pub fn StringView::contains(self : StringView, str : StringView) -> Bool {
-      #|  self.find(str) is Some(_)
-      #|}
-      #|pub fn String::contains(self : String, str : StringView) -> Bool {
-      #|  self[:].contains(str)
-      #|}
-      #|pub fn StringView::contains_any(self : StringView, chars~ : StringView) -> Bool {
-      #|  match chars {
-      #|    [] => false
-      #|    [c] => self.contains_char(c) // specialize for single character
-      #|    _ =>
-      #|      for c in self {
-      #|        if chars.contains_char(c) {
-      #|          break true
-      #|        }
-      #|      } else {
-      #|        false
-      #|      }
-      #|  }
-      #|}
-      #|pub fn String::contains_any(self : String, chars~ : StringView) -> Bool {
-      #|  self[:].contains_any(chars~)
-      #|}
-      #|test "contains" {
-      #|  inspect("hello".contains("o"), content="true")
-      #|  inspect("hello".contains("l"), content="true")
-      #|  inspect("hello".contains("hello"), content="true")
-      #|  inspect("hello".contains("h"), content="true")
-      #|  inspect("hello".contains(""), content="true")
-      #|  inspect("hello".contains("world"), content="false")
-      #|  inspect("".contains(""), content="true")
-      #|  inspect("".contains("a"), content="false")
-      #|  inspect("hello hello".contains("hello"), content="true")
-      #|  inspect("aaa".contains("aa"), content="true")
-      #|  inspect("😀😀".contains("😀"), content="true")
-      #|}
-      #|test "contains_any" {
-      #|  inspect("hello".contains_any(chars="h"), content="true")
-      #|  inspect("hello".contains_any(chars="xyz"), content="false")
-      #|  inspect("hello".contains_any(chars=""), content="false")
-      #|  inspect("".contains_any(chars="abc"), content="false")
-      #|  inspect("😀😃".contains_any(chars="😄😀"), content="true")
-      #|  inspect("hello"[:].contains_any(chars="eo"), content="true")
-      #|}
-      #|pub fn StringView::contains_char(self : StringView, c : Char) -> Bool {
-      #|  let len = self.length()
-      #|  guard len > 0 else { return false }
-      #|  let c = c.to_int()
-      #|  if c <= 0xFFFF {
-      #|    for i in 0..<len {
-      #|      if self.unsafe_charcode_at(i) == c {
-      #|        return true
-      #|      }
-      #|    }
-      #|  } else {
-      #|    guard len >= 2 else { return false }
-      #|    let adj = c - 0x10000
-      #|    let high = 0xD800 + (adj >> 10)
-      #|    let low = 0xDC00 + (adj & 0x3FF)
-      #|    let mut i = 0
-      #|    while i < len - 1 {
-      #|      if self.unsafe_charcode_at(i) == high {
-      #|        i += 1
-      #|        if self.unsafe_charcode_at(i) == low {
-      #|          return true
-      #|        }
-      #|      }
-      #|      i += 1
-      #|    }
-      #|  }
-      #|  false
-      #|}
-      #|pub fn String::contains_char(self : String, c : Char) -> Bool {
-      #|  self[:].contains_char(c)
-      #|}
-      #|test "contains_char" {
-      #|  inspect("hello".contains_char('h'), content="true")
-      #|  inspect("hello".contains_char('e'), content="true")
-      #|  inspect("hello".contains_char('l'), content="true")
-      #|  inspect("hello".contains_char('o'), content="true")
-      #|  inspect("hello".contains_char('x'), content="false")
-      #|  inspect("".contains_char('a'), content="false")
-      #|  inspect("hello world".contains_char(' '), content="true")
-      #|  inspect("hello world".contains_char('w'), content="true")
-      #|  inspect("😀😀".contains_char('😀'), content="true")
-      #|  inspect("😀😀".contains_char('😃'), content="false")
-      #|  inspect("hello".contains_char((104).unsafe_to_char()), content="true") // 'h' is 104 in ASCII
-      #|}
-      #|#callsite(migration(char_set, allow_positional=true))
-      #|pub fn StringView::trim_start(
-      #|  self : StringView,
-      #|  char_set~ : StringView,
-      #|) -> StringView {
-      #|  loop self {
-      #|    [] as v => v
-      #|    [c, .. rest] as v =>
-      #|      if char_set.contains_char(c) {
-      #|        continue rest
-      #|      } else {
-      #|        v
-      #|      }
-      #|  }
-      #|}
-      #|#callsite(migration(char_set, allow_positional=true))
-      #|pub fn String::trim_start(self : String, char_set~ : StringView) -> StringView {
-      #|  self[:].trim_start(char_set~)
-      #|}
-      #|test "trim_start" {
-      #|  inspect("hello".trim_start(char_set="h"), content="ello")
-      #|  inspect("hello".trim_start(char_set="he"), content="llo")
-      #|  inspect("hello".trim_start(char_set="eh"), content="llo")
-      #|  inspect("hello".trim_start(char_set="x"), content="hello")
-      #|  inspect("hello".trim_start(char_set=""), content="hello")
-      #|  inspect("".trim_start(char_set="a"), content="")
-      #|  inspect("   hello".trim_start(char_set=" "), content="hello")
-      #|  inspect("hello world".trim_start(char_set="helo"), content=" world")
-      #|  inspect("😀😀hello".trim_start(char_set="😀"), content="hello")
-      #|  inspect("😀😃hello".trim_start(char_set="😀😃"), content="hello")
-      #|  inspect("aaaabc".trim_start(char_set="a"), content="bc")
-      #|  inspect("aaaa".trim_start(char_set="a"), content="")
-      #|}
-      #|#callsite(migration(char_set, allow_positional=true))
-      #|pub fn StringView::trim_end(
-      #|  self : StringView,
-      #|  char_set~ : StringView,
-      #|) -> StringView {
-      #|  loop self {
-      #|    [] as v => v
-      #|    [.. rest, c] as v =>
-      #|      if char_set.contains_char(c) {
-      #|        continue rest
-      #|      } else {
-      #|        v
-      #|      }
-      #|  }
-      #|}
-      #|#callsite(migration(char_set, allow_positional=true))
-      #|pub fn String::trim_end(self : String, char_set~ : StringView) -> StringView {
-      #|  self[:].trim_end(char_set~)
-      #|}
-      #|test "trim_end" {
-      #|  inspect("hello".trim_end(char_set="o"), content="hell")
-      #|  inspect("hello".trim_end(char_set="lo"), content="he")
-      #|  inspect("hello".trim_end(char_set="x"), content="hello")
-      #|  inspect("hello".trim_end(char_set=""), content="hello")
-      #|  inspect("".trim_end(char_set="a"), content="")
-      #|  inspect("hello   ".trim_end(char_set=" "), content="hello")
-      #|  inspect("hello world".trim_end(char_set="dlrow "), content="he")
-      #|  inspect("hello😀😀".trim_end(char_set="😀"), content="hello")
-      #|  inspect("hello😀😃".trim_end(char_set="😀😃"), content="hello")
-      #|  inspect("abcccc".trim_end(char_set="c"), content="ab")
-      #|  inspect("cccc".trim_end(char_set="c"), content="")
-      #|}
-      #|#callsite(migration(char_set, allow_positional=true))
-      #|pub fn StringView::trim(
-      #|  self : StringView,
-      #|  char_set~ : StringView,
-      #|) -> StringView {
-      #|  self.trim_start(char_set~).trim_end(char_set~)
-      #|}
-      #|#callsite(migration(char_set, allow_positional=true))
-      #|pub fn String::trim(self : String, char_set~ : StringView) -> StringView {
-      #|  self[:].trim(char_set~)
-      #|}
-      #|test "trim" {
-      #|  inspect("hello".trim(char_set="h"), content="ello")
-      #|  inspect("hello".trim(char_set="o"), content="hell")
-      #|  inspect("hello".trim(char_set="ho"), content="ell")
-      #|  inspect("hello".trim(char_set="oh"), content="ell")
-      #|  inspect("hello".trim(char_set="x"), content="hello")
-      #|  inspect("hello".trim(char_set=""), content="hello")
-      #|  inspect("".trim(char_set="a"), content="")
-      #|  inspect("   hello   ".trim(char_set=" "), content="hello")
-      #|  inspect("hello world".trim(char_set="hd"), content="ello worl")
-      #|  inspect("😀hello😀".trim(char_set="😀"), content="hello")
-      #|  inspect("😀😃hello😀😃".trim(char_set="😀😃"), content="hello")
-      #|  inspect("aaaabcaaa".trim(char_set="a"), content="bc")
-      #|  inspect("aaaa".trim(char_set="a"), content="")
-      #|  inspect("  hello world  ".trim(char_set=" "), content="hello world")
-      #|  inspect("abcabc".trim(char_set="abc"), content="")
-      #|}
-      #|pub fn StringView::trim_space(self : StringView) -> StringView {
-      #|  self.trim(char_set=" \n\r\t")
-      #|}
-      #|pub fn String::trim_space(self : String) -> StringView {
-      #|  self[:].trim_space()
-      #|}
-      #|test "trim_space" {
-      #|  inspect("hello".trim_space(), content="hello")
-      #|  inspect("  hello  ".trim_space(), content="hello")
-      #|  inspect("hello  ".trim_space(), content="hello")
-      #|  inspect("  hello".trim_space(), content="hello")
-      #|  inspect("\t\nhello\r\n".trim_space(), content="hello")
-      #|  inspect("  hello world  ".trim_space(), content="hello world")
-      #|  inspect("  ".trim_space(), content="")
-      #|  inspect("\n\r\t".trim_space(), content="")
-      #|  inspect("".trim_space(), content="")
-      #|  inspect("  hello\nworld\t".trim_space(), content="hello\nworld")
-      #|}
-      #|pub fn StringView::is_empty(self : StringView) -> Bool {
-      #|  self.length() == 0
-      #|}
-      #|pub fn String::is_empty(self : String) -> Bool {
-      #|  self == ""
-      #|}
-      #|test "is_empty" {
-      #|  inspect("".is_empty(), content="true")
-      #|  inspect("hello".is_empty(), content="false")
-      #|  inspect(" ".is_empty(), content="false")
-      #|  inspect("\n".is_empty(), content="false")
-      #|  inspect("\t".is_empty(), content="false")
-      #|  inspect("   ".is_empty(), content="false")
-      #|  let s = "hello"
-      #|  let empty_view = s[0:0]
-      #|  let non_empty_view = s[0:3]
-      #|  inspect(empty_view.is_empty(), content="true")
-      #|  inspect(non_empty_view.is_empty(), content="false")
-      #|}
-      #|pub fn StringView::is_blank(self : StringView) -> Bool {
-      #|  self.trim_space().is_empty()
-      #|}
-      #|pub fn String::is_blank(self : String) -> Bool {
-      #|  self[:].is_blank()
-      #|}
-      #|test "is_blank" {
-      #|  inspect("".is_blank(), content="true")
-      #|  inspect("hello".is_blank(), content="false")
-      #|  inspect(" ".is_blank(), content="true")
-      #|  inspect("\n".is_blank(), content="true")
-      #|  inspect("\t".is_blank(), content="true")
-      #|  inspect("   ".is_blank(), content="true")
-      #|  inspect(" \n\t\r ".is_blank(), content="true")
-      #|  inspect("hello world".is_blank(), content="false")
-      #|  inspect("  hello  ".is_blank(), content="false")
-      #|  let s = "   hello  "
-      #|  let blank_view = s[0:3] // "   "
-      #|  let non_blank_view = s[3:8] // "hello"
-      #|  inspect(blank_view.is_blank(), content="true")
-      #|  inspect(non_blank_view.is_blank(), content="false")
-      #|}
-      #|pub fn StringView::pad_start(
-      #|  self : StringView,
-      #|  total_width : Int,
-      #|  padding_char : Char,
-      #|) -> String {
-      #|  let len = self.length()
-      #|  guard len < total_width else { return self.to_string() }
-      #|  let padding = String::make(total_width - len, padding_char)
-      #|  [..padding, ..self]
-      #|}
-      #|pub fn String::pad_start(
-      #|  self : String,
-      #|  total_width : Int,
-      #|  padding_char : Char,
-      #|) -> String {
-      #|  let len = self.length()
-      #|  guard len < total_width else { return self }
-      #|  let padding = String::make(total_width - len, padding_char)
-      #|  [..padding, ..self]
-      #|}
-      #|test "pad_start" {
-      #|  inspect("2".pad_start(3, '0'), content="002")
-      #|  inspect("abc".pad_start(5, 'x'), content="xxabc")
-      #|  inspect("hello".pad_start(4, ' '), content="hello") // No padding needed
-      #|  inspect("".pad_start(3, '-'), content="---")
-      #|  inspect("test".pad_start(8, '*'), content="****test")
-      #|  inspect("123".pad_start(6, '0'), content="000123")
-      #|  let s = "hello"
-      #|  let view = s[2:5] // "llo"
-      #|  inspect(view.pad_start(5, 'x'), content="xxllo")
-      #|  inspect("🌟".pad_start(3, '✨'), content="✨🌟")
-      #|  inspect("abc".pad_start(0, 'x'), content="abc") // width less than string length
-      #|  inspect("abc".pad_start(3, 'x'), content="abc") // width equal to string length
-      #|}
-      #|pub fn StringView::pad_end(
-      #|  self : StringView,
-      #|  total_width : Int,
-      #|  padding_char : Char,
-      #|) -> String {
-      #|  let len = self.length()
-      #|  guard len < total_width else { return self.to_string() }
-      #|  let padding = String::make(total_width - len, padding_char)
-      #|  [..self, ..padding]
-      #|}
-      #|pub fn String::pad_end(
-      #|  self : String,
-      #|  total_width : Int,
-      #|  padding_char : Char,
-      #|) -> String {
-      #|  let len = self.length()
-      #|  guard len < total_width else { return self }
-      #|  let padding = String::make(total_width - len, padding_char)
-      #|  [..self, ..padding]
-      #|}
-      #|test "pad_end" {
-      #|  inspect("2".pad_end(3, '0'), content="200")
-      #|  inspect("abc".pad_end(5, 'x'), content="abcxx")
-      #|  inspect("hello".pad_end(4, ' '), content="hello") // No padding needed
-      #|  inspect("".pad_end(3, '-'), content="---")
-      #|  inspect("test".pad_end(8, '*'), content="test****")
-      #|  inspect("123".pad_end(6, '0'), content="123000")
-      #|  let s = "hello"
-      #|  let view = s[2:5] // "llo"
-      #|  inspect(view.pad_end(5, 'x'), content="lloxx")
-      #|  inspect("🌟".pad_end(3, '✨'), content="🌟✨")
-      #|  inspect("abc".pad_end(0, 'x'), content="abc") // width less than string length
-      #|  inspect("abc".pad_end(3, 'x'), content="abc") // width equal to string length
-      #|}
-      #|pub fn StringView::repeat(self : StringView, n : Int) -> StringView {
-      #|  match n {
-      #|    _..=0 => ""
-      #|    1 => self
-      #|    _ => {
-      #|      let len = self.length()
-      #|      let buf = StringBuilder::new(size_hint=len * n)
-      #|      let str = self.to_string()
-      #|      for _ in 0..<n {
-      #|        buf.write_string(str)
-      #|      }
-      #|      buf.to_string()
-      #|    }
-      #|  }
-      #|}
-      #|pub fn String::repeat(self : String, n : Int) -> String {
-      #|  match n {
-      #|    _..=0 => ""
-      #|    1 => self
-      #|    _ => {
-      #|      let len = self.length()
-      #|      let buf = StringBuilder::new(size_hint=len * n)
-      #|      let str = self.to_string()
-      #|      for _ in 0..<n {
-      #|        buf.write_string(str)
-      #|      }
-      #|      buf.to_string()
-      #|    }
-      #|  }
-      #|}
-      #|test "repeat" {
-      #|  inspect("abc".repeat(3), content="abcabcabc")
-      #|  inspect("x".repeat(5), content="xxxxx")
-      #|  inspect("hello ".repeat(2), content="hello hello ")
-      #|  inspect("".repeat(10), content="")
-      #|  let s = "hello world"
-      #|  let view = s[6:11] // "world"
-      #|  inspect(view.repeat(2), content="worldworld")
-      #|  inspect("🌟".repeat(3), content="🌟🌟🌟")
-      #|  inspect("✨🌟".repeat(2), content="✨🌟✨🌟")
-      #|  inspect("abc".repeat(0), content="")
-      #|  inspect("abc".repeat(-5), content="")
-      #|  inspect("abc".repeat(1), content="abc")
-      #|}
-      #|pub fn StringView::rev(self : StringView) -> String {
-      #|  let buf = StringBuilder::new(size_hint=self.length())
-      #|  for c in self.rev_iter() {
-      #|    buf.write_char(c)
-      #|  }
-      #|  buf.to_string()
-      #|}
-      #|pub fn String::rev(self : String) -> String {
-      #|  self[:].rev()
-      #|}
-      #|test "rev" {
-      #|  inspect("hello".rev(), content="olleh")
-      #|  inspect("".rev(), content="")
-      #|  inspect("abc".rev(), content="cba")
-      #|  inspect("😀😃".rev(), content="😃😀")
-      #|}
-      #|pub fn StringView::split(
-      #|  self : StringView,
-      #|  sep : StringView,
-      #|) -> Iter[StringView] {
-      #|  let sep_len = sep.length()
-      #|  if sep_len == 0 {
-      #|    return self.iter().map(c => c.to_string().view())
-      #|  }
-      #|  Iter::new(yield_ => {
-      #|    let mut view = self
-      #|    while view.find(sep) is Some(end) {
-      #|      guard yield_(view.view(end_offset=end)) is IterContinue else {
-      #|        break IterEnd
-      #|      }
-      #|      view = view.view(start_offset=end + sep_len)
-      #|    } else {
-      #|      yield_(view)
-      #|    }
-      #|  })
-      #|}
-      #|pub fn String::split(self : String, sep : StringView) -> Iter[StringView] {
-      #|  self[:].split(sep)
-      #|}
-      #|test "split" {
-      #|  assert_eq("a,b,c".split(",").map(StringView::to_string).collect(), [
-      #|    "a", "b", "c",
-      #|  ])
-      #|  assert_eq("a,b,c".split("").map(StringView::to_string).collect(), [
-      #|    "a", ",", "b", ",", "c",
-      #|  ])
-      #|  assert_eq(
-      #|    "apple::orange::banana".split("::").map(StringView::to_string).collect(),
-      #|    ["apple", "orange", "banana"],
-      #|  )
-      #|  assert_eq("abc".split("").map(StringView::to_string).collect(), [
-      #|    "a", "b", "c",
-      #|  ])
-      #|  assert_eq("hello".split(",").map(StringView::to_string).collect(), ["hello"])
-      #|  assert_eq(",a,b,c".split(",").map(StringView::to_string).collect(), [
-      #|    "", "a", "b", "c",
-      #|  ])
-      #|  assert_eq("a,b,c,".split(",").map(StringView::to_string).collect(), [
-      #|    "a", "b", "c", "",
-      #|  ])
-      #|  assert_eq("a,b,c".split("").map(StringView::to_string).collect(), [
-      #|    "a", ",", "b", ",", "c",
-      #|  ])
-      #|  assert_eq("".split("").map(StringView::to_string).collect(), [])
-      #|  assert_eq("".split(",").map(StringView::to_string).collect(), [""])
-      #|  assert_eq("😀,😃,😄".split(",").map(StringView::to_string).collect(), [
-      #|    "😀", "😃", "😄",
-      #|  ])
-      #|  assert_eq("a😀b😀c".split("😀").map(StringView::to_string).collect(), [
-      #|    "a", "b", "c",
-      #|  ])
-      #|}
-      #|pub fn StringView::replace(
-      #|  self : StringView,
-      #|  old~ : StringView,
-      #|  new~ : StringView,
-      #|) -> StringView {
-      #|  match self.find(old) {
-      #|    Some(end) =>
-      #|      [
-      #|        ..self.view(end_offset=end),
-      #|        ..new,
-      #|        ..self.view(start_offset=end + old.length()),
-      #|      ]
-      #|    None => self
-      #|  }
-      #|}
-      #|pub fn String::replace(
-      #|  self : String,
-      #|  old~ : StringView,
-      #|  new~ : StringView,
-      #|) -> String {
-      #|  match self.find(old) {
-      #|    Some(end) =>
-      #|      [
-      #|        ..self.view(end_offset=end),
-      #|        ..new,
-      #|        ..self.view(start_offset=end + old.length()),
-      #|      ]
-      #|    None => self
-      #|  }
-      #|}
-      #|test "replace" {
-      #|  inspect("hello".replace(old="o", new="a"), content="hella")
-      #|  inspect("hello".replace(old="l", new="a"), content="healo")
-      #|  inspect("hello".replace(old="hello", new="a"), content="a")
-      #|  inspect("hello".replace(old="h", new="a"), content="aello")
-      #|  inspect("hello".replace(old="", new="a"), content="ahello")
-      #|  inspect("hello".replace(old="world", new="a"), content="hello")
-      #|  inspect("".replace(old="", new="a"), content="a")
-      #|}
-      #|pub fn StringView::replace_all(
-      #|  self : StringView,
-      #|  old~ : StringView,
-      #|  new~ : StringView,
-      #|) -> StringView {
-      #|  let len = self.length()
-      #|  let buf = StringBuilder::new(size_hint=len)
-      #|  let old_len = old.length()
-      #|  let new = new.to_string()
-      #|  if old_len == 0 {
-      #|    buf.write_string(new)
-      #|    for c in self {
-      #|      buf.write_char(c)
-      #|      buf.write_string(new)
-      #|    }
-      #|    buf.to_string()
-      #|  } else {
-      #|    let first_end = self.find(old)
-      #|    if first_end is Some(end) {
-      #|      for view = self, end = end {
-      #|        let seg = view.view(end_offset=end)
-      #|        buf.write_substring(seg.data(), seg.start_offset(), seg.length())
-      #|        buf.write_string(new)
-      #|        guard end + old_len <= len else { break }
-      #|        let next_view = view.view(start_offset=end + old_len)
-      #|        guard next_view.find(old) is Some(next_end) else {
-      #|          buf.write_substring(
-      #|            next_view.data(),
-      #|            next_view.start_offset(),
-      #|            next_view.length(),
-      #|          )
-      #|          break
-      #|        }
-      #|        continue next_view, next_end
-      #|      }
-      #|      buf.to_string()
-      #|    } else {
-      #|      self
-      #|    }
-      #|  }
-      #|}
-      #|pub fn String::replace_all(
-      #|  self : String,
-      #|  old~ : StringView,
-      #|  new~ : StringView,
-      #|) -> String {
-      #|  let len = self.length()
-      #|  let buf = StringBuilder::new(size_hint=len)
-      #|  let old_len = old.length()
-      #|  let new = new.to_string()
-      #|  if old_len == 0 {
-      #|    buf.write_string(new)
-      #|    for c in self {
-      #|      buf.write_char(c)
-      #|      buf.write_string(new)
-      #|    }
-      #|    buf.to_string()
-      #|  } else {
-      #|    let first_end = self.find(old)
-      #|    if first_end is Some(end) {
-      #|      for view = self[:], end = end {
-      #|        let seg = view.view(end_offset=end)
-      #|        buf.write_substring(seg.data(), seg.start_offset(), seg.length())
-      #|        buf.write_string(new)
-      #|        guard end + old_len <= len else { break }
-      #|        let next_view = view.view(start_offset=end + old_len)
-      #|        guard next_view.find(old) is Some(next_end) else {
-      #|          buf.write_substring(
-      #|            next_view.data(),
-      #|            next_view.start_offset(),
-      #|            next_view.length(),
-      #|          )
-      #|          break
-      #|        }
-      #|        continue next_view, next_end
-      #|      }
-      #|      buf.to_string()
-      #|    } else {
-      #|      self
-      #|    }
-      #|  }
-      #|}
-      #|test "replace_all" {
-      #|  assert_eq("hello".replace_all(old="o", new="a"), "hella")
-      #|  assert_eq("hello".replace_all(old="l", new="a"), "heaao")
-      #|  assert_eq("hello".replace_all(old="ll", new="rr"), "herro")
-      #|  assert_eq("hello".replace_all(old="hello", new="world"), "world")
-      #|  assert_eq("hello hello hello".replace_all(old="hello", new="hi"), "hi hi hi")
-      #|  assert_eq(
-      #|    "hello hello helloi".replace_all(old="hello", new="hi"),
-      #|    "hi hi hii",
-      #|  )
-      #|  assert_eq(
-      #|    "hi hi hii".replace_all(old="hi", new="hello"),
-      #|    "hello hello helloi",
-      #|  )
-      #|  assert_eq("hello".replace_all(old="", new="a"), "ahaealalaoa")
-      #|  assert_eq("hello".replace_all(old="world", new="a"), "hello")
-      #|  assert_eq("".replace_all(old="", new="a"), "a")
-      #|  assert_eq("aaa".replace_all(old="a", new="b"), "bbb")
-      #|  assert_eq("aaa".replace_all(old="a", new="bb"), "bbbbbb")
-      #|  assert_eq("aaa".replace_all(old="aa", new="b"), "ba")
-      #|  assert_eq("🤣🤣🤣".replace_all(old="🤣", new="😊"), "😊😊😊")
-      #|  assert_eq("abc123abc".replace_all(old="abc", new="xyz"), "xyz123xyz")
-      #|  assert_eq("abcabcabc".replace_all(old="abc", new=""), "")
-      #|  assert_eq("abc".replace_all(old="abc", new=""), "")
-      #|  assert_eq("abc".replace_all(old="", new="x"), "xaxbxcx")
-      #|}
-      #|test "String::replace_all boundary cases" {
-      #|  assert_eq("helloworld".replace_all(old="world", new="X"), "helloX")
-      #|  assert_eq("abcdef".replace_all(old="def", new="XYZ"), "abcXYZ")
-      #|  assert_eq("abcabc".replace_all(old="abc", new="X"), "XX")
-      #|  assert_eq("test".replace_all(old="test", new="done"), "done")
-      #|  assert_eq("remove_me".replace_all(old="_me", new=""), "remove")
-      #|}
-      #|test "View::replace_all" {
-      #|  assert_eq("hello"[:].replace_all(old="o", new="a"), "hella")
-      #|  assert_eq("hello"[:].replace_all(old="l", new="a"), "heaao")
-      #|  assert_eq("hello"[:].replace_all(old="ll", new="rr"), "herro")
-      #|  assert_eq("hello"[:].replace_all(old="hello", new="world"), "world")
-      #|  assert_eq(
-      #|    "hello hello hello"[:].replace_all(old="hello", new="hi"),
-      #|    "hi hi hi",
-      #|  )
-      #|  assert_eq(
-      #|    "hello hello helloi"[:].replace_all(old="hello", new="hi"),
-      #|    "hi hi hii",
-      #|  )
-      #|  assert_eq(
-      #|    "hi hi hii"[:].replace_all(old="hi", new="hello"),
-      #|    "hello hello helloi",
-      #|  )
-      #|  assert_eq("hello"[:].replace_all(old="", new="a"), "ahaealalaoa")
-      #|  assert_eq("hello"[:].replace_all(old="world", new="a"), "hello")
-      #|  assert_eq(""[:].replace_all(old="", new="a"), "a")
-      #|  assert_eq("aaa"[:].replace_all(old="a", new="b"), "bbb")
-      #|  assert_eq("aaa"[:].replace_all(old="a", new="bb"), "bbbbbb")
-      #|  assert_eq("aaa"[:].replace_all(old="aa", new="b"), "ba")
-      #|  assert_eq(
-      #|    "🤣🤣🤣"[:].replace_all(old="🤣", new="😊"),
-      #|    "😊😊😊",
-      #|  )
-      #|  assert_eq("abc123abc"[:].replace_all(old="abc", new="xyz"), "xyz123xyz")
-      #|  assert_eq("abcabcabc"[:].replace_all(old="abc", new=""), "")
-      #|  assert_eq("abc"[:].replace_all(old="abc", new=""), "")
-      #|  assert_eq("abc"[:].replace_all(old="", new="x"), "xaxbxcx")
-      #|}
-      #|test "View::replace_all boundary cases" {
-      #|  assert_eq("abcabc"[:].replace_all(old="abc", new="X"), "XX")
-      #|  assert_eq("aaaa"[:].replace_all(old="aa", new="b"), "bb")
-      #|  assert_eq("hello"[:].replace_all(old="lo", new="X"), "helX")
-      #|  assert_eq("a"[:].replace_all(old="a", new=""), "")
-      #|  inspect("Testing boundary condition", content="Testing boundary condition")
-      #|}
-      #|pub fn StringView::to_lower(self : StringView) -> StringView {
-      #|  guard self.find_by(x => x.is_ascii_uppercase()) is Some(idx) else {
-      #|    return self
-      #|  }
-      #|  let buf = StringBuilder::new(size_hint=self.length())
-      #|  let head = self.view(end_offset=idx)
-      #|  buf.write_substring(head.data(), head.start_offset(), head.length())
-      #|  for c in self.view(start_offset=idx) {
-      #|    if c.is_ascii_uppercase() {
-      #|      buf.write_char((c.to_int() + 32).unsafe_to_char())
-      #|    } else {
-      #|      buf.write_char(c)
-      #|    }
-      #|  }
-      #|  buf.to_string()
-      #|}
-      #|pub fn String::to_lower(self : String) -> String {
-      #|  guard self.find_by(x => x.is_ascii_uppercase()) is Some(idx) else {
-      #|    return self
-      #|  }
-      #|  let buf = StringBuilder::new(size_hint=self.length())
-      #|  let head = self.view(end_offset=idx)
-      #|  buf.write_substring(head.data(), head.start_offset(), head.length())
-      #|  for c in self.view(start_offset=idx) {
-      #|    if c.is_ascii_uppercase() {
-      #|      buf.write_char((c.to_int() + 32).unsafe_to_char())
-      #|    } else {
-      #|      buf.write_char(c)
-      #|    }
-      #|  }
-      #|  buf.to_string()
-      #|}
-      #|test "to_lower" {
-      #|  assert_eq("Hello".to_lower(), "hello")
-      #|  assert_eq("HELLO".to_lower(), "hello")
-      #|  assert_eq("Hello, World!".to_lower(), "hello, world!")
-      #|}
-      #|test "View::to_lower" {
-      #|  assert_eq("Hello"[:].to_lower(), "hello")
-      #|  assert_eq("HELLO"[:].to_lower(), "hello")
-      #|  assert_eq("Hello, World!"[:].to_lower(), "hello, world!")
-      #|}
-      #|pub fn StringView::to_upper(self : StringView) -> StringView {
-      #|  guard self.find_by(_.is_ascii_lowercase()) is Some(idx) else { return self }
-      #|  let buf = StringBuilder::new(size_hint=self.length())
-      #|  let head = self.view(end_offset=idx)
-      #|  buf.write_substring(head.data(), head.start_offset(), head.length())
-      #|  for c in self.view(start_offset=idx) {
-      #|    if c.is_ascii_lowercase() {
-      #|      buf.write_char((c.to_int() - 32).unsafe_to_char())
-      #|    } else {
-      #|      buf.write_char(c)
-      #|    }
-      #|  }
-      #|  buf.to_string()
-      #|}
-      #|pub fn String::to_upper(self : String) -> String {
-      #|  guard self.find_by(_.is_ascii_lowercase()) is Some(idx) else { return self }
-      #|  let buf = StringBuilder::new(size_hint=self.length())
-      #|  let head = self.view(end_offset=idx)
-      #|  buf.write_substring(head.data(), head.start_offset(), head.length())
-      #|  for c in self.view(start_offset=idx) {
-      #|    if c.is_ascii_lowercase() {
-      #|      buf.write_char((c.to_int() - 32).unsafe_to_char())
-      #|    } else {
-      #|      buf.write_char(c)
-      #|    }
-      #|  }
-      #|  buf.to_string()
-      #|}
-      #|test "to_upper" {
-      #|  assert_eq("hello".to_upper(), "HELLO")
-      #|  assert_eq("HELLO".to_upper(), "HELLO")
-      #|  assert_eq("Hello, World!".to_upper(), "HELLO, WORLD!")
-      #|}
-      #|test "View::to_upper" {
-      #|  assert_eq("hello"[:].to_upper(), "HELLO")
-      #|  assert_eq("HELLO"[:].to_upper(), "HELLO")
-      #|  assert_eq("Hello, World!"[:].to_upper(), "HELLO, WORLD!")
-      #|}
-      #|pub fn[A] StringView::fold(
-      #|  self : StringView,
-      #|  init~ : A,
-      #|  f : (A, Char) -> A,
-      #|) -> A {
-      #|  let mut rv = init
-      #|  for c in self {
-      #|    rv = f(rv, c)
-      #|  }
-      #|  rv
-      #|}
-      #|pub fn[A] String::fold(self : String, init~ : A, f : (A, Char) -> A) -> A {
-      #|  self[:].fold(init~, f)
-      #|}
-      #|test "fold" {
-      #|  assert_eq(
-      #|    "hello".fold(init=[], (acc, c) => {
-      #|      acc.push(c)
-      #|      acc
-      #|    }),
-      #|    ['h', 'e', 'l', 'l', 'o'],
-      #|  )
-      #|  assert_eq(
-      #|    "hello".fold(init=0, (acc, c) => acc + c.to_int()),
-      #|    104 + 101 + 108 + 108 + 111,
-      #|  )
-      #|}
-      #|pub fn[A] StringView::rev_fold(
-      #|  self : StringView,
-      #|  init~ : A,
-      #|  f : (A, Char) -> A,
-      #|) -> A {
-      #|  let mut rv = init
-      #|  for c in self.rev_iter() {
-      #|    rv = f(rv, c)
-      #|  }
-      #|  rv
-      #|}
-      #|pub fn[A] String::rev_fold(self : String, init~ : A, f : (A, Char) -> A) -> A {
-      #|  self[:].rev_fold(init~, f)
-      #|}
-      #|test "rev_fold" {
-      #|  assert_eq(
-      #|    "hello".rev_fold(init=[], (acc, c) => {
-      #|      acc.push(c)
-      #|      acc
-      #|    }),
-      #|    ['o', 'l', 'l', 'e', 'h'],
-      #|  )
-      #|  assert_eq(
-      #|    "hello".rev_fold(init=0, (acc, c) => acc + c.to_int()),
-      #|    111 + 108 + 108 + 101 + 104,
-      #|  )
-      #|}
-      #|pub fn String::get(self : String, idx : Int) -> Int? {
-      #|  guard idx >= 0 && idx < self.length() else { return None }
-      #|  Some(self.unsafe_charcode_at(idx))
-      #|}
-      #|pub fn StringView::get(self : StringView, idx : Int) -> Int? {
-      #|  guard idx >= 0 && idx < self.length() else { return None }
-      #|  Some(self.unsafe_charcode_at(idx))
-      #|}
-      #|test "String::get supports emoji (surrogate pair)" {
-      #|  let s = "hello"
-      #|  inspect(s.get(0), content="Some(104)")
-      #|  inspect(s.get(4), content="Some(111)")
-      #|  inspect(s.get(5), content="None")
-      #|  inspect(s.get(-1), content="None")
-      #|  let s = "a🤣b"
-      #|  inspect(s.get(0), content="Some(97)")
-      #|  inspect(s.get(1), content="Some(55358)")
-      #|  inspect(s.get(2), content="Some(56611)")
-      #|  inspect(s.get(3), content="Some(98)")
-      #|  inspect(s.get(4), content="None")
-      #|}
-      #|test "View::get basic cases" {
-      #|  let v = "hello"[1:-1]
-      #|  inspect(v.get(0), content="Some(101)")
-      #|  inspect(v.get(2), content="Some(108)")
-      #|  inspect(v.get(3), content="None")
-      #|  inspect(v.get(-1), content="None")
-      #|  let v = "ab🤣cd"[1:-1]
-      #|  inspect(v.get(0), content="Some(98)")
-      #|  inspect(v.get(1), content="Some(55358)")
-      #|  inspect(v.get(2), content="Some(56611)")
-      #|}
-      #|pub fn String::get_char(self : String, idx : Int) -> Char? {
-      #|  guard idx >= 0 && idx < self.length() else { return None }
-      #|  let c = self.unsafe_charcode_at(idx)
-      #|  if c.is_leading_surrogate() {
-      #|    guard idx + 1 < self.length() else { return None }
-      #|    let next = self.unsafe_charcode_at(idx + 1)
-      #|    if next.is_trailing_surrogate() {
-      #|      Some(code_point_of_surrogate_pair(c, next))
-      #|    } else {
-      #|      None
-      #|    }
-      #|  } else if c.is_trailing_surrogate() {
-      #|    None
-      #|  } else {
-      #|    Some(c.unsafe_to_char())
-      #|  }
-      #|}
-      #|pub fn StringView::get_char(self : StringView, idx : Int) -> Char? {
-      #|  guard idx >= 0 && idx < self.length() else { return None }
-      #|  let c = self.unsafe_charcode_at(idx)
-      #|  if c.is_leading_surrogate() {
-      #|    guard idx + 1 < self.length() else { return None }
-      #|    let next = self.unsafe_charcode_at(idx + 1)
-      #|    if next.is_trailing_surrogate() {
-      #|      Some(code_point_of_surrogate_pair(c, next))
-      #|    } else {
-      #|      None
-      #|    }
-      #|  } else if c.is_trailing_surrogate() {
-      #|    None
-      #|  } else {
-      #|    Some(c.unsafe_to_char())
-      #|  }
-      #|}
-      #|test "String::get_char basic cases" {
-      #|  let s = "hello"
-      #|  inspect(s.get_char(0), content="Some('h')")
-      #|  inspect(s.get_char(1), content="Some('e')")
-      #|  inspect(s.get_char(4), content="Some('o')")
-      #|  inspect(s.get_char(5), content="None")
-      #|  inspect(s.get_char(-1), content="None")
-      #|  let s = "a🤣b"
-      #|  inspect(s.get_char(0), content="Some('a')")
-      #|  inspect(s.get_char(1), content="Some('🤣')")
-      #|  inspect(s.get_char(2), content="None") // Second half of surrogate pair is not a valid char
-      #|  inspect(s.get_char(3), content="Some('b')")
-      #|  inspect(s.get_char(4), content="None")
-      #|}
-      #|test "View::get_char basic cases" {
-      #|  let s = "a🤣b"
-      #|  let v = s[0:-1]
-      #|  inspect(v.get_char(0), content="Some('a')")
-      #|  inspect(v.get_char(1), content="Some('🤣')")
-      #|  inspect(v.get_char(2), content="None")
-      #|  inspect(v.get_char(3), content="None")
-      #|  inspect(v.get_char(4), content="None")
-      #|  let v2 = s[1:3] // Only contains the emoji surrogate pair
-      #|  inspect(v2.get_char(0), content="Some('🤣')")
-      #|  inspect(v2.get_char(1), content="None")
-      #|  inspect(v2.get_char(2), content="None")
-      #|}
-    ),
     "string.mbt": (
-      #|#as_free_fn
-      #|pub fn String::from_array(chars : ArrayView[Char]) -> String {
-      #|  let buf = StringBuilder::new(size_hint=chars.length() * 4)
-      #|  for c in chars {
-      #|    buf.write_char(c)
-      #|  }
-      #|  buf.to_string()
-      #|}
-      #|#as_free_fn
-      #|pub fn String::from_iter(iter : Iter[Char]) -> String {
-      #|  let chars = iter.collect()
+      #|#deprecated
+      #|pub fn from_array(chars : ArrayView[Char]) -> String {
       #|  String::from_array(chars)
       #|}
-      #|#as_free_fn
-      #|pub fn String::from_iterator(iter : Iterator[Char]) -> String {
-      #|  let chars = iter.collect()
-      #|  String::from_array(chars)
+      #|#deprecated
+      #|pub fn from_iter(iter : Iter[Char]) -> String {
+      #|  String::from_iter(iter)
       #|}
-      #|pub impl Compare for String with compare(self, other) {
-      #|  let len = self.length()
-      #|  match len.compare(other.length()) {
-      #|    0 => {
-      #|      for i in 0..<len {
-      #|        let order = self
-      #|          .unsafe_charcode_at(i)
-      #|          .compare(other.unsafe_charcode_at(i))
-      #|        if order != 0 {
-      #|          return order
-      #|        }
-      #|      }
-      #|      0
-      #|    }
-      #|    order => order
-      #|  }
-      #|}
-      #|pub impl Default for String with default() {
-      #|  ""
+      #|#deprecated
+      #|pub fn from_iterator(iter : Iterator[Char]) -> String {
+      #|  String::from_iterator(iter)
       #|}
       #|pub fn default() -> String {
       #|  ""
-      #|}
-      #|#deprecated("Check `@encoding/utf8.encode`")
-      #|pub fn String::to_bytes(self : String) -> Bytes {
-      #|  let array = FixedArray::make(self.length() * 2, Byte::default())
-      #|  array.blit_from_string(0, self, 0, self.length())
-      #|  array |> unsafe_to_bytes
-      #|}
-      #|fn unsafe_to_bytes(array : FixedArray[Byte]) -> Bytes = "%identity"
-      #|pub fn String::to_array(self : String) -> Array[Char] {
-      #|  self
-      #|  .iter()
-      #|  .fold(init=Array::new(capacity=self.length()), (rv, c) => {
-      #|    rv.push(c)
-      #|    rv
-      #|  })
-      #|}
-      #|pub fn String::iter(self : String) -> Iter[Char] {
-      #|  Iter::new(yield_ => {
-      #|    let len = self.length()
-      #|    for index in 0..<len {
-      #|      let c1 = self.unsafe_charcode_at(index)
-      #|      if c1.is_leading_surrogate() && index + 1 < len {
-      #|        let c2 = self.unsafe_charcode_at(index + 1)
-      #|        if c2.is_trailing_surrogate() {
-      #|          let c = code_point_of_surrogate_pair(c1, c2)
-      #|          guard yield_(c) is IterContinue else { break IterEnd }
-      #|          continue index + 2
-      #|        }
-      #|      }
-      #|      guard yield_(c1.unsafe_to_char()) is IterContinue else { break IterEnd }
-      #|    } else {
-      #|      IterContinue
-      #|    }
-      #|  })
-      #|}
-      #|pub fn String::iterator(self : String) -> Iterator[Char] {
-      #|  let len = self.length()
-      #|  let mut index = 0
-      #|  Iterator::new(fn() {
-      #|    guard index < len else { None }
-      #|    let c1 = self.unsafe_charcode_at(index)
-      #|    if c1.is_leading_surrogate() && index + 1 < len {
-      #|      let c2 = self.unsafe_charcode_at(index + 1)
-      #|      if c2.is_trailing_surrogate() {
-      #|        let c = code_point_of_surrogate_pair(c1, c2)
-      #|        index += 2
-      #|        return Some(c)
-      #|      }
-      #|    }
-      #|    index += 1
-      #|    Some(c1.unsafe_to_char())
-      #|  })
-      #|}
-      #|pub fn String::iter2(self : String) -> Iter2[Int, Char] {
-      #|  Iter2::new(yield_ => {
-      #|    let len = self.length()
-      #|    for index = 0, n = 0; index < len; index = index + 1, n = n + 1 {
-      #|      let c1 = self.unsafe_charcode_at(index)
-      #|      if c1.is_leading_surrogate() && index + 1 < len {
-      #|        let c2 = self.unsafe_charcode_at(index + 1)
-      #|        if c2.is_trailing_surrogate() {
-      #|          let c = code_point_of_surrogate_pair(c1, c2)
-      #|          guard yield_(n, c) is IterContinue else { break IterEnd }
-      #|          continue index + 2, n + 1
-      #|        }
-      #|      }
-      #|      guard yield_(n, c1.unsafe_to_char()) is IterContinue else {
-      #|        break IterEnd
-      #|      }
-      #|    } else {
-      #|      IterContinue
-      #|    }
-      #|  })
-      #|}
-      #|pub fn String::iterator2(self : String) -> Iterator2[Int, Char] {
-      #|  self.iterator().iterator2()
-      #|}
-      #|pub fn String::rev_iter(self : String) -> Iter[Char] {
-      #|  Iter::new(yield_ => {
-      #|    let len = self.length()
-      #|    for index = len - 1; index >= 0; index = index - 1 {
-      #|      let c1 = self.unsafe_charcode_at(index)
-      #|      if c1.is_trailing_surrogate() && index - 1 >= 0 {
-      #|        let c2 = self.unsafe_charcode_at(index - 1)
-      #|        if c2.is_leading_surrogate() {
-      #|          let c = code_point_of_surrogate_pair(c2, c1)
-      #|          guard yield_(c) is IterContinue else { break IterEnd }
-      #|          continue index - 2
-      #|        }
-      #|      }
-      #|      guard yield_(c1.unsafe_to_char()) is IterContinue else { break IterEnd }
-      #|    } else {
-      #|      IterContinue
-      #|    }
-      #|  })
-      #|}
-      #|pub fn String::rev_iterator(self : String) -> Iterator[Char] {
-      #|  let len = self.length()
-      #|  let mut index = len
-      #|  Iterator::new(fn() {
-      #|    guard index > 0 else { None }
-      #|    index -= 1
-      #|    let c1 = self.unsafe_charcode_at(index)
-      #|    if c1.is_trailing_surrogate() && index - 1 >= 0 {
-      #|      let c2 = self.unsafe_charcode_at(index - 1)
-      #|      if c2.is_leading_surrogate() {
-      #|        index -= 1
-      #|        return Some(code_point_of_surrogate_pair(c2, c1))
-      #|      }
-      #|    }
-      #|    Some(c1.unsafe_to_char())
-      #|  })
-      #|}
-      #|fn String::offset_of_nth_char_forward(
-      #|  self : String,
-      #|  n : Int,
-      #|  start_offset~ : Int,
-      #|  end_offset~ : Int,
-      #|) -> Int? {
-      #|  guard start_offset >= 0 && start_offset <= end_offset else {
-      #|    abort("Invalid start index")
-      #|  }
-      #|  let mut utf16_offset = start_offset
-      #|  let mut char_count = 0
-      #|  while utf16_offset < end_offset && char_count < n {
-      #|    let c = self.unsafe_charcode_at(utf16_offset)
-      #|    if c.is_leading_surrogate() {
-      #|      utf16_offset = utf16_offset + 2
-      #|    } else {
-      #|      utf16_offset = utf16_offset + 1
-      #|    }
-      #|    char_count = char_count + 1
-      #|  }
-      #|  if char_count < n || utf16_offset >= end_offset {
-      #|    None
-      #|  } else {
-      #|    Some(utf16_offset)
-      #|  }
-      #|}
-      #|fn String::offset_of_nth_char_backward(
-      #|  self : String,
-      #|  n : Int,
-      #|  start_offset~ : Int,
-      #|  end_offset~ : Int,
-      #|) -> Int? {
-      #|  let mut char_count = 0
-      #|  let mut utf16_offset = end_offset
-      #|  while utf16_offset - 1 >= start_offset && char_count < n {
-      #|    let c = self.unsafe_charcode_at(utf16_offset - 1)
-      #|    if c.is_trailing_surrogate() {
-      #|      utf16_offset = utf16_offset - 2
-      #|    } else {
-      #|      utf16_offset = utf16_offset - 1
-      #|    }
-      #|    char_count = char_count + 1
-      #|  }
-      #|  if char_count < n || utf16_offset < start_offset {
-      #|    None
-      #|  } else {
-      #|    Some(utf16_offset)
-      #|  }
-      #|}
-      #|pub fn String::offset_of_nth_char(
-      #|  self : String,
-      #|  i : Int,
-      #|  start_offset? : Int = 0,
-      #|  end_offset? : Int,
-      #|) -> Int? {
-      #|  let end_offset = if end_offset is Some(o) { o } else { self.length() }
-      #|  if i >= 0 {
-      #|    self.offset_of_nth_char_forward(i, start_offset~, end_offset~)
-      #|  } else {
-      #|    self.offset_of_nth_char_backward(-i, start_offset~, end_offset~)
-      #|  }
-      #|}
-      #|pub fn String::char_length_eq(
-      #|  self : String,
-      #|  len : Int,
-      #|  start_offset? : Int = 0,
-      #|  end_offset? : Int,
-      #|) -> Bool {
-      #|  let end_offset = if end_offset is Some(o) { o } else { self.length() }
-      #|  for index = start_offset, count = 0
-      #|      index < end_offset && count < len
-      #|      index = index + 1, count = count + 1 {
-      #|    let c1 = self.unsafe_charcode_at(index)
-      #|    if c1.is_leading_surrogate() && index + 1 < end_offset {
-      #|      let c2 = self.unsafe_charcode_at(index + 1)
-      #|      if c2.is_trailing_surrogate() {
-      #|        continue index + 2, count + 1
-      #|      } else {
-      #|        abort("invalid surrogate pair")
-      #|      }
-      #|    }
-      #|  } else {
-      #|    count == len && index == end_offset
-      #|  }
-      #|}
-      #|pub fn String::char_length_ge(
-      #|  self : String,
-      #|  len : Int,
-      #|  start_offset? : Int = 0,
-      #|  end_offset? : Int,
-      #|) -> Bool {
-      #|  let end_offset = if end_offset is Some(o) { o } else { self.length() }
-      #|  for index = start_offset, count = 0
-      #|      index < end_offset && count < len
-      #|      index = index + 1, count = count + 1 {
-      #|    let c1 = self.unsafe_charcode_at(index)
-      #|    if c1.is_leading_surrogate() && index + 1 < end_offset {
-      #|      let c2 = self.unsafe_charcode_at(index + 1)
-      #|      if c2.is_trailing_surrogate() {
-      #|        continue index + 2, count + 1
-      #|      } else {
-      #|        abort("invalid surrogate pair")
-      #|      }
-      #|    }
-      #|  } else {
-      #|    count >= len
-      #|  }
-      #|}
-      #|pub fn String::lexical_compare(self : String, other : String) -> Int {
-      #|  self.to_string_view().lexical_compare(other.to_string_view())
       #|}
     ),
     "string_like.mbt": (
@@ -38219,339 +38934,7 @@ let moonbitlang_core_string_module : RuntimePackage = RuntimePackage::new(
       #|}
     ),
     "view.mbt": (
-      #|#builtin.valtype
-      #|#deprecated("Use `StringView` instead")
-      #|pub typealias StringView as View
-      #|fn StringView::str(self : StringView) -> String = "%stringview.str"
-      #|fn StringView::start(self : StringView) -> Int = "%stringview.start"
-      #|fn StringView::end(self : StringView) -> Int = "%stringview.end"
-      #|fn StringView::make_view(str : String, start : Int, end : Int) -> StringView = "%stringview.make"
-      #|#alias("_[_]")
-      #|pub fn StringView::at(self : StringView, index : Int) -> Int {
-      #|  guard index >= 0 && index < self.length() else {
-      #|    abort("Index out of bounds")
-      #|  }
-      #|  self.str().unsafe_charcode_at(self.start() + index)
-      #|}
-      #|pub fn StringView::data(self : StringView) -> String {
-      #|  self.str()
-      #|}
-      #|pub fn StringView::start_offset(self : StringView) -> Int {
-      #|  self.start()
-      #|}
-      #|pub fn StringView::length(self : StringView) -> Int {
-      #|  self.end() - self.start()
-      #|}
-      #|pub fn String::view(
-      #|  self : String,
-      #|  start_offset? : Int = 0,
-      #|  end_offset? : Int,
-      #|) -> StringView {
-      #|  let end_offset = if end_offset is Some(o) { o } else { self.length() }
-      #|  guard start_offset >= 0 &&
-      #|    start_offset <= end_offset &&
-      #|    end_offset <= self.length() else {
-      #|    abort("Invalid index for View")
-      #|  }
-      #|  StringView::make_view(self, start_offset, end_offset)
-      #|}
-      #|pub fn StringView::view(
-      #|  self : StringView,
-      #|  start_offset? : Int = 0,
-      #|  end_offset? : Int,
-      #|) -> StringView {
-      #|  let end_offset = if end_offset is Some(o) { o } else { self.length() }
-      #|  guard start_offset >= 0 &&
-      #|    start_offset <= end_offset &&
-      #|    end_offset <= self.length() else {
-      #|    abort("Invalid index for View")
-      #|  }
-      #|  StringView::make_view(
-      #|    self.str(),
-      #|    self.start() + start_offset,
-      #|    self.start() + end_offset,
-      #|  )
-      #|}
-      #|pub fn StringView::offset_of_nth_char(self : StringView, i : Int) -> Int? {
-      #|  if self
-      #|    .str()
-      #|    .offset_of_nth_char(i, start_offset=self.start(), end_offset=self.end())
-      #|    is Some(index) {
-      #|    Some(index - self.start())
-      #|  } else {
-      #|    None
-      #|  }
-      #|}
-      #|pub fn StringView::unsafe_charcode_at(self : StringView, index : Int) -> Int {
-      #|  self.str().unsafe_charcode_at(self.start() + index)
-      #|}
-      #|pub fn StringView::char_length(self : StringView) -> Int {
-      #|  self.str().char_length(start_offset=self.start(), end_offset=self.end())
-      #|}
-      #|pub fn StringView::char_length_eq(self : StringView, len : Int) -> Bool {
-      #|  self
-      #|  .str()
-      #|  .char_length_eq(len, start_offset=self.start(), end_offset=self.end())
-      #|}
-      #|pub fn StringView::char_length_ge(self : StringView, len : Int) -> Bool {
-      #|  self
-      #|  .str()
-      #|  .char_length_ge(len, start_offset=self.start(), end_offset=self.end())
-      #|}
-      #|pub impl Show for StringView with output(self, logger) {
-      #|  let substr = self.str().unsafe_substring(start=self.start(), end=self.end())
-      #|  String::output(substr, logger)
-      #|}
-      #|pub impl Show for StringView with to_string(self) {
-      #|  self.str().unsafe_substring(start=self.start(), end=self.end())
-      #|}
-      #|pub fn StringView::iter(self : StringView) -> Iter[Char] {
-      #|  Iter::new(yield_ => for index in self.start()..<self.end() {
-      #|    let c1 = self.str().unsafe_charcode_at(index)
-      #|    if c1.is_leading_surrogate() && index + 1 < self.end() {
-      #|      let c2 = self.str().unsafe_charcode_at(index + 1)
-      #|      if c2.is_trailing_surrogate() {
-      #|        let c = code_point_of_surrogate_pair(c1, c2)
-      #|        guard yield_(c) is IterContinue else { break IterEnd }
-      #|        continue index + 2
-      #|      }
-      #|    }
-      #|    guard yield_(c1.unsafe_to_char()) is IterContinue else { break IterEnd }
-      #|  } else {
-      #|    IterContinue
-      #|  })
-      #|}
-      #|pub fn StringView::iterator(self : StringView) -> Iterator[Char] {
-      #|  let start = self.start()
-      #|  let end = self.end()
-      #|  let mut index = start
-      #|  Iterator::new(fn() {
-      #|    guard index < end else { None }
-      #|    let c1 = self.str().unsafe_charcode_at(index)
-      #|    if c1.is_leading_surrogate() && index + 1 < self.end() {
-      #|      let c2 = self.str().unsafe_charcode_at(index + 1)
-      #|      if c2.is_trailing_surrogate() {
-      #|        index += 2
-      #|        return Some(code_point_of_surrogate_pair(c1, c2))
-      #|      }
-      #|    }
-      #|    index += 1
-      #|    Some(c1.unsafe_to_char())
-      #|  })
-      #|}
-      #|pub fn StringView::iter2(self : StringView) -> Iter2[Int, Char] {
-      #|  Iter2::new(yield_ => {
-      #|    let len = self.length()
-      #|    for index = 0, n = 0; index < len; index = index + 1, n = n + 1 {
-      #|      let c1 = self.str().unsafe_charcode_at(self.start() + index)
-      #|      if c1.is_leading_surrogate() && index + 1 < len {
-      #|        let c2 = self.str().unsafe_charcode_at(self.start() + index + 1)
-      #|        if c2.is_trailing_surrogate() {
-      #|          let c = code_point_of_surrogate_pair(c1, c2)
-      #|          guard yield_(n, c) is IterContinue else { break IterEnd }
-      #|          continue index + 2, n + 1
-      #|        }
-      #|      }
-      #|      guard yield_(n, c1.unsafe_to_char()) is IterContinue else {
-      #|        break IterEnd
-      #|      }
-      #|    } else {
-      #|      IterContinue
-      #|    }
-      #|  })
-      #|}
-      #|pub fn StringView::iterator2(self : StringView) -> Iterator2[Int, Char] {
-      #|  let start = self.start()
-      #|  let end = self.end()
-      #|  let mut index = start
-      #|  let mut char_index = 0
-      #|  Iterator2::new(fn() {
-      #|    guard index < end else { None }
-      #|    let c1 = self.str().unsafe_charcode_at(index)
-      #|    if c1.is_leading_surrogate() && index + 1 < self.end() {
-      #|      let c2 = self.str().unsafe_charcode_at(index + 1)
-      #|      if c2.is_trailing_surrogate() {
-      #|        let result = (char_index, code_point_of_surrogate_pair(c1, c2))
-      #|        index += 2
-      #|        char_index += 1
-      #|        return Some(result)
-      #|      }
-      #|    }
-      #|    let result = (char_index, c1.unsafe_to_char())
-      #|    index += 1
-      #|    char_index += 1
-      #|    Some(result)
-      #|  })
-      #|}
-      #|pub fn StringView::rev_iter(self : StringView) -> Iter[Char] {
-      #|  Iter::new(yield_ => for index = self.end() - 1
-      #|                          index >= self.start()
-      #|                          index = index - 1 {
-      #|    let c1 = self.str().unsafe_charcode_at(index)
-      #|    if c1.is_trailing_surrogate() && index - 1 >= 0 {
-      #|      let c2 = self.str().unsafe_charcode_at(index - 1)
-      #|      if c2.is_leading_surrogate() {
-      #|        let c = code_point_of_surrogate_pair(c2, c1)
-      #|        guard yield_(c) is IterContinue else { break IterEnd }
-      #|        continue index - 2
-      #|      }
-      #|    }
-      #|    guard yield_(c1.unsafe_to_char()) is IterContinue else { break IterEnd }
-      #|  } else {
-      #|    IterContinue
-      #|  })
-      #|}
-      #|pub fn StringView::rev_iterator(self : StringView) -> Iterator[Char] {
-      #|  let start = self.start()
-      #|  let end = self.end()
-      #|  let mut index = end
-      #|  Iterator::new(fn() {
-      #|    guard index > start else { None }
-      #|    index -= 1
-      #|    let c1 = self.str().unsafe_charcode_at(index)
-      #|    if c1.is_trailing_surrogate() && index - 1 >= 0 {
-      #|      let c2 = self.str().unsafe_charcode_at(index - 1)
-      #|      if c2.is_leading_surrogate() {
-      #|        index -= 1
-      #|        return Some(code_point_of_surrogate_pair(c2, c1))
-      #|      }
-      #|    }
-      #|    Some(c1.unsafe_to_char())
-      #|  })
-      #|}
-      #|pub impl Eq for StringView with equal(self, other) {
-      #|  let len = self.length()
-      #|  guard len == other.length() else { return false }
-      #|  if physical_equal(self.str(), other.str()) && self.start() == other.start() {
-      #|    return true
-      #|  }
-      #|  for i in 0..<len {
-      #|    guard self.str().unsafe_charcode_at(self.start() + i) ==
-      #|      other.str().unsafe_charcode_at(other.start() + i) else {
-      #|      return false
-      #|    }
-      #|  }
-      #|  true
-      #|}
-      #|pub impl Compare for StringView with compare(self, other) {
-      #|  let self_len = self.length()
-      #|  let other_len = other.length()
-      #|  let cmp = self_len.compare(other_len)
-      #|  guard cmp == 0 else { return cmp }
-      #|  if physical_equal(self.str(), other.str()) && self.start() == other.start() {
-      #|    return 0
-      #|  }
-      #|  for i in 0..<self_len {
-      #|    let cmp = self
-      #|      .str()
-      #|      .unsafe_charcode_at(self.start() + i)
-      #|      .compare(other.str().unsafe_charcode_at(other.start() + i))
-      #|    guard cmp == 0 else { return cmp }
-      #|  }
-      #|  0
-      #|}
-      #|pub fn StringView::lexical_compare(
-      #|  self : StringView,
-      #|  other : StringView,
-      #|) -> Int {
-      #|  let self_len = self.length()
-      #|  let other_len = other.length()
-      #|  let min_len = if self_len < other_len { self_len } else { other_len }
-      #|  for i in 0..<min_len {
-      #|    let self_char = self.str().unsafe_charcode_at(self.start() + i)
-      #|    let other_char = other.str().unsafe_charcode_at(other.start() + i)
-      #|    let cmp = self_char.compare(other_char)
-      #|    if cmp != 0 {
-      #|      return cmp
-      #|    }
-      #|  }
-      #|  self_len.compare(other_len)
-      #|}
-      #|pub impl Default for StringView with default() {
-      #|  ""
-      #|}
-      #|pub fn StringView::from_array(chars : ArrayView[Char]) -> StringView {
-      #|  String::from_array(chars)
-      #|}
-      #|pub fn StringView::from_iter(iter : Iter[Char]) -> StringView {
-      #|  String::from_iter(iter)
-      #|}
-      #|pub fn StringView::from_iterator(iter : Iterator[Char]) -> StringView {
-      #|  String::from_iterator(iter)
-      #|}
-      #|pub fn StringView::make(length : Int, value : Char) -> StringView {
-      #|  String::make(length, value)
-      #|}
-      #|pub impl ToJson for StringView with to_json(self) {
-      #|  String::to_json(self.to_string())
-      #|}
-      #|pub impl Hash for StringView with hash_combine(
-      #|  self : StringView,
-      #|  hasher : Hasher,
-      #|) -> Unit {
-      #|  for i in 0..<self.length() {
-      #|    hasher.combine_uint(self.unsafe_charcode_at(i).reinterpret_as_uint())
-      #|  }
-      #|}
-      #|pub suberror CreatingViewError {
-      #|  IndexOutOfBounds
-      #|  InvalidIndex
-      #|} derive(Show)
-      #|#alias("_[_:_]")
-      #|pub fn String::sub(
-      #|  self : String,
-      #|  start? : Int = 0,
-      #|  end? : Int,
-      #|) -> StringView raise CreatingViewError {
-      #|  let len = self.length()
-      #|  let end = match end {
-      #|    None => len
-      #|    Some(end) => if end < 0 { len + end } else { end }
-      #|  }
-      #|  let start = if start < 0 { len + start } else { start }
-      #|  guard start >= 0 && start <= end && end <= len else { raise IndexOutOfBounds }
-      #|  if start < len && self.unsafe_charcode_at(start).is_trailing_surrogate() {
-      #|    raise InvalidIndex
-      #|  }
-      #|  if end < len && self.unsafe_charcode_at(end).is_trailing_surrogate() {
-      #|    raise InvalidIndex
-      #|  }
-      #|  StringView::make_view(self, start, end)
-      #|}
-      #|#alias("_[_:_]")
-      #|pub fn StringView::sub(
-      #|  self : StringView,
-      #|  start? : Int = 0,
-      #|  end? : Int,
-      #|) -> StringView raise CreatingViewError {
-      #|  let str_len = self.str().length()
-      #|  let abs_end = match end {
-      #|    None => self.end()
-      #|    Some(end) => if end < 0 { self.end() + end } else { self.start() + end }
-      #|  }
-      #|  let abs_start = if start < 0 {
-      #|    self.end() + start
-      #|  } else {
-      #|    self.start() + start
-      #|  }
-      #|  guard abs_start >= self.start() &&
-      #|    abs_start <= abs_end &&
-      #|    abs_end <= self.end() else {
-      #|    raise IndexOutOfBounds
-      #|  }
-      #|  if abs_start < str_len &&
-      #|    self.str().unsafe_charcode_at(abs_start).is_trailing_surrogate() {
-      #|    raise InvalidIndex
-      #|  }
-      #|  if abs_end < str_len &&
-      #|    self.str().unsafe_charcode_at(abs_end).is_trailing_surrogate() {
-      #|    raise InvalidIndex
-      #|  }
-      #|  StringView::make_view(self.str(), abs_start, abs_end)
-      #|}
-      #|pub impl Add for StringView with add(self, other) {
-      #|  [..self, ..other]
-      #|}
+      #|pub type View = StringView
     ),
   },
 )
@@ -38579,24 +38962,30 @@ let moonbitlang_core_string_regex_module : RuntimePackage = RuntimePackage::new(
     ),
     "regex.mbt": (
       #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
       #|struct MatchResult(@regex_impl.MatchResult, @regex_impl.Regexp)
       #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
       #|pub fn MatchResult::before(self : Self) -> StringView {
       #|  self.0.before()
       #|}
       #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
       #|pub fn MatchResult::after(self : Self) -> StringView {
       #|  self.0.after()
       #|}
       #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
       #|pub fn MatchResult::content(self : Self) -> StringView {
       #|  self.0.get(0).unwrap()
       #|}
       #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
       #|pub fn MatchResult::group(self : Self, index : Int) -> StringView? {
       #|  self.0.get(index)
       #|}
       #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
       #|pub fn MatchResult::named_group(self : Self, name : String) -> StringView? {
       #|  if self.1.group_by_name(name) is Some(index) {
       #|    self.0.get(index)
@@ -38605,12 +38994,15 @@ let moonbitlang_core_string_regex_module : RuntimePackage = RuntimePackage::new(
       #|  }
       #|}
       #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
       #|struct Regex(@regex_impl.Regexp)
       #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
       #|pub fn compile(pattern : StringView) -> Regex raise {
       #|  @regex_impl.compile(pattern)
       #|}
       #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
       #|pub fn Regex::execute(self : Self, input : StringView) -> MatchResult? {
       #|  match self.0.match_(input) {
       #|    None => None
@@ -38724,7 +39116,7 @@ let moonbitlang_core_string_regex_internal_regexp_module : RuntimePackage = Runt
       #|  }
       #|  { input, captures, names: self.map, before, after }
       #|}
-      #|#deprecated("Use `Regexp::execute` and `MatchResult::before`/`after` instead.")
+      #|#deprecated("Use `Regexp::execute` and `MatchResult::before`/`after` instead.", skip_current_package=false)
       #|pub fn Regexp::execute_with_remainder(
       #|  self : Regexp,
       #|  input : StringView,
@@ -38815,20 +39207,23 @@ let moonbitlang_core_string_regex_internal_regexp_module : RuntimePackage = Runt
       #|}
       #|test "rest method" {
       #|  let engine = compile("hello")
-      #|  let (result, rest) = engine.execute_with_remainder("hello world")
+      #|  let result = engine.execute("hello world")
       #|  inspect(result.matched(), content="true")
-      #|  inspect(rest, content=" world")
-      #|  let (result2, rest2) = engine.execute_with_remainder("say hello")
+      #|  inspect(result.before(), content="")
+      #|  inspect(result.after(), content=" world")
+      #|  let result2 = engine.execute("say hello")
       #|  inspect(result2.matched(), content="true")
-      #|  inspect(rest2, content="")
-      #|  let (result3, rest3) = engine.execute_with_remainder("hi there")
+      #|  inspect(result2.before(), content="say ")
+      #|  inspect(result2.after(), content="")
+      #|  let result3 = engine.execute("hi there")
       #|  inspect(result3.matched(), content="false")
-      #|  inspect(rest3, content="hi there")
+      #|  inspect(result3.before(), content="hi there")
+      #|  inspect(result3.after(), content="")
       #|  inspect("Test rest method completed", content="Test rest method completed")
       #|}
       #|test "rest method with capture groups" {
       #|  let engine = compile("(\\w+)\\s+")
-      #|  let (result, rest) = engine.execute_with_remainder("hello world test")
+      #|  let result = engine.execute("hello world test")
       #|  inspect(result.matched(), content="true")
       #|  inspect(
       #|    result.get(0),
@@ -38842,9 +39237,9 @@ let moonbitlang_core_string_regex_internal_regexp_module : RuntimePackage = Runt
       #|      #|Some("hello")
       #|    ),
       #|  )
-      #|  inspect(rest, content="world test")
+      #|  inspect(result.after(), content="world test")
       #|  let engine2 = compile(".*")
-      #|  let (result2, rest2) = engine2.execute_with_remainder("everything")
+      #|  let result2 = engine2.execute("everything")
       #|  inspect(result2.matched(), content="true")
       #|  inspect(
       #|    result2.get(0),
@@ -38852,27 +39247,27 @@ let moonbitlang_core_string_regex_internal_regexp_module : RuntimePackage = Runt
       #|      #|Some("everything")
       #|    ),
       #|  )
-      #|  inspect(rest2, content="")
+      #|  inspect(result2.after(), content="")
       #|}
       #|test "rest method usage example" {
       #|  let engine = compile("\\b\\w+\\b")
       #|  let mut input : StringView = "word1 word2 word3"
-      #|  let (result1, rest1) = engine.execute_with_remainder(input)
+      #|  let result1 = engine.execute(input)
       #|  inspect(
       #|    result1.get(0),
       #|    content=(
       #|      #|Some("word1")
       #|    ),
       #|  )
-      #|  input = rest1
-      #|  let (result2, rest2) = engine.execute_with_remainder(input)
+      #|  input = result1.after()
+      #|  let result2 = engine.execute(input)
       #|  inspect(
       #|    result2.get(0),
       #|    content=(
       #|      #|Some("word2")
       #|    ),
       #|  )
-      #|  inspect(rest2, content=" word3")
+      #|  inspect(result2.after(), content=" word3")
       #|}
     ),
   },
@@ -40404,11 +40799,11 @@ let moonbitlang_core_test_module : RuntimePackage = RuntimePackage::new(
       #|}
     ),
     "types.mbt": (
+      #|#alias(T, deprecated)
       #|struct Test {
       #|  name : String
       #|  buffer : StringBuilder
       #|}
-      #|pub typealias Test as T
       #|#as_free_fn
       #|pub fn Test::new(name : String) -> Test {
       #|  { name, buffer: StringBuilder::new() }
@@ -40444,27 +40839,27 @@ let moonbitlang_core_tuple_module : RuntimePackage = RuntimePackage::new(
       #|pub fn[T, U] pair(x : T, y : U) -> (T, U) {
       #|  (x, y)
       #|}
-      #|#deprecated("use `tuple.0` instead")
+      #|#deprecated("use `tuple.0` instead", skip_current_package=false)
       #|#coverage.skip
       #|pub fn[T, U] fst(tuple : (T, U)) -> T {
       #|  tuple.0
       #|}
-      #|#deprecated("use `tuple.1` instead")
+      #|#deprecated("use `tuple.1` instead", skip_current_package=false)
       #|#coverage.skip
       #|pub fn[T, U] snd(tuple : (T, U)) -> U {
       #|  tuple.1
       #|}
-      #|#deprecated("use `{ let (a,b) = tuple; (f(a),b) }` instead")
+      #|#deprecated("use `{ let (a,b) = tuple; (f(a),b) }` instead", skip_current_package=false)
       #|#coverage.skip
       #|pub fn[T, U, V] map_fst(f : (T) -> U, tuple : (T, V)) -> (U, V) {
       #|  (f(tuple.0), tuple.1)
       #|}
-      #|#deprecated("use `{ let (a,b) = tuple; (a,f(b)) }` instead")
+      #|#deprecated("use `{ let (a,b) = tuple; (a,f(b)) }` instead", skip_current_package=false)
       #|#coverage.skip
       #|pub fn[T, U, V] map_snd(f : (T) -> U, tuple : (V, T)) -> (V, U) {
       #|  (tuple.0, f(tuple.1))
       #|}
-      #|#deprecated("use `{ let (a,b) = tuple; (f(a),f(b)) }` instead")
+      #|#deprecated("use `{ let (a,b) = tuple; (f(a),f(b)) }` instead", skip_current_package=false)
       #|#coverage.skip
       #|pub fn[T, U, V, W] map_both(
       #|  f : (T) -> U,
@@ -40942,10 +41337,8 @@ let moonbitlang_core_uint16_module : RuntimePackage = RuntimePackage::new(
   files={
     "moon.pkg.json": (
       #|{
-      #|  "import": [
-      #|    "moonbitlang/core/builtin",
-      #|    "moonbitlang/core/json"
-      #|  ]
+      #|  "import": ["moonbitlang/core/builtin", "moonbitlang/core/json"],
+      #|  "test-import": ["moonbitlang/core/char"]
       #|}
     ),
     "uint16.mbt": (
