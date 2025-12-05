@@ -13,6 +13,8 @@ let core_stubs : Map[String, String] = {
 
 ///|
 let builtin_embedded_code : Map[String, RuntimeFunction] = {
+  "%any.to_string": any_to_string_fn,
+  "%identity": identity_fn,
   "%abort": abort_fn,
   "%panic": panic_fn,
   "%typeof": typeof_fn,
@@ -92,12 +94,12 @@ let builtin_embedded_code : Map[String, RuntimeFunction] = {
   "%u64.to_i64_reinterpret": uint64_to_int64_fn,
   // 类型转换函数
   "%i32_to_f64": to_double_fn,
-  "%i32.to_f32": to_float_fn,
-  "%i32_to_byte": to_byte_fn,
-  "%i32_to_i16": to_int16_fn,
-  "%i32_to_u16": to_uint16_fn,
-  "%i32_to_i64": to_int64_fn,
-  "%u32.to_u64": to_uint64_fn,
+  "%i32.to_f32": i32_to_f32_fn,
+  "%i32_to_byte": i32_to_byte_fn,
+  "%i32_to_i16": i32_to_int16_fn,
+  "%i32_to_u16": i32_to_uint16_fn,
+  "%i32_to_i64": i32_to_int64_fn,
+  "%u32.to_u64": i32_to_uint64_fn,
   // ArrayView
   // ArrayView functions
   "%arrayview.buf": array_view_buf_fn,
@@ -162,6 +164,22 @@ let core_embedded_methods : Map[String, Map[String, RuntimeFunction]] = {
   "Iter2": iter2_methods,
   "StringBuilder": stringbuilder_methods,
   "Json": json_methods,
+}
+
+///|
+let identity_fn : RuntimeFunction = ctx => match ctx.args {
+  [{ val: value, .. }] => value
+  _ => Unit
+}
+
+///|
+let any_to_string_fn : RuntimeFunction = ctx => match ctx.args {
+  [{ val: value, .. }] =>
+    match value {
+      Object({ ty, .. }) => String("<obj:\{ty}>")
+      obj => String(obj.to_string())
+    }
+  _ => Unit
 }
 
 ///|
@@ -339,17 +357,14 @@ let to_double_fn : RuntimeFunction = ctx => match ctx.args {
 
 ///|
 /// 转换为 Float
-let to_float_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Int(i, ..), .. }] => Float(i.to_float())
-  [{ val: Float(f), .. }] => Float(f)
-  [{ val: Double(d), .. }] => Float(d.to_float())
-  [{ val: UInt(u), .. }] => Float(u.to_float())
+let i32_to_f32_fn : RuntimeFunction = ctx => match ctx.args {
+  [{ val: Int(i, ..), .. }] => Float(Float::from_int(i))
   _ => Unit
 }
 
 ///|
 /// 转换为 Byte
-let to_byte_fn : RuntimeFunction = ctx => match ctx.args {
+let i32_to_byte_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Int(i, ..), .. }] => Byte(i.to_byte())
   [{ val: UInt(u), .. }] => Byte(u.to_byte())
   [{ val: Byte(b), .. }] => Byte(b)
@@ -358,7 +373,7 @@ let to_byte_fn : RuntimeFunction = ctx => match ctx.args {
 
 ///|
 /// 转换为 Int16 (使用 Int 表示)
-let to_int16_fn : RuntimeFunction = ctx => match ctx.args {
+let i32_to_int16_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Int(i, ..), .. }] => Int(i & 0xFFFF, raw=None)
   [{ val: UInt(u), .. }] => Int(u.reinterpret_as_int() & 0xFFFF, raw=None)
   _ => Unit
@@ -366,14 +381,14 @@ let to_int16_fn : RuntimeFunction = ctx => match ctx.args {
 
 ///|
 /// 转换为 UInt16 
-let to_uint16_fn : RuntimeFunction = ctx => match ctx.args {
+let i32_to_uint16_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Int(i, ..), .. }] => UInt16(i.to_uint16())
   _ => Unit
 }
 
 ///|
 /// 转换为 Int64
-let to_int64_fn : RuntimeFunction = ctx => match ctx.args {
+let i32_to_int64_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Int(i, ..), .. }] => Int64(i.to_int64())
   [{ val: UInt(u), .. }] => Int64(u.to_int64())
   [{ val: Int64(i64), .. }] => Int64(i64)
@@ -384,7 +399,7 @@ let to_int64_fn : RuntimeFunction = ctx => match ctx.args {
 
 ///|
 /// 转换为 UInt64
-let to_uint64_fn : RuntimeFunction = ctx => match ctx.args {
+let i32_to_uint64_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Int(i, ..), .. }] => UInt64(i.to_uint64())
   [{ val: UInt(u), .. }] => UInt64(u.to_uint64())
   [{ val: Int64(i64), .. }] => UInt64(i64.reinterpret_as_uint64())
