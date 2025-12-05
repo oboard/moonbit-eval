@@ -2,7 +2,7 @@
   "name": "oboard/moonbit-eval",
   "version": "0.8.14",
   "deps": {
-    "moonbitlang/parser": "0.1.11",
+    "moonbitlang/parser": "0.1.12",
     "moonbitlang/x": "0.4.37"
   },
   "readme": "README.md",

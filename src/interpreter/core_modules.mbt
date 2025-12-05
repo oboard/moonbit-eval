@@ -92,8 +92,6 @@ let core_modules : Map[String, RuntimePackage] = {
   "moonbitlang/core/random": moonbitlang_core_random_module,
   "random/internal/random_source": moonbitlang_core_random_internal_random_source_module,
   "moonbitlang/core/random/internal/random_source": moonbitlang_core_random_internal_random_source_module,
-  "rational": moonbitlang_core_rational_module,
-  "moonbitlang/core/rational": moonbitlang_core_rational_module,
   "ref": moonbitlang_core_ref_module,
   "moonbitlang/core/ref": moonbitlang_core_ref_module,
   "result": moonbitlang_core_result_module,
@@ -179,6 +177,7 @@ let moonbitlang_core_array_module : RuntimePackage = RuntimePackage::new(
     "moonbitlang/core/builtin": moonbitlang_core_builtin_module,
     "moonbitlang/core/bytes": moonbitlang_core_bytes_module,
     "moonbitlang/core/string": moonbitlang_core_string_module,
+    "moonbitlang/core/uint16": moonbitlang_core_uint16_module,
   },
   files={
     "moon.pkg.json": (
@@ -186,7 +185,8 @@ let moonbitlang_core_array_module : RuntimePackage = RuntimePackage::new(
       #|  "import": [
       #|    "moonbitlang/core/builtin",
       #|    "moonbitlang/core/bytes",
-      #|    "moonbitlang/core/string"        
+      #|    "moonbitlang/core/string",
+      #|    "moonbitlang/core/uint16"
       #|  ],
       #|  "test-import": [
       #|    "moonbitlang/core/char",
@@ -352,12 +352,9 @@ let moonbitlang_core_array_module : RuntimePackage = RuntimePackage::new(
       #|  _len : Int,
       #|) -> UInt {
       #|  let byte_index = offset >> 3
-      #|  let bit_mask = (1 << (7 - (offset & 7))).to_byte()
-      #|  if (bs.unsafe_get(byte_index) & bit_mask) != 0 {
-      #|    1
-      #|  } else {
-      #|    0
-      #|  }
+      #|  let bit_shift = 7 - (offset & 7)
+      #|  let byte_val = bs.unsafe_get(byte_index).to_uint()
+      #|  (byte_val >> bit_shift) & 1U
       #|}
       #|#internal(experimental, "subject to breaking change without notice")
       #|#doc(hidden)
@@ -367,12 +364,9 @@ let moonbitlang_core_array_module : RuntimePackage = RuntimePackage::new(
       #|  _len : Int,
       #|) -> Int {
       #|  let byte_index = offset >> 3
-      #|  let bit_mask = (1 << (7 - (offset & 7))).to_byte()
-      #|  if (bs.unsafe_get(byte_index) & bit_mask) != 0 {
-      #|    -1
-      #|  } else {
-      #|    0
-      #|  }
+      #|  let bit_shift = 7 - (offset & 7)
+      #|  let byte_val = bs.unsafe_get(byte_index).to_int()
+      #|  ((byte_val >> bit_shift) & 1) * -1
       #|}
       #|#internal(experimental, "subject to breaking change without notice")
       #|#doc(hidden)
@@ -814,449 +808,29 @@ let moonbitlang_core_array_module : RuntimePackage = RuntimePackage::new(
       #|}
     ),
     "fixedarray.mbt": "",
-    "fixedarray_sort.mbt": (
+    "sort.mbt": (
+      #|pub fn[T : Compare] Array::sort(self : Array[T]) -> Unit {
+      #|  self.mut_view().sort()
+      #|}
       #|pub fn[T : Compare] FixedArray::stable_sort(self : FixedArray[T]) -> Unit {
-      #|  timsort({ array: self, start: 0, end: self.length() })
-      #|}
-      #|priv struct TimSortRun {
-      #|  len : Int
-      #|  start : Int
-      #|}
-      #|fn[T : Compare] timsort(arr : FixedArraySlice[T]) -> Unit {
-      #|  let max_insertion = 20
-      #|  let len = arr.length()
-      #|  if len <= max_insertion {
-      #|    FixedArraySlice::insertion_sort(arr)
-      #|  }
-      #|  let mut end = 0
-      #|  let mut start = 0
-      #|  let runs : Array[TimSortRun] = []
-      #|  while end < len {
-      #|    let (streak_end, was_reversed) = find_streak(arr.slice(start, arr.end))
-      #|    end += streak_end
-      #|    if was_reversed {
-      #|      arr.slice(start, end).rev_inplace()
-      #|    }
-      #|    end = provide_sorted_batch(arr, start, end)
-      #|    runs.push({ start, len: end - start })
-      #|    start = end
-      #|    while true {
-      #|      guard collapse(runs, len) is Some(r) else { break }
-      #|      let left = runs[r]
-      #|      let right = runs[r + 1]
-      #|      merge(arr.slice(left.start, right.start + right.len), left.len)
-      #|      runs[r + 1] = { start: left.start, len: left.len + right.len }
-      #|      runs.remove(r) |> ignore
-      #|    }
-      #|  }
-      #|}
-      #|fn[T : Compare] FixedArraySlice::insertion_sort(
-      #|  arr : FixedArraySlice[T],
-      #|) -> Unit {
-      #|  for i in 1..<arr.length() {
-      #|    for j = i; j > 0 && arr[j] < arr[j - 1]; j = j - 1 {
-      #|      arr.swap(j, j - 1)
-      #|    }
-      #|  }
-      #|}
-      #|fn[T : Compare] merge(arr : FixedArraySlice[T], mid : Int) -> Unit {
-      #|  let buf_len = arr.length() - mid
-      #|  let buf : FixedArray[T] = FixedArray::make(buf_len, arr[mid])
-      #|  for i in 0..<buf.length() {
-      #|    buf[i] = arr[mid + i]
-      #|  }
-      #|  let buf : FixedArraySlice[T] = { array: buf, start: 0, end: buf_len }
-      #|  let buf_remaining = for p1 = mid - 1, p2 = buf_len - 1, p = mid + buf_len - 1; p1 >=
-      #|                         0 &&
-      #|                         p2 >= 0; {
-      #|    if arr[p1] > buf[p2] {
-      #|      arr[p] = arr[p1]
-      #|      continue p1 - 1, p2, p - 1
-      #|    } else {
-      #|      arr[p] = buf[p2]
-      #|      continue p1, p2 - 1, p - 1
-      #|    }
-      #|  } else {
-      #|    p2
-      #|  }
-      #|  for i = buf_remaining; i >= 0; i = i - 1 {
-      #|    arr[i] = buf[i]
-      #|  }
-      #|}
-      #|fn[T : Compare] find_streak(arr : FixedArraySlice[T]) -> (Int, Bool) {
-      #|  let len = arr.length()
-      #|  if len < 2 {
-      #|    return (len, false)
-      #|  }
-      #|  let assume_reverse = arr[1] < arr[0]
-      #|  if assume_reverse {
-      #|    for end = 2 {
-      #|      if end < len && arr[end] < arr[end - 1] {
-      #|        continue end + 1
-      #|      } else {
-      #|        break (end, true)
-      #|      }
-      #|    }
-      #|  } else {
-      #|    for end = 2 {
-      #|      if end < len && arr[end] >= arr[end - 1] {
-      #|        continue end + 1
-      #|      } else {
-      #|        break (end, false)
-      #|      }
-      #|    }
-      #|  }
-      #|}
-      #|fn[T : Compare] provide_sorted_batch(
-      #|  arr : FixedArraySlice[T],
-      #|  start : Int,
-      #|  end : Int,
-      #|) -> Int {
-      #|  let len = arr.length()
-      #|  let min_insertion_run = 10
-      #|  let start_end_diff = end - start
-      #|  if start_end_diff < min_insertion_run && end < len {
-      #|    let sort_end = minimum(len, start + min_insertion_run)
-      #|    FixedArraySlice::insertion_sort(arr.slice(start, sort_end))
-      #|    sort_end
-      #|  } else {
-      #|    end
-      #|  }
-      #|}
-      #|fn collapse(runs : Array[TimSortRun], stop : Int) -> Int? {
-      #|  let n : Int = runs.length()
-      #|  if n >= 2 &&
-      #|    (
-      #|      runs[n - 1].start + runs[n - 1].len == stop ||
-      #|      runs[n - 2].len <= runs[n - 1].len ||
-      #|      (n >= 3 && runs[n - 3].len <= runs[n - 2].len + runs[n - 1].len) ||
-      #|      (n >= 4 && runs[n - 4].len <= runs[n - 3].len + runs[n - 2].len)
-      #|    ) {
-      #|    if n >= 3 && runs[n - 3].len < runs[n - 1].len {
-      #|      Some(n - 3)
-      #|    } else {
-      #|      Some(n - 2)
-      #|    }
-      #|  } else {
-      #|    None
-      #|  }
-      #|}
-      #|pub fn[T : Compare] FixedArray::sort(self : FixedArray[T]) -> Unit {
-      #|  fixed_quick_sort(
-      #|    { array: self, start: 0, end: self.length() },
-      #|    None,
-      #|    fixed_get_limit(self.length()),
-      #|  )
-      #|}
-      #|fn[T : Compare] fixed_quick_sort(
-      #|  arr : FixedArraySlice[T],
-      #|  pred : T?,
-      #|  limit : Int,
-      #|) -> Unit {
-      #|  let mut limit = limit
-      #|  let mut arr = arr
-      #|  let mut pred = pred
-      #|  let mut was_partitioned = true
-      #|  let mut balanced = true
-      #|  let bubble_sort_len = 16
-      #|  while true {
-      #|    let len = arr.length()
-      #|    if len <= bubble_sort_len {
-      #|      if len >= 2 {
-      #|        fixed_bubble_sort(arr)
-      #|      }
-      #|      return
-      #|    }
-      #|    if limit == 0 {
-      #|      fixed_heap_sort(arr)
-      #|      return
-      #|    }
-      #|    let (pivot_index, likely_sorted) = fixed_choose_pivot(arr)
-      #|    if was_partitioned && balanced && likely_sorted {
-      #|      if fixed_try_bubble_sort(arr) {
-      #|        return
-      #|      }
-      #|    }
-      #|    let (pivot, partitioned) = fixed_partition(arr, pivot_index)
-      #|    was_partitioned = partitioned
-      #|    balanced = minimum(pivot, len - pivot) >= len / 8
-      #|    if !balanced {
-      #|      limit -= 1
-      #|    }
-      #|    if pred is Some(pred) {
-      #|      if pred == arr[pivot] {
-      #|        let mut i = pivot
-      #|        while i < len && pred == arr[i] {
-      #|          i = i + 1
-      #|        }
-      #|        arr = arr.slice(i, len)
-      #|        continue
-      #|      }
-      #|    }
-      #|    let left = arr.slice(0, pivot)
-      #|    let right = arr.slice(pivot + 1, len)
-      #|    if left.length() < right.length() {
-      #|      fixed_quick_sort(left, pred, limit)
-      #|      pred = Some(arr[pivot])
-      #|      arr = right
-      #|    } else {
-      #|      fixed_quick_sort(right, Some(arr[pivot]), limit)
-      #|      arr = left
-      #|    }
-      #|  }
-      #|}
-      #|fn fixed_get_limit(len : Int) -> Int {
-      #|  let mut len = len
-      #|  let mut limit = 0
-      #|  while len > 0 {
-      #|    len = len / 2
-      #|    limit += 1
-      #|  }
-      #|  limit
-      #|}
-      #|fn[T : Compare] fixed_try_bubble_sort(arr : FixedArraySlice[T]) -> Bool {
-      #|  let max_tries = 8
-      #|  let mut tries = 0
-      #|  for i in 1..<arr.length() {
-      #|    let mut sorted = true
-      #|    for j = i; j > 0 && arr[j - 1] > arr[j]; j = j - 1 {
-      #|      sorted = false
-      #|      arr.swap(j, j - 1)
-      #|    }
-      #|    if !sorted {
-      #|      tries += 1
-      #|      if tries > max_tries {
-      #|        return false
-      #|      }
-      #|    }
-      #|  }
-      #|  true
-      #|}
-      #|fn[T : Compare] fixed_bubble_sort(arr : FixedArraySlice[T]) -> Unit {
-      #|  for i in 1..<arr.length() {
-      #|    for j = i; j > 0 && arr[j - 1] > arr[j]; j = j - 1 {
-      #|      arr.swap(j, j - 1)
-      #|    }
-      #|  }
-      #|}
-      #|test "fixed_try_bubble_sort" {
-      #|  let arr : FixedArray[_] = [8, 7, 6, 5, 4, 3, 2, 1]
-      #|  let sorted = fixed_try_bubble_sort({ array: arr, start: 0, end: 8 })
-      #|  inspect(sorted, content="true")
-      #|  assert_eq(arr, [1, 2, 3, 4, 5, 6, 7, 8])
-      #|}
-      #|fn[T : Compare] fixed_partition(
-      #|  arr : FixedArraySlice[T],
-      #|  pivot_index : Int,
-      #|) -> (Int, Bool) {
-      #|  arr.swap(pivot_index, arr.length() - 1)
-      #|  let pivot = arr[arr.length() - 1]
-      #|  let mut i = 0
-      #|  let mut partitioned = true
-      #|  for j in 0..<(arr.length() - 1) {
-      #|    if arr[j] < pivot {
-      #|      if i != j {
-      #|        arr.swap(i, j)
-      #|        partitioned = false
-      #|      }
-      #|      i = i + 1
-      #|    }
-      #|  }
-      #|  arr.swap(i, arr.length() - 1)
-      #|  (i, partitioned)
-      #|}
-      #|fn[T : Compare] fixed_choose_pivot(arr : FixedArraySlice[T]) -> (Int, Bool) {
-      #|  let len = arr.length()
-      #|  let use_median_of_medians = 50
-      #|  let max_swaps = 4 * 3
-      #|  let mut swaps = 0
-      #|  let b = len / 4 * 2
-      #|  if len >= 8 {
-      #|    let a = len / 4 * 1
-      #|    let c = len / 4 * 3
-      #|    let sort_2 = (a : Int, b : Int) => if arr[a] > arr[b] {
-      #|      arr.swap(a, b)
-      #|      swaps += 1
-      #|    }
-      #|    let sort_3 = (a : Int, b : Int, c : Int) => {
-      #|      sort_2(a, b)
-      #|      sort_2(b, c)
-      #|      sort_2(a, b)
-      #|    }
-      #|    if len > use_median_of_medians {
-      #|      sort_3(a - 1, a, a + 1)
-      #|      sort_3(b - 1, b, b + 1)
-      #|      sort_3(c - 1, c, c + 1)
-      #|    }
-      #|    sort_3(a, b, c)
-      #|  }
-      #|  if swaps == max_swaps {
-      #|    arr.rev_inplace()
-      #|    (len - b - 1, true)
-      #|  } else {
-      #|    (b, swaps == 0)
-      #|  }
-      #|}
-      #|fn[T : Compare] fixed_heap_sort(arr : FixedArraySlice[T]) -> Unit {
-      #|  let len = arr.length()
-      #|  for i = len / 2 - 1; i >= 0; i = i - 1 {
-      #|    fixed_sift_down(arr, i)
-      #|  }
-      #|  for i = len - 1; i > 0; i = i - 1 {
-      #|    arr.swap(0, i)
-      #|    fixed_sift_down(arr.slice(0, i), 0)
-      #|  }
-      #|}
-      #|fn[T : Compare] fixed_sift_down(arr : FixedArraySlice[T], index : Int) -> Unit {
-      #|  let mut index = index
-      #|  let len = arr.length()
-      #|  let mut child = index * 2 + 1
-      #|  while child < len {
-      #|    if child + 1 < len && arr[child] < arr[child + 1] {
-      #|      child = child + 1
-      #|    }
-      #|    if arr[index] >= arr[child] {
-      #|      return
-      #|    }
-      #|    arr.swap(index, child)
-      #|    index = child
-      #|    child = index * 2 + 1
-      #|  }
-      #|}
-      #|fn fixed_test_sort(f : (FixedArray[Int]) -> Unit) -> Unit raise {
-      #|  let arr : FixedArray[_] = [5, 4, 3, 2, 1]
-      #|  f(arr)
-      #|  assert_eq(arr, [1, 2, 3, 4, 5])
-      #|  let arr : FixedArray[_] = [5, 5, 5, 5, 1]
-      #|  f(arr)
-      #|  assert_eq(arr, [1, 5, 5, 5, 5])
-      #|  let arr : FixedArray[_] = [1, 2, 3, 4, 5]
-      #|  f(arr)
-      #|  assert_eq(arr, [1, 2, 3, 4, 5])
-      #|  let arr = FixedArray::make(1000, 0)
-      #|  for i in 0..<1000 {
-      #|    arr[i] = 1000 - i - 1
-      #|  }
-      #|  for i = 10; i < 1000; i = i + 10 {
-      #|    arr.swap(i, i - 1)
-      #|  }
-      #|  f(arr)
-      #|  let expected = FixedArray::make(1000, 0)
-      #|  for i in 0..<1000 {
-      #|    expected[i] = i
-      #|  }
-      #|  assert_eq(arr, expected)
-      #|}
-      #|test "fixed_heap_sort" {
-      #|  fixed_test_sort(arr => fixed_heap_sort({
-      #|    array: arr,
-      #|    start: 0,
-      #|    end: arr.length(),
-      #|  }))
-      #|}
-      #|test "fixed_bubble_sort" {
-      #|  fixed_test_sort(arr => fixed_bubble_sort({
-      #|    array: arr,
-      #|    start: 0,
-      #|    end: arr.length(),
-      #|  }))
-      #|}
-      #|test "sort" {
-      #|  fixed_test_sort(arr => arr.sort())
-      #|}
-      #|test "stable_sort" {
-      #|  let arr : FixedArray[_] = [5, 1, 3, 4, 2]
-      #|  arr.stable_sort()
-      #|  assert_eq(arr, [1, 2, 3, 4, 5])
-      #|  let arr = FixedArray::make(1000, 0)
-      #|  for i in 0..<1000 {
-      #|    arr[i] = 1000 - i - 1
-      #|  }
-      #|  for i = 10; i < 1000; i = i + 10 {
-      #|    arr.swap(i, i - 1)
-      #|  }
-      #|  arr.stable_sort()
-      #|  let expected = FixedArray::make(1000, 0)
-      #|  for i in 0..<1000 {
-      #|    expected[i] = i
-      #|  }
-      #|  assert_eq(arr, expected)
-      #|}
-      #|pub fn[T : Compare] FixedArray::is_sorted(arr : FixedArray[T]) -> Bool {
-      #|  for i in 1..<arr.length() {
-      #|    if arr[i] < arr[i - 1] {
-      #|      break false
-      #|    }
-      #|  } else {
-      #|    true
-      #|  }
-      #|}
-      #|test "stable_sort_complex" {
-      #|  let run_lens = [86, 64, 21, 20, 22]
-      #|  let total_len = run_lens.fold(init=0, (acc, x) => acc + x)
-      #|  let arr = FixedArray::make(total_len, 0)
-      #|  let mut index = 0
-      #|  for i in 0..<run_lens.length() {
-      #|    for j in 0..<run_lens[i] {
-      #|      arr[index] = j
-      #|      index += 1
-      #|    }
-      #|  }
-      #|  assert_false(arr.is_sorted())
-      #|  arr.stable_sort()
-      #|  assert_true(arr.is_sorted())
-      #|}
-      #|test "find_streak with empty array" {
-      #|  let arr : FixedArray[Int] = []
-      #|  let (streak_end, was_reversed) = find_streak({ array: arr, start: 0, end: 0 })
-      #|  inspect(streak_end, content="0")
-      #|  inspect(was_reversed, content="false")
-      #|}
-      #|test "find_streak with single element array" {
-      #|  let arr : FixedArray[_] = [1]
-      #|  let (streak_end, was_reversed) = find_streak({ array: arr, start: 0, end: 1 })
-      #|  inspect(streak_end, content="1")
-      #|  inspect(was_reversed, content="false")
-      #|}
-      #|test "find_streak with increasing elements" {
-      #|  let arr : FixedArray[_] = [1, 2, 3, 4, 5]
-      #|  let (streak_end, was_reversed) = find_streak({ array: arr, start: 0, end: 5 })
-      #|  inspect(streak_end, content="5")
-      #|  inspect(was_reversed, content="false")
-      #|}
-      #|test "find_streak with decreasing elements" {
-      #|  let arr : FixedArray[_] = [5, 4, 3, 2, 1]
-      #|  let (streak_end, was_reversed) = find_streak({ array: arr, start: 0, end: 5 })
-      #|  inspect(streak_end, content="5")
-      #|  inspect(was_reversed, content="true")
-      #|}
-      #|test "provide_sorted_batch with long run" {
-      #|  let arr : FixedArray[_] = [1, 2, 3, 4, 5]
-      #|  let end = provide_sorted_batch({ array: arr, start: 0, end: 5 }, 0, 5)
-      #|  inspect(end, content="5")
-      #|}
-      #|test "fixed_quick_sort with limit reached" {
-      #|  let arr : FixedArray[_] = [5, 4, 3, 2, 1]
-      #|  fixed_quick_sort({ array: arr, start: 0, end: 5 }, None, 0)
-      #|  assert_true(FixedArray::is_sorted(arr))
-      #|}
-      #|test "fixed_quick_sort with balanced partitions" {
-      #|  let arr : FixedArray[_] = [5, 4, 3, 2, 1]
-      #|  fixed_quick_sort({ array: arr, start: 0, end: 5 }, None, 10)
-      #|  assert_true(FixedArray::is_sorted(arr))
+      #|  self.mut_view().stable_sort()
       #|}
     ),
-    "fixedarray_sort_by.mbt": (
+    "sort_by.mbt": (
+      #|pub fn[T, K : Compare] Array::sort_by_key(
+      #|  self : Array[T],
+      #|  map : (T) -> K,
+      #|) -> Unit {
+      #|  self.mut_view().sort_by_key(map)
+      #|}
+      #|pub fn[T] Array::sort_by(self : Array[T], cmp : (T, T) -> Int) -> Unit {
+      #|  self.mut_view().sort_by(cmp)
+      #|}
       #|pub fn[T, K : Compare] FixedArray::sort_by_key(
       #|  self : FixedArray[T],
       #|  map : (T) -> K,
       #|) -> Unit {
-      #|  fixed_quick_sort_by(
-      #|    { array: self, start: 0, end: self.length() },
-      #|    (a, b) => map(a).compare(map(b)),
-      #|    None,
-      #|    get_limit(self.length()),
-      #|  )
+      #|  self.mut_view().sort_by_key(map)
       #|}
       #|test "@array.sort_by_key/basic" {
       #|  let arr : FixedArray[_] = [3, 1, 4, 1, 5]
@@ -1270,12 +844,7 @@ let moonbitlang_core_array_module : RuntimePackage = RuntimePackage::new(
       #|  self : FixedArray[T],
       #|  cmp : (T, T) -> Int,
       #|) -> Unit {
-      #|  fixed_quick_sort_by(
-      #|    { array: self, start: 0, end: self.length() },
-      #|    cmp,
-      #|    None,
-      #|    get_limit(self.length()),
-      #|  )
+      #|  self.mut_view().sort_by(cmp)
       #|}
       #|test "sort_by: basic functionality" {
       #|  let arr : FixedArray[_] = [5, 3, 2, 4, 1]
@@ -1316,1121 +885,6 @@ let moonbitlang_core_array_module : RuntimePackage = RuntimePackage::new(
       #|  let mixed_arr : FixedArray[_] = [-5, 3, -2, 4, -1]
       #|  mixed_arr.sort_by((a, b) => a - b)
       #|  inspect(mixed_arr, content="[-5, -2, -1, 3, 4]")
-      #|}
-      #|fn[T] fixed_quick_sort_by(
-      #|  arr : FixedArraySlice[T],
-      #|  cmp : (T, T) -> Int,
-      #|  pred : T?,
-      #|  limit : Int,
-      #|) -> Unit {
-      #|  let mut limit = limit
-      #|  let mut arr = arr
-      #|  let mut pred = pred
-      #|  let mut was_partitioned = true
-      #|  let mut balanced = true
-      #|  let bubble_sort_len = 16
-      #|  while true {
-      #|    let len = arr.length()
-      #|    if len <= bubble_sort_len {
-      #|      if len >= 2 {
-      #|        fixed_bubble_sort_by(arr, cmp)
-      #|      }
-      #|      return
-      #|    }
-      #|    if limit == 0 {
-      #|      fixed_heap_sort_by(arr, cmp)
-      #|      return
-      #|    }
-      #|    let (pivot_index, likely_sorted) = fixed_choose_pivot_by(arr, cmp)
-      #|    if was_partitioned && balanced && likely_sorted {
-      #|      if fixed_try_bubble_sort_by(arr, cmp) {
-      #|        return
-      #|      }
-      #|    }
-      #|    let (pivot, partitioned) = fixed_partition_by(arr, cmp, pivot_index)
-      #|    was_partitioned = partitioned
-      #|    balanced = minimum(pivot, len - pivot) >= len / 8
-      #|    if !balanced {
-      #|      limit -= 1
-      #|    }
-      #|    if pred is Some(pred) {
-      #|      if cmp(pred, arr[pivot]) == 0 {
-      #|        let mut i = pivot
-      #|        while i < len && cmp(pred, arr[i]) == 0 {
-      #|          i = i + 1
-      #|        }
-      #|        arr = arr.slice(i, len)
-      #|        continue
-      #|      }
-      #|    }
-      #|    let left = arr.slice(0, pivot)
-      #|    let right = arr.slice(pivot + 1, len)
-      #|    if left.length() < right.length() {
-      #|      fixed_quick_sort_by(left, cmp, pred, limit)
-      #|      pred = Some(arr[pivot])
-      #|      arr = right
-      #|    } else {
-      #|      fixed_quick_sort_by(right, cmp, Some(arr[pivot]), limit)
-      #|      arr = left
-      #|    }
-      #|  }
-      #|}
-      #|fn[T] fixed_try_bubble_sort_by(
-      #|  arr : FixedArraySlice[T],
-      #|  cmp : (T, T) -> Int,
-      #|) -> Bool {
-      #|  let max_tries = 8
-      #|  let mut tries = 0
-      #|  for i in 1..<arr.length() {
-      #|    let mut sorted = true
-      #|    for j = i; j > 0 && cmp(arr[j - 1], arr[j]) > 0; j = j - 1 {
-      #|      sorted = false
-      #|      arr.swap(j, j - 1)
-      #|    }
-      #|    if !sorted {
-      #|      tries += 1
-      #|      if tries > max_tries {
-      #|        return false
-      #|      }
-      #|    }
-      #|  }
-      #|  true
-      #|}
-      #|fn[T] fixed_bubble_sort_by(
-      #|  arr : FixedArraySlice[T],
-      #|  cmp : (T, T) -> Int,
-      #|) -> Unit {
-      #|  for i in 1..<arr.length() {
-      #|    for j = i; j > 0 && cmp(arr[j - 1], arr[j]) > 0; j = j - 1 {
-      #|      arr.swap(j, j - 1)
-      #|    }
-      #|  }
-      #|}
-      #|test "try_bubble_sort" {
-      #|  let arr : FixedArray[_] = [8, 7, 6, 5, 4, 3, 2, 1]
-      #|  let sorted = fixed_try_bubble_sort_by({ array: arr, start: 0, end: 8 }, (a, b) => a -
-      #|    b)
-      #|  inspect(sorted, content="true")
-      #|  assert_eq(arr, [1, 2, 3, 4, 5, 6, 7, 8])
-      #|}
-      #|fn[T] fixed_partition_by(
-      #|  arr : FixedArraySlice[T],
-      #|  cmp : (T, T) -> Int,
-      #|  pivot_index : Int,
-      #|) -> (Int, Bool) {
-      #|  arr.swap(pivot_index, arr.length() - 1)
-      #|  let pivot = arr[arr.length() - 1]
-      #|  let mut i = 0
-      #|  let mut partitioned = true
-      #|  for j in 0..<(arr.length() - 1) {
-      #|    if cmp(arr[j], pivot) < 0 {
-      #|      if i != j {
-      #|        arr.swap(i, j)
-      #|        partitioned = false
-      #|      }
-      #|      i = i + 1
-      #|    }
-      #|  }
-      #|  arr.swap(i, arr.length() - 1)
-      #|  (i, partitioned)
-      #|}
-      #|fn[T] fixed_choose_pivot_by(
-      #|  arr : FixedArraySlice[T],
-      #|  cmp : (T, T) -> Int,
-      #|) -> (Int, Bool) {
-      #|  let len = arr.length()
-      #|  let use_median_of_medians = 50
-      #|  let max_swaps = 4 * 3
-      #|  let mut swaps = 0
-      #|  let b = len / 4 * 2
-      #|  if len >= 8 {
-      #|    let a = len / 4 * 1
-      #|    let c = len / 4 * 3
-      #|    let sort_2 = (a : Int, b : Int) => if cmp(arr[a], arr[b]) > 0 {
-      #|      arr.swap(a, b)
-      #|      swaps += 1
-      #|    }
-      #|    let sort_3 = (a : Int, b : Int, c : Int) => {
-      #|      sort_2(a, b)
-      #|      sort_2(b, c)
-      #|      sort_2(a, b)
-      #|    }
-      #|    if len > use_median_of_medians {
-      #|      sort_3(a - 1, a, a + 1)
-      #|      sort_3(b - 1, b, b + 1)
-      #|      sort_3(c - 1, c, c + 1)
-      #|    }
-      #|    sort_3(a, b, c)
-      #|  }
-      #|  if swaps == max_swaps {
-      #|    arr.rev_inplace()
-      #|    (len - b - 1, true)
-      #|  } else {
-      #|    (b, swaps == 0)
-      #|  }
-      #|}
-      #|fn[T] fixed_heap_sort_by(arr : FixedArraySlice[T], cmp : (T, T) -> Int) -> Unit {
-      #|  let len = arr.length()
-      #|  for i = len / 2 - 1; i >= 0; i = i - 1 {
-      #|    fixed_sift_down_by(arr, i, cmp)
-      #|  }
-      #|  for i = len - 1; i > 0; i = i - 1 {
-      #|    arr.swap(0, i)
-      #|    fixed_sift_down_by(arr.slice(0, i), 0, cmp)
-      #|  }
-      #|}
-      #|fn[T] fixed_sift_down_by(
-      #|  arr : FixedArraySlice[T],
-      #|  index : Int,
-      #|  cmp : (T, T) -> Int,
-      #|) -> Unit {
-      #|  let mut index = index
-      #|  let len = arr.length()
-      #|  let mut child = index * 2 + 1
-      #|  while child < len {
-      #|    if child + 1 < len && cmp(arr[child], arr[child + 1]) < 0 {
-      #|      child = child + 1
-      #|    }
-      #|    if cmp(arr[index], arr[child]) >= 0 {
-      #|      return
-      #|    }
-      #|    arr.swap(index, child)
-      #|    index = child
-      #|    child = index * 2 + 1
-      #|  }
-      #|}
-      #|test "heap_sort" {
-      #|  fixed_test_sort(arr => fixed_heap_sort_by(
-      #|    { array: arr, start: 0, end: arr.length() },
-      #|    (a, b) => a - b,
-      #|  ))
-      #|}
-      #|test "bubble_sort" {
-      #|  fixed_test_sort(arr => fixed_bubble_sort_by(
-      #|    { array: arr, start: 0, end: arr.length() },
-      #|    (a, b) => a - b,
-      #|  ))
-      #|}
-      #|test "sort" {
-      #|  fixed_test_sort(arr => arr.sort())
-      #|}
-      #|test "sort_by" {
-      #|  let arr = [5, 1, 3, 4, 2]
-      #|  arr.sort_by_key(x => -x)
-      #|  assert_eq(arr, [5, 4, 3, 2, 1])
-      #|}
-      #|test "sort_by_fallback" {
-      #|  let arr = FixedArray::makei(100, i => if i % 2 == 0 { 1 } else { 0 })
-      #|  arr.sort_by(
-      #|    (a, b) => if a < b { -1 } else { 1 },
-      #|  )
-      #|  assert_true(arr.is_sorted())
-      #|}
-    ),
-    "slice.mbt": (
-      #|priv struct FixedArraySlice[T] {
-      #|  array : FixedArray[T]
-      #|  start : Int
-      #|  end : Int
-      #|}
-      #|fn[T] FixedArraySlice::length(self : FixedArraySlice[T]) -> Int {
-      #|  self.end - self.start
-      #|}
-      #|#alias("_[_]")
-      #|fn[T] FixedArraySlice::at(self : FixedArraySlice[T], index : Int) -> T {
-      #|  self.array[self.start + index]
-      #|}
-      #|#alias("_[_]=_")
-      #|fn[T] FixedArraySlice::set(
-      #|  self : FixedArraySlice[T],
-      #|  index : Int,
-      #|  value : T,
-      #|) -> Unit {
-      #|  self.array[self.start + index] = value
-      #|}
-      #|fn[T] FixedArraySlice::swap(
-      #|  self : FixedArraySlice[T],
-      #|  a : Int,
-      #|  b : Int,
-      #|) -> Unit {
-      #|  self.array.swap(self.start + a, self.start + b)
-      #|}
-      #|fn[T] FixedArraySlice::rev_inplace(self : FixedArraySlice[T]) -> Unit {
-      #|  let len = self.length()
-      #|  let mid_len = len / 2
-      #|  for i in 0..<mid_len {
-      #|    let j = len - i - 1
-      #|    self.swap(i, j)
-      #|  }
-      #|}
-      #|fn[T] FixedArraySlice::slice(
-      #|  self : FixedArraySlice[T],
-      #|  start : Int,
-      #|  end : Int,
-      #|) -> FixedArraySlice[T] {
-      #|  { array: self.array, start: self.start + start, end: self.start + end }
-      #|}
-    ),
-    "sort.mbt": (
-      #|pub fn[T : Compare] Array::sort(self : Array[T]) -> Unit {
-      #|  let len = self.length()
-      #|  self.quick_sort(start=0, end=len, None, get_limit(len))
-      #|}
-      #|fn[T : Compare] Array::quick_sort(
-      #|  arr : Array[T],
-      #|  start~ : Int,
-      #|  end~ : Int,
-      #|  pred : T?,
-      #|  limit : Int,
-      #|) -> Unit {
-      #|  let mut limit = limit
-      #|  let mut current_start = start
-      #|  let mut current_end = end
-      #|  let mut pred = pred
-      #|  let mut was_partitioned = true
-      #|  let mut balanced = true
-      #|  let insertion_sort_len = 16
-      #|  while true {
-      #|    let len = current_end - current_start
-      #|    if len <= insertion_sort_len {
-      #|      if len >= 2 {
-      #|        arr.insertion_sort(start=current_start, end=current_end)
-      #|      }
-      #|      return
-      #|    }
-      #|    if limit == 0 {
-      #|      arr.heap_sort(start=current_start, end=current_end)
-      #|      return
-      #|    }
-      #|    let (pivot_index, likely_sorted) = arr.choose_pivot(
-      #|      start=current_start,
-      #|      end=current_end,
-      #|    )
-      #|    if was_partitioned && balanced && likely_sorted {
-      #|      if arr.try_bubble_sort(start=current_start, end=current_end) {
-      #|        return
-      #|      }
-      #|    }
-      #|    let (actual_pivot_pos, partitioned) = arr.partition(
-      #|      start=current_start,
-      #|      end=current_end,
-      #|      pivot_index, // Now passing absolute index directly
-      #|    )
-      #|    was_partitioned = partitioned
-      #|    balanced = {
-      #|      let pivot_pos = actual_pivot_pos - current_start
-      #|      let diff = len - pivot_pos
-      #|      (if pivot_pos < diff { pivot_pos } else { diff }) >= len / 8
-      #|    }
-      #|    if !balanced {
-      #|      limit -= 1
-      #|    }
-      #|    if pred is Some(pred) {
-      #|      if pred == arr[actual_pivot_pos] {
-      #|        let mut i = actual_pivot_pos
-      #|        while i < current_end && pred == arr[i] {
-      #|          i = i + 1
-      #|        }
-      #|        current_start = i
-      #|        continue
-      #|      }
-      #|    }
-      #|    let left_start = current_start
-      #|    let left_end = actual_pivot_pos
-      #|    let right_start = actual_pivot_pos + 1
-      #|    let right_end = current_end
-      #|    if left_end - left_start < right_end - right_start {
-      #|      arr.quick_sort(start=left_start, end=left_end, pred, limit)
-      #|      pred = Some(arr[actual_pivot_pos])
-      #|      current_start = right_start
-      #|      current_end = right_end
-      #|    } else {
-      #|      arr.quick_sort(
-      #|        start=right_start,
-      #|        end=right_end,
-      #|        Some(arr[actual_pivot_pos]),
-      #|        limit,
-      #|      )
-      #|      current_start = left_start
-      #|      current_end = left_end
-      #|    }
-      #|  }
-      #|}
-      #|fn get_limit(len : Int) -> Int {
-      #|  let mut len = len
-      #|  let mut limit = 0
-      #|  while len > 0 {
-      #|    len = len / 2
-      #|    limit += 1
-      #|  }
-      #|  limit
-      #|}
-      #|fn[T : Compare] Array::try_bubble_sort(
-      #|  arr : Array[T],
-      #|  start~ : Int,
-      #|  end~ : Int,
-      #|) -> Bool {
-      #|  let max_tries = 8
-      #|  let mut tries = 0
-      #|  let actual_start = if start < 0 { 0 } else { start }
-      #|  let actual_end = if end > arr.length() { arr.length() } else { end }
-      #|  if actual_start >= actual_end {
-      #|    return true // Empty or invalid range is considered sorted
-      #|  }
-      #|  for i in (actual_start + 1)..<actual_end {
-      #|    let mut sorted = true
-      #|    for j = i; j > actual_start && arr[j - 1] > arr[j]; j = j - 1 {
-      #|      sorted = false
-      #|      let temp = arr[j]
-      #|      arr[j] = arr[j - 1]
-      #|      arr[j - 1] = temp
-      #|    }
-      #|    if !sorted {
-      #|      tries += 1
-      #|      if tries > max_tries {
-      #|        return false
-      #|      }
-      #|    }
-      #|  }
-      #|  true
-      #|}
-      #|fn[T : Compare] Array::insertion_sort(
-      #|  arr : Array[T],
-      #|  start~ : Int,
-      #|  end~ : Int,
-      #|) -> Unit {
-      #|  let actual_start = if start < 0 { 0 } else { start }
-      #|  let actual_end = if end > arr.length() { arr.length() } else { end }
-      #|  if actual_start >= actual_end {
-      #|    return // Empty or invalid range, nothing to sort
-      #|  }
-      #|  for i in (actual_start + 1)..<actual_end {
-      #|    for j = i; j > actual_start && arr[j - 1] > arr[j]; j = j - 1 {
-      #|      let temp = arr[j]
-      #|      arr[j] = arr[j - 1]
-      #|      arr[j - 1] = temp
-      #|    }
-      #|  }
-      #|}
-      #|fn[T : Compare] Array::partition(
-      #|  arr : Array[T],
-      #|  start~ : Int,
-      #|  end~ : Int,
-      #|  pivot_index : Int, // Now expects absolute index
-      #|) -> (Int, Bool) {
-      #|  let actual_start = if start < 0 { 0 } else { start }
-      #|  let actual_end = if end > arr.length() { arr.length() } else { end }
-      #|  if actual_start >= actual_end {
-      #|    return (actual_start, true) // Empty or invalid range - return absolute position
-      #|  }
-      #|  let last_index = actual_end - 1
-      #|  let temp = arr[pivot_index]
-      #|  arr[pivot_index] = arr[last_index]
-      #|  arr[last_index] = temp
-      #|  let pivot = arr[last_index]
-      #|  let mut i = actual_start
-      #|  let mut partitioned = true
-      #|  for j in actual_start..<last_index {
-      #|    if arr[j] < pivot {
-      #|      if i != j {
-      #|        let temp = arr[i]
-      #|        arr[i] = arr[j]
-      #|        arr[j] = temp
-      #|        partitioned = false
-      #|      }
-      #|      i = i + 1
-      #|    }
-      #|  }
-      #|  let temp = arr[i]
-      #|  arr[i] = arr[last_index]
-      #|  arr[last_index] = temp
-      #|  (i, partitioned) // Return absolute position
-      #|}
-      #|fn[T : Compare] Array::choose_pivot(
-      #|  arr : Array[T],
-      #|  start~ : Int,
-      #|  end~ : Int,
-      #|) -> (Int, Bool) {
-      #|  let actual_start = if start < 0 { 0 } else { start }
-      #|  let actual_end = if end > arr.length() { arr.length() } else { end }
-      #|  if actual_start >= actual_end {
-      #|    return (actual_start, true) // Empty or invalid range - return absolute position
-      #|  }
-      #|  let len = actual_end - actual_start
-      #|  let use_median_of_medians = 50
-      #|  let max_swaps = 4 * 3
-      #|  let mut swaps = 0
-      #|  let b = len / 4 * 2
-      #|  if len >= 8 {
-      #|    let a = len / 4 * 1
-      #|    let c = len / 4 * 3
-      #|    let sort_2 = (a_idx : Int, b_idx : Int) => {
-      #|      let a_pos = actual_start + a_idx
-      #|      let b_pos = actual_start + b_idx
-      #|      if arr[a_pos] > arr[b_pos] {
-      #|        let temp = arr[a_pos]
-      #|        arr[a_pos] = arr[b_pos]
-      #|        arr[b_pos] = temp
-      #|        swaps += 1
-      #|      }
-      #|    }
-      #|    let sort_3 = (a_idx : Int, b_idx : Int, c_idx : Int) => {
-      #|      sort_2(a_idx, b_idx)
-      #|      sort_2(b_idx, c_idx)
-      #|      sort_2(a_idx, b_idx)
-      #|    }
-      #|    if len > use_median_of_medians {
-      #|      sort_3(a - 1, a, a + 1)
-      #|      sort_3(b - 1, b, b + 1)
-      #|      sort_3(c - 1, c, c + 1)
-      #|    }
-      #|    sort_3(a, b, c)
-      #|  }
-      #|  if swaps == max_swaps {
-      #|    let mid_len = len / 2
-      #|    for i in 0..<mid_len {
-      #|      let j = len - i - 1
-      #|      let i_pos = actual_start + i
-      #|      let j_pos = actual_start + j
-      #|      let temp = arr[i_pos]
-      #|      arr[i_pos] = arr[j_pos]
-      #|      arr[j_pos] = temp
-      #|    }
-      #|    (actual_start + len - b - 1, true)
-      #|  } else {
-      #|    (actual_start + b, swaps == 0)
-      #|  }
-      #|}
-      #|fn[T : Compare] Array::heap_sort(
-      #|  arr : Array[T],
-      #|  start~ : Int,
-      #|  end~ : Int,
-      #|) -> Unit {
-      #|  let actual_start = if start < 0 { 0 } else { start }
-      #|  let actual_end = if end > arr.length() { arr.length() } else { end }
-      #|  if actual_start >= actual_end {
-      #|    return // Empty or invalid range, nothing to sort
-      #|  }
-      #|  let len = actual_end - actual_start
-      #|  for i = len / 2 - 1; i >= 0; i = i - 1 {
-      #|    arr.sift_down(start=actual_start, end=actual_end, i)
-      #|  }
-      #|  for i = len - 1; i > 0; i = i - 1 {
-      #|    let root = actual_start
-      #|    let last = actual_start + i
-      #|    let temp = arr[root]
-      #|    arr[root] = arr[last]
-      #|    arr[last] = temp
-      #|    arr.sift_down(start=actual_start, end=actual_start + i, 0)
-      #|  }
-      #|}
-      #|fn[T : Compare] Array::sift_down(
-      #|  arr : Array[T],
-      #|  start~ : Int,
-      #|  end~ : Int,
-      #|  index : Int,
-      #|) -> Unit {
-      #|  let mut current = index
-      #|  let len = end - start
-      #|  let mut child = current * 2 + 1
-      #|  while child < len {
-      #|    let child_pos = start + child
-      #|    let current_pos = start + current
-      #|    if child + 1 < len && arr[child_pos] < arr[child_pos + 1] {
-      #|      child = child + 1
-      #|    }
-      #|    let new_child_pos = start + child
-      #|    if arr[current_pos] >= arr[new_child_pos] {
-      #|      return
-      #|    }
-      #|    let temp = arr[current_pos]
-      #|    arr[current_pos] = arr[new_child_pos]
-      #|    arr[new_child_pos] = temp
-      #|    current = child
-      #|    child = current * 2 + 1
-      #|  }
-      #|}
-      #|fn test_sort(f : (Array[Int]) -> Unit) -> Unit raise {
-      #|  let arr = [5, 4, 3, 2, 1]
-      #|  f(arr)
-      #|  assert_eq(arr, [1, 2, 3, 4, 5])
-      #|  let arr = [5, 5, 5, 5, 1]
-      #|  f(arr)
-      #|  assert_eq(arr, [1, 5, 5, 5, 5])
-      #|  let arr = [1, 2, 3, 4, 5]
-      #|  f(arr)
-      #|  assert_eq(arr, [1, 2, 3, 4, 5])
-      #|  let arr = Array::new(capacity=1000)
-      #|  for i in 0..<1000 {
-      #|    arr.push(1000 - i - 1)
-      #|  }
-      #|  for i = 10; i < 1000; i = i + 10 {
-      #|    arr.swap(i, i - 1)
-      #|  }
-      #|  f(arr)
-      #|  let expected = Array::new(capacity=1000)
-      #|  for i in 0..<1000 {
-      #|    expected.push(i)
-      #|  }
-      #|  assert_eq(arr, expected)
-      #|}
-      #|test "try_bubble_sort" {
-      #|  let arr = [8, 7, 6, 5, 4, 3, 2, 1]
-      #|  let sorted = arr.try_bubble_sort(start=0, end=8)
-      #|  inspect(sorted, content="true")
-      #|  assert_eq(arr, [1, 2, 3, 4, 5, 6, 7, 8])
-      #|}
-      #|test "heap_sort" {
-      #|  test_sort(arr => arr.heap_sort(start=0, end=arr.length()))
-      #|}
-      #|test "insertion_sort" {
-      #|  test_sort(arr => arr.insertion_sort(start=0, end=arr.length()))
-      #|}
-      #|test "sort" {
-      #|  test_sort(arr => arr.sort())
-      #|}
-      #|test "sort with same pivot optimization" {
-      #|  let arr = [
-      #|    35, 43, 72, 83, 39, 4, 83, 18, 43, 25, 88, 51, 43, 60, 83, 6, 36, 68, 79, 86,
-      #|  ]
-      #|  arr.sort()
-      #|  assert_eq(arr, [
-      #|    4, 6, 18, 25, 35, 36, 39, 43, 43, 43, 51, 60, 68, 72, 79, 83, 83, 83, 86, 88,
-      #|  ])
-      #|}
-      #|test "heap_sort coverage" {
-      #|  let arr = [5, 4, 3, 2, 1]
-      #|  arr.heap_sort(start=0, end=arr.length())
-      #|  assert_eq(arr, [1, 2, 3, 4, 5])
-      #|  let arr2 = [1, 2, 3, 4, 5]
-      #|  arr2.heap_sort(start=0, end=arr2.length())
-      #|  assert_eq(arr2, [1, 2, 3, 4, 5])
-      #|  let arr2 = [1, 2, 3, 4, 5]
-      #|  arr2.heap_sort(start=0, end=arr2.length())
-      #|  assert_eq(arr2, [1, 2, 3, 4, 5])
-      #|  let arr3 = [5, 5, 5, 5, 1]
-      #|  arr3.heap_sort(start=0, end=arr3.length())
-      #|  assert_eq(arr3, [1, 5, 5, 5, 5])
-      #|}
-      #|test "quick_sort limit check" {
-      #|  let arr = [5, 4, 3, 2, 1]
-      #|  arr.quick_sort(start=0, end=arr.length(), None, 0)
-      #|  assert_eq(arr, [1, 2, 3, 4, 5])
-      #|  let arr2 = [1, 2, 3, 4, 5]
-      #|  arr2.quick_sort(start=0, end=arr2.length(), None, 0)
-      #|  assert_eq(arr2, [1, 2, 3, 4, 5])
-      #|  let arr3 = [5, 5, 5, 5, 1]
-      #|  arr3.quick_sort(start=0, end=arr3.length(), None, 0)
-      #|  assert_eq(arr3, [1, 5, 5, 5, 5])
-      #|}
-      #|test "quick_sort with pred check" {
-      #|  let arr = []
-      #|  for i = 16; i >= 0; i = i - 1 {
-      #|    arr.push(i)
-      #|  }
-      #|  arr.quick_sort(start=0, end=arr.length(), Some(8), 0)
-      #|  assert_eq(arr, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16])
-      #|  let arr = [5, 4, 3, 2, 1]
-      #|  arr.quick_sort(start=0, end=arr.length(), Some(3), 0)
-      #|  assert_eq(arr, [1, 2, 3, 4, 5])
-      #|  let arr2 = [1, 2, 3, 4, 5]
-      #|  arr2.quick_sort(start=0, end=arr2.length(), Some(3), 0)
-      #|  assert_eq(arr2, [1, 2, 3, 4, 5])
-      #|  let arr3 = [5, 5, 5, 5, 1]
-      #|  arr3.quick_sort(start=0, end=arr3.length(), Some(3), 0)
-      #|  assert_eq(arr3, [1, 5, 5, 5, 5])
-      #|}
-      #|test "quick_sort with unbalanced partitions" {
-      #|  let arr = []
-      #|  for i = 16; i >= 0; i = i - 1 {
-      #|    arr.push(if i >= 8 { i } else { 8 })
-      #|  }
-      #|  arr.quick_sort(start=0, end=arr.length(), Some(8), 42)
-      #|  assert_eq(arr, [8, 8, 8, 8, 8, 8, 8, 8, 8, 9, 10, 11, 12, 13, 14, 15, 16])
-      #|  let arr = [5, 4, 3, 2, 1]
-      #|  arr.quick_sort(start=0, end=arr.length(), None, 1)
-      #|  assert_eq(arr, [1, 2, 3, 4, 5])
-      #|  let arr2 = [1, 2, 3, 4, 5]
-      #|  arr2.quick_sort(start=0, end=arr2.length(), None, 1)
-      #|  assert_eq(arr2, [1, 2, 3, 4, 5])
-      #|  let arr3 = [5, 5, 5, 5, 1]
-      #|  arr3.quick_sort(start=0, end=arr3.length(), None, 1)
-      #|  assert_eq(arr3, [1, 5, 5, 5, 5])
-      #|}
-      #|test "quick_sort with pivot equal to pred" {
-      #|  let arr = [5, 4, 3, 2, 1]
-      #|  arr.quick_sort(start=0, end=arr.length(), Some(3), 0)
-      #|  assert_eq(arr, [1, 2, 3, 4, 5])
-      #|}
-      #|test "quick_sort with pred less than all elements" {
-      #|  let arr = [5, 4, 3, 2, 1]
-      #|  arr.quick_sort(start=0, end=arr.length(), Some(0), 0)
-      #|  assert_eq(arr, [1, 2, 3, 4, 5])
-      #|}
-      #|test "quick_sort with pred greater than all elements" {
-      #|  let arr = [5, 4, 3, 2, 1]
-      #|  arr.quick_sort(start=0, end=arr.length(), Some(6), 0)
-      #|  assert_eq(arr, [1, 2, 3, 4, 5])
-      #|}
-      #|test "partition with edge cases - verify relative position fix" {
-      #|  let arr1 = [3, 1, 4, 1, 5, 9, 2, 6]
-      #|  arr1.quick_sort(start=4, end=4, None, 10)
-      #|  assert_eq(arr1, [3, 1, 4, 1, 5, 9, 2, 6]) // Should remain unchanged
-      #|  let arr2 = [3, 1, 4, 1, 5, 9, 2, 6]
-      #|  arr2.quick_sort(start=3, end=4, None, 10)
-      #|  assert_eq(arr2, [3, 1, 4, 1, 5, 9, 2, 6]) // Single element is already sorted
-      #|  let arr3 = [5, 4, 3, 2, 1]
-      #|  arr3.quick_sort(start=2, end=3, None, 10)
-      #|  assert_eq(arr3, [5, 4, 3, 2, 1]) // Only one element, no change
-      #|  let arr4 = [10, 9, 8, 7, 6, 5, 4, 3, 2, 1]
-      #|  arr4.quick_sort(start=5, end=10, None, 10)
-      #|  assert_eq(arr4, [10, 9, 8, 7, 6, 1, 2, 3, 4, 5]) // Only last 5 elements sorted
-      #|  let arr5 = [9, 8, 7, 6, 5, 4, 3, 2, 1, 0]
-      #|  arr5.quick_sort(start=0, end=3, None, 10) // Sort first 3
-      #|  arr5.quick_sort(start=7, end=10, None, 10) // Sort last 3
-      #|  assert_eq(arr5, [7, 8, 9, 6, 5, 4, 3, 0, 1, 2])
-      #|}
-      #|test "partition_by with edge cases - verify relative position fix" {
-      #|  let arr1 = [10, 9, 8, 7, 6, 5, 4, 3, 2, 1]
-      #|  arr1.quick_sort_by(start=3, end=7, (a, b) => a - b, None, 10)
-      #|  assert_eq(arr1, [10, 9, 8, 4, 5, 6, 7, 3, 2, 1]) // Middle segment sorted
-      #|  let arr2 = [5, 4, 3, 2, 1]
-      #|  arr2.quick_sort_by(start=2, end=2, (a, b) => a - b, None, 10)
-      #|  assert_eq(arr2, [5, 4, 3, 2, 1]) // No change for empty segment
-      #|  let arr3 = [5, 4, 3, 2, 1]
-      #|  arr3.quick_sort_by(start=3, end=5, (a, b) => a - b, None, 10)
-      #|  assert_eq(arr3, [5, 4, 3, 1, 2]) // Last two elements sorted
-      #|}
-      #|test "Array::partition - basic partitioning" {
-      #|  let arr1 = [3, 7, 1, 4, 6, 2, 5]
-      #|  let (pos, partitioned) = arr1.partition(start=0, end=7, 3)
-      #|  assert_eq(pos, 3)
-      #|  assert_eq(partitioned, false) // Elements were rearranged
-      #|  for i in 0..<pos {
-      #|    assert_true(arr1[i] < 4)
-      #|  }
-      #|  for i in (pos + 1)..<7 {
-      #|    assert_true(arr1[i] >= 4)
-      #|  }
-      #|  assert_eq(arr1[pos], 4) // Pivot should be at position 3
-      #|  let arr2 = [1, 2, 3, 4, 5, 6, 7]
-      #|  let (pos2, partitioned2) = arr2.partition(start=0, end=7, 3)
-      #|  assert_eq(pos2, 3)
-      #|  assert_eq(partitioned2, true) // Array was already partitioned
-      #|  assert_eq(arr2, [1, 2, 3, 4, 5, 6, 7]) // No change needed
-      #|}
-      #|test "Array::partition - edge cases" {
-      #|  let arr1 = [5, 4, 3, 2, 1]
-      #|  let (pos1, partitioned1) = arr1.partition(start=2, end=2, 2) // Absolute pivot index
-      #|  assert_eq(pos1, 2) // Should return absolute position (start)
-      #|  assert_eq(partitioned1, true)
-      #|  assert_eq(arr1, [5, 4, 3, 2, 1]) // No change
-      #|  let arr2 = [5, 4, 3, 2, 1]
-      #|  let (pos2, partitioned2) = arr2.partition(start=2, end=3, 2) // Absolute pivot index
-      #|  assert_eq(pos2, 2) // Single element stays at absolute position 2
-      #|  assert_eq(partitioned2, true)
-      #|  assert_eq(arr2, [5, 4, 3, 2, 1]) // Single element is already partitioned
-      #|  let arr3 = [5, 3]
-      #|  let (pos3, partitioned3) = arr3.partition(start=0, end=2, 0)
-      #|  assert_eq(pos3, 1) // Pivot 5 should end at position 1
-      #|  assert_eq(partitioned3, true) // No element rearrangement needed during partitioning
-      #|  assert_eq(arr3, [3, 5]) // Should be swapped
-      #|  let arr4 = [3, 5]
-      #|  let (pos4, partitioned4) = arr4.partition(start=0, end=2, 1)
-      #|  assert_eq(pos4, 1) // Pivot 5 stays at position 1
-      #|  assert_eq(partitioned4, true)
-      #|  assert_eq(arr4, [3, 5]) // Already in correct order
-      #|  let arr5 = [3, 5]
-      #|  let (pos5, partitioned5) = arr5.partition(start=0, end=2, 0)
-      #|  assert_eq(pos5, 0) // Pivot 3 should end at position 0
-      #|  assert_eq(partitioned5, true) // No rearrangement needed
-      #|  assert_eq(arr5, [3, 5]) // No change needed
-      #|}
-      #|test "Array::partition - with duplicates" {
-      #|  let arr = [3, 5, 2, 5, 1, 5, 4, 5]
-      #|  let (pos, _partitioned) = arr.partition(start=0, end=8, 1)
-      #|  assert_eq(arr[pos], 5) // Pivot should be at returned position
-      #|  for i in 0..<pos {
-      #|    assert_true(arr[i] < 5)
-      #|  }
-      #|  for i in pos..<8 {
-      #|    assert_true(arr[i] >= 5)
-      #|  }
-      #|  assert_eq(pos, 4)
-      #|}
-      #|test "Array::partition - different pivot positions" {
-      #|  let arr1 = [5, 2, 8, 1, 9, 3]
-      #|  let (pos1, _) = arr1.partition(start=0, end=6, 0)
-      #|  assert_eq(arr1[pos1], 5)
-      #|  assert_eq(pos1, 3)
-      #|  let arr2 = [5, 2, 8, 1, 9, 3]
-      #|  let (pos2, _) = arr2.partition(start=0, end=6, 5)
-      #|  assert_eq(arr2[pos2], 3)
-      #|  assert_eq(pos2, 2)
-      #|  let arr3 = [9, 8, 5, 2, 6, 1, 4, 7, 3]
-      #|  let (pos3, _) = arr3.partition(start=2, end=7, 4) // Absolute pivot index (was 2+2=4)
-      #|  assert_eq(arr3[pos3], 6)
-      #|  assert_eq(pos3, 6)
-      #|}
-      #|test "Array::partition - all elements same" {
-      #|  let arr = [5, 5, 5, 5, 5]
-      #|  let (pos, partitioned) = arr.partition(start=0, end=5, 2)
-      #|  assert_eq(pos, 0)
-      #|  assert_eq(partitioned, true) // No swaps needed
-      #|  assert_eq(arr, [5, 5, 5, 5, 5])
-      #|}
-      #|test "Array::partition - reverse sorted array" {
-      #|  let arr = [9, 8, 7, 6, 5, 4, 3, 2, 1]
-      #|  let (pos, partitioned) = arr.partition(start=0, end=9, 4)
-      #|  assert_eq(arr[pos], 5)
-      #|  assert_eq(partitioned, false) // Elements were rearranged
-      #|  assert_eq(pos, 4)
-      #|  for i in 0..<pos {
-      #|    assert_true(arr[i] < 5)
-      #|  }
-      #|  for i in (pos + 1)..<9 {
-      #|    assert_true(arr[i] >= 5)
-      #|  }
-      #|}
-    ),
-    "sort_by.mbt": (
-      #|pub fn[T, K : Compare] Array::sort_by_key(
-      #|  self : Array[T],
-      #|  map : (T) -> K,
-      #|) -> Unit {
-      #|  self.quick_sort_by(
-      #|    start=0,
-      #|    end=self.length(),
-      #|    (a, b) => map(a).compare(map(b)),
-      #|    None,
-      #|    get_limit(self.length()),
-      #|  )
-      #|}
-      #|pub fn[T] Array::sort_by(self : Array[T], cmp : (T, T) -> Int) -> Unit {
-      #|  self.quick_sort_by(
-      #|    start=0,
-      #|    end=self.length(),
-      #|    cmp,
-      #|    None,
-      #|    get_limit(self.length()),
-      #|  )
-      #|}
-      #|fn[T] Array::quick_sort_by(
-      #|  arr : Array[T],
-      #|  start~ : Int,
-      #|  end~ : Int,
-      #|  cmp : (T, T) -> Int,
-      #|  pred : T?,
-      #|  limit : Int,
-      #|) -> Unit {
-      #|  let mut limit = limit
-      #|  let mut current_start = start
-      #|  let mut current_end = end
-      #|  let mut pred = pred
-      #|  let mut was_partitioned = true
-      #|  let mut balanced = true
-      #|  let bubble_sort_len = 16
-      #|  while true {
-      #|    let len = current_end - current_start
-      #|    if len <= bubble_sort_len {
-      #|      if len >= 2 {
-      #|        arr.bubble_sort_by(start=current_start, end=current_end, cmp)
-      #|      }
-      #|      return
-      #|    }
-      #|    if limit == 0 {
-      #|      arr.heap_sort_by(start=current_start, end=current_end, cmp)
-      #|      return
-      #|    }
-      #|    let (pivot_index, likely_sorted) = arr.choose_pivot_by(
-      #|      start=current_start,
-      #|      end=current_end,
-      #|      cmp,
-      #|    )
-      #|    if was_partitioned && balanced && likely_sorted {
-      #|      if arr.try_bubble_sort_by(start=current_start, end=current_end, cmp) {
-      #|        return
-      #|      }
-      #|    }
-      #|    let (actual_pivot_pos, partitioned) = arr.partition_by(
-      #|      start=current_start,
-      #|      end=current_end,
-      #|      cmp,
-      #|      pivot_index, // Now passing absolute index directly
-      #|    )
-      #|    was_partitioned = partitioned
-      #|    balanced = {
-      #|      let pivot_pos = actual_pivot_pos - current_start
-      #|      let diff = len - pivot_pos
-      #|      (if pivot_pos < diff { pivot_pos } else { diff }) >= len / 8
-      #|    }
-      #|    if !balanced {
-      #|      limit -= 1
-      #|    }
-      #|    if pred is Some(pred) {
-      #|      if cmp(pred, arr[actual_pivot_pos]) == 0 {
-      #|        let mut i = actual_pivot_pos
-      #|        while i < current_end && cmp(pred, arr[i]) == 0 {
-      #|          i = i + 1
-      #|        }
-      #|        current_start = i
-      #|        continue
-      #|      }
-      #|    }
-      #|    let left_start = current_start
-      #|    let left_end = actual_pivot_pos
-      #|    let right_start = actual_pivot_pos + 1
-      #|    let right_end = current_end
-      #|    if left_end - left_start < right_end - right_start {
-      #|      arr.quick_sort_by(start=left_start, end=left_end, cmp, pred, limit)
-      #|      pred = Some(arr[actual_pivot_pos])
-      #|      current_start = right_start
-      #|      current_end = right_end
-      #|    } else {
-      #|      arr.quick_sort_by(
-      #|        start=right_start,
-      #|        end=right_end,
-      #|        cmp,
-      #|        Some(arr[actual_pivot_pos]),
-      #|        limit,
-      #|      )
-      #|      current_start = left_start
-      #|      current_end = left_end
-      #|    }
-      #|  }
-      #|}
-      #|fn[T] Array::try_bubble_sort_by(
-      #|  arr : Array[T],
-      #|  start~ : Int,
-      #|  end~ : Int,
-      #|  cmp : (T, T) -> Int,
-      #|) -> Bool {
-      #|  let max_tries = 8
-      #|  let mut tries = 0
-      #|  let actual_start = if start < 0 { 0 } else { start }
-      #|  let actual_end = if end > arr.length() { arr.length() } else { end }
-      #|  if actual_start >= actual_end {
-      #|    return true // Empty or invalid range is considered sorted
-      #|  }
-      #|  for i in (actual_start + 1)..<actual_end {
-      #|    let mut sorted = true
-      #|    for j = i; j > actual_start && cmp(arr[j - 1], arr[j]) > 0; j = j - 1 {
-      #|      sorted = false
-      #|      let temp = arr[j]
-      #|      arr[j] = arr[j - 1]
-      #|      arr[j - 1] = temp
-      #|    }
-      #|    if !sorted {
-      #|      tries += 1
-      #|      if tries > max_tries {
-      #|        return false
-      #|      }
-      #|    }
-      #|  }
-      #|  true
-      #|}
-      #|fn[T] Array::bubble_sort_by(
-      #|  arr : Array[T],
-      #|  start~ : Int,
-      #|  end~ : Int,
-      #|  cmp : (T, T) -> Int,
-      #|) -> Unit {
-      #|  let actual_start = if start < 0 { 0 } else { start }
-      #|  let actual_end = if end > arr.length() { arr.length() } else { end }
-      #|  if actual_start >= actual_end {
-      #|    return // Empty or invalid range, nothing to sort
-      #|  }
-      #|  for i in (actual_start + 1)..<actual_end {
-      #|    for j = i; j > actual_start && cmp(arr[j - 1], arr[j]) > 0; j = j - 1 {
-      #|      let temp = arr[j]
-      #|      arr[j] = arr[j - 1]
-      #|      arr[j - 1] = temp
-      #|    }
-      #|  }
-      #|}
-      #|fn[T] Array::partition_by(
-      #|  arr : Array[T],
-      #|  start~ : Int,
-      #|  end~ : Int,
-      #|  cmp : (T, T) -> Int,
-      #|  pivot_index : Int, // Now expects absolute index
-      #|) -> (Int, Bool) {
-      #|  let actual_start = if start < 0 { 0 } else { start }
-      #|  let actual_end = if end > arr.length() { arr.length() } else { end }
-      #|  if actual_start >= actual_end {
-      #|    return (actual_start, true) // Empty or invalid range - return absolute position
-      #|  }
-      #|  let last_index = actual_end - 1
-      #|  let temp = arr[pivot_index]
-      #|  arr[pivot_index] = arr[last_index]
-      #|  arr[last_index] = temp
-      #|  let pivot = arr[last_index]
-      #|  let mut i = actual_start
-      #|  let mut partitioned = true
-      #|  for j in actual_start..<last_index {
-      #|    if cmp(arr[j], pivot) < 0 {
-      #|      if i != j {
-      #|        let temp = arr[i]
-      #|        arr[i] = arr[j]
-      #|        arr[j] = temp
-      #|        partitioned = false
-      #|      }
-      #|      i = i + 1
-      #|    }
-      #|  }
-      #|  let temp = arr[i]
-      #|  arr[i] = arr[last_index]
-      #|  arr[last_index] = temp
-      #|  (i, partitioned) // Return absolute position
-      #|}
-      #|fn[T] Array::choose_pivot_by(
-      #|  arr : Array[T],
-      #|  start~ : Int,
-      #|  end~ : Int,
-      #|  cmp : (T, T) -> Int,
-      #|) -> (Int, Bool) {
-      #|  let actual_start = if start < 0 { 0 } else { start }
-      #|  let actual_end = if end > arr.length() { arr.length() } else { end }
-      #|  if actual_start >= actual_end {
-      #|    return (actual_start, true) // Empty or invalid range - return absolute position
-      #|  }
-      #|  let len = actual_end - actual_start
-      #|  let use_median_of_medians = 50
-      #|  let max_swaps = 4 * 3
-      #|  let mut swaps = 0
-      #|  let b = len / 4 * 2
-      #|  if len >= 8 {
-      #|    let a = len / 4 * 1
-      #|    let c = len / 4 * 3
-      #|    let sort_2 = (a_idx : Int, b_idx : Int) => {
-      #|      let a_pos = actual_start + a_idx
-      #|      let b_pos = actual_start + b_idx
-      #|      if cmp(arr[a_pos], arr[b_pos]) > 0 {
-      #|        let temp = arr[a_pos]
-      #|        arr[a_pos] = arr[b_pos]
-      #|        arr[b_pos] = temp
-      #|        swaps += 1
-      #|      }
-      #|    }
-      #|    let sort_3 = (a_idx : Int, b_idx : Int, c_idx : Int) => {
-      #|      sort_2(a_idx, b_idx)
-      #|      sort_2(b_idx, c_idx)
-      #|      sort_2(a_idx, b_idx)
-      #|    }
-      #|    if len > use_median_of_medians {
-      #|      sort_3(a - 1, a, a + 1)
-      #|      sort_3(b - 1, b, b + 1)
-      #|      sort_3(c - 1, c, c + 1)
-      #|    }
-      #|    sort_3(a, b, c)
-      #|  }
-      #|  if swaps == max_swaps {
-      #|    let mid_len = len / 2
-      #|    for i in 0..<mid_len {
-      #|      let j = len - i - 1
-      #|      let i_pos = actual_start + i
-      #|      let j_pos = actual_start + j
-      #|      let temp = arr[i_pos]
-      #|      arr[i_pos] = arr[j_pos]
-      #|      arr[j_pos] = temp
-      #|    }
-      #|    (actual_start + len - b - 1, true)
-      #|  } else {
-      #|    (actual_start + b, swaps == 0)
-      #|  }
-      #|}
-      #|fn[T] Array::heap_sort_by(
-      #|  arr : Array[T],
-      #|  start~ : Int,
-      #|  end~ : Int,
-      #|  cmp : (T, T) -> Int,
-      #|) -> Unit {
-      #|  let actual_start = if start < 0 { 0 } else { start }
-      #|  let actual_end = if end > arr.length() { arr.length() } else { end }
-      #|  if actual_start >= actual_end {
-      #|    return // Empty or invalid range, nothing to sort
-      #|  }
-      #|  let len = actual_end - actual_start
-      #|  for i = len / 2 - 1; i >= 0; i = i - 1 {
-      #|    arr.sift_down_by(start=actual_start, end=actual_end, i, cmp)
-      #|  }
-      #|  for i = len - 1; i > 0; i = i - 1 {
-      #|    let root = actual_start
-      #|    let last = actual_start + i
-      #|    let temp = arr[root]
-      #|    arr[root] = arr[last]
-      #|    arr[last] = temp
-      #|    arr.sift_down_by(start=actual_start, end=actual_start + i, 0, cmp)
-      #|  }
-      #|}
-      #|fn[T] Array::sift_down_by(
-      #|  arr : Array[T],
-      #|  start~ : Int,
-      #|  end~ : Int,
-      #|  index : Int,
-      #|  cmp : (T, T) -> Int,
-      #|) -> Unit {
-      #|  let mut current = index
-      #|  let len = end - start
-      #|  let mut child = current * 2 + 1
-      #|  while child < len {
-      #|    let child_pos = start + child
-      #|    let current_pos = start + current
-      #|    if child + 1 < len && cmp(arr[child_pos], arr[child_pos + 1]) < 0 {
-      #|      child = child + 1
-      #|    }
-      #|    let new_child_pos = start + child
-      #|    if cmp(arr[current_pos], arr[new_child_pos]) >= 0 {
-      #|      return
-      #|    }
-      #|    let temp = arr[current_pos]
-      #|    arr[current_pos] = arr[new_child_pos]
-      #|    arr[new_child_pos] = temp
-      #|    current = child
-      #|    child = current * 2 + 1
-      #|  }
-      #|}
-      #|test "try_bubble_sort" {
-      #|  let arr = [8, 7, 6, 5, 4, 3, 2, 1]
-      #|  let sorted = arr.try_bubble_sort_by(start=0, end=8, (a, b) => a - b)
-      #|  inspect(sorted, content="true")
-      #|  assert_eq(arr, [1, 2, 3, 4, 5, 6, 7, 8])
-      #|}
-      #|test "heap_sort" {
-      #|  test_sort(arr => arr.heap_sort_by(start=0, end=arr.length(), (a, b) => a - b))
-      #|}
-      #|test "bubble_sort" {
-      #|  test_sort(arr => arr.bubble_sort_by(start=0, end=arr.length(), (a, b) => a - b))
-      #|}
-      #|test "sort_by_key" {
-      #|  let arr = [5, 1, 3, 4, 2]
-      #|  arr.sort_by_key(x => -x)
-      #|  assert_eq(arr, [5, 4, 3, 2, 1])
-      #|}
-      #|test "sort_by" {
-      #|  test_sort(arr => arr.sort_by((a, b) => a - b))
-      #|}
-      #|test "sort_by - many duplicates" {
-      #|  let arr = []
-      #|  for i in 0..<20 {
-      #|    arr.push(5)
-      #|  }
-      #|  for i in 0..<20 {
-      #|    arr.push(3)
-      #|  }
-      #|  for i in 0..<20 {
-      #|    arr.push(5)
-      #|  }
-      #|  for i in 0..<20 {
-      #|    arr.push(1)
-      #|  }
-      #|  for i in 0..<20 {
-      #|    arr.push(5)
-      #|  }
-      #|  arr.sort_by((a, b) => a - b)
-      #|  for i in 1..<arr.length() {
-      #|    assert_true(arr[i - 1] <= arr[i])
-      #|  }
       #|}
     ),
     "unsafe_bytes.mbt": (
@@ -2495,15 +949,6 @@ let moonbitlang_core_array_module : RuntimePackage = RuntimePackage::new(
       #|  }
       #|}
     ),
-    "utils.mbt": (
-      #|fn minimum(x : Int, y : Int) -> Int {
-      #|  if x > y {
-      #|    y
-      #|  } else {
-      #|    x
-      #|  }
-      #|}
-    ),
     "view.mbt": (
       #|#deprecated
       #|pub type View[T] = ArrayView[T]
@@ -2553,13 +998,6 @@ let moonbitlang_core_array_module : RuntimePackage = RuntimePackage::new(
       #|  } else {
       #|    false
       #|  }
-      #|}
-      #|pub fn[A] ArrayView::iter(self : ArrayView[A]) -> Iter[A] {
-      #|  Iter::new(yield_ => for v in self {
-      #|    guard yield_(v) is IterContinue else { break IterEnd }
-      #|  } else {
-      #|    IterContinue
-      #|  })
       #|}
       #|pub fn[X] ArrayView::rev_iterator(self : ArrayView[X]) -> Iterator[X] {
       #|  let mut i = self.length()
@@ -2686,57 +1124,21 @@ let moonbitlang_core_array_module : RuntimePackage = RuntimePackage::new(
       #|      }
       #|      size_hint = size_hint << 1
       #|      let buf = StringBuilder::new(size_hint~)
-      #|      buf.write_substring(hd.data(), hd.start_offset(), hd.length())
+      #|      buf.write_view(hd)
       #|      if separator is "" {
       #|        for s in tl {
       #|          let s = s.to_string_view()
-      #|          buf.write_substring(s.data(), s.start_offset(), s.length())
+      #|          buf.write_view(s)
       #|        }
       #|      } else {
       #|        for s in tl {
       #|          let s = s.to_string_view()
-      #|          buf.write_substring(
-      #|            separator.data(),
-      #|            separator.start_offset(),
-      #|            separator.length(),
-      #|          )
-      #|          buf.write_substring(s.data(), s.start_offset(), s.length())
+      #|          buf.write_view(separator)
+      #|          buf.write_view(s)
       #|        }
       #|      }
       #|      buf.to_string()
       #|    }
-      #|  }
-      #|}
-      #|pub impl[X : Show] Show for ArrayView[X] with output(self, logger) {
-      #|  logger.write_iter(self.iter())
-      #|}
-      #|pub impl[T : Eq] Eq for ArrayView[T] with equal(self, other) -> Bool {
-      #|  if self.length() != other.length() {
-      #|    return false
-      #|  }
-      #|  for i in 0..<self.length() {
-      #|    if !(self[i] == other[i]) {
-      #|      return false
-      #|    }
-      #|  } else {
-      #|    true
-      #|  }
-      #|}
-      #|pub impl[T : Compare] Compare for ArrayView[T] with compare(self, other) -> Int {
-      #|  let len_self = self.length()
-      #|  let len_other = other.length()
-      #|  let cmp = len_self.compare(len_other)
-      #|  guard cmp == 0 else { return cmp }
-      #|  for i in 0..<len_self {
-      #|    let cmp = self[i].compare(other[i])
-      #|    guard cmp == 0 else { break cmp }
-      #|  } else {
-      #|    0
-      #|  }
-      #|}
-      #|pub impl[A : Hash] Hash for ArrayView[A] with hash_combine(self, hasher) {
-      #|  for e in self {
-      #|    hasher.combine(e)
       #|  }
       #|}
       #|fn[T] ArrayView::start(self : ArrayView[T]) -> Int = "%arrayview.start"
@@ -3156,6 +1558,8 @@ let moonbitlang_core_bigint_module : RuntimePackage = RuntimePackage::new(
     "moonbitlang/core/quickcheck/splitmix": moonbitlang_core_quickcheck_splitmix_module,
     "moonbitlang/core/string": moonbitlang_core_string_module,
     "moonbitlang/core/bytes": moonbitlang_core_bytes_module,
+    "moonbitlang/core/int16": moonbitlang_core_int16_module,
+    "moonbitlang/core/uint16": moonbitlang_core_uint16_module,
   },
   files={
     "moon.pkg.json": (
@@ -3168,7 +1572,9 @@ let moonbitlang_core_bigint_module : RuntimePackage = RuntimePackage::new(
       #|    "moonbitlang/core/quickcheck",
       #|    "moonbitlang/core/quickcheck/splitmix",
       #|    "moonbitlang/core/string",
-      #|    "moonbitlang/core/bytes"
+      #|    "moonbitlang/core/bytes",
+      #|    "moonbitlang/core/int16",
+      #|    "moonbitlang/core/uint16"
       #|  ],
       #|  "targets": {
       #|    "bigint_js.mbt": ["js"],
@@ -3274,7 +1680,7 @@ let moonbitlang_core_bigint_module : RuntimePackage = RuntimePackage::new(
       #|  self.to_int().to_uint16()
       #|}
       #|pub fn BigInt::to_int16(self : BigInt) -> Int16 {
-      #|  self.to_int().to_int16()
+      #|  Int16::from_int(self.to_int())
       #|}
     ),
     "bigint_js.mbt": (
@@ -4500,22 +2906,22 @@ let moonbitlang_core_bigint_module : RuntimePackage = RuntimePackage::new(
       #|}
     ),
     "deprecated.mbt": (
-      #|#deprecated("Use infix bitwise operator `>>` instead", skip_current_package=false)
+      #|#deprecated("Use infix bitwise operator `>>` instead")
       #|#coverage.skip
       #|pub fn BigInt::asr(self : BigInt, n : Int) -> BigInt {
       #|  self >> n
       #|}
-      #|#deprecated("Use infix bitwise operator `<<` instead", skip_current_package=false)
+      #|#deprecated("Use infix bitwise operator `<<` instead")
       #|#coverage.skip
       #|pub fn BigInt::shl(self : BigInt, n : Int) -> BigInt {
       #|  self << n
       #|}
-      #|#deprecated("Use infix bitwise operator `<<` instead", skip_current_package=false)
+      #|#deprecated("Use infix bitwise operator `<<` instead")
       #|#coverage.skip
       #|pub fn BigInt::lsl(self : BigInt, n : Int) -> BigInt {
       #|  self << n
       #|}
-      #|#deprecated("Use infix bitwise operator `>>` instead", skip_current_package=false)
+      #|#deprecated("Use infix bitwise operator `>>` instead")
       #|#coverage.skip
       #|pub fn BigInt::shr(self : BigInt, n : Int) -> BigInt {
       #|  self >> n
@@ -4532,7 +2938,7 @@ let moonbitlang_core_bool_module : RuntimePackage = RuntimePackage::new(
     "moon.pkg.json": (
       #|{
       #|  "import": ["moonbitlang/core/builtin"],
-      #|  "test-import": [ "moonbitlang/core/char" ]
+      #|  "test-import": [ "moonbitlang/core/char", "moonbitlang/core/int16" ]
       #|}
     ),
     "bool.mbt": (
@@ -4594,6 +3000,8 @@ let moonbitlang_core_buffer_module : RuntimePackage = RuntimePackage::new(
     "moonbitlang/core/array": moonbitlang_core_array_module,
     "moonbitlang/core/string": moonbitlang_core_string_module,
     "moonbitlang/core/float": moonbitlang_core_float_module,
+    "moonbitlang/core/int16": moonbitlang_core_int16_module,
+    "moonbitlang/core/uint16": moonbitlang_core_uint16_module,
   },
   files={
     "moon.pkg.json": (
@@ -4603,7 +3011,9 @@ let moonbitlang_core_buffer_module : RuntimePackage = RuntimePackage::new(
       #|    "moonbitlang/core/bytes",
       #|    "moonbitlang/core/array",
       #|    "moonbitlang/core/string",
-      #|    "moonbitlang/core/float"
+      #|    "moonbitlang/core/float",
+      #|    "moonbitlang/core/int16",
+      #|    "moonbitlang/core/uint16"
       #|  ],
       #|  "test-import": ["moonbitlang/core/int"]
       #|}
@@ -4633,9 +3043,6 @@ let moonbitlang_core_buffer_module : RuntimePackage = RuntimePackage::new(
       #|}
       #|pub fn Buffer::is_empty(self : Buffer) -> Bool {
       #|  self.len == 0
-      #|}
-      #|pub fn Buffer::contents(self : Buffer) -> Bytes {
-      #|  Bytes::from_array(self.data[0:self.len])
       #|}
       #|pub fn new(size_hint? : Int = 0) -> Buffer {
       #|  let initial = if size_hint < 1 { 1 } else { size_hint }
@@ -4891,16 +3298,15 @@ let moonbitlang_core_buffer_module : RuntimePackage = RuntimePackage::new(
       #|  }
       #|  buf.len += len * 2
       #|}
-      #|pub impl Logger for Buffer with write_substring(
-      #|  self : Buffer,
-      #|  value : String,
-      #|  start : Int,
-      #|  len : Int,
-      #|) -> Unit {
-      #|  guard start >= 0 && len >= 0 && start + len <= value.length()
-      #|  self.grow_if_necessary(self.len + len * 2)
-      #|  self.data.blit_from_string(self.len, value, start, len)
-      #|  self.len += len * 2
+      #|pub impl Logger for Buffer with write_view(self : Buffer, value : StringView) -> Unit {
+      #|  self.grow_if_necessary(self.len + value.length() * 2)
+      #|  self.data.blit_from_string(
+      #|    self.len,
+      #|    value.data(),
+      #|    value.start_offset(),
+      #|    value.length(),
+      #|  )
+      #|  self.len += value.length() * 2
       #|}
       #|pub impl Logger for Buffer with write_char(self : Buffer, value : Char) -> Unit {
       #|  self.grow_if_necessary(self.len + 4)
@@ -4920,8 +3326,12 @@ let moonbitlang_core_buffer_module : RuntimePackage = RuntimePackage::new(
       #|pub fn Buffer::reset(self : Buffer) -> Unit {
       #|  self.len = 0
       #|}
+      #|#alias(contents)
       #|pub fn Buffer::to_bytes(self : Buffer) -> Bytes {
       #|  Bytes::from_array(self.data[0:self.len])
+      #|}
+      #|pub fn Buffer::view(self : Buffer) -> ArrayView[Byte] {
+      #|  self.data[0:self.len]
       #|}
       #|pub impl Show for Buffer with output(self, logger) {
       #|  logger.write_string(self.contents().to_unchecked_string())
@@ -5150,13 +3560,8 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|  )
       #|  result
       #|}
-      #|pub fn[T] Array::append(self : Array[T], other : Array[T]) -> Unit {
-      #|  other.blit_to(
-      #|    self,
-      #|    len=other.length(),
-      #|    src_offset=0,
-      #|    dst_offset=self.length(),
-      #|  )
+      #|pub fn[T] Array::append(self : Array[T], other : ArrayView[T]) -> Unit {
+      #|  other.blit_to(self, dst_offset=self.length())
       #|}
       #|#locals(f)
       #|pub fn[T] Array::each(self : Array[T], f : (T) -> Unit raise?) -> Unit raise? {
@@ -5205,7 +3610,8 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|  arr
       #|}
       #|#locals(f)
-      #|pub fn[T] Array::map_inplace(
+      #|#alias(map_inplace, deprecated)
+      #|pub fn[T] Array::map_in_place(
       #|  self : Array[T],
       #|  f : (T) -> T raise?,
       #|) -> Unit raise? {
@@ -5228,7 +3634,8 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|  arr
       #|}
       #|#locals(f)
-      #|pub fn[T] Array::mapi_inplace(
+      #|#alias(mapi_inplace, deprecated)
+      #|pub fn[T] Array::mapi_in_place(
       #|  self : Array[T],
       #|  f : (Int, T) -> T raise?,
       #|) -> Unit raise? {
@@ -5253,17 +3660,10 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|  self.length() == 0
       #|}
       #|pub fn[T : Compare] Array::is_sorted(self : Array[T]) -> Bool {
-      #|  for i = 1 {
-      #|    if i >= self.length() {
-      #|      break true
-      #|    }
-      #|    if self[i - 1] > self[i] {
-      #|      break false
-      #|    }
-      #|    continue i + 1
-      #|  }
+      #|  self[:].is_sorted()
       #|}
-      #|pub fn[T] Array::rev_inplace(self : Array[T]) -> Unit {
+      #|#alias(rev_inplace, deprecated)
+      #|pub fn[T] Array::rev_in_place(self : Array[T]) -> Unit {
       #|  let len = self.length()
       #|  for i in 0..<(len / 2) {
       #|    let temp = self.unsafe_get(i)
@@ -5279,6 +3679,8 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|  }
       #|  arr
       #|}
+      #|#deprecated("Use ArrayView instead, e.g, (a[:index], a[index:])")
+      #|#doc(hidden)
       #|pub fn[T] Array::split_at(self : Array[T], index : Int) -> (Array[T], Array[T]) {
       #|  if index < 0 || index > self.length() {
       #|    let len = self.length()
@@ -5718,10 +4120,12 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|    len,
       #|  )
       #|}
+      #|#label_migration(src_offset, fill=false, msg="Use ArrayView::blit_to instead")
+      #|#label_migration(len, fill=false, msg="Use ArrayView::blit_to instead")
       #|pub fn[A] Array::blit_to(
       #|  self : Array[A],
       #|  dst : Array[A],
-      #|  len~ : Int,
+      #|  len? : Int = self.length(),
       #|  src_offset? : Int = 0,
       #|  dst_offset? : Int = 0,
       #|) -> Unit {
@@ -5735,78 +4139,96 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|  }
       #|  Array::unsafe_blit(dst, dst_offset, self, src_offset, len)
       #|}
+      #|pub fn[A] ArrayView::blit_to(
+      #|  self : ArrayView[A],
+      #|  dst : Array[A],
+      #|  dst_offset? : Int = 0,
+      #|) -> Unit {
+      #|  let len = self.len()
+      #|  guard dst_offset >= 0 && dst_offset <= dst.length()
+      #|  if dst_offset + len > dst.length() {
+      #|    dst.unsafe_grow_to_length(dst_offset + len)
+      #|  }
+      #|  UninitializedArray::unsafe_blit(
+      #|    dst.buffer(),
+      #|    dst_offset,
+      #|    self.buf(),
+      #|    self.start(),
+      #|    len,
+      #|  )
+      #|}
       #|test "Array::blit_to/basic" {
       #|  let src = [1, 2, 3, 4, 5]
       #|  let dst = [0, 0, 0, 0, 0]
-      #|  Array::blit_to(src, dst, len=3, src_offset=1, dst_offset=2)
+      #|  src[1:4].blit_to(dst, dst_offset=2)
       #|  inspect(dst, content="[0, 0, 2, 3, 4]")
       #|  let src = [1, 2, 3, 4, 5]
       #|  let dst = [0, 0, 0, 0, 0]
-      #|  Array::blit_to(src, dst, len=3)
+      #|  src[0:3].blit_to(dst)
       #|  inspect(dst, content="[1, 2, 3, 0, 0]")
       #|}
       #|test "Array::blit_to/zero_length" {
       #|  let src = [1, 2, 3]
       #|  let dst = [4, 5, 6]
-      #|  Array::blit_to(src, dst, len=0)
+      #|  src[0:0].blit_to(dst)
       #|  inspect(dst, content="[4, 5, 6]")
       #|}
       #|test "Array::blit_to/grow_destination" {
       #|  let src = [1, 2, 3, 4, 5]
       #|  let dst = [0, 0]
-      #|  Array::blit_to(src, dst, len=3, dst_offset=1)
+      #|  src[0:3].blit_to(dst, dst_offset=1)
       #|  inspect(dst, content="[0, 1, 2, 3]")
       #|}
       #|test "Array::blit_to/edge_cases" {
       #|  let src = [1, 2, 3, 4, 5]
       #|  let dst = [0, 0, 0, 0, 0]
-      #|  Array::blit_to(src, dst, len=2, src_offset=1, dst_offset=2)
+      #|  src[1:3].blit_to(dst, dst_offset=2)
       #|  inspect(dst, content="[0, 0, 2, 3, 0]")
-      #|  Array::blit_to(src, src, len=2, src_offset=0, dst_offset=3)
+      #|  src[0:2].blit_to(src, dst_offset=3)
       #|  inspect(src, content="[1, 2, 3, 1, 2]")
-      #|  Array::blit_to(src, dst, len=0, src_offset=0, dst_offset=0)
+      #|  src[0:0].blit_to(dst, dst_offset=0)
       #|  inspect(dst, content="[0, 0, 2, 3, 0]")
-      #|  Array::blit_to(src, dst, len=5)
+      #|  src[0:5].blit_to(dst)
       #|  inspect(dst, content="[1, 2, 3, 1, 2]")
       #|}
       #|test "panic Array::blit_to/boundary_cases1" {
       #|  let src = [1, 2, 3, 4, 5]
       #|  let dst = [0, 0, 0, 0, 0]
-      #|  ignore(Array::blit_to(src, dst, len=-1))
+      #|  ignore(src[3:1].blit_to(dst))
       #|}
       #|test "panic Array::blit_to/boundary_cases2" {
       #|  let src = [1, 2, 3, 4, 5]
       #|  let dst = [0, 0, 0, 0, 0]
-      #|  ignore(Array::blit_to(src, dst, len=2, src_offset=-1))
+      #|  ignore(src[-1:1].blit_to(dst))
       #|}
       #|test "panic Array::blit_to/boundary_cases3" {
       #|  let src = [1, 2, 3, 4, 5]
       #|  let dst = [0, 0, 0, 0, 0]
-      #|  ignore(Array::blit_to(src, dst, len=6))
+      #|  ignore(src[0:6].blit_to(dst))
       #|}
       #|test "panic Array::blit_to/boundary_cases4" {
       #|  let src = [1, 2, 3, 4, 5]
       #|  let dst = [0, 0, 0, 0, 0]
-      #|  ignore(Array::blit_to(src, dst, len=5, dst_offset=6))
+      #|  ignore(src[0:5].blit_to(dst, dst_offset=6))
       #|}
       #|test "Array::blit_to - random cases" {
       #|  let src = [10, 20, 30, 40, 50]
       #|  let dst = [0, 0, 0, 0, 0]
-      #|  Array::blit_to(src, dst, len=2, src_offset=2, dst_offset=1)
+      #|  src[2:4].blit_to(dst, dst_offset=1)
       #|  inspect(dst, content="[0, 30, 40, 0, 0]")
-      #|  Array::blit_to(src, dst, len=3, src_offset=1, dst_offset=2)
+      #|  src[1:4].blit_to(dst, dst_offset=2)
       #|  inspect(dst, content="[0, 30, 20, 30, 40]")
-      #|  Array::blit_to(src, dst, len=1, src_offset=4, dst_offset=4)
+      #|  src[4:5].blit_to(dst, dst_offset=4)
       #|  inspect(dst, content="[0, 30, 20, 30, 50]")
       #|}
       #|test "Array::blit_to - boundary cases" {
       #|  let src = [1, 2, 3, 4, 5]
       #|  let dst = [0, 0, 0, 0, 0]
-      #|  Array::blit_to(src, dst, len=1, src_offset=4, dst_offset=0)
+      #|  src[4:5].blit_to(dst, dst_offset=0)
       #|  inspect(dst, content="[5, 0, 0, 0, 0]")
-      #|  Array::blit_to(src, dst, len=1, src_offset=0, dst_offset=4)
+      #|  src[0:1].blit_to(dst, dst_offset=4)
       #|  inspect(dst, content="[5, 0, 0, 0, 1]")
-      #|  Array::blit_to(src, dst, len=2, src_offset=3, dst_offset=3)
+      #|  src[3:5].blit_to(dst, dst_offset=3)
       #|  inspect(dst, content="[5, 0, 0, 4, 5]")
       #|}
       #|test "Array::unsafe_blit_fixed" {
@@ -5814,6 +4236,715 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|  let dst = Array::make(5, 0) // Create an Array with 5 elements of value 0
       #|  Array::unsafe_blit_fixed(dst, 1, src, 0, 2) // Copy 2 elements from src[0] to dst[1]
       #|  inspect(dst, content="[0, 1, 1, 0, 0]")
+      #|}
+      #|test "ArrayView::blit_to/basic" {
+      #|  let src = [1, 2, 3, 4, 5]
+      #|  let view = src[1:4] // view = [2, 3, 4]
+      #|  let dst = [0, 0, 0, 0, 0]
+      #|  view.blit_to(dst)
+      #|  inspect(dst, content="[2, 3, 4, 0, 0]")
+      #|}
+      #|test "ArrayView::blit_to/with_offset" {
+      #|  let src = [1, 2, 3, 4, 5]
+      #|  let view = src[1:4] // view = [2, 3, 4]
+      #|  let dst = [0, 0, 0, 0, 0]
+      #|  view.blit_to(dst, dst_offset=2)
+      #|  inspect(dst, content="[0, 0, 2, 3, 4]")
+      #|}
+      #|test "ArrayView::blit_to/grow_destination" {
+      #|  let src = [1, 2, 3, 4, 5]
+      #|  let view = src[1:4] // view = [2, 3, 4]
+      #|  let dst = [0, 0]
+      #|  view.blit_to(dst, dst_offset=1)
+      #|  inspect(dst, content="[0, 2, 3, 4]")
+      #|}
+      #|test "ArrayView::blit_to/empty_view" {
+      #|  let src = [1, 2, 3, 4, 5]
+      #|  let view = src[2:2] // empty view
+      #|  let dst = [0, 0, 0]
+      #|  view.blit_to(dst)
+      #|  inspect(dst, content="[0, 0, 0]")
+      #|}
+      #|test "ArrayView::blit_to/nested_view" {
+      #|  let src = [1, 2, 3, 4, 5, 6, 7]
+      #|  let view1 = src[1:6] // [2, 3, 4, 5, 6]
+      #|  let view2 = view1[1:4] // [3, 4, 5]
+      #|  let dst = [0, 0, 0, 0, 0]
+      #|  view2.blit_to(dst, dst_offset=1)
+      #|  inspect(dst, content="[0, 3, 4, 5, 0]")
+      #|}
+      #|test "panic ArrayView::blit_to/invalid_offset" {
+      #|  let src = [1, 2, 3, 4, 5]
+      #|  let view = src[1:4]
+      #|  let dst = [0, 0, 0]
+      #|  ignore(view.blit_to(dst, dst_offset=-1))
+      #|}
+      #|test "panic ArrayView::blit_to/offset_exceeds_length" {
+      #|  let src = [1, 2, 3, 4, 5]
+      #|  let view = src[1:4]
+      #|  let dst = [0, 0, 0]
+      #|  ignore(view.blit_to(dst, dst_offset=4))
+      #|}
+    ),
+    "array_sort.mbt": (
+      #|pub fn[T : Compare] MutArrayView::sort(self : MutArrayView[T]) -> Unit {
+      #|  fixed_quick_sort(self, None, fixed_get_limit(self.length()))
+      #|}
+      #|pub fn[T : Compare] MutArrayView::stable_sort(self : MutArrayView[T]) -> Unit {
+      #|  timsort(self)
+      #|}
+      #|priv struct TimSortRun {
+      #|  len : Int
+      #|  start : Int
+      #|}
+      #|fn[T : Compare] timsort(arr : MutArrayView[T]) -> Unit {
+      #|  let max_insertion = 20
+      #|  let len = arr.length()
+      #|  if len <= max_insertion {
+      #|    MutArrayView::insertion_sort(arr)
+      #|  }
+      #|  let mut end = 0
+      #|  let mut start = 0
+      #|  let runs : Array[TimSortRun] = []
+      #|  while end < len {
+      #|    let (streak_end, was_reversed) = find_streak(arr.mut_view(start~))
+      #|    end += streak_end
+      #|    if was_reversed {
+      #|      arr.mut_view(start~, end~).rev_in_place()
+      #|    }
+      #|    end = provide_sorted_batch(arr, start, end)
+      #|    runs.push({ start, len: end - start })
+      #|    start = end
+      #|    while true {
+      #|      guard collapse(runs, len) is Some(r) else { break }
+      #|      let left = runs[r]
+      #|      let right = runs[r + 1]
+      #|      merge(arr.slice(left.start, right.start + right.len), left.len)
+      #|      runs[r + 1] = { start: left.start, len: left.len + right.len }
+      #|      runs.remove(r) |> ignore
+      #|    }
+      #|  }
+      #|}
+      #|fn[T : Compare] MutArrayView::insertion_sort(arr : MutArrayView[T]) -> Unit {
+      #|  for i in 1..<arr.length() {
+      #|    for j = i; j > 0 && arr[j] < arr[j - 1]; j = j - 1 {
+      #|      arr.swap(j, j - 1)
+      #|    }
+      #|  }
+      #|}
+      #|fn[T : Compare] merge(arr : MutArrayView[T], mid : Int) -> Unit {
+      #|  let buf_len = arr.length() - mid
+      #|  let buf : FixedArray[T] = FixedArray::make(buf_len, arr[mid])
+      #|  for i in 0..<buf.length() {
+      #|    buf[i] = arr[mid + i]
+      #|  }
+      #|  let buf : MutArrayView[T] = buf.mut_view()
+      #|  let buf_remaining = for p1 = mid - 1, p2 = buf_len - 1, p = mid + buf_len - 1; p1 >=
+      #|                         0 &&
+      #|                         p2 >= 0; {
+      #|    if arr[p1] > buf[p2] {
+      #|      arr[p] = arr[p1]
+      #|      continue p1 - 1, p2, p - 1
+      #|    } else {
+      #|      arr[p] = buf[p2]
+      #|      continue p1, p2 - 1, p - 1
+      #|    }
+      #|  } else {
+      #|    p2
+      #|  }
+      #|  for i = buf_remaining; i >= 0; i = i - 1 {
+      #|    arr[i] = buf[i]
+      #|  }
+      #|}
+      #|fn[T : Compare] find_streak(arr : MutArrayView[T]) -> (Int, Bool) {
+      #|  let len = arr.length()
+      #|  if len < 2 {
+      #|    return (len, false)
+      #|  }
+      #|  let assume_reverse = arr[1] < arr[0]
+      #|  if assume_reverse {
+      #|    for end = 2 {
+      #|      if end < len && arr[end] < arr[end - 1] {
+      #|        continue end + 1
+      #|      } else {
+      #|        break (end, true)
+      #|      }
+      #|    }
+      #|  } else {
+      #|    for end = 2 {
+      #|      if end < len && arr[end] >= arr[end - 1] {
+      #|        continue end + 1
+      #|      } else {
+      #|        break (end, false)
+      #|      }
+      #|    }
+      #|  }
+      #|}
+      #|fn[T : Compare] provide_sorted_batch(
+      #|  arr : MutArrayView[T],
+      #|  start : Int,
+      #|  end : Int,
+      #|) -> Int {
+      #|  let len = arr.length()
+      #|  let min_insertion_run = 10
+      #|  let start_end_diff = end - start
+      #|  if start_end_diff < min_insertion_run && end < len {
+      #|    let sort_end = minimum(len, start + min_insertion_run)
+      #|    MutArrayView::insertion_sort(arr.slice(start, sort_end))
+      #|    sort_end
+      #|  } else {
+      #|    end
+      #|  }
+      #|}
+      #|fn collapse(runs : Array[TimSortRun], stop : Int) -> Int? {
+      #|  let n : Int = runs.length()
+      #|  if n >= 2 &&
+      #|    (
+      #|      runs[n - 1].start + runs[n - 1].len == stop ||
+      #|      runs[n - 2].len <= runs[n - 1].len ||
+      #|      (n >= 3 && runs[n - 3].len <= runs[n - 2].len + runs[n - 1].len) ||
+      #|      (n >= 4 && runs[n - 4].len <= runs[n - 3].len + runs[n - 2].len)
+      #|    ) {
+      #|    if n >= 3 && runs[n - 3].len < runs[n - 1].len {
+      #|      Some(n - 3)
+      #|    } else {
+      #|      Some(n - 2)
+      #|    }
+      #|  } else {
+      #|    None
+      #|  }
+      #|}
+      #|pub fn[T : Compare] FixedArray::sort(self : FixedArray[T]) -> Unit {
+      #|  self.mut_view().sort()
+      #|}
+      #|fn[T] MutArrayView::slice(
+      #|  arr : MutArrayView[T],
+      #|  start : Int,
+      #|  end : Int,
+      #|) -> MutArrayView[T] {
+      #|  arr.mut_view(start~, end~)
+      #|}
+      #|fn[T] MutArrayView::swap(arr : MutArrayView[T], i : Int, j : Int) -> Unit {
+      #|  let temp = arr[i]
+      #|  arr[i] = arr[j]
+      #|  arr[j] = temp
+      #|}
+      #|fn[T] MutArrayView::rev_in_place(arr : MutArrayView[T]) -> Unit {
+      #|  let len = arr.length()
+      #|  let mid_len = len / 2
+      #|  for i in 0..<mid_len {
+      #|    let j = len - i - 1
+      #|    let temp = arr[i]
+      #|    arr[i] = arr[j]
+      #|    arr[j] = temp
+      #|  }
+      #|}
+      #|fn[T : Compare] fixed_quick_sort(
+      #|  arr : MutArrayView[T],
+      #|  pred : T?,
+      #|  limit : Int,
+      #|) -> Unit {
+      #|  let mut limit = limit
+      #|  let mut arr = arr
+      #|  let mut pred = pred
+      #|  let mut was_partitioned = true
+      #|  let mut balanced = true
+      #|  let bubble_sort_len = 16
+      #|  while true {
+      #|    let len = arr.length()
+      #|    if len <= bubble_sort_len {
+      #|      if len >= 2 {
+      #|        fixed_bubble_sort(arr)
+      #|      }
+      #|      return
+      #|    }
+      #|    if limit == 0 {
+      #|      fixed_heap_sort(arr)
+      #|      return
+      #|    }
+      #|    let (pivot_index, likely_sorted) = fixed_choose_pivot(arr)
+      #|    if was_partitioned && balanced && likely_sorted {
+      #|      if fixed_try_bubble_sort(arr) {
+      #|        return
+      #|      }
+      #|    }
+      #|    let (pivot, partitioned) = fixed_partition(arr, pivot_index)
+      #|    was_partitioned = partitioned
+      #|    balanced = minimum(pivot, len - pivot) >= len / 8
+      #|    if !balanced {
+      #|      limit -= 1
+      #|    }
+      #|    if pred is Some(pred) {
+      #|      if pred == arr[pivot] {
+      #|        let mut i = pivot
+      #|        while i < len && pred == arr[i] {
+      #|          i = i + 1
+      #|        }
+      #|        arr = arr.slice(i, len)
+      #|        continue
+      #|      }
+      #|    }
+      #|    let left = arr.slice(0, pivot)
+      #|    let right = arr.slice(pivot + 1, len)
+      #|    if left.length() < right.length() {
+      #|      fixed_quick_sort(left, pred, limit)
+      #|      pred = Some(arr[pivot])
+      #|      arr = right
+      #|    } else {
+      #|      fixed_quick_sort(right, Some(arr[pivot]), limit)
+      #|      arr = left
+      #|    }
+      #|  }
+      #|}
+      #|fn fixed_get_limit(len : Int) -> Int {
+      #|  let mut len = len
+      #|  let mut limit = 0
+      #|  while len > 0 {
+      #|    len = len / 2
+      #|    limit += 1
+      #|  }
+      #|  limit
+      #|}
+      #|fn[T : Compare] fixed_try_bubble_sort(arr : MutArrayView[T]) -> Bool {
+      #|  let max_tries = 8
+      #|  let mut tries = 0
+      #|  for i in 1..<arr.length() {
+      #|    let mut sorted = true
+      #|    for j = i; j > 0 && arr[j - 1] > arr[j]; j = j - 1 {
+      #|      sorted = false
+      #|      arr.swap(j, j - 1)
+      #|    }
+      #|    if !sorted {
+      #|      tries += 1
+      #|      if tries > max_tries {
+      #|        return false
+      #|      }
+      #|    }
+      #|  }
+      #|  true
+      #|}
+      #|fn[T : Compare] fixed_bubble_sort(arr : MutArrayView[T]) -> Unit {
+      #|  for i in 1..<arr.length() {
+      #|    for j = i; j > 0 && arr[j - 1] > arr[j]; j = j - 1 {
+      #|      arr.swap(j, j - 1)
+      #|    }
+      #|  }
+      #|}
+      #|test "fixed_try_bubble_sort" {
+      #|  let arr : FixedArray[_] = [8, 7, 6, 5, 4, 3, 2, 1]
+      #|  let sorted = fixed_try_bubble_sort(arr.mut_view())
+      #|  inspect(sorted, content="true")
+      #|  assert_eq(arr, [1, 2, 3, 4, 5, 6, 7, 8])
+      #|}
+      #|fn[T : Compare] fixed_partition(
+      #|  arr : MutArrayView[T],
+      #|  pivot_index : Int,
+      #|) -> (Int, Bool) {
+      #|  arr.swap(pivot_index, arr.length() - 1)
+      #|  let pivot = arr[arr.length() - 1]
+      #|  let mut i = 0
+      #|  let mut partitioned = true
+      #|  for j in 0..<(arr.length() - 1) {
+      #|    if arr[j] < pivot {
+      #|      if i != j {
+      #|        arr.swap(i, j)
+      #|        partitioned = false
+      #|      }
+      #|      i = i + 1
+      #|    }
+      #|  }
+      #|  arr.swap(i, arr.length() - 1)
+      #|  (i, partitioned)
+      #|}
+      #|fn[T : Compare] fixed_choose_pivot(arr : MutArrayView[T]) -> (Int, Bool) {
+      #|  let len = arr.length()
+      #|  let use_median_of_medians = 50
+      #|  let max_swaps = 4 * 3
+      #|  let mut swaps = 0
+      #|  let b = len / 4 * 2
+      #|  if len >= 8 {
+      #|    let a = len / 4 * 1
+      #|    let c = len / 4 * 3
+      #|    let sort_2 = (a : Int, b : Int) => if arr[a] > arr[b] {
+      #|      arr.swap(a, b)
+      #|      swaps += 1
+      #|    }
+      #|    let sort_3 = (a : Int, b : Int, c : Int) => {
+      #|      sort_2(a, b)
+      #|      sort_2(b, c)
+      #|      sort_2(a, b)
+      #|    }
+      #|    if len > use_median_of_medians {
+      #|      sort_3(a - 1, a, a + 1)
+      #|      sort_3(b - 1, b, b + 1)
+      #|      sort_3(c - 1, c, c + 1)
+      #|    }
+      #|    sort_3(a, b, c)
+      #|  }
+      #|  if swaps == max_swaps {
+      #|    arr.rev_in_place()
+      #|    (len - b - 1, true)
+      #|  } else {
+      #|    (b, swaps == 0)
+      #|  }
+      #|}
+      #|fn[T : Compare] fixed_heap_sort(arr : MutArrayView[T]) -> Unit {
+      #|  let len = arr.length()
+      #|  for i = len / 2 - 1; i >= 0; i = i - 1 {
+      #|    fixed_sift_down(arr, i)
+      #|  }
+      #|  for i = len - 1; i > 0; i = i - 1 {
+      #|    arr.swap(0, i)
+      #|    fixed_sift_down(arr.slice(0, i), 0)
+      #|  }
+      #|}
+      #|fn[T : Compare] fixed_sift_down(arr : MutArrayView[T], index : Int) -> Unit {
+      #|  let mut index = index
+      #|  let len = arr.length()
+      #|  let mut child = index * 2 + 1
+      #|  while child < len {
+      #|    if child + 1 < len && arr[child] < arr[child + 1] {
+      #|      child = child + 1
+      #|    }
+      #|    if arr[index] >= arr[child] {
+      #|      return
+      #|    }
+      #|    arr.swap(index, child)
+      #|    index = child
+      #|    child = index * 2 + 1
+      #|  }
+      #|}
+      #|fn fixed_test_sort(f : (MutArrayView[Int]) -> Unit) -> Unit raise {
+      #|  let arr : FixedArray[_] = [5, 4, 3, 2, 1]
+      #|  f(arr.mut_view())
+      #|  assert_eq(arr, [1, 2, 3, 4, 5])
+      #|  let arr : FixedArray[_] = [5, 5, 5, 5, 1]
+      #|  f(arr.mut_view())
+      #|  assert_eq(arr, [1, 5, 5, 5, 5])
+      #|  let arr : FixedArray[_] = [1, 2, 3, 4, 5]
+      #|  f(arr.mut_view())
+      #|  assert_eq(arr, [1, 2, 3, 4, 5])
+      #|  let arr = FixedArray::make(1000, 0)
+      #|  for i in 0..<1000 {
+      #|    arr[i] = 1000 - i - 1
+      #|  }
+      #|  for i = 10; i < 1000; i = i + 10 {
+      #|    arr.swap(i, i - 1)
+      #|  }
+      #|  f(arr.mut_view())
+      #|  let expected = FixedArray::make(1000, 0)
+      #|  for i in 0..<1000 {
+      #|    expected[i] = i
+      #|  }
+      #|  assert_eq(arr, expected)
+      #|}
+      #|test "fixed_heap_sort" {
+      #|  fixed_test_sort(arr => fixed_heap_sort(arr.mut_view()))
+      #|}
+      #|test "fixed_bubble_sort" {
+      #|  fixed_test_sort(arr => fixed_bubble_sort(arr.mut_view()))
+      #|}
+      #|test "sort" {
+      #|  fixed_test_sort(arr => arr.sort())
+      #|}
+      #|test "stable_sort" {
+      #|  let arr : FixedArray[_] = [5, 1, 3, 4, 2]
+      #|  arr.mut_view().stable_sort()
+      #|  assert_eq(arr, [1, 2, 3, 4, 5])
+      #|  let arr = FixedArray::make(1000, 0)
+      #|  for i in 0..<1000 {
+      #|    arr[i] = 1000 - i - 1
+      #|  }
+      #|  for i = 10; i < 1000; i = i + 10 {
+      #|    arr.swap(i, i - 1)
+      #|  }
+      #|  arr.mut_view().stable_sort()
+      #|  let expected = FixedArray::make(1000, 0)
+      #|  for i in 0..<1000 {
+      #|    expected[i] = i
+      #|  }
+      #|  assert_eq(arr, expected)
+      #|}
+      #|pub fn[T : Compare] FixedArray::is_sorted(arr : FixedArray[T]) -> Bool {
+      #|  arr[:].is_sorted()
+      #|}
+      #|test "stable_sort_complex" {
+      #|  let run_lens = [86, 64, 21, 20, 22]
+      #|  let total_len = run_lens.fold(init=0, (acc, x) => acc + x)
+      #|  let arr = FixedArray::make(total_len, 0)
+      #|  let mut index = 0
+      #|  for i in 0..<run_lens.length() {
+      #|    for j in 0..<run_lens[i] {
+      #|      arr[index] = j
+      #|      index += 1
+      #|    }
+      #|  }
+      #|  assert_false(arr.is_sorted())
+      #|  arr.mut_view().stable_sort()
+      #|  assert_true(arr.is_sorted())
+      #|}
+      #|test "find_streak with empty array" {
+      #|  let arr : FixedArray[Int] = []
+      #|  let (streak_end, was_reversed) = find_streak(arr.mut_view())
+      #|  inspect(streak_end, content="0")
+      #|  inspect(was_reversed, content="false")
+      #|}
+      #|test "find_streak with single element array" {
+      #|  let arr : FixedArray[_] = [1]
+      #|  let (streak_end, was_reversed) = find_streak(arr.mut_view())
+      #|  inspect(streak_end, content="1")
+      #|  inspect(was_reversed, content="false")
+      #|}
+      #|test "find_streak with increasing elements" {
+      #|  let arr : FixedArray[_] = [1, 2, 3, 4, 5]
+      #|  let (streak_end, was_reversed) = find_streak(arr.mut_view())
+      #|  inspect(streak_end, content="5")
+      #|  inspect(was_reversed, content="false")
+      #|}
+      #|test "find_streak with decreasing elements" {
+      #|  let arr : FixedArray[_] = [5, 4, 3, 2, 1]
+      #|  let (streak_end, was_reversed) = find_streak(arr.mut_view())
+      #|  inspect(streak_end, content="5")
+      #|  inspect(was_reversed, content="true")
+      #|}
+      #|test "provide_sorted_batch with long run" {
+      #|  let arr : FixedArray[_] = [1, 2, 3, 4, 5]
+      #|  let end = provide_sorted_batch(arr.mut_view(), 0, 5)
+      #|  inspect(end, content="5")
+      #|}
+      #|test "fixed_quick_sort with limit reached" {
+      #|  let arr : FixedArray[_] = [5, 4, 3, 2, 1]
+      #|  fixed_quick_sort(arr.mut_view(), None, 0)
+      #|  assert_true(FixedArray::is_sorted(arr))
+      #|}
+      #|test "fixed_quick_sort with balanced partitions" {
+      #|  let arr : FixedArray[_] = [5, 4, 3, 2, 1]
+      #|  fixed_quick_sort(arr.mut_view(), None, 10)
+      #|  assert_true(FixedArray::is_sorted(arr))
+      #|}
+      #|fn minimum(x : Int, y : Int) -> Int {
+      #|  if x > y {
+      #|    y
+      #|  } else {
+      #|    x
+      #|  }
+      #|}
+    ),
+    "array_sort_by.mbt": (
+      #|pub fn[T, K : Compare] MutArrayView::sort_by_key(
+      #|  self : Self[T],
+      #|  map : (T) -> K,
+      #|) -> Unit {
+      #|  fixed_quick_sort_by(
+      #|    self,
+      #|    (a, b) => map(a).compare(map(b)),
+      #|    None,
+      #|    fixed_get_limit(self.length()),
+      #|  )
+      #|}
+      #|pub fn[T] MutArrayView::sort_by(self : Self[T], cmp : (T, T) -> Int) -> Unit {
+      #|  fixed_quick_sort_by(self, cmp, None, fixed_get_limit(self.length()))
+      #|}
+      #|fn[T] fixed_quick_sort_by(
+      #|  arr : MutArrayView[T],
+      #|  cmp : (T, T) -> Int,
+      #|  pred : T?,
+      #|  limit : Int,
+      #|) -> Unit {
+      #|  let mut limit = limit
+      #|  let mut arr = arr
+      #|  let mut pred = pred
+      #|  let mut was_partitioned = true
+      #|  let mut balanced = true
+      #|  let bubble_sort_len = 16
+      #|  while true {
+      #|    let len = arr.length()
+      #|    if len <= bubble_sort_len {
+      #|      if len >= 2 {
+      #|        fixed_bubble_sort_by(arr, cmp)
+      #|      }
+      #|      return
+      #|    }
+      #|    if limit == 0 {
+      #|      fixed_heap_sort_by(arr, cmp)
+      #|      return
+      #|    }
+      #|    let (pivot_index, likely_sorted) = fixed_choose_pivot_by(arr, cmp)
+      #|    if was_partitioned && balanced && likely_sorted {
+      #|      if fixed_try_bubble_sort_by(arr, cmp) {
+      #|        return
+      #|      }
+      #|    }
+      #|    let (pivot, partitioned) = fixed_partition_by(arr, cmp, pivot_index)
+      #|    was_partitioned = partitioned
+      #|    balanced = minimum(pivot, len - pivot) >= len / 8
+      #|    if !balanced {
+      #|      limit -= 1
+      #|    }
+      #|    if pred is Some(pred) {
+      #|      if cmp(pred, arr[pivot]) == 0 {
+      #|        let mut i = pivot
+      #|        while i < len && cmp(pred, arr[i]) == 0 {
+      #|          i = i + 1
+      #|        }
+      #|        arr = arr.slice(i, len)
+      #|        continue
+      #|      }
+      #|    }
+      #|    let left = arr.slice(0, pivot)
+      #|    let right = arr.slice(pivot + 1, len)
+      #|    if left.length() < right.length() {
+      #|      fixed_quick_sort_by(left, cmp, pred, limit)
+      #|      pred = Some(arr[pivot])
+      #|      arr = right
+      #|    } else {
+      #|      fixed_quick_sort_by(right, cmp, Some(arr[pivot]), limit)
+      #|      arr = left
+      #|    }
+      #|  }
+      #|}
+      #|fn[T] fixed_try_bubble_sort_by(
+      #|  arr : MutArrayView[T],
+      #|  cmp : (T, T) -> Int,
+      #|) -> Bool {
+      #|  let max_tries = 8
+      #|  let mut tries = 0
+      #|  for i in 1..<arr.length() {
+      #|    let mut sorted = true
+      #|    for j = i; j > 0 && cmp(arr[j - 1], arr[j]) > 0; j = j - 1 {
+      #|      sorted = false
+      #|      arr.swap(j, j - 1)
+      #|    }
+      #|    if !sorted {
+      #|      tries += 1
+      #|      if tries > max_tries {
+      #|        return false
+      #|      }
+      #|    }
+      #|  }
+      #|  true
+      #|}
+      #|fn[T] fixed_bubble_sort_by(arr : MutArrayView[T], cmp : (T, T) -> Int) -> Unit {
+      #|  for i in 1..<arr.length() {
+      #|    for j = i; j > 0 && cmp(arr[j - 1], arr[j]) > 0; j = j - 1 {
+      #|      arr.swap(j, j - 1)
+      #|    }
+      #|  }
+      #|}
+      #|test "try_bubble_sort" {
+      #|  let arr : FixedArray[_] = [8, 7, 6, 5, 4, 3, 2, 1]
+      #|  let sorted = fixed_try_bubble_sort_by(arr.mut_view(), (a, b) => a - b)
+      #|  inspect(sorted, content="true")
+      #|  assert_eq(arr, [1, 2, 3, 4, 5, 6, 7, 8])
+      #|}
+      #|fn[T] fixed_partition_by(
+      #|  arr : MutArrayView[T],
+      #|  cmp : (T, T) -> Int,
+      #|  pivot_index : Int,
+      #|) -> (Int, Bool) {
+      #|  arr.swap(pivot_index, arr.length() - 1)
+      #|  let pivot = arr[arr.length() - 1]
+      #|  let mut i = 0
+      #|  let mut partitioned = true
+      #|  for j in 0..<(arr.length() - 1) {
+      #|    if cmp(arr[j], pivot) < 0 {
+      #|      if i != j {
+      #|        arr.swap(i, j)
+      #|        partitioned = false
+      #|      }
+      #|      i = i + 1
+      #|    }
+      #|  }
+      #|  arr.swap(i, arr.length() - 1)
+      #|  (i, partitioned)
+      #|}
+      #|fn[T] fixed_choose_pivot_by(
+      #|  arr : MutArrayView[T],
+      #|  cmp : (T, T) -> Int,
+      #|) -> (Int, Bool) {
+      #|  let len = arr.length()
+      #|  let use_median_of_medians = 50
+      #|  let max_swaps = 4 * 3
+      #|  let mut swaps = 0
+      #|  let b = len / 4 * 2
+      #|  if len >= 8 {
+      #|    let a = len / 4 * 1
+      #|    let c = len / 4 * 3
+      #|    let sort_2 = (a : Int, b : Int) => if cmp(arr[a], arr[b]) > 0 {
+      #|      arr.swap(a, b)
+      #|      swaps += 1
+      #|    }
+      #|    let sort_3 = (a : Int, b : Int, c : Int) => {
+      #|      sort_2(a, b)
+      #|      sort_2(b, c)
+      #|      sort_2(a, b)
+      #|    }
+      #|    if len > use_median_of_medians {
+      #|      sort_3(a - 1, a, a + 1)
+      #|      sort_3(b - 1, b, b + 1)
+      #|      sort_3(c - 1, c, c + 1)
+      #|    }
+      #|    sort_3(a, b, c)
+      #|  }
+      #|  if swaps == max_swaps {
+      #|    arr.rev_in_place()
+      #|    (len - b - 1, true)
+      #|  } else {
+      #|    (b, swaps == 0)
+      #|  }
+      #|}
+      #|fn[T] fixed_heap_sort_by(arr : MutArrayView[T], cmp : (T, T) -> Int) -> Unit {
+      #|  let len = arr.length()
+      #|  for i = len / 2 - 1; i >= 0; i = i - 1 {
+      #|    fixed_sift_down_by(arr, i, cmp)
+      #|  }
+      #|  for i = len - 1; i > 0; i = i - 1 {
+      #|    arr.swap(0, i)
+      #|    fixed_sift_down_by(arr.slice(0, i), 0, cmp)
+      #|  }
+      #|}
+      #|fn[T] fixed_sift_down_by(
+      #|  arr : MutArrayView[T],
+      #|  index : Int,
+      #|  cmp : (T, T) -> Int,
+      #|) -> Unit {
+      #|  let mut index = index
+      #|  let len = arr.length()
+      #|  let mut child = index * 2 + 1
+      #|  while child < len {
+      #|    if child + 1 < len && cmp(arr[child], arr[child + 1]) < 0 {
+      #|      child = child + 1
+      #|    }
+      #|    if cmp(arr[index], arr[child]) >= 0 {
+      #|      return
+      #|    }
+      #|    arr.swap(index, child)
+      #|    index = child
+      #|    child = index * 2 + 1
+      #|  }
+      #|}
+      #|test "heap_sort" {
+      #|  fixed_test_sort(arr => fixed_heap_sort_by(arr.mut_view(), (a, b) => a - b))
+      #|}
+      #|test "bubble_sort" {
+      #|  fixed_test_sort(arr => fixed_bubble_sort_by(arr.mut_view(), (a, b) => a - b))
+      #|}
+      #|test "sort" {
+      #|  fixed_test_sort(arr => arr.sort())
+      #|}
+      #|test "sort_by" {
+      #|  let arr = [5, 1, 3, 4, 2]
+      #|  arr.mut_view().sort_by_key(x => -x)
+      #|  assert_eq(arr, [5, 4, 3, 2, 1])
+      #|}
+      #|test "sort_by_fallback" {
+      #|  let arr = FixedArray::makei(100, i => if i % 2 == 0 { 1 } else { 0 })
+      #|  arr
+      #|  .mut_view()
+      #|  .sort_by(
+      #|    (a, b) => if a < b { -1 } else { 1 },
+      #|  )
+      #|  assert_true(arr.is_sorted())
       #|}
     ),
     "arraycore_js.mbt": (
@@ -6283,6 +5414,54 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|    i += 1
       #|    Some(elem)
       #|  })
+      #|}
+      #|pub fn[A] ArrayView::iter(self : ArrayView[A]) -> Iter[A] {
+      #|  Iter::new(yield_ => for v in self {
+      #|    guard yield_(v) is IterContinue else { break IterEnd }
+      #|  } else {
+      #|    IterContinue
+      #|  })
+      #|}
+      #|pub impl[X : Show] Show for ArrayView[X] with output(self, logger) {
+      #|  logger.write_iter(self.iter())
+      #|}
+      #|pub impl[T : Eq] Eq for ArrayView[T] with equal(self, other) -> Bool {
+      #|  if self.length() != other.length() {
+      #|    return false
+      #|  }
+      #|  for i in 0..<self.length() {
+      #|    if !(self[i] == other[i]) {
+      #|      return false
+      #|    }
+      #|  } else {
+      #|    true
+      #|  }
+      #|}
+      #|pub impl[T : Compare] Compare for ArrayView[T] with compare(self, other) -> Int {
+      #|  let len_self = self.length()
+      #|  let len_other = other.length()
+      #|  let cmp = len_self.compare(len_other)
+      #|  guard cmp == 0 else { return cmp }
+      #|  for i in 0..<len_self {
+      #|    let cmp = self[i].compare(other[i])
+      #|    guard cmp == 0 else { break cmp }
+      #|  } else {
+      #|    0
+      #|  }
+      #|}
+      #|pub impl[A : Hash] Hash for ArrayView[A] with hash_combine(self, hasher) {
+      #|  for e in self {
+      #|    hasher.combine(e)
+      #|  }
+      #|}
+      #|pub fn[T : Compare] ArrayView::is_sorted(self : ArrayView[T]) -> Bool {
+      #|  for i in 1..<self.length() {
+      #|    if self[i - 1] > self[i] {
+      #|      break false
+      #|    }
+      #|  } else {
+      #|    true
+      #|  }
       #|}
     ),
     "assert.mbt": (
@@ -7125,7 +6304,7 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|}
     ),
     "deprecated.mbt": (
-      #|#deprecated("Use `..<` in for loop or `until` method instead", skip_current_package=false)
+      #|#deprecated("Use `..<` in for loop or `until` method instead")
       #|#coverage.skip
       #|pub fn Int::upto(self : Int, end : Int, inclusive? : Bool = false) -> Iter[Int] {
       #|  yield_ => {
@@ -7143,7 +6322,7 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|    }
       #|  }
       #|}
-      #|#deprecated("Use `..<` in for loop or `until` method instead", skip_current_package=false)
+      #|#deprecated("Use `..<` in for loop or `until` method instead")
       #|#coverage.skip
       #|pub fn UInt::upto(
       #|  self : UInt,
@@ -7165,7 +6344,7 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|    }
       #|  }
       #|}
-      #|#deprecated("Use `..<` in for loop or `until` method instead", skip_current_package=false)
+      #|#deprecated("Use `..<` in for loop or `until` method instead")
       #|#coverage.skip
       #|pub fn UInt64::upto(
       #|  self : UInt64,
@@ -7187,7 +6366,7 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|    }
       #|  }
       #|}
-      #|#deprecated("Use `..<` in for loop or `until` method instead", skip_current_package=false)
+      #|#deprecated("Use `..<` in for loop or `until` method instead")
       #|#coverage.skip
       #|pub fn Int64::upto(
       #|  self : Int64,
@@ -7209,7 +6388,7 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|    }
       #|  }
       #|}
-      #|#deprecated("Use `..<` in for loop or `until` method instead", skip_current_package=false)
+      #|#deprecated("Use `..<` in for loop or `until` method instead")
       #|#coverage.skip
       #|pub fn Double::upto(
       #|  self : Double,
@@ -7231,23 +6410,23 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|    }
       #|  }
       #|}
-      #|#deprecated("check `@encoding/utf8.encode`", skip_current_package=false)
+      #|#deprecated("check `@encoding/utf8.encode`")
       #|#coverage.skip
       #|pub fn Bytes::of_string(str : String) -> Bytes {
       #|  FixedArray::make(str.length() * 2, Byte::default())
       #|  ..blit_from_string(0, str, 0, str.length())
       #|  .unsafe_reinterpret_as_bytes()
       #|}
-      #|#deprecated("Bytes are immutable. Use `FixedArray::blit_from_bytes` if it's really necessary.", skip_current_package=false)
+      #|#deprecated("Bytes are immutable. Use `FixedArray::blit_from_bytes` if it's really necessary.")
       #|pub fn Bytes::copy(self : Bytes) -> Bytes {
       #|  Bytes::makei(self.length(), i => self[i])
       #|}
-      #|#deprecated("Use infix operator `<<` instead", skip_current_package=false)
+      #|#deprecated("Use infix operator `<<` instead")
       #|#coverage.skip
       #|pub fn Byte::lsl(self : Byte, count : Int) -> Byte {
       #|  (self.to_int() << count).to_byte()
       #|}
-      #|#deprecated("Use infix operator `>>` instead", skip_current_package=false)
+      #|#deprecated("Use infix operator `>>` instead")
       #|#coverage.skip
       #|pub fn Byte::lsr(self : Byte, count : Int) -> Byte {
       #|  (self.to_uint() >> count).reinterpret_as_int().to_byte()
@@ -7269,7 +6448,7 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|    assert_eq(dump(x) + x, 84)
       #|  }
       #|}
-      #|#deprecated("The index will be changed to utf16 index. If you want to access n-th character, use `str.iter().nth(n).unwrap()` instead.", skip_current_package=false)
+      #|#deprecated("The index will be changed to utf16 index. If you want to access n-th character, use `str.iter().nth(n).unwrap()` instead.")
       #|pub fn String::codepoint_at(self : String, index : Int) -> Char {
       #|  let charcode_len = self.length()
       #|  guard index >= 0 && index < charcode_len else { abort("index out of bounds") }
@@ -7828,7 +7007,8 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|  let sum = ([1, 2, 3, 4, 5] : FixedArray[_]).rev_foldi(init=0, f)
       #|  inspect(sum, content="25")
       #|}
-      #|pub fn[T] FixedArray::rev_inplace(self : FixedArray[T]) -> Unit {
+      #|#alias(rev_inplace, deprecated)
+      #|pub fn[T] FixedArray::rev_in_place(self : FixedArray[T]) -> Unit {
       #|  let mid_len = self.length() / 2
       #|  for i in 0..<mid_len {
       #|    let j = self.length() - i - 1
@@ -7853,26 +7033,26 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|test "rev in place" {
       #|  {
       #|    let arr : FixedArray[Int] = []
-      #|    arr.rev_inplace()
+      #|    arr.rev_in_place()
       #|    assert_eq(arr, [])
       #|  }
       #|  {
       #|    let arr : FixedArray[_] = [1]
-      #|    arr.rev_inplace()
+      #|    arr.rev_in_place()
       #|    assert_eq(arr, [1])
       #|  }
       #|  {
       #|    let arr : FixedArray[_] = [1, 2]
-      #|    arr.rev_inplace()
+      #|    arr.rev_in_place()
       #|    assert_eq(arr, [2, 1])
       #|  }
       #|  {
       #|    let arr : FixedArray[_] = [1, 2, 3, 4, 5]
-      #|    arr.rev_inplace()
+      #|    arr.rev_in_place()
       #|    assert_eq(arr, [5, 4, 3, 2, 1])
       #|  }
       #|  let arr : FixedArray[_] = [1, 2, 3, 4, 5, 6]
-      #|  arr.rev_inplace()
+      #|  arr.rev_in_place()
       #|  assert_eq(arr, [6, 5, 4, 3, 2, 1])
       #|}
       #|test "rev" {
@@ -8562,19 +7742,27 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|pub fn Int::is_surrogate(self : Int) -> Bool {
       #|  0xD800 <= self && self <= 0xDFFF
       #|}
+      #|pub fn Int::abs(self : Int) -> Int {
+      #|  if self < 0 {
+      #|    -self
+      #|  } else {
+      #|    self
+      #|  }
+      #|}
     ),
-    "int16.mbt": (
-      #|pub impl Shl for UInt16 with shl(self : UInt16, that : Int) -> UInt16 {
-      #|  (self.to_int() << that).to_uint16()
+    "int64.mbt": (
+      #|pub fn Int64::from_int(i : Int) -> Int64 {
+      #|  i.to_int64()
       #|}
-      #|pub impl Shr for UInt16 with shr(self : UInt16, that : Int) -> UInt16 {
-      #|  (self.to_int() >> that).to_uint16()
+      #|pub fn Int64::abs(self : Int64) -> Int64 {
+      #|  if self < 0L {
+      #|    -self
+      #|  } else {
+      #|    self
+      #|  }
       #|}
-      #|pub impl BitOr for UInt16 with lor(self : UInt16, that : UInt16) -> UInt16 {
-      #|  (self.to_int() | that.to_int()).to_uint16()
-      #|}
-      #|pub impl BitAnd for UInt16 with land(self : UInt16, that : UInt16) -> UInt16 {
-      #|  (self.to_int() & that.to_int()).to_uint16()
+      #|pub impl Hash for Int64 with hash_combine(self, hasher) {
+      #|  hasher.combine_int64(self)
       #|}
     ),
     "int64_js.mbt": (
@@ -8658,46 +7846,138 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|  rem_u : (Int, Int, Int, Int) -> Int
       #|  get_high : () -> Int
       #|}
-      #|extern "js" fn get_int64_wasm_helper() -> Int64WasmHelper =
-      #|  #|function f() {
-      #|  #|  if (f._exports) return f._exports;
-      #|  #|  return f._exports = new WebAssembly.Instance(new WebAssembly.Module(new Uint8Array([0, 97, 115, 109, 1, 0, 0, 0, 1, 13, 2, 96, 0, 1, 127, 96, 4, 127, 127, 127, 127, 1, 127, 3, 7, 6, 0, 1, 1, 1, 1, 1, 6, 6, 1, 127, 1, 65, 0, 11, 7, 50, 6, 3, 109, 117, 108, 0, 1, 5, 100, 105, 118, 95, 115, 0, 2, 5, 100, 105, 118, 95, 117, 0, 3, 5, 114, 101, 109, 95, 115, 0, 4, 5, 114, 101, 109, 95, 117, 0, 5, 8, 103, 101, 116, 95, 104, 105, 103, 104, 0, 0, 10, 191, 1, 6, 4, 0, 35, 0, 11, 36, 1, 1, 126, 32, 0, 173, 32, 1, 173, 66, 32, 134, 132, 32, 2, 173, 32, 3, 173, 66, 32, 134, 132, 126, 34, 4, 66, 32, 135, 167, 36, 0, 32, 4, 167, 11, 36, 1, 1, 126, 32, 0, 173, 32, 1, 173, 66, 32, 134, 132, 32, 2, 173, 32, 3, 173, 66, 32, 134, 132, 127, 34, 4, 66, 32, 135, 167, 36, 0, 32, 4, 167, 11, 36, 1, 1, 126, 32, 0, 173, 32, 1, 173, 66, 32, 134, 132, 32, 2, 173, 32, 3, 173, 66, 32, 134, 132, 128, 34, 4, 66, 32, 135, 167, 36, 0, 32, 4, 167, 11, 36, 1, 1, 126, 32, 0, 173, 32, 1, 173, 66, 32, 134, 132, 32, 2, 173, 32, 3, 173, 66, 32, 134, 132, 129, 34, 4, 66, 32, 135, 167, 36, 0, 32, 4, 167, 11, 36, 1, 1, 126, 32, 0, 173, 32, 1, 173, 66, 32, 134, 132, 32, 2, 173, 32, 3, 173, 66, 32, 134, 132, 130, 34, 4, 66, 32, 135, 167, 36, 0, 32, 4, 167, 11])), {}).exports;
+      #|priv struct WasmHelperCache {
+      #|  mut tried : Bool
+      #|  mut exports : Int64WasmHelper?
+      #|}
+      #|let wasm_helper_cache : WasmHelperCache = { tried: false, exports: None }
+      #|fn try_get_int64_wasm_helper() -> Bool {
+      #|  if wasm_helper_cache.tried {
+      #|    return match wasm_helper_cache.exports {
+      #|      Some(_) => true
+      #|      None => false
+      #|    }
+      #|  }
+      #|  wasm_helper_cache.tried = true
+      #|  wasm_helper_cache.exports = try_init_wasm_helper()
+      #|  match wasm_helper_cache.exports {
+      #|    Some(_) => true
+      #|    None => false
+      #|  }
+      #|}
+      #|extern "js" fn try_init_wasm_helper() -> Int64WasmHelper? =
+      #|  #|function() {
+      #|  #|  try {
+      #|  #|    return new WebAssembly.Instance(new WebAssembly.Module(new Uint8Array([0, 97, 115, 109, 1, 0, 0, 0, 1, 13, 2, 96, 0, 1, 127, 96, 4, 127, 127, 127, 127, 1, 127, 3, 7, 6, 0, 1, 1, 1, 1, 1, 6, 6, 1, 127, 1, 65, 0, 11, 7, 50, 6, 3, 109, 117, 108, 0, 1, 5, 100, 105, 118, 95, 115, 0, 2, 5, 100, 105, 118, 95, 117, 0, 3, 5, 114, 101, 109, 95, 115, 0, 4, 5, 114, 101, 109, 95, 117, 0, 5, 8, 103, 101, 116, 95, 104, 105, 103, 104, 0, 0, 10, 191, 1, 6, 4, 0, 35, 0, 11, 36, 1, 1, 126, 32, 0, 173, 32, 1, 173, 66, 32, 134, 132, 32, 2, 173, 32, 3, 173, 66, 32, 134, 132, 126, 34, 4, 66, 32, 135, 167, 36, 0, 32, 4, 167, 11, 36, 1, 1, 126, 32, 0, 173, 32, 1, 173, 66, 32, 134, 132, 32, 2, 173, 32, 3, 173, 66, 32, 134, 132, 127, 34, 4, 66, 32, 135, 167, 36, 0, 32, 4, 167, 11, 36, 1, 1, 126, 32, 0, 173, 32, 1, 173, 66, 32, 134, 132, 32, 2, 173, 32, 3, 173, 66, 32, 134, 132, 128, 34, 4, 66, 32, 135, 167, 36, 0, 32, 4, 167, 11, 36, 1, 1, 126, 32, 0, 173, 32, 1, 173, 66, 32, 134, 132, 32, 2, 173, 32, 3, 173, 66, 32, 134, 132, 129, 34, 4, 66, 32, 135, 167, 36, 0, 32, 4, 167, 11, 36, 1, 1, 126, 32, 0, 173, 32, 1, 173, 66, 32, 134, 132, 32, 2, 173, 32, 3, 173, 66, 32, 134, 132, 130, 34, 4, 66, 32, 135, 167, 36, 0, 32, 4, 167, 11])), {}).exports;
+      #|  #|  } catch (e) {
+      #|  #|    return undefined;
+      #|  #|  }
+      #|  #|}
+      #|extern "js" fn MyInt64::div_bigint(self : MyInt64, other : MyInt64) -> MyInt64 =
+      #|  #|(a, b) => {
+      #|  #|  const aVal = (BigInt(a.hi) << 32n) | BigInt(a.lo >>> 0);
+      #|  #|  const bVal = (BigInt(b.hi) << 32n) | BigInt(b.lo >>> 0);
+      #|  #|  const result = aVal / bVal;
+      #|  #|  const lo = Number(result & 0xFFFFFFFFn);
+      #|  #|  const hi = Number((result >> 32n) & 0xFFFFFFFFn);
+      #|  #|  return { hi: hi | 0, lo: lo | 0 };
+      #|  #|}
+      #|extern "js" fn MyInt64::div_u_bigint(
+      #|  self : MyInt64,
+      #|  other : MyInt64,
+      #|) -> MyInt64 =
+      #|  #|(a, b) => {
+      #|  #|  const aVal = (BigInt(a.hi >>> 0) << 32n) | BigInt(a.lo >>> 0);
+      #|  #|  const bVal = (BigInt(b.hi >>> 0) << 32n) | BigInt(b.lo >>> 0);
+      #|  #|  const result = aVal / bVal;
+      #|  #|  const lo = Number(result & 0xFFFFFFFFn);
+      #|  #|  const hi = Number((result >> 32n) & 0xFFFFFFFFn);
+      #|  #|  return { hi: hi | 0, lo: lo | 0 };
+      #|  #|}
+      #|extern "js" fn MyInt64::mod_bigint(self : MyInt64, other : MyInt64) -> MyInt64 =
+      #|  #|(a, b) => {
+      #|  #|  const aVal = (BigInt(a.hi) << 32n) | BigInt(a.lo >>> 0);
+      #|  #|  const bVal = (BigInt(b.hi) << 32n) | BigInt(b.lo >>> 0);
+      #|  #|  const result = aVal % bVal;
+      #|  #|  const lo = Number(result & 0xFFFFFFFFn);
+      #|  #|  const hi = Number((result >> 32n) & 0xFFFFFFFFn);
+      #|  #|  return { hi: hi | 0, lo: lo | 0 };
+      #|  #|}
+      #|extern "js" fn MyInt64::mod_u_bigint(
+      #|  self : MyInt64,
+      #|  other : MyInt64,
+      #|) -> MyInt64 =
+      #|  #|(a, b) => {
+      #|  #|  const aVal = (BigInt(a.hi >>> 0) << 32n) | BigInt(a.lo >>> 0);
+      #|  #|  const bVal = (BigInt(b.hi >>> 0) << 32n) | BigInt(b.lo >>> 0);
+      #|  #|  const result = aVal % bVal;
+      #|  #|  const lo = Number(result & 0xFFFFFFFFn);
+      #|  #|  const hi = Number((result >> 32n) & 0xFFFFFFFFn);
+      #|  #|  return { hi: hi | 0, lo: lo | 0 };
       #|  #|}
       #|impl Div for MyInt64 with div(self : MyInt64, other : MyInt64) -> MyInt64 {
       #|  guard not(other.hi == 0 && other.lo == 0) else { panic() }
-      #|  let exports = get_int64_wasm_helper()
-      #|  let { hi: ahi, lo: alo } = self
-      #|  let { hi: bhi, lo: blo } = other
-      #|  let lo = (exports.div_s)(alo, ahi, blo, bhi)
-      #|  let hi = (exports.get_high)()
-      #|  { hi, lo }
+      #|  if not(try_get_int64_wasm_helper()) {
+      #|    return self.div_bigint(other)
+      #|  }
+      #|  match wasm_helper_cache.exports {
+      #|    Some(exports) => {
+      #|      let { hi: ahi, lo: alo } = self
+      #|      let { hi: bhi, lo: blo } = other
+      #|      let lo = (exports.div_s)(alo, ahi, blo, bhi)
+      #|      let hi = (exports.get_high)()
+      #|      { hi, lo }
+      #|    }
+      #|    None => panic()
+      #|  }
       #|}
       #|fn MyInt64::div_u(self : MyInt64, other : MyInt64) -> MyInt64 {
       #|  guard not(other.hi == 0 && other.lo == 0) else { panic() }
-      #|  let exports = get_int64_wasm_helper()
-      #|  let { hi: ahi, lo: alo } = self
-      #|  let { hi: bhi, lo: blo } = other
-      #|  let lo = (exports.div_u)(alo, ahi, blo, bhi)
-      #|  let hi = (exports.get_high)()
-      #|  { hi, lo }
+      #|  if not(try_get_int64_wasm_helper()) {
+      #|    return self.div_u_bigint(other)
+      #|  }
+      #|  match wasm_helper_cache.exports {
+      #|    Some(exports) => {
+      #|      let { hi: ahi, lo: alo } = self
+      #|      let { hi: bhi, lo: blo } = other
+      #|      let lo = (exports.div_u)(alo, ahi, blo, bhi)
+      #|      let hi = (exports.get_high)()
+      #|      { hi, lo }
+      #|    }
+      #|    None => panic()
+      #|  }
       #|}
       #|impl Mod for MyInt64 with mod(self : MyInt64, other : MyInt64) -> MyInt64 {
       #|  guard not(other.hi == 0 && other.lo == 0) else { panic() }
-      #|  let exports = get_int64_wasm_helper()
-      #|  let { hi: ahi, lo: alo } = self
-      #|  let { hi: bhi, lo: blo } = other
-      #|  let lo = (exports.rem_s)(alo, ahi, blo, bhi)
-      #|  let hi = (exports.get_high)()
-      #|  { hi, lo }
+      #|  if not(try_get_int64_wasm_helper()) {
+      #|    return self.mod_bigint(other)
+      #|  }
+      #|  match wasm_helper_cache.exports {
+      #|    Some(exports) => {
+      #|      let { hi: ahi, lo: alo } = self
+      #|      let { hi: bhi, lo: blo } = other
+      #|      let lo = (exports.rem_s)(alo, ahi, blo, bhi)
+      #|      let hi = (exports.get_high)()
+      #|      { hi, lo }
+      #|    }
+      #|    None => panic()
+      #|  }
       #|}
       #|fn MyInt64::mod_u(self : MyInt64, other : MyInt64) -> MyInt64 {
       #|  guard not(other.hi == 0 && other.lo == 0) else { panic() }
-      #|  let exports = get_int64_wasm_helper()
-      #|  let { hi: ahi, lo: alo } = self
-      #|  let { hi: bhi, lo: blo } = other
-      #|  let lo = (exports.rem_u)(alo, ahi, blo, bhi)
-      #|  let hi = (exports.get_high)()
-      #|  { hi, lo }
+      #|  if not(try_get_int64_wasm_helper()) {
+      #|    return self.mod_u_bigint(other)
+      #|  }
+      #|  match wasm_helper_cache.exports {
+      #|    Some(exports) => {
+      #|      let { hi: ahi, lo: alo } = self
+      #|      let { hi: bhi, lo: blo } = other
+      #|      let lo = (exports.rem_u)(alo, ahi, blo, bhi)
+      #|      let hi = (exports.get_high)()
+      #|      { hi, lo }
+      #|    }
+      #|    None => panic()
+      #|  }
       #|}
       #|fn MyInt64::lnot(self : MyInt64) -> MyInt64 {
       #|  { hi: self.hi.lnot(), lo: self.lo.lnot() }
@@ -8890,27 +8170,27 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|pub impl BitXOr for Int64 with lxor(self : Int64, other : Int64) -> Int64 {
       #|  MyInt64::from_int64(self).lxor(MyInt64::from_int64(other)).to_int64()
       #|}
-      #|#deprecated("Use infix operator `<<` instead", skip_current_package=false)
+      #|#deprecated("Use infix operator `<<` instead")
       #|#coverage.skip
       #|pub fn Int64::lsl(self : Int64, other : Int) -> Int64 {
       #|  MyInt64::from_int64(self).lsl(other).to_int64()
       #|}
-      #|#deprecated("Use infix operator `<<` instead", skip_current_package=false)
+      #|#deprecated("Use infix operator `<<` instead")
       #|#coverage.skip
       #|pub fn Int64::shl(self : Int64, other : Int) -> Int64 {
       #|  MyInt64::from_int64(self).lsl(other).to_int64()
       #|}
-      #|#deprecated("Use UInt64 type and infix operator `>>` instead", skip_current_package=false)
+      #|#deprecated("Use UInt64 type and infix operator `>>` instead")
       #|#coverage.skip
       #|pub fn Int64::lsr(self : Int64, other : Int) -> Int64 {
       #|  MyInt64::from_int64(self).lsr(other).to_int64()
       #|}
-      #|#deprecated("Use infix operator `>>` instead", skip_current_package=false)
+      #|#deprecated("Use infix operator `>>` instead")
       #|#coverage.skip
       #|pub fn Int64::shr(self : Int64, other : Int) -> Int64 {
       #|  MyInt64::from_int64(self).asr(other).to_int64()
       #|}
-      #|#deprecated("Use infix operator `>>` instead", skip_current_package=false)
+      #|#deprecated("Use infix operator `>>` instead")
       #|#coverage.skip
       #|pub fn Int64::asr(self : Int64, other : Int) -> Int64 {
       #|  MyInt64::from_int64(self).asr(other).to_int64()
@@ -8948,9 +8228,6 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|pub fn Int64::to_byte(self : Int64) -> Byte {
       #|  MyInt64::from_int64(self).to_int().to_byte()
       #|}
-      #|pub fn Int64::to_int16(self : Int64) -> Int16 {
-      #|  MyInt64::from_int64(self).to_int().to_int16()
-      #|}
       #|pub fn Int64::to_uint16(self : Int64) -> UInt16 {
       #|  MyInt64::from_int64(self).to_int().to_uint16()
       #|}
@@ -8966,13 +8243,10 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|pub fn Int::to_int64(self : Int) -> Int64 {
       #|  MyInt64::from_int(self).to_int64()
       #|}
-      #|pub fn Int16::to_int64(self : Int16) -> Int64 {
-      #|  MyInt64::from_int(self.to_int()).to_int64()
-      #|}
       #|pub fn UInt16::to_int64(self : UInt16) -> Int64 {
       #|  MyInt64::from_int(self.to_int()).to_int64()
       #|}
-      #|#deprecated("Use `reinterpret_as_int64` instead", skip_current_package=false)
+      #|#deprecated("Use `reinterpret_as_int64` instead")
       #|#coverage.skip
       #|pub fn Double::reinterpret_as_i64(self : Double) -> Int64 {
       #|  MyInt64::reinterpret_double(self).to_int64()
@@ -8980,7 +8254,7 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|pub fn Double::reinterpret_as_int64(self : Double) -> Int64 {
       #|  MyInt64::reinterpret_double(self).to_int64()
       #|}
-      #|#deprecated("Use `reinterpret_as_uint64` instead", skip_current_package=false)
+      #|#deprecated("Use `reinterpret_as_uint64` instead")
       #|#coverage.skip
       #|pub fn Double::reinterpret_as_u64(self : Double) -> UInt64 {
       #|  MyInt64::reinterpret_double(self).to_uint64()
@@ -8996,7 +8270,7 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|}
       #|fn MyInt64::to_uint64(self : MyInt64) -> UInt64 = "%identity"
       #|fn MyInt64::from_uint64(value : UInt64) -> MyInt64 = "%identity"
-      #|#deprecated("Use `reinterpret_as_uint64` instead", skip_current_package=false)
+      #|#deprecated("Use `reinterpret_as_uint64` instead")
       #|#coverage.skip
       #|pub fn Int64::to_uint64(self : Int64) -> UInt64 = "%identity"
       #|pub fn Int64::reinterpret_as_uint64(self : Int64) -> UInt64 = "%identity"
@@ -9015,7 +8289,7 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|pub impl Mod for UInt64 with mod(self : UInt64, other : UInt64) -> UInt64 {
       #|  MyInt64::from_uint64(self).mod_u(MyInt64::from_uint64(other)).to_uint64()
       #|}
-      #|#deprecated("Use reinterpret_as_int64 instead", skip_current_package=false)
+      #|#deprecated("Use reinterpret_as_int64 instead")
       #|#coverage.skip
       #|pub fn UInt64::to_int64(self : UInt64) -> Int64 = "%identity"
       #|pub fn UInt64::reinterpret_as_int64(self : UInt64) -> Int64 = "%identity"
@@ -9052,22 +8326,22 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|pub fn UInt64::lnot(self : UInt64) -> UInt64 {
       #|  MyInt64::lnot(MyInt64::from_uint64(self)).to_uint64()
       #|}
-      #|#deprecated("Use infix operator `<<` instead", skip_current_package=false)
+      #|#deprecated("Use infix operator `<<` instead")
       #|#coverage.skip
       #|pub fn UInt64::lsl(self : UInt64, shift : Int) -> UInt64 {
       #|  MyInt64::lsl(MyInt64::from_uint64(self), shift).to_uint64()
       #|}
-      #|#deprecated("Use infix operator `<<` instead", skip_current_package=false)
+      #|#deprecated("Use infix operator `<<` instead")
       #|#coverage.skip
       #|pub fn UInt64::lsr(self : UInt64, shift : Int) -> UInt64 {
       #|  MyInt64::lsr(MyInt64::from_uint64(self), shift).to_uint64()
       #|}
-      #|#deprecated("Use infix operator `>>` instead", skip_current_package=false)
+      #|#deprecated("Use infix operator `>>` instead")
       #|#coverage.skip
       #|pub fn UInt64::shl(self : UInt64, shift : Int) -> UInt64 {
       #|  MyInt64::lsl(MyInt64::from_uint64(self), shift).to_uint64()
       #|}
-      #|#deprecated("Use infix operator `>>` instead", skip_current_package=false)
+      #|#deprecated("Use infix operator `>>` instead")
       #|#coverage.skip
       #|pub fn UInt64::shr(self : UInt64, shift : Int) -> UInt64 {
       #|  MyInt64::lsr(MyInt64::from_uint64(self), shift).to_uint64()
@@ -9087,9 +8361,11 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|pub fn UInt64::popcnt(self : UInt64) -> Int {
       #|  MyInt64::from_uint64(self).popcnt()
       #|}
+      #|#deprecated("Use `Float::from_int64` instead")
       #|pub fn Int64::to_float(self : Int64) -> Float {
       #|  self.to_double().to_float()
       #|}
+      #|#deprecated("Use `Float::from_uint64` instead")
       #|pub fn UInt64::to_float(self : UInt64) -> Float {
       #|  Double::convert_uint64(self).to_float()
       #|}
@@ -9105,19 +8381,19 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|pub impl BitAnd for Int64 with land(self, other) = "%i64_land"
       #|pub impl BitOr for Int64 with lor(self, other) = "%i64_lor"
       #|pub impl BitXOr for Int64 with lxor(self, other) = "%i64_lxor"
-      #|#deprecated("Use infix operator `<<` instead", skip_current_package=false)
+      #|#deprecated("Use infix operator `<<` instead")
       #|#coverage.skip
       #|pub fn Int64::lsl(self : Int64, other : Int) -> Int64 = "%i64_shl"
-      #|#deprecated("Use infix operator `<<` instead", skip_current_package=false)
+      #|#deprecated("Use infix operator `<<` instead")
       #|#coverage.skip
       #|pub fn Int64::shl(self : Int64, other : Int) -> Int64 = "%i64_shl"
-      #|#deprecated("Use UInt64 type and infix operator `>>` instead", skip_current_package=false)
+      #|#deprecated("Use UInt64 type and infix operator `>>` instead")
       #|#coverage.skip
       #|pub fn Int64::lsr(self : Int64, other : Int) -> Int64 = "%u64.shr"
-      #|#deprecated("Use infix operator `>>` instead", skip_current_package=false)
+      #|#deprecated("Use infix operator `>>` instead")
       #|#coverage.skip
       #|pub fn Int64::asr(self : Int64, other : Int) -> Int64 = "%i64_shr"
-      #|#deprecated("Use infix operator `>>` instead", skip_current_package=false)
+      #|#deprecated("Use infix operator `>>` instead")
       #|#coverage.skip
       #|pub fn Int64::shr(self : Int64, other : Int) -> Int64 = "%i64_shr"
       #|pub impl Shl for Int64 with shl(self, other) = "%i64_shl"
@@ -9137,28 +8413,27 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|pub fn Int64::reinterpret_as_double(self : Int64) -> Double = "%i64_to_f64_reinterpret"
       #|pub fn UInt64::reinterpret_as_double(self : UInt64) -> Double = "%i64_to_f64_reinterpret"
       #|pub fn Int64::to_byte(self : Int64) -> Byte = "%i64_to_byte"
-      #|pub fn Int64::to_int16(self : Int64) -> Int16 = "%i64_to_i16"
       #|pub fn Int64::to_uint16(self : Int64) -> UInt16 = "%i64_to_u16"
       #|pub fn UInt64::trunc_double(val : Double) -> UInt64 = "%f64.to_u64"
+      #|#deprecated("Use `Float::from_int64` instead")
       #|pub fn Int64::to_float(self : Int64) -> Float = "%i64.to_f32"
       #|pub fn UInt64::extend_uint(val : UInt) -> UInt64 = "%u32.to_u64"
       #|pub fn Int::to_int64(self : Int) -> Int64 = "%i32_to_i64"
-      #|pub fn Int16::to_int64(self : Int16) -> Int64 = "%i16_to_i64"
       #|pub fn UInt16::to_int64(self : UInt16) -> Int64 = "%u16_to_i64"
-      #|#deprecated("Use `reinterpret_as_int64` instead", skip_current_package=false)
+      #|#deprecated("Use `reinterpret_as_int64` instead")
       #|#coverage.skip
       #|pub fn Double::reinterpret_as_i64(self : Double) -> Int64 = "%f64_to_i64_reinterpret"
       #|pub fn Double::reinterpret_as_int64(self : Double) -> Int64 = "%f64_to_i64_reinterpret"
-      #|#deprecated("Use `reinterpret_as_uint64` instead", skip_current_package=false)
+      #|#deprecated("Use `reinterpret_as_uint64` instead")
       #|#coverage.skip
       #|pub fn Double::reinterpret_as_u64(self : Double) -> UInt64 = "%f64_to_i64_reinterpret"
       #|pub fn Double::reinterpret_as_uint64(self : Double) -> UInt64 = "%f64_to_i64_reinterpret"
       #|pub fn Double::convert_uint64(val : UInt64) -> Double = "%u64.to_f64"
-      #|#deprecated("Use `reinterpret_as_uint64` instead", skip_current_package=false)
+      #|#deprecated("Use `reinterpret_as_uint64` instead")
       #|#coverage.skip
       #|pub fn Int64::to_uint64(self : Int64) -> UInt64 = "%i64.to_u64_reinterpret"
       #|pub fn Int64::reinterpret_as_uint64(self : Int64) -> UInt64 = "%i64.to_u64_reinterpret"
-      #|#deprecated("Use `reinterpret_as_int64` instead", skip_current_package=false)
+      #|#deprecated("Use `reinterpret_as_int64` instead")
       #|#coverage.skip
       #|pub fn UInt64::to_int64(self : UInt64) -> Int64 = "%u64.to_i64_reinterpret"
       #|pub fn UInt64::reinterpret_as_int64(self : UInt64) -> Int64 = "%u64.to_i64_reinterpret"
@@ -9183,16 +8458,16 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|pub impl BitOr for UInt64 with lor(self, other) = "%u64.bitor"
       #|pub impl BitXOr for UInt64 with lxor(self, other) = "%u64.bitxor"
       #|pub fn UInt64::lnot(self : UInt64) -> UInt64 = "%u64.bitnot"
-      #|#deprecated("Use infix operator `<<` instead", skip_current_package=false)
+      #|#deprecated("Use infix operator `<<` instead")
       #|#coverage.skip
       #|pub fn UInt64::lsl(self : UInt64, shift : Int) -> UInt64 = "%u64.shl"
-      #|#deprecated("Use infix operator `<<` instead", skip_current_package=false)
+      #|#deprecated("Use infix operator `<<` instead")
       #|#coverage.skip
       #|pub fn UInt64::shl(self : UInt64, shift : Int) -> UInt64 = "%u64.shl"
-      #|#deprecated("Use infix operator `>>` instead", skip_current_package=false)
+      #|#deprecated("Use infix operator `>>` instead")
       #|#coverage.skip
       #|pub fn UInt64::shr(self : UInt64, shift : Int) -> UInt64 = "%u64.shr"
-      #|#deprecated("Use infix operator `>>` instead", skip_current_package=false)
+      #|#deprecated("Use infix operator `>>` instead")
       #|#coverage.skip
       #|pub fn UInt64::lsr(self : UInt64, shift : Int) -> UInt64 = "%u64.shr"
       #|pub impl Shl for UInt64 with shl(self, shift) = "%u64.shl"
@@ -9200,6 +8475,7 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|pub fn UInt64::clz(self : UInt64) -> Int = "%u64.clz"
       #|pub fn UInt64::ctz(self : UInt64) -> Int = "%u64.ctz"
       #|pub fn UInt64::popcnt(self : UInt64) -> Int = "%u64.popcnt"
+      #|#deprecated("Use `Float::from_uint64` instead")
       #|pub fn UInt64::to_float(self : UInt64) -> Float = "%u64.to_f32"
     ),
     "intrinsics.mbt": (
@@ -9209,7 +8485,7 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|pub fn[T] panic() -> T = "%panic"
       #|pub fn not(x : Bool) -> Bool = "%bool_not"
       #|pub impl Eq for Bool with equal(self : Bool, other : Bool) -> Bool = "%bool_eq"
-      #|#deprecated("Use `compare` instead", skip_current_package=false)
+      #|#deprecated("Use `compare` instead")
       #|#coverage.skip
       #|pub fn Bool::op_compare(self : Bool, other : Bool) -> Int = "%bool_compare"
       #|pub impl Compare for Bool with compare(self, other) = "%bool_compare"
@@ -9226,21 +8502,21 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|pub impl BitXOr for Int with lxor(self : Int, other : Int) -> Int = "%i32_lxor"
       #|pub impl Shl for Int with shl(self, other) = "%i32_shl"
       #|pub impl Shr for Int with shr(self, other) = "%i32_shr"
-      #|#deprecated("Use infix operator `<<` instead", skip_current_package=false)
+      #|#deprecated("Use infix operator `<<` instead")
       #|#coverage.skip
       #|pub fn Int::lsl(self : Int, other : Int) -> Int = "%i32_shl"
-      #|#deprecated("Use infix operator `<<` instead", skip_current_package=false)
+      #|#deprecated("Use infix operator `<<` instead")
       #|#coverage.skip
       #|pub fn Int::shl(self : Int, other : Int) -> Int = "%i32_shl"
-      #|#deprecated("Use UInt type and infix operator `>>` instead", skip_current_package=false)
+      #|#deprecated("Use UInt type and infix operator `>>` instead")
       #|#coverage.skip
       #|pub fn Int::lsr(self : Int, other : Int) -> Int {
       #|  (self.reinterpret_as_uint() >> other).reinterpret_as_int()
       #|}
-      #|#deprecated("Use infix operator `>>` instead", skip_current_package=false)
+      #|#deprecated("Use infix operator `>>` instead")
       #|#coverage.skip
       #|pub fn Int::asr(self : Int, other : Int) -> Int = "%i32_shr"
-      #|#deprecated("Use infix operator `>>` instead", skip_current_package=false)
+      #|#deprecated("Use infix operator `>>` instead")
       #|#coverage.skip
       #|pub fn Int::shr(self : Int, other : Int) -> Int = "%i32_shr"
       #|pub fn Int::ctz(self : Int) -> Int = "%i32_ctz"
@@ -9260,7 +8536,7 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|pub fn Int::to_double(self : Int) -> Double = "%i32_to_f64"
       #|pub fn UInt::trunc_double(val : Double) -> UInt = "%f64.to_u32"
       #|pub fn Int::reinterpret_as_uint(self : Int) -> UInt = "%i32.to_u32_reinterpret"
-      #|#deprecated("Use `reinterpret_as_uint` instead", skip_current_package=false)
+      #|#deprecated("Use `reinterpret_as_uint` instead")
       #|#coverage.skip
       #|pub fn Int::to_uint(self : Int) -> UInt = "%i32.to_u32_reinterpret"
       #|pub fn Int::to_uint64(self : Int) -> UInt64 {
@@ -9285,7 +8561,7 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|pub fn Char::to_uint(self : Char) -> UInt {
       #|  self.to_int().reinterpret_as_uint()
       #|}
-      #|#deprecated("Use `Int::unsafe_to_char` instead, and use `Int::to_char` for safe conversion", skip_current_package=false)
+      #|#deprecated("Use `Int::unsafe_to_char` instead, and use `Int::to_char` for safe conversion")
       #|pub fn Char::from_int(val : Int) -> Char = "%char_from_int"
       #|pub impl Eq for Char with equal(self : Char, other : Char) -> Bool = "%char_eq"
       #|pub impl Compare for Char with compare(self, other) = "%char_compare"
@@ -9340,9 +8616,11 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|pub fn[T] FixedArray::make(len : Int, init : T) -> FixedArray[T] = "%fixedarray.make"
       #|#alias(charcode_length, deprecated)
       #|pub fn String::length(self : String) -> Int = "%string_length"
-      #|#alias(charcode_at, deprecated)
+      #|#alias(charcode_at)
       #|#alias("_[_]")
+      #|#deprecated("Use `code_unit_at` instead which returns UInt16")
       #|pub fn String::at(self : String, idx : Int) -> Int = "%string_get"
+      #|pub fn String::code_unit_at(self : String, idx : Int) -> UInt16 = "%string_get"
       #|#internal(unsafe, "Panic if index is out of bounds.")
       #|#doc(hidden)
       #|pub fn String::unsafe_charcode_at(self : String, idx : Int) -> Int = "%string.unsafe_get"
@@ -9358,7 +8636,7 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|  self.to_int().to_int64()
       #|}
       #|pub fn UInt::reinterpret_as_int(self : UInt) -> Int = "%u32.to_i32_reinterpret"
-      #|#deprecated("Use `reinterpret_as_int` instead", skip_current_package=false)
+      #|#deprecated("Use `reinterpret_as_int` instead")
       #|#coverage.skip
       #|pub fn UInt::to_int(self : UInt) -> Int = "%u32.to_i32_reinterpret"
       #|pub impl Add for UInt with add(self, other) = "%u32.add"
@@ -9377,16 +8655,16 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|pub impl BitOr for UInt with lor(self : UInt, other : UInt) -> UInt = "%u32.bitor"
       #|pub impl BitXOr for UInt with lxor(self : UInt, other : UInt) -> UInt = "%u32.bitxor"
       #|pub fn UInt::lnot(self : UInt) -> UInt = "%u32.bitnot"
-      #|#deprecated("Use infix operator `<<` instead", skip_current_package=false)
+      #|#deprecated("Use infix operator `<<` instead")
       #|#coverage.skip
       #|pub fn UInt::lsl(self : UInt, shift : Int) -> UInt = "%u32.shl"
-      #|#deprecated("Use infix operator `<<` instead", skip_current_package=false)
+      #|#deprecated("Use infix operator `<<` instead")
       #|#coverage.skip
       #|pub fn UInt::shl(self : UInt, shift : Int) -> UInt = "%u32.shl"
-      #|#deprecated("Use infix operator `>>` instead", skip_current_package=false)
+      #|#deprecated("Use infix operator `>>` instead")
       #|#coverage.skip
       #|pub fn UInt::lsr(self : UInt, shift : Int) -> UInt = "%u32.shr"
-      #|#deprecated("Use infix operator `>>` instead", skip_current_package=false)
+      #|#deprecated("Use infix operator `>>` instead")
       #|#coverage.skip
       #|pub fn UInt::shr(self : UInt, shift : Int) -> UInt = "%u32.shr"
       #|pub impl Shl for UInt with shl(self, shift) = "%u32.shl"
@@ -9401,18 +8679,24 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|  self.reinterpret_as_int().to_byte()
       #|}
       #|pub fn UInt::to_double(self : UInt) -> Double = "%u32.to_f64"
+      #|#deprecated("Use `Float::from_int` instead")
       #|pub fn Int::to_float(self : Int) -> Float = "%i32.to_f32"
+      #|#deprecated("Use `Float::reinterpret_from_int` instead")
       #|pub fn Int::reinterpret_as_float(self : Int) -> Float = "%i32.to_f32_reinterpret"
+      #|#deprecated("Use `Float::reinterpret_from_uint` instead")
       #|pub fn UInt::reinterpret_as_float(self : UInt) -> Float = "%i32.to_f32_reinterpret"
+      #|#deprecated("Use `Float::from_byte` instead")
       #|pub fn Byte::to_float(self : Byte) -> Float = "%byte.to_f32"
       #|pub fn Byte::to_double(self : Byte) -> Double {
       #|  self.to_int().to_double()
       #|}
+      #|#deprecated("Use `Float::from_double` instead", skip_current_package=true)
       #|pub fn Double::to_float(self : Double) -> Float = "%f64.to_f32"
+      #|#deprecated("Use `Float::from_uint` instead")
       #|pub fn UInt::to_float(self : UInt) -> Float = "%u32.to_f32"
-      #|pub fn Int16::to_int(self : Int16) -> Int = "%i16_to_i32"
-      #|pub fn Int16::to_byte(self : Int16) -> Byte = "%i16_to_byte"
+      #|#deprecated("Use `Int16::from_int` instead")
       #|pub fn Int::to_int16(self : Int) -> Int16 = "%i32_to_i16"
+      #|#deprecated("Use `Int16::from_byte` instead")
       #|pub fn Byte::to_int16(self : Byte) -> Int16 = "%byte_to_i16"
       #|pub fn UInt16::to_int(self : UInt16) -> Int = "%u16_to_i32"
       #|pub fn UInt16::to_byte(self : UInt16) -> Byte = "%u16_to_byte"
@@ -9698,11 +8982,11 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|  })
       #|  first
       #|}
-      #|#deprecated("Use `Iter::singleton(a) + self` instead", skip_current_package=false)
+      #|#deprecated("Use `Iter::singleton(a) + self` instead")
       #|pub fn[T] Iter::prepend(self : Iter[T], a : T) -> Iter[T] {
       #|  yield_ => if yield_(a) is IterContinue { self.run(yield_) } else { IterEnd }
       #|}
-      #|#deprecated("Use `self + Iter::singleton(a)` instead", skip_current_package=false)
+      #|#deprecated("Use `self + Iter::singleton(a)` instead")
       #|pub fn[T] Iter::append(self : Iter[T], a : T) -> Iter[T] {
       #|  yield_ => if self.run(yield_) is IterContinue { yield_(a) } else { IterEnd }
       #|}
@@ -9905,7 +9189,7 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|  (self.0)()
       #|}
       #|#locals(f)
-      #|#deprecated("write a loop instead.", skip_current_package=false)
+      #|#deprecated("write a loop instead.")
       #|pub fn[X] Iterator::run(
       #|  self : Iterator[X],
       #|  f : (X) -> IterResult,
@@ -9916,7 +9200,7 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|    IterContinue
       #|  }
       #|}
-      #|#deprecated("write a loop instead.", skip_current_package=false)
+      #|#deprecated("write a loop instead.")
       #|pub fn[X] Iterator::just_run(self : Iterator[X], f : (X) -> IterResult) -> Unit {
       #|  while self.next() is Some(x) {
       #|    if f(x) is IterEnd {
@@ -11030,19 +10314,22 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|  }
       #|  other
       #|}
-      #|pub fn[K : Hash + Eq, V] Map::merge(
-      #|  self : Map[K, V],
-      #|  other : Map[K, V],
-      #|) -> Map[K, V] {
+      #|pub fn[K : Eq, V] Map::merge(self : Map[K, V], other : Map[K, V]) -> Map[K, V] {
       #|  let result = self.copy()
       #|  result.merge_in_place(other)
       #|  result
       #|}
-      #|pub fn[K : Hash + Eq, V] Map::merge_in_place(
+      #|pub fn[K : Eq, V] Map::merge_in_place(
       #|  self : Map[K, V],
       #|  other : Map[K, V],
       #|) -> Unit {
-      #|  other.each((k, v) => self.set(k, v))
+      #|  loop other.head {
+      #|    Some({ key, value, next, hash, .. }) => {
+      #|      self.set_with_hash(key, value, hash)
+      #|      continue next
+      #|    }
+      #|    None => break
+      #|  }
       #|}
       #|#locals(f)
       #|pub fn[K, V] Map::retain(self : Map[K, V], f : (K, V) -> Bool) -> Unit {
@@ -11171,20 +10458,186 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|  }
       #|}
     ),
+    "mutarrayview.mbt": (
+      #|#builtin.valtype
+      #|type MutArrayView[T]
+      #|fn[T] MutArrayView::buf(self : MutArrayView[T]) -> UninitializedArray[T] = "%arrayview.buf"
+      #|fn[T] MutArrayView::start(self : MutArrayView[T]) -> Int = "%arrayview.start"
+      #|fn[T] MutArrayView::len(self : MutArrayView[T]) -> Int = "%arrayview.len"
+      #|fn[T] MutArrayView::make(
+      #|  buf : UninitializedArray[T],
+      #|  start : Int,
+      #|  len : Int,
+      #|) -> MutArrayView[T] = "%arrayview.make"
+      #|pub fn[T] MutArrayView::length(self : MutArrayView[T]) -> Int {
+      #|  self.len()
+      #|}
+      #|#alias("_[_]")
+      #|pub fn[T] MutArrayView::at(self : MutArrayView[T], index : Int) -> T {
+      #|  guard index >= 0 && index < self.len() else {
+      #|    abort(
+      #|      "index out of bounds: the len is from 0 to \{self.len()} but the index is \{index}",
+      #|    )
+      #|  }
+      #|  self.buf()[self.start() + index]
+      #|}
+      #|#intrinsic("%arrayview.unsafe_get")
+      #|#internal(unsafe, "Panic if index is out of bounds")
+      #|pub fn[T] MutArrayView::unsafe_get(self : MutArrayView[T], index : Int) -> T {
+      #|  self.buf()[self.start() + index]
+      #|}
+      #|#alias("_[_]=_")
+      #|pub fn[T] MutArrayView::set(
+      #|  self : MutArrayView[T],
+      #|  index : Int,
+      #|  value : T,
+      #|) -> Unit {
+      #|  guard index >= 0 && index < self.len() else {
+      #|    abort(
+      #|      "index out of bounds: the len is from 0 to \{self.len()} but the index is \{index}",
+      #|    )
+      #|  }
+      #|  self.buf()[self.start() + index] = value
+      #|}
+      #|#intrinsic("%arrayview.unsafe_set")
+      #|#internal(unsafe, "Panic if index is out of bounds")
+      #|pub fn[T] MutArrayView::unsafe_set(
+      #|  self : MutArrayView[T],
+      #|  index : Int,
+      #|  value : T,
+      #|) -> Unit {
+      #|  self.buf()[self.start() + index] = value
+      #|}
+      #|pub fn[T] Array::mut_view(
+      #|  self : Array[T],
+      #|  start? : Int = 0,
+      #|  end? : Int,
+      #|) -> MutArrayView[T] {
+      #|  let len = self.length()
+      #|  let end = match end {
+      #|    None => len
+      #|    Some(end) => if end < 0 { len + end } else { end }
+      #|  }
+      #|  let start = if start < 0 { len + start } else { start }
+      #|  guard start >= 0 && start <= end && end <= len else {
+      #|    abort("View index out of bounds")
+      #|  }
+      #|  MutArrayView::make(self.buffer(), start, end - start)
+      #|}
+      #|pub fn[T] MutArrayView::mut_view(
+      #|  self : MutArrayView[T],
+      #|  start? : Int = 0,
+      #|  end? : Int,
+      #|) -> MutArrayView[T] {
+      #|  let len = self.length()
+      #|  let end = match end {
+      #|    None => len
+      #|    Some(end) => if end < 0 { len + end } else { end }
+      #|  }
+      #|  let start = if start < 0 { len + start } else { start }
+      #|  guard start >= 0 && start <= end && end <= len else {
+      #|    abort("View index out of bounds")
+      #|  }
+      #|  MutArrayView::make(self.buf(), self.start() + start, end - start)
+      #|}
+      #|pub fn[T] FixedArray::mut_view(
+      #|  self : FixedArray[T],
+      #|  start? : Int = 0,
+      #|  end? : Int,
+      #|) -> MutArrayView[T] {
+      #|  let len = self.length()
+      #|  let end = match end {
+      #|    None => len
+      #|    Some(end) => if end < 0 { len + end } else { end }
+      #|  }
+      #|  let start = if start < 0 { len + start } else { start }
+      #|  guard start >= 0 && start <= end && end <= len else {
+      #|    abort("View index out of bounds")
+      #|  }
+      #|  MutArrayView::make(
+      #|    unsafe_cast_fixedarray_to_uninitializedarray(self),
+      #|    start,
+      #|    end - start,
+      #|  )
+      #|}
+      #|#alias("_[_:_]")
+      #|pub fn[T] MutArrayView::sub(
+      #|  self : MutArrayView[T],
+      #|  start? : Int = 0,
+      #|  end? : Int,
+      #|) -> ArrayView[T] {
+      #|  let len = self.length()
+      #|  let end = match end {
+      #|    None => len
+      #|    Some(end) => if end < 0 { len + end } else { end }
+      #|  }
+      #|  let start = if start < 0 { len + start } else { start }
+      #|  guard start >= 0 && start <= end && end <= len else {
+      #|    abort("View index out of bounds")
+      #|  }
+      #|  ArrayView::make(self.buf(), self.start() + start, end - start)
+      #|}
+      #|pub fn[X] MutArrayView::iterator(self : MutArrayView[X]) -> Iterator[X] {
+      #|  let mut i = 0
+      #|  Iterator::new(fn() {
+      #|    guard i < self.length() else { None }
+      #|    let elem = self.unsafe_get(i)
+      #|    i += 1
+      #|    Some(elem)
+      #|  })
+      #|}
+      #|pub fn[X] MutArrayView::rev_iterator(self : MutArrayView[X]) -> Iterator[X] {
+      #|  let mut i = self.length()
+      #|  Iterator::new(fn() {
+      #|    guard i > 0 else { None }
+      #|    i -= 1
+      #|    Some(self.unsafe_get(i))
+      #|  })
+      #|}
+      #|pub fn[X] MutArrayView::iterator2(self : MutArrayView[X]) -> Iterator2[Int, X] {
+      #|  let mut i = 0
+      #|  Iterator2::new(fn() {
+      #|    guard i < self.length() else { None }
+      #|    let result = Some((i, self.unsafe_get(i)))
+      #|    i += 1
+      #|    result
+      #|  })
+      #|}
+      #|pub impl[X : Show] Show for MutArrayView[X] with output(self, logger) {
+      #|  self[:].output(logger)
+      #|}
+      #|pub impl[T : Eq] Eq for MutArrayView[T] with equal(self, other) -> Bool {
+      #|  self[:] == other[:]
+      #|}
+      #|pub impl[T : Compare] Compare for MutArrayView[T] with compare(self, other) -> Int {
+      #|  self[:].compare(other[:])
+      #|}
+      #|pub impl[A : Hash] Hash for MutArrayView[A] with hash_combine(self, hasher) {
+      #|  self[:].hash_combine(hasher)
+      #|}
+    ),
     "op.mbt": (
       #|#coverage.skip
+      #|#deprecated
+      #|#doc(hidden)
       #|pub fn[T : Compare] op_lt(self_ : T, other : T) -> Bool {
       #|  Compare::op_lt(self_, other)
       #|}
       #|#coverage.skip
+      #|#deprecated
+      #|#doc(hidden)
       #|pub fn[T : Compare] op_gt(self_ : T, other : T) -> Bool {
       #|  Compare::op_gt(self_, other)
       #|}
       #|#coverage.skip
+      #|#deprecated
+      #|#doc(hidden)
       #|pub fn[T : Compare] op_le(self_ : T, other : T) -> Bool {
       #|  Compare::op_le(self_, other)
       #|}
       #|#coverage.skip
+      #|#deprecated
+      #|#doc(hidden)
       #|pub fn[T : Compare] op_ge(self_ : T, other : T) -> Bool {
       #|  Compare::op_ge(self_, other)
       #|}
@@ -11196,32 +10649,32 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
     "operators.mbt": (
       #|pub(open) trait Add {
       #|  add(Self, Self) -> Self = _
-      #|  #deprecated("use `add` instead")
+      #|  #deprecated("use `add` instead", skip_current_package=true)
       #|  op_add(Self, Self) -> Self = _
       #|}
       #|pub(open) trait Sub {
       #|  sub(Self, Self) -> Self = _
-      #|  #deprecated("use `sub` instead")
+      #|  #deprecated("use `sub` instead", skip_current_package=true)
       #|  op_sub(Self, Self) -> Self = _
       #|}
       #|pub(open) trait Mul {
       #|  mul(Self, Self) -> Self = _
-      #|  #deprecated("use `mul` instead")
+      #|  #deprecated("use `mul` instead", skip_current_package=true)
       #|  op_mul(Self, Self) -> Self = _
       #|}
       #|pub(open) trait Div {
       #|  div(Self, Self) -> Self = _
-      #|  #deprecated("use `div` instead")
+      #|  #deprecated("use `div` instead", skip_current_package=true)
       #|  op_div(Self, Self) -> Self = _
       #|}
       #|pub(open) trait Neg {
       #|  neg(Self) -> Self = _
-      #|  #deprecated("use `neg` instead")
+      #|  #deprecated("use `neg` instead", skip_current_package=true)
       #|  op_neg(Self) -> Self = _
       #|}
       #|pub(open) trait Mod {
       #|  mod(Self, Self) -> Self = _
-      #|  #deprecated("use `mod` instead")
+      #|  #deprecated("use `mod` instead", skip_current_package=true)
       #|  op_mod(Self, Self) -> Self = _
       #|}
       #|pub(open) trait BitAnd {
@@ -11235,12 +10688,12 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|}
       #|pub(open) trait Shl {
       #|  shl(Self, Int) -> Self = _
-      #|  #deprecated("use `shl` instead")
+      #|  #deprecated("use `shl` instead", skip_current_package=true)
       #|  op_shl(Self, Int) -> Self = _
       #|}
       #|pub(open) trait Shr {
       #|  shr(Self, Int) -> Self = _
-      #|  #deprecated("use `shr` instead")
+      #|  #deprecated("use `shr` instead", skip_current_package=true)
       #|  op_shr(Self, Int) -> Self = _
       #|}
       #|#deprecated("replace `impl op_add` with `impl add`")
@@ -11409,14 +10862,14 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|    None => None
       #|  }
       #|}
-      #|#deprecated("use `option.bind(x => x)` instead", skip_current_package=false)
+      #|#deprecated("use `option.bind(x => x)` instead")
       #|pub fn[T] Option::flatten(self : T??) -> T? {
       #|  match self {
       #|    Some(inner) => inner
       #|    None => None
       #|  }
       #|}
-      #|#deprecated("use `x is None` instead", skip_current_package=false)
+      #|#deprecated("use `x is None` instead")
       #|pub fn[T] Option::is_empty(self : T?) -> Bool {
       #|  self is None
       #|}
@@ -11426,11 +10879,11 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|    None => None
       #|  }
       #|}
-      #|#deprecated("use `x is Some(_)` instead", skip_current_package=false)
+      #|#deprecated("use `x is Some(_)` instead")
       #|pub fn[T] Option::is_some(self : T?) -> Bool {
       #|  self is Some(_)
       #|}
-      #|#deprecated("use `x is None` instead", skip_current_package=false)
+      #|#deprecated("use `x is None` instead")
       #|pub fn[T] Option::is_none(self : T?) -> Bool {
       #|  self is None
       #|}
@@ -11679,9 +11132,6 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|pub impl Show for Byte with output(self, logger) {
       #|  logger.write_string(self.to_string())
       #|}
-      #|pub impl Show for Int16 with output(self, logger) {
-      #|  logger.write_string(self.to_string())
-      #|}
       #|pub impl Show for UInt16 with output(self, logger) {
       #|  logger.write_string(self.to_string())
       #|}
@@ -11841,7 +11291,7 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|  bytes.blit_from_string(0, str, start, len)
       #|  bytes.unsafe_reinterpret_as_bytes().to_unchecked_string()
       #|}
-      #|#deprecated("Use `str[:]` or `str[:].to_string()` instead")
+      #|#deprecated("Use `str[:]` or `str[:].to_string()` instead", skip_current_package=true)
       #|pub fn String::substring(self : String, start? : Int = 0, end? : Int) -> String {
       #|  let len = self.length()
       #|  let end = match end {
@@ -11907,7 +11357,7 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|pub impl Default for String with default() {
       #|  ""
       #|}
-      #|#deprecated("Check `@encoding/utf8.encode`", skip_current_package=false)
+      #|#deprecated("Check `@encoding/utf8.encode`")
       #|pub fn String::to_bytes(self : String) -> Bytes {
       #|  let array = FixedArray::make(self.length() * 2, Byte::default())
       #|  array.blit_from_string(0, self, 0, self.length())
@@ -12448,7 +11898,7 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|    rv
       #|  })
       #|}
-      #|#deprecated("Check `@encoding/utf8.encode`", skip_current_package=false)
+      #|#deprecated("Check `@encoding/utf8.encode`")
       #|#coverage.skip
       #|pub fn StringView::to_bytes(self : StringView) -> Bytes {
       #|  let array = FixedArray::make(self.length() * 2, Byte::default())
@@ -13393,16 +12843,18 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|  let inc = self.data.set_utf16le_char(self.len, ch)
       #|  self.len += inc
       #|}
-      #|pub impl Logger for StringBuilder with write_substring(
+      #|pub impl Logger for StringBuilder with write_view(
       #|  self : StringBuilder,
-      #|  str : String,
-      #|  start : Int,
-      #|  len : Int,
+      #|  str : StringView,
       #|) -> Unit {
-      #|  guard start >= 0 && len >= 0 && start + len <= str.length()
-      #|  self.grow_if_necessary(self.len + len * 2)
-      #|  self.data.blit_from_string(self.len, str, start, len)
-      #|  self.len += len * 2
+      #|  self.grow_if_necessary(self.len + str.length() * 2)
+      #|  self.data.blit_from_string(
+      #|    self.len,
+      #|    str.data(),
+      #|    str.start_offset(),
+      #|    str.length(),
+      #|  )
+      #|  self.len += str.length() * 2
       #|}
       #|pub fn StringBuilder::to_string(self : StringBuilder) -> String {
       #|  self.data
@@ -13435,13 +12887,11 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|pub impl Logger for StringBuilder with write_char(self, ch) {
       #|  self.val += char_to_string(ch)
       #|}
-      #|pub impl Logger for StringBuilder with write_substring(
+      #|pub impl Logger for StringBuilder with write_view(
       #|  self : StringBuilder,
-      #|  str : String,
-      #|  start : Int,
-      #|  len : Int,
+      #|  str : StringView,
       #|) -> Unit {
-      #|  self.val += str.substring(start~, end=start + len)
+      #|  self.val += str.to_string()
       #|}
       #|pub impl Show for StringBuilder with output(self, logger) {
       #|  logger.write_string(self.val)
@@ -13459,11 +12909,18 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|fn StringView::end(self : StringView) -> Int = "%stringview.end"
       #|fn StringView::make_view(str : String, start : Int, end : Int) -> StringView = "%stringview.make"
       #|#alias("_[_]")
+      #|#deprecated("Use `code_unit_at` instead which returns UInt16")
       #|pub fn StringView::at(self : StringView, index : Int) -> Int {
       #|  guard index >= 0 && index < self.length() else {
       #|    abort("Index out of bounds")
       #|  }
       #|  self.str().unsafe_charcode_at(self.start() + index)
+      #|}
+      #|pub fn StringView::code_unit_at(self : StringView, index : Int) -> UInt16 {
+      #|  guard index >= 0 && index < self.length() else {
+      #|    abort("Index out of bounds")
+      #|  }
+      #|  self.str().code_unit_at(self.start() + index)
       #|}
       #|pub fn StringView::length(self : StringView) -> Int {
       #|  self.end() - self.start()
@@ -14370,9 +13827,6 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|  #|(num, radix) => {
       #|  #|  return (BigInt(num.hi >>> 0) << 32n | BigInt(num.lo >>> 0)).toString(radix);
       #|  #|}
-      #|pub fn Int16::to_string(self : Int16, radix? : Int = 10) -> String {
-      #|  self.to_int().to_string(radix~)
-      #|}
       #|pub fn UInt16::to_string(self : UInt16, radix? : Int = 10) -> String {
       #|  self.to_int().to_string(radix~)
       #|}
@@ -14405,7 +13859,7 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
     "traits.mbt": (
       #|pub(open) trait Eq {
       #|  equal(Self, Self) -> Bool = _
-      #|  #deprecated("use `equal` instead")
+      #|  #deprecated("use `equal` instead", skip_current_package=true)
       #|  op_equal(Self, Self) -> Bool = _
       #|}
       #|pub(open) trait Compare: Eq {
@@ -14438,9 +13892,21 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|  default() -> Self
       #|}
       #|pub(open) trait Logger {
-      #|  write_string(Self, String) -> Unit
-      #|  write_substring(Self, String, Int, Int) -> Unit
+      #|  write_string(Self, String) -> Unit = _
+      #|  #deprecated("use `write_view` instead", skip_current_package=true)
+      #|  write_substring(Self, String, Int, Int) -> Unit = _
+      #|  write_view(Self, StringView) -> Unit = _
       #|  write_char(Self, Char) -> Unit = _
+      #|}
+      #|impl Logger with write_substring(self, value, start, len) {
+      #|  self.write_view(try! value[start:start + len])
+      #|}
+      #|impl Logger with write_string(self, value) {
+      #|  self.write_view(value[:])
+      #|}
+      #|#deprecated("replace `impl write_substring` with `impl write_view`")
+      #|impl Logger with write_view(self, value) {
+      #|  self.write_substring(value.data(), value.start_offset(), value.length())
       #|}
       #|impl Logger with write_char(self, value) {
       #|  self.write_string([value])
@@ -16111,6 +15577,78 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|  [a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15]
       #|}
     ),
+    "uint16_char.mbt": (
+      #|pub fn UInt16::is_leading_surrogate(self : Self) -> Bool {
+      #|  self >= 0xD800 && self <= 0xDBFF
+      #|}
+      #|pub fn UInt16::is_trailing_surrogate(self : Self) -> Bool {
+      #|  self >= 0xDC00 && self <= 0xDFFF
+      #|}
+      #|pub fn UInt16::is_surrogate(self : Self) -> Bool {
+      #|  self >= 0xD800 && self <= 0xDFFF
+      #|}
+      #|pub fn UInt16::unsafe_to_char(self : UInt16) -> Char {
+      #|  self.to_int().unsafe_to_char()
+      #|}
+      #|pub fn UInt16::to_char(self : UInt16) -> Char? {
+      #|  if self is (0..=0xD7FF) || self is (0xE000..<_) {
+      #|    Some(self.unsafe_to_char())
+      #|  } else {
+      #|    None
+      #|  }
+      #|}
+      #|pub impl Add for UInt16 with add(self : UInt16, that : UInt16) -> UInt16 {
+      #|  (self.to_int() + that.to_int()).to_uint16()
+      #|}
+      #|pub impl Sub for UInt16 with sub(self : UInt16, that : UInt16) -> UInt16 {
+      #|  (self.to_int() - that.to_int()).to_uint16()
+      #|}
+      #|pub impl Mul for UInt16 with mul(self : UInt16, that : UInt16) -> UInt16 {
+      #|  (self.to_int() * that.to_int()).to_uint16()
+      #|}
+      #|pub impl Div for UInt16 with div(self : UInt16, that : UInt16) -> UInt16 {
+      #|  (self.to_int() / that.to_int()).to_uint16()
+      #|}
+      #|pub impl Mod for UInt16 with mod(self : UInt16, that : UInt16) -> UInt16 {
+      #|  (self.to_int() % that.to_int()).to_uint16()
+      #|}
+      #|pub impl Eq for UInt16 with equal(self, that) {
+      #|  self.to_int() == that.to_int()
+      #|}
+      #|pub impl Compare for UInt16 with compare(self, that) {
+      #|  self.to_int().compare(that.to_int())
+      #|}
+      #|pub impl Hash for UInt16 with hash_combine(self, hasher) {
+      #|  hasher.combine_int(self.to_int())
+      #|}
+      #|pub impl Shl for UInt16 with shl(self : UInt16, that : Int) -> UInt16 {
+      #|  (self.to_int() << that).to_uint16()
+      #|}
+      #|pub impl Shr for UInt16 with shr(self : UInt16, that : Int) -> UInt16 {
+      #|  (self.to_int() >> that).to_uint16()
+      #|}
+      #|pub impl BitOr for UInt16 with lor(self : UInt16, that : UInt16) -> UInt16 {
+      #|  (self.to_int() | that.to_int()).to_uint16()
+      #|}
+      #|pub impl BitAnd for UInt16 with land(self : UInt16, that : UInt16) -> UInt16 {
+      #|  (self.to_int() & that.to_int()).to_uint16()
+      #|}
+      #|pub impl BitXOr for UInt16 with lxor(self : UInt16, that : UInt16) -> UInt16 {
+      #|  (self.to_int() ^ that.to_int()).to_uint16()
+      #|}
+      #|pub impl Default for UInt16 with default() {
+      #|  0
+      #|}
+      #|pub impl ToJson for UInt16 with to_json(self : UInt16) -> Json {
+      #|  Json::number(self.to_int().to_double())
+      #|}
+      #|pub fn UInt16::to_uint(self : UInt16) -> UInt {
+      #|  self.to_int().reinterpret_as_uint()
+      #|}
+      #|pub fn UInt16::to_uint64(self : UInt16) -> UInt64 {
+      #|  self.to_int().to_uint64()
+      #|}
+    ),
     "uint64.mbt": (
       #|pub impl Default for UInt64 with default() {
       #|  0
@@ -16150,8 +15688,7 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|  ArrayView::make(self, start, end - start)
       #|}
       #|pub fn[A] UninitializedArray::length(self : UninitializedArray[A]) -> Int {
-      #|  let UninitializedArray(self) = self
-      #|  self.length()
+      #|  self.0.length()
       #|}
       #|#internal(unsafe, "For internal use only.")
       #|#doc(hidden)
@@ -16232,11 +15769,16 @@ let moonbitlang_core_bytes_module : RuntimePackage = RuntimePackage::new(
   deps={
     "moonbitlang/core/builtin": moonbitlang_core_builtin_module,
     "moonbitlang/core/byte": moonbitlang_core_byte_module,
+    "moonbitlang/core/uint16": moonbitlang_core_uint16_module,
   },
   files={
     "moon.pkg.json": (
       #|{
-      #|  "import": ["moonbitlang/core/builtin", "moonbitlang/core/byte"],
+      #|  "import": [
+      #|    "moonbitlang/core/builtin", 
+      #|    "moonbitlang/core/byte",
+      #|    "moonbitlang/core/uint16"
+      #|  ],
       #|  "test-import": [
       #|    "moonbitlang/core/array",
       #|    "moonbitlang/core/double", 
@@ -16267,12 +15809,9 @@ let moonbitlang_core_bytes_module : RuntimePackage = RuntimePackage::new(
       #|  _len : Int,
       #|) -> UInt {
       #|  let byte_index = offset >> 3
-      #|  let bit_mask = (1 << (7 - (offset & 7))).to_byte()
-      #|  if (bs.unsafe_get(byte_index) & bit_mask) != 0 {
-      #|    1
-      #|  } else {
-      #|    0
-      #|  }
+      #|  let bit_shift = 7 - (offset & 7)
+      #|  let byte_val = bs.unsafe_get(byte_index).to_uint()
+      #|  (byte_val >> bit_shift) & 1U
       #|}
       #|#internal(experimental, "subject to breaking change without notice")
       #|#doc(hidden)
@@ -16282,12 +15821,9 @@ let moonbitlang_core_bytes_module : RuntimePackage = RuntimePackage::new(
       #|  _len : Int,
       #|) -> Int {
       #|  let byte_index = offset >> 3
-      #|  let bit_mask = (1 << (7 - (offset & 7))).to_byte()
-      #|  if (bs.unsafe_get(byte_index) & bit_mask) != 0 {
-      #|    -1
-      #|  } else {
-      #|    0
-      #|  }
+      #|  let bit_shift = 7 - (offset & 7)
+      #|  let byte_val = bs.unsafe_get(byte_index).to_int()
+      #|  ((byte_val >> bit_shift) & 1) * -1
       #|}
       #|#internal(experimental, "subject to breaking change without notice")
       #|#doc(hidden)
@@ -16799,6 +16335,7 @@ let moonbitlang_core_bytes_module : RuntimePackage = RuntimePackage::new(
     ),
     "unsafe_bytes.mbt": (
       #|#intrinsic("%bytes.unsafe_read_uint64_le")
+      #|#doc(hidden)
       #|pub fn Bytes::unsafe_read_uint64_le(bytes : Bytes, index : Int) -> UInt64 {
       #|  let mut result : UInt64 = 0
       #|  for i in 0..=7 {
@@ -16807,6 +16344,7 @@ let moonbitlang_core_bytes_module : RuntimePackage = RuntimePackage::new(
       #|  result
       #|}
       #|#intrinsic("%bytes.unsafe_read_uint64_be")
+      #|#doc(hidden)
       #|pub fn Bytes::unsafe_read_uint64_be(bytes : Bytes, index : Int) -> UInt64 {
       #|  let mut result : UInt64 = 0
       #|  for i in 0..=7 {
@@ -16815,6 +16353,7 @@ let moonbitlang_core_bytes_module : RuntimePackage = RuntimePackage::new(
       #|  result
       #|}
       #|#intrinsic("%bytes.unsafe_read_uint32_le")
+      #|#doc(hidden)
       #|pub fn Bytes::unsafe_read_uint32_le(bytes : Bytes, index : Int) -> UInt {
       #|  let mut result : UInt = 0
       #|  for i in 0..=3 {
@@ -16823,6 +16362,7 @@ let moonbitlang_core_bytes_module : RuntimePackage = RuntimePackage::new(
       #|  result
       #|}
       #|#intrinsic("%bytes.unsafe_read_uint32_be")
+      #|#doc(hidden)
       #|pub fn Bytes::unsafe_read_uint32_be(bytes : Bytes, index : Int) -> UInt {
       #|  let mut result : UInt = 0
       #|  for i in 0..=3 {
@@ -16831,6 +16371,7 @@ let moonbitlang_core_bytes_module : RuntimePackage = RuntimePackage::new(
       #|  result
       #|}
       #|#intrinsic("%bytes.unsafe_read_uint16_le")
+      #|#doc(hidden)
       #|pub fn Bytes::unsafe_read_uint16_le(bytes : Bytes, index : Int) -> UInt16 {
       #|  let mut result : UInt16 = 0
       #|  for i in 0..=1 {
@@ -16839,6 +16380,7 @@ let moonbitlang_core_bytes_module : RuntimePackage = RuntimePackage::new(
       #|  result
       #|}
       #|#intrinsic("%bytes.unsafe_read_uint16_be")
+      #|#doc(hidden)
       #|pub fn Bytes::unsafe_read_uint16_be(bytes : Bytes, index : Int) -> UInt16 {
       #|  let mut result : UInt16 = 0
       #|  for i in 0..=1 {
@@ -16885,7 +16427,7 @@ let moonbitlang_core_bytes_module : RuntimePackage = RuntimePackage::new(
     ),
     "view.mbt": (
       #|#builtin.valtype
-      #|#deprecated("Use `BytesView` instead", skip_current_package=false)
+      #|#deprecated("Use `BytesView` instead")
       #|pub type View = BytesView
       #|fn BytesView::bytes(self : BytesView) -> Bytes = "%bytesview.bytes"
       #|fn BytesView::start(self : BytesView) -> Int = "%bytesview.start"
@@ -16978,21 +16520,24 @@ let moonbitlang_core_bytes_module : RuntimePackage = RuntimePackage::new(
       #|    Some(result)
       #|  })
       #|}
-      #|#deprecated(skip_current_package=false, "Use bits pattern directly")
+      #|#deprecated("Use bits pattern directly")
+      #|#doc(hidden)
       #|pub fn BytesView::to_uint_be(self : BytesView) -> UInt {
       #|  (self[0].to_uint() << 24) +
       #|  (self[1].to_uint() << 16) +
       #|  (self[2].to_uint() << 8) +
       #|  self[3].to_uint()
       #|}
-      #|#deprecated(skip_current_package=false, "Use bits pattern directly")
+      #|#deprecated("Use bits pattern directly")
+      #|#doc(hidden)
       #|pub fn BytesView::to_uint_le(self : BytesView) -> UInt {
       #|  self[0].to_uint() +
       #|  (self[1].to_uint() << 8) +
       #|  (self[2].to_uint() << 16) +
       #|  (self[3].to_uint() << 24)
       #|}
-      #|#deprecated(skip_current_package=false, "Use bits pattern directly")
+      #|#deprecated("Use bits pattern directly")
+      #|#doc(hidden)
       #|pub fn BytesView::to_uint64_be(self : BytesView) -> UInt64 {
       #|  (self[0].to_uint().to_uint64() << 56) +
       #|  (self[1].to_uint().to_uint64() << 48) +
@@ -17003,7 +16548,8 @@ let moonbitlang_core_bytes_module : RuntimePackage = RuntimePackage::new(
       #|  (self[6].to_uint().to_uint64() << 8) +
       #|  self[7].to_uint().to_uint64()
       #|}
-      #|#deprecated(skip_current_package=false, "Use bits pattern directly")
+      #|#deprecated("Use bits pattern directly")
+      #|#doc(hidden)
       #|pub fn BytesView::to_uint64_le(self : BytesView) -> UInt64 {
       #|  self[0].to_uint().to_uint64() +
       #|  (self[1].to_uint().to_uint64() << 8) +
@@ -17014,33 +16560,41 @@ let moonbitlang_core_bytes_module : RuntimePackage = RuntimePackage::new(
       #|  (self[6].to_uint().to_uint64() << 48) +
       #|  (self[7].to_uint().to_uint64() << 56)
       #|}
+      #|#deprecated
+      #|#doc(hidden)
       #|pub fn BytesView::to_int_be(self : BytesView) -> Int {
-      #|  self.to_uint_be().reinterpret_as_int()
+      #|  guard self is [u32be(u32), ..]
+      #|  u32.reinterpret_as_int()
       #|}
+      #|#deprecated
+      #|#doc(hidden)
       #|pub fn BytesView::to_int_le(self : BytesView) -> Int {
-      #|  self.to_uint_le().reinterpret_as_int()
+      #|  guard self is [u32le(u32), ..]
+      #|  u32.reinterpret_as_int()
       #|}
+      #|#deprecated
+      #|#doc(hidden)
       #|pub fn BytesView::to_int64_be(self : BytesView) -> Int64 {
-      #|  self.to_uint64_be().reinterpret_as_int64()
+      #|  guard self is [u64be(u64), ..]
+      #|  u64.reinterpret_as_int64()
       #|}
+      #|#deprecated
+      #|#doc(hidden)
       #|pub fn BytesView::to_int64_le(self : BytesView) -> Int64 {
-      #|  self.to_uint64_le().reinterpret_as_int64()
+      #|  guard self is [u64le(u64), ..]
+      #|  u64.reinterpret_as_int64()
       #|}
-      #|#deprecated(skip_current_package=false, "Use bits pattern directly")
-      #|pub fn BytesView::to_float_be(self : BytesView) -> Float {
-      #|  self.to_uint_be().reinterpret_as_float()
-      #|}
-      #|#deprecated(skip_current_package=false, "Use bits pattern directly")
-      #|pub fn BytesView::to_float_le(self : BytesView) -> Float {
-      #|  self.to_uint_le().reinterpret_as_float()
-      #|}
-      #|#deprecated(skip_current_package=false, "Use bits pattern directly")
+      #|#deprecated("Use bits pattern directly")
+      #|#doc(hidden)
       #|pub fn BytesView::to_double_be(self : BytesView) -> Double {
-      #|  self.to_uint64_be().reinterpret_as_double()
+      #|  guard self is [u64be(u64), ..]
+      #|  u64.reinterpret_as_double()
       #|}
-      #|#deprecated(skip_current_package=false, "Use bits pattern directly")
+      #|#deprecated("Use bits pattern directly")
+      #|#doc(hidden)
       #|pub fn BytesView::to_double_le(self : BytesView) -> Double {
-      #|  self.to_uint64_le().reinterpret_as_double()
+      #|  guard self is [u64le(u64), ..]
+      #|  u64.reinterpret_as_double()
       #|}
       #|pub impl Show for BytesView with output(self, logger) {
       #|  logger.write_string("b\"")
@@ -18040,21 +17594,20 @@ let moonbitlang_core_deque_module : RuntimePackage = RuntimePackage::new(
       #|  }
       #|  let mut i = 0
       #|  for deque in self {
-      #|    let cap = deque.buf.length()
-      #|    let head_len = cap - deque.head
-      #|    target.buf.unsafe_blit(i, deque.buf, deque.head, head_len)
-      #|    if head_len < deque.len {
-      #|      target.buf.unsafe_blit(i + head_len, deque.buf, 0, deque.len - head_len)
-      #|    }
-      #|    i += deque.len
+      #|    let (front, back) = deque.as_views()
+      #|    target.buf.unsafe_blit(i, deque.buf, front.start_offset(), front.length())
+      #|    i += front.length()
+      #|    target.buf.unsafe_blit(i, deque.buf, back.start_offset(), back.length())
+      #|    i += back.length()
       #|  }
       #|  target
       #|}
       #|pub fn[A] Deque::drain(self : Deque[A], start~ : Int, len? : Int) -> Deque[A] {
-      #|  let len = match len {
-      #|    Some(l) => if l > self.len { self.len } else { l }
-      #|    None => self.len - start
+      #|  if start >= self.len {
+      #|    return new()
       #|  }
+      #|  let max_len = self.len - start
+      #|  let len = if len is Some(l) && l <= max_len { l } else { max_len }
       #|  if len == 0 {
       #|    return new()
       #|  }
@@ -18064,31 +17617,89 @@ let moonbitlang_core_deque_module : RuntimePackage = RuntimePackage::new(
       #|    head: 0,
       #|    tail: len - 1,
       #|  }
-      #|  let cap = self.buf.length()
-      #|  let start_idx = (self.head + start) % cap
-      #|  let start_len = cap - start_idx
-      #|  if start_len < len {
-      #|    deque.buf.unsafe_blit(0, self.buf, start_idx, start_len)
-      #|    deque.buf.unsafe_blit(start_len, self.buf, 0, len - start_len)
-      #|    for i in 0..<start_len {
-      #|      set_null(self.buf, (start_idx + i) % cap)
-      #|    }
-      #|    for i in 0..<(len - start_len) {
-      #|      set_null(self.buf, i)
+      #|  let (front, back) = self.as_views()
+      #|  if start < front.length() {
+      #|    let front_max_drain = front.length() - start
+      #|    if len <= front_max_drain {
+      #|      deque.buf.unsafe_blit(0, self.buf, front.start_offset() + start, len)
+      #|      if start == 0 && len == front_max_drain {
+      #|        for i in front.start_offset()..<self.buf.length() {
+      #|          set_null(self.buf, i)
+      #|        }
+      #|        self.head = 0
+      #|      } else {
+      #|        let new_head = front.start_offset() + len
+      #|        self.buf.unsafe_blit(new_head, self.buf, front.start_offset(), start)
+      #|        for i in front.start_offset()..<new_head {
+      #|          set_null(self.buf, i)
+      #|        }
+      #|        self.head = new_head
+      #|      }
+      #|    } else {
+      #|      deque.buf.unsafe_blit(
+      #|        0,
+      #|        self.buf,
+      #|        front.start_offset() + start,
+      #|        front_max_drain,
+      #|      )
+      #|      deque.buf.unsafe_blit(front_max_drain, self.buf, 0, len - front_max_drain)
+      #|      if start > 0 {
+      #|        let back_remaining = len - front_max_drain
+      #|        let back_len = back.length() - back_remaining
+      #|        if back_len == 0 {
+      #|          for i in 0..<back.length() {
+      #|            set_null(self.buf, i)
+      #|          }
+      #|          for i in (front.start_offset() + start)..<self.buf.length() {
+      #|            set_null(self.buf, i)
+      #|          }
+      #|          self.tail = front.start_offset() + start - 1
+      #|        } else {
+      #|          let new_head = front.start_offset() + front_max_drain
+      #|          self.buf.unsafe_blit(new_head, self.buf, front.start_offset(), start)
+      #|          for i in front.start_offset()..<new_head {
+      #|            set_null(self.buf, i)
+      #|          }
+      #|          self.head = new_head
+      #|          self.buf.unsafe_blit(0, self.buf, back_remaining, back_len)
+      #|          for i in back_len..<back.length() {
+      #|            set_null(self.buf, i)
+      #|          }
+      #|          self.tail = back_len - 1
+      #|        }
+      #|      } else {
+      #|        for i in (front.start_offset() + start)..<self.buf.length() {
+      #|          set_null(self.buf, i)
+      #|        }
+      #|        for i in 0..<(len - front_max_drain) {
+      #|          set_null(self.buf, i)
+      #|        }
+      #|        self.head = len - front_max_drain
+      #|      }
       #|    }
       #|  } else {
-      #|    deque.buf.unsafe_blit(0, self.buf, start_idx, len)
-      #|    for i in 0..<len {
-      #|      set_null(self.buf, start_idx + i)
+      #|    let back_start = start - front.length()
+      #|    deque.buf.unsafe_blit(0, self.buf, back_start, len)
+      #|    self.buf.unsafe_blit(
+      #|      back_start,
+      #|      self.buf,
+      #|      back_start + len,
+      #|      back.length() - back_start - len,
+      #|    )
+      #|    for i in (back.length() - len)..<back.length() {
+      #|      set_null(self.buf, i)
+      #|    }
+      #|    if back.length() == len {
+      #|      self.tail = self.buf.length() - 1
+      #|    } else {
+      #|      self.tail = back.length() - len - 1
       #|    }
       #|  }
-      #|  let new_head = self.head + len
-      #|  for i = start - 1; i >= 0; i = i - 1 {
-      #|    self.buf[(new_head + i) % cap] = self.buf[(self.head + i) % cap]
-      #|    set_null(self.buf, (self.head + i) % cap)
-      #|  }
-      #|  self.head = new_head % cap
       #|  self.len -= len
+      #|  if self.len == 0 {
+      #|    self.head = 0
+      #|    self.tail = 0
+      #|  }
       #|  deque
       #|}
       #|#locals(cmp)
@@ -18138,7 +17749,8 @@ let moonbitlang_core_deque_module : RuntimePackage = RuntimePackage::new(
       #|  }
       #|  0
       #|}
-      #|pub fn[A] Deque::rev_inplace(self : Deque[A]) -> Unit {
+      #|#alias(rev_inplace, deprecated)
+      #|pub fn[A] Deque::rev_in_place(self : Deque[A]) -> Unit {
       #|  guard self.len > 0 else { return }
       #|  let cap = self.buf.length()
       #|  let mut left = self.head
@@ -18248,12 +17860,12 @@ let moonbitlang_core_double_module : RuntimePackage = RuntimePackage::new(
       #|}
     ),
     "deprecated.mbt": (
-      #|#deprecated("Use `@double.not_a_number` instead", skip_current_package=false)
+      #|#deprecated("Use `@double.not_a_number` instead")
       #|#coverage.skip
       #|pub fn Double::nan() -> Double {
       #|  not_a_number
       #|}
-      #|#deprecated("Use `@double.infinity` and `@double.neg_infinity` instead", skip_current_package=false)
+      #|#deprecated("Use `@double.infinity` and `@double.neg_infinity` instead")
       #|#coverage.skip
       #|pub fn Double::inf(sign : Int) -> Double {
       #|  if sign >= 0 {
@@ -18262,7 +17874,7 @@ let moonbitlang_core_double_module : RuntimePackage = RuntimePackage::new(
       #|    neg_infinity
       #|  }
       #|}
-      #|#deprecated("Use `@double.min_positive` instead", skip_current_package=false)
+      #|#deprecated("Use `@double.min_positive` instead")
       #|#coverage.skip
       #|pub fn Double::min_normal() -> Double {
       #|  min_positive
@@ -19646,7 +19258,7 @@ let moonbitlang_core_encoding_utf16_module : RuntimePackage = RuntimePackage::ne
       #|    arr[0] = 0xFE
       #|    arr[1] = 0xFF
       #|    for i in 0..<str.length() {
-      #|      let code_unit = str[i]
+      #|      let code_unit = str.code_unit_at(i)
       #|      arr[2 + i * 2] = (code_unit >> 8).to_byte()
       #|      arr[2 + i * 2 + 1] = (code_unit & 0xFF).to_byte()
       #|    }
@@ -19654,7 +19266,7 @@ let moonbitlang_core_encoding_utf16_module : RuntimePackage = RuntimePackage::ne
       #|  } else {
       #|    let arr = FixedArray::make(str.length() * 2, b'\x00')
       #|    for i in 0..<str.length() {
-      #|      let code_unit = str[i]
+      #|      let code_unit = str.code_unit_at(i)
       #|      arr[i * 2] = (code_unit >> 8).to_byte()
       #|      arr[i * 2 + 1] = (code_unit & 0xFF).to_byte()
       #|    }
@@ -20166,15 +19778,15 @@ let moonbitlang_core_float_module : RuntimePackage = RuntimePackage::new(
       #|}
     ),
     "float.mbt": (
-      #|pub let not_a_number : Float = (0x7FC00000).reinterpret_as_float()
-      #|pub let infinity : Float = (0x7F800000).reinterpret_as_float()
-      #|pub let neg_infinity : Float = (0xFF800000).reinterpret_as_float()
-      #|pub let max_value : Float = (0x7F7FFFFF).reinterpret_as_float()
-      #|pub let min_value : Float = (0xFF7FFFFF).reinterpret_as_float()
-      #|pub let min_positive : Float = (0x00800000).reinterpret_as_float()
+      #|pub let not_a_number : Float = Float::reinterpret_from_int(0x7FC00000)
+      #|pub let infinity : Float = Float::reinterpret_from_int(0x7F800000)
+      #|pub let neg_infinity : Float = Float::reinterpret_from_int(0xFF800000)
+      #|pub let max_value : Float = Float::reinterpret_from_int(0x7F7FFFFF)
+      #|pub let min_value : Float = Float::reinterpret_from_int(0xFF7FFFFF)
+      #|pub let min_positive : Float = Float::reinterpret_from_int(0x00800000)
       #|#as_free_fn(deprecated)
       #|pub fn Float::abs(self : Float) -> Float = "%f32.abs"
-      #|#deprecated(skip_current_package=false)
+      #|#deprecated
       #|pub fn default() -> Float {
       #|  0.0
       #|}
@@ -20190,10 +19802,22 @@ let moonbitlang_core_float_module : RuntimePackage = RuntimePackage::new(
       #|  hasher.combine_uint(self.reinterpret_as_uint())
       #|}
       #|pub fn Float::to_be_bytes(self : Float) -> Bytes {
-      #|  self.reinterpret_as_uint().to_be_bytes()
+      #|  let uint = self.reinterpret_as_uint()
+      #|  [
+      #|    (uint >> 24).to_byte(),
+      #|    (uint >> 16).to_byte(),
+      #|    (uint >> 8).to_byte(),
+      #|    uint.to_byte(),
+      #|  ]
       #|}
       #|pub fn Float::to_le_bytes(self : Float) -> Bytes {
-      #|  self.reinterpret_as_uint().to_le_bytes()
+      #|  let uint = self.reinterpret_as_uint()
+      #|  [
+      #|    uint.to_byte(),
+      #|    (uint >> 8).to_byte(),
+      #|    (uint >> 16).to_byte(),
+      #|    (uint >> 24).to_byte(),
+      #|  ]
       #|}
       #|pub fn Float::is_inf(self : Float) -> Bool {
       #|  self.is_pos_inf() || self.is_neg_inf()
@@ -20230,9 +19854,9 @@ let moonbitlang_core_float_module : RuntimePackage = RuntimePackage::new(
       #|    diff <= absolute_tolerance
       #|}
       #|pub impl Mod for Float with mod(self : Float, other : Float) -> Float {
-      #|  (self.to_double() % other.to_double()).to_float()
+      #|  Float::from_double(self.to_double() % other.to_double())
       #|}
-      #|#deprecated("Use `..<` in for loop or `until` method instead", skip_current_package=false)
+      #|#deprecated("Use `..<` in for loop or `until` method instead")
       #|#coverage.skip
       #|pub fn Float::upto(
       #|  self : Float,
@@ -20286,7 +19910,6 @@ let moonbitlang_core_float_module : RuntimePackage = RuntimePackage::new(
       #|pub impl ToJson for Float with to_json(self : Float) -> Json {
       #|  Json::number(self.to_double())
       #|}
-      #|pub fn Float::from_uint64(value : UInt64) -> Float = "%u64.to_f32"
       #|pub fn Float::sqrt(self : Float) -> Float = "%f32.sqrt"
       #|pub fn Float::reinterpret_as_int(self : Float) -> Int = "%f32.to_i32_reinterpret"
       #|pub impl Neg for Float with neg(self) = "%f32.neg"
@@ -20302,11 +19925,44 @@ let moonbitlang_core_float_module : RuntimePackage = RuntimePackage::new(
       #|pub impl Compare for Float with op_gt(x, y) = "%f32.gt"
       #|pub impl Compare for Float with op_ge(x, y) = "%f32.ge"
       #|pub fn Float::reinterpret_as_uint(self : Float) -> UInt = "%f32.to_i32_reinterpret"
+      #|pub fn Float::reinterpret_from_int(self : Int) -> Float = "%i32.to_f32_reinterpret"
+      #|pub fn Float::reinterpret_from_uint(self : UInt) -> Float = "%i32.to_f32_reinterpret"
+      #|test "Float::reinterpret" {
+      #|  inspect(Float::reinterpret_from_int(1065353216), content="1")
+      #|  inspect(Float::reinterpret_from_uint(0x3F800000), content="1")
+      #|}
+      #|pub fn Float::from_int(self : Int) -> Float = "%i32.to_f32"
+      #|pub fn Float::from_byte(self : Byte) -> Float = "%byte.to_f32"
+      #|pub fn Float::from_double(self : Double) -> Float = "%f64.to_f32"
+      #|pub fn Float::from_uint(self : UInt) -> Float = "%u32.to_f32"
+      #|#cfg(not(target="js"))
+      #|pub fn Float::from_uint64(self : UInt64) -> Float = "%u64.to_f32"
+      #|#cfg(target="js")
+      #|pub fn Float::from_uint64(self : UInt64) -> Float {
+      #|  Float::from_double(self.to_double())
+      #|}
+      #|test "Float::from_uint64" {
+      #|  let n = 42UL
+      #|  inspect(Float::from_uint64(n).to_double(), content="42")
+      #|  let big = 18446744073709551615UL // UInt64::max_value
+      #|  inspect(Float::from_uint64(big).to_double(), content="18446744073709552000")
+      #|}
+      #|#cfg(not(target="js"))
+      #|pub fn Float::from_int64(self : Int64) -> Float = "%i64.to_f32"
+      #|#cfg(target="js")
+      #|pub fn Float::from_int64(self : Int64) -> Float {
+      #|  Float::from_double(self.to_double())
+      #|}
+      #|test "Float::from_int64" {
+      #|  let n = 42L
+      #|  let f = Float::from_int64(n)
+      #|  inspect(f.to_double(), content="42")
+      #|}
     ),
     "pow.mbt": (
       #|#as_free_fn
       #|pub fn Float::pow(self : Float, other : Float) -> Float {
-      #|  self.to_double().pow(other.to_double()).to_float()
+      #|  Float::from_double(self.to_double().pow(other.to_double()))
       #|}
     ),
     "round.mbt": (
@@ -20319,13 +19975,13 @@ let moonbitlang_core_float_module : RuntimePackage = RuntimePackage::new(
       #|  let u32 = self.reinterpret_as_uint()
       #|  let biased_exp = ((u32 >> frac_bits) & ((0x1U << exp_bits) - 1)).reinterpret_as_int()
       #|  if biased_exp < exp_bias {
-      #|    return (u32 & sign_mask).reinterpret_as_float()
+      #|    return Float::reinterpret_from_uint(u32 & sign_mask)
       #|  } else if biased_exp >= exp_bias + frac_bits {
       #|    return self
       #|  }
       #|  let mask_shift = biased_exp - exp_bias + exp_bits
       #|  let trunc_mask = (sign_mask.reinterpret_as_int() >> mask_shift).reinterpret_as_uint()
-      #|  return (u32 & trunc_mask).reinterpret_as_float()
+      #|  return Float::reinterpret_from_uint(u32 & trunc_mask)
       #|}
       #|#as_free_fn
       #|pub fn Float::ceil(self : Float) -> Float {
@@ -21933,7 +21589,7 @@ let moonbitlang_core_immut_array_module : RuntimePackage = RuntimePackage::new(
       #|}
     ),
     "deprecated.mbt": (
-      #|#deprecated("We don't copy immutable array", skip_current_package=false)
+      #|#deprecated("We don't copy immutable array")
       #|#coverage.skip
       #|pub fn[A] T::copy(self : T[A]) -> T[A] {
       #|  fn copy(t : Tree[A]) -> Tree[A] {
@@ -24256,12 +23912,12 @@ let moonbitlang_core_immut_list_module : RuntimePackage = RuntimePackage::new(
       #|}
     ),
     "deprecated.mbt": (
-      #|#deprecated("use `@list` instead", skip_current_package=false)
+      #|#deprecated("use `@list` instead")
       #|pub(all) enum T[A] {
       #|  Nil
       #|  Cons(A, T[A])
       #|} derive(Eq)
-      #|#deprecated("use `@immut/list.from_json` instead", skip_current_package=false)
+      #|#deprecated("use `@immut/list.from_json` instead")
       #|#coverage.skip
       #|pub fn[A : @json.FromJson] T::from_json(
       #|  json : Json,
@@ -24280,7 +23936,7 @@ let moonbitlang_core_immut_list_module : RuntimePackage = RuntimePackage::new(
       #|  }
       #|  aux(self)
       #|}
-      #|#deprecated("use `==` instead", skip_current_package=false)
+      #|#deprecated("use `==` instead")
       #|pub fn[A : Eq] T::equal(self : T[A], other : T[A]) -> Bool {
       #|  loop (self, other) {
       #|    (Nil, Nil) => true
@@ -24288,29 +23944,29 @@ let moonbitlang_core_immut_list_module : RuntimePackage = RuntimePackage::new(
       #|    (_, _) => false
       #|  }
       #|}
-      #|#deprecated("use `@immut/list.from_array` instead", skip_current_package=false)
+      #|#deprecated("use `@immut/list.from_array` instead")
       #|#coverage.skip
       #|pub fn[A] T::from_array(arr : ArrayView[A]) -> T[A] {
       #|  from_array(arr)
       #|}
-      #|#deprecated("use `@immut/list.default` instead", skip_current_package=false)
+      #|#deprecated("use `@immut/list.default` instead")
       #|#coverage.skip
       #|pub fn[X] T::default() -> T[X] {
       #|  Nil
       #|}
-      #|#deprecated("use `@immut/list.from_iter` instead", skip_current_package=false)
+      #|#deprecated("use `@immut/list.from_iter` instead")
       #|#coverage.skip
       #|pub fn[A] T::from_iter(iter : Iter[A]) -> T[A] {
       #|  from_iter(iter)
       #|}
-      #|#deprecated("use `@immut/list.of` instead", skip_current_package=false)
+      #|#deprecated("use `@immut/list.of` instead")
       #|#coverage.skip
       #|pub fn[A] T::of(arr : ArrayView[A]) -> T[A] {
       #|  of(arr)
       #|}
     ),
     "list.mbt": (
-      #|#deprecated("use `@list` instead", skip_current_package=false)
+      #|#deprecated("use `@list` instead")
       #|pub fn[A] T::add(self : T[A], head : A) -> T[A] {
       #|  Cons(head, self)
       #|}
@@ -24326,7 +23982,7 @@ let moonbitlang_core_immut_list_module : RuntimePackage = RuntimePackage::new(
       #|  }
       #|  Json::array(jsons)
       #|}
-      #|#deprecated("use `@list` instead", skip_current_package=false)
+      #|#deprecated("use `@list` instead")
       #|pub fn[A : ToJson] T::to_json(self : T[A]) -> Json {
       #|  ToJson::to_json(self)
       #|}
@@ -24340,13 +23996,13 @@ let moonbitlang_core_immut_list_module : RuntimePackage = RuntimePackage::new(
       #|    list
       #|  }
       #|}
-      #|#deprecated("use `@list` instead", skip_current_package=false)
+      #|#deprecated("use `@list` instead")
       #|pub fn[A : @json.FromJson] from_json(
       #|  json : Json,
       #|) -> T[A] raise @json.JsonDecodeError {
       #|  @json.from_json(json)
       #|}
-      #|#deprecated("use `@list` instead", skip_current_package=false)
+      #|#deprecated("use `@list` instead")
       #|pub fn[A] from_array(arr : ArrayView[A]) -> T[A] {
       #|  for i = arr.length() - 1, list = Nil; i >= 0; {
       #|    continue i - 1, Cons(arr[i], list)
@@ -24354,14 +24010,14 @@ let moonbitlang_core_immut_list_module : RuntimePackage = RuntimePackage::new(
       #|    list
       #|  }
       #|}
-      #|#deprecated("use `@list` instead", skip_current_package=false)
+      #|#deprecated("use `@list` instead")
       #|pub fn[A] T::length(self : T[A]) -> Int {
       #|  loop (self, 0) {
       #|    (Nil, len) => len
       #|    (Cons(_, rest), acc) => continue (rest, acc + 1)
       #|  }
       #|}
-      #|#deprecated("use `@list` instead", skip_current_package=false)
+      #|#deprecated("use `@list` instead")
       #|pub fn[A] T::each(self : T[A], f : (A) -> Unit raise?) -> Unit raise? {
       #|  loop self {
       #|    Nil => ()
@@ -24371,7 +24027,7 @@ let moonbitlang_core_immut_list_module : RuntimePackage = RuntimePackage::new(
       #|    }
       #|  }
       #|}
-      #|#deprecated("use `@list` instead", skip_current_package=false)
+      #|#deprecated("use `@list` instead")
       #|pub fn[A] T::eachi(self : T[A], f : (Int, A) -> Unit raise?) -> Unit raise? {
       #|  loop (self, 0) {
       #|    (Nil, _) => ()
@@ -24381,14 +24037,14 @@ let moonbitlang_core_immut_list_module : RuntimePackage = RuntimePackage::new(
       #|    }
       #|  }
       #|}
-      #|#deprecated("use `@list` instead", skip_current_package=false)
+      #|#deprecated("use `@list` instead")
       #|pub fn[A, B] T::map(self : T[A], f : (A) -> B) -> T[B] {
       #|  match self {
       #|    Nil => Nil
       #|    Cons(head, tail) => Cons(f(head), tail.map(f))
       #|  }
       #|}
-      #|#deprecated("use `@list` instead", skip_current_package=false)
+      #|#deprecated("use `@list` instead")
       #|pub fn[A, B] T::mapi(self : T[A], f : (Int, A) -> B raise?) -> T[B] raise? {
       #|  fn go(xs : T[A], i : Int, f : (Int, A) -> B raise?) -> T[B] raise? {
       #|    match xs {
@@ -24398,14 +24054,14 @@ let moonbitlang_core_immut_list_module : RuntimePackage = RuntimePackage::new(
       #|  }
       #|  go(self, 0, f)
       #|}
-      #|#deprecated("use `@list` instead", skip_current_package=false)
+      #|#deprecated("use `@list` instead")
       #|pub fn[A, B] T::rev_map(self : T[A], f : (A) -> B raise?) -> T[B] raise? {
       #|  loop (Nil, self) {
       #|    (acc, Nil) => acc
       #|    (acc, Cons(x, xs)) => continue (Cons(f(x), acc), xs)
       #|  }
       #|}
-      #|#deprecated("use `@list` instead", skip_current_package=false)
+      #|#deprecated("use `@list` instead")
       #|pub fn[A] T::to_array(self : T[A]) -> Array[A] {
       #|  match self {
       #|    Nil => []
@@ -24422,7 +24078,7 @@ let moonbitlang_core_immut_list_module : RuntimePackage = RuntimePackage::new(
       #|    }
       #|  }
       #|}
-      #|#deprecated("use `@list` instead", skip_current_package=false)
+      #|#deprecated("use `@list` instead")
       #|pub fn[A] T::filter(self : T[A], f : (A) -> Bool raise?) -> T[A] raise? {
       #|  match self {
       #|    Nil => Nil
@@ -24434,21 +24090,21 @@ let moonbitlang_core_immut_list_module : RuntimePackage = RuntimePackage::new(
       #|      }
       #|  }
       #|}
-      #|#deprecated("use `@list` instead", skip_current_package=false)
+      #|#deprecated("use `@list` instead")
       #|pub fn[A] T::all(self : T[A], f : (A) -> Bool raise?) -> Bool raise? {
       #|  loop self {
       #|    Nil => true
       #|    Cons(head, tail) => if f(head) { continue tail } else { false }
       #|  }
       #|}
-      #|#deprecated("use `@list` instead", skip_current_package=false)
+      #|#deprecated("use `@list` instead")
       #|pub fn[A] T::any(self : T[A], f : (A) -> Bool raise?) -> Bool raise? {
       #|  match self {
       #|    Nil => false
       #|    Cons(head, tail) => f(head) || tail.any(f)
       #|  }
       #|}
-      #|#deprecated("use `@list` instead", skip_current_package=false)
+      #|#deprecated("use `@list` instead")
       #|pub fn[A] T::tail(self : T[A]) -> T[A] {
       #|  match self {
       #|    Nil => Nil
@@ -24457,7 +24113,7 @@ let moonbitlang_core_immut_list_module : RuntimePackage = RuntimePackage::new(
       #|}
       #|#internal(unsafe, "Panic if the list is empty")
       #|#doc(hidden)
-      #|#deprecated("use `@list` instead", skip_current_package=false)
+      #|#deprecated("use `@list` instead")
       #|pub fn[A] T::unsafe_head(self : T[A]) -> A {
       #|  match self {
       #|    Nil => abort("head of empty list")
@@ -24465,11 +24121,11 @@ let moonbitlang_core_immut_list_module : RuntimePackage = RuntimePackage::new(
       #|  }
       #|}
       #|#coverage.skip
-      #|#deprecated("use `@list` instead", skip_current_package=false)
+      #|#deprecated("use `@list` instead")
       #|pub fn[A] T::head_exn(self : T[A]) -> A {
       #|  self.unsafe_head()
       #|}
-      #|#deprecated("use `@list` instead", skip_current_package=false)
+      #|#deprecated("use `@list` instead")
       #|pub fn[A] T::head(self : T[A]) -> A? {
       #|  match self {
       #|    Nil => None
@@ -24478,7 +24134,7 @@ let moonbitlang_core_immut_list_module : RuntimePackage = RuntimePackage::new(
       #|}
       #|#internal(unsafe, "Panic if the list is empty")
       #|#doc(hidden)
-      #|#deprecated("use `@list` instead", skip_current_package=false)
+      #|#deprecated("use `@list` instead")
       #|pub fn[A] T::unsafe_last(self : T[A]) -> A {
       #|  loop self {
       #|    Nil => abort("last of empty list")
@@ -24486,7 +24142,7 @@ let moonbitlang_core_immut_list_module : RuntimePackage = RuntimePackage::new(
       #|    Cons(_, tail) => continue tail
       #|  }
       #|}
-      #|#deprecated("use `@list` instead", skip_current_package=false)
+      #|#deprecated("use `@list` instead")
       #|pub fn[A] T::last(self : T[A]) -> A? {
       #|  loop self {
       #|    Nil => None
@@ -24494,25 +24150,25 @@ let moonbitlang_core_immut_list_module : RuntimePackage = RuntimePackage::new(
       #|    Cons(_, tail) => continue tail
       #|  }
       #|}
-      #|#deprecated("use `@list` instead", skip_current_package=false)
+      #|#deprecated("use `@list` instead")
       #|pub fn[A] T::concat(self : T[A], other : T[A]) -> T[A] {
       #|  match self {
       #|    Nil => other
       #|    Cons(head, tail) => Cons(head, tail.concat(other))
       #|  }
       #|}
-      #|#deprecated("use `@list` instead", skip_current_package=false)
+      #|#deprecated("use `@list` instead")
       #|pub fn[A] T::rev_concat(self : T[A], other : T[A]) -> T[A] {
       #|  loop (self, other) {
       #|    (Nil, other) => other
       #|    (Cons(head, tail), other) => continue (tail, Cons(head, other))
       #|  }
       #|}
-      #|#deprecated("use `@list` instead", skip_current_package=false)
+      #|#deprecated("use `@list` instead")
       #|pub fn[A] T::rev(self : T[A]) -> T[A] {
       #|  self.rev_concat(Nil)
       #|}
-      #|#deprecated("use `@list` instead", skip_current_package=false)
+      #|#deprecated("use `@list` instead")
       #|pub fn[A, B] T::fold(
       #|  self : T[A],
       #|  init~ : B,
@@ -24523,7 +24179,7 @@ let moonbitlang_core_immut_list_module : RuntimePackage = RuntimePackage::new(
       #|    Cons(head, tail) => tail.fold(f, init=f(init, head))
       #|  }
       #|}
-      #|#deprecated("use `@list` instead", skip_current_package=false)
+      #|#deprecated("use `@list` instead")
       #|pub fn[A, B] T::rev_fold(
       #|  self : T[A],
       #|  init~ : B,
@@ -24537,7 +24193,7 @@ let moonbitlang_core_immut_list_module : RuntimePackage = RuntimePackage::new(
       #|  acc
       #|}
       #|#coverage.skip
-      #|#deprecated("use `@list` instead", skip_current_package=false)
+      #|#deprecated("use `@list` instead")
       #|pub fn[A, B] T::fold_left(
       #|  self : T[A],
       #|  f : (B, A) -> B raise?,
@@ -24546,7 +24202,7 @@ let moonbitlang_core_immut_list_module : RuntimePackage = RuntimePackage::new(
       #|  self.fold(init~, f)
       #|}
       #|#coverage.skip
-      #|#deprecated("use `@list.rev_fold` instead", skip_current_package=false)
+      #|#deprecated("use `@list.rev_fold` instead")
       #|pub fn[A, B] T::fold_right(
       #|  self : T[A],
       #|  f : (A, B) -> B raise?,
@@ -24557,7 +24213,7 @@ let moonbitlang_core_immut_list_module : RuntimePackage = RuntimePackage::new(
       #|    Cons(head, tail) => f(head, tail.rev_fold(f, init~))
       #|  }
       #|}
-      #|#deprecated("use `@list` instead", skip_current_package=false)
+      #|#deprecated("use `@list` instead")
       #|pub fn[A, B] T::foldi(
       #|  self : T[A],
       #|  init~ : B,
@@ -24571,7 +24227,7 @@ let moonbitlang_core_immut_list_module : RuntimePackage = RuntimePackage::new(
       #|  }
       #|  go(self, 0, f, init)
       #|}
-      #|#deprecated("use `@list` instead", skip_current_package=false)
+      #|#deprecated("use `@list` instead")
       #|pub fn[A, B] T::rev_foldi(
       #|  self : T[A],
       #|  init~ : B,
@@ -24585,7 +24241,7 @@ let moonbitlang_core_immut_list_module : RuntimePackage = RuntimePackage::new(
       #|  }
       #|  go(self, 0, f, init)
       #|}
-      #|#deprecated("use `@list.foldi` instead", skip_current_package=false)
+      #|#deprecated("use `@list.foldi` instead")
       #|pub fn[A, B] T::fold_lefti(
       #|  self : T[A],
       #|  f : (Int, B, A) -> B raise?,
@@ -24599,7 +24255,7 @@ let moonbitlang_core_immut_list_module : RuntimePackage = RuntimePackage::new(
       #|  }
       #|  go(self, 0, f, init)
       #|}
-      #|#deprecated("use `@list.rev_foldi` instead", skip_current_package=false)
+      #|#deprecated("use `@list.rev_foldi` instead")
       #|pub fn[A, B] T::fold_righti(
       #|  self : T[A],
       #|  f : (Int, A, B) -> B raise?,
@@ -24613,7 +24269,7 @@ let moonbitlang_core_immut_list_module : RuntimePackage = RuntimePackage::new(
       #|  }
       #|  go(self, 0, f, init)
       #|}
-      #|#deprecated("use `@list` instead", skip_current_package=false)
+      #|#deprecated("use `@list` instead")
       #|pub fn[A, B] T::zip(self : T[A], other : T[B]) -> T[(A, B)]? {
       #|  let mut acc = Nil
       #|  let res = loop (self, other) {
@@ -24626,18 +24282,18 @@ let moonbitlang_core_immut_list_module : RuntimePackage = RuntimePackage::new(
       #|  }
       #|  res.map(T::rev)
       #|}
-      #|#deprecated("use `@list` instead", skip_current_package=false)
+      #|#deprecated("use `@list` instead")
       #|pub fn[A, B] T::concat_map(self : T[A], f : (A) -> T[B]) -> T[B] {
       #|  self.flat_map(f)
       #|}
-      #|#deprecated("use `@list` instead", skip_current_package=false)
+      #|#deprecated("use `@list` instead")
       #|pub fn[A, B] T::flat_map(self : T[A], f : (A) -> T[B] raise?) -> T[B] raise? {
       #|  match self {
       #|    Nil => Nil
       #|    Cons(head, tail) => f(head).concat(tail.flat_map(f))
       #|  }
       #|}
-      #|#deprecated("use `@list` instead", skip_current_package=false)
+      #|#deprecated("use `@list` instead")
       #|pub fn[A, B] T::filter_map(self : T[A], f : (A) -> B?) -> T[B] {
       #|  loop (Nil, self) {
       #|    (acc, Nil) => acc.rev()
@@ -24650,7 +24306,7 @@ let moonbitlang_core_immut_list_module : RuntimePackage = RuntimePackage::new(
       #|}
       #|#internal(unsafe, "Panic if the index is out of bounds")
       #|#doc(hidden)
-      #|#deprecated("use `@list` instead", skip_current_package=false)
+      #|#deprecated("use `@list` instead")
       #|pub fn[A] T::unsafe_nth(self : T[A], n : Int) -> A {
       #|  loop (self, n) {
       #|    (Nil, _) => abort("nth: index out of bounds")
@@ -24658,11 +24314,11 @@ let moonbitlang_core_immut_list_module : RuntimePackage = RuntimePackage::new(
       #|    (Cons(_, tail), n) => continue (tail, n - 1)
       #|  }
       #|}
-      #|#deprecated("use `@list` instead", skip_current_package=false)
+      #|#deprecated("use `@list` instead")
       #|pub fn[A] T::nth_exn(self : T[A], n : Int) -> A {
       #|  self.unsafe_nth(n)
       #|}
-      #|#deprecated("use `@list` instead", skip_current_package=false)
+      #|#deprecated("use `@list` instead")
       #|pub fn[A] T::nth(self : T[A], n : Int) -> A? {
       #|  loop (self, n) {
       #|    (Nil, _) => None
@@ -24670,7 +24326,7 @@ let moonbitlang_core_immut_list_module : RuntimePackage = RuntimePackage::new(
       #|    (Cons(_, tail), n) => continue (tail, n - 1)
       #|  }
       #|}
-      #|#deprecated("use `@list` instead", skip_current_package=false)
+      #|#deprecated("use `@list` instead")
       #|pub fn[A] repeat(n : Int, x : A) -> T[A] {
       #|  if n == 0 {
       #|    Nil
@@ -24678,7 +24334,7 @@ let moonbitlang_core_immut_list_module : RuntimePackage = RuntimePackage::new(
       #|    Cons(x, repeat(n - 1, x))
       #|  }
       #|}
-      #|#deprecated("use `@list` instead", skip_current_package=false)
+      #|#deprecated("use `@list` instead")
       #|pub fn[A] T::intersperse(self : T[A], separator : A) -> T[A] {
       #|  match self {
       #|    Nil => Nil
@@ -24686,11 +24342,11 @@ let moonbitlang_core_immut_list_module : RuntimePackage = RuntimePackage::new(
       #|    Cons(head, tail) => Cons(head, Cons(separator, tail.intersperse(separator)))
       #|  }
       #|}
-      #|#deprecated("use `@list` instead", skip_current_package=false)
+      #|#deprecated("use `@list` instead")
       #|pub fn[A] T::is_empty(self : T[A]) -> Bool {
       #|  self is Nil
       #|}
-      #|#deprecated("use `@list` instead", skip_current_package=false)
+      #|#deprecated("use `@list` instead")
       #|pub fn[A, B] T::unzip(self : T[(A, B)]) -> (T[A], T[B]) {
       #|  let mut xs = Nil
       #|  let mut ys = Nil
@@ -24703,7 +24359,7 @@ let moonbitlang_core_immut_list_module : RuntimePackage = RuntimePackage::new(
       #|    }
       #|  }
       #|}
-      #|#deprecated("use `@list` instead", skip_current_package=false)
+      #|#deprecated("use `@list` instead")
       #|pub fn[A] T::flatten(self : T[T[A]]) -> T[A] {
       #|  match self {
       #|    Nil => Nil
@@ -24712,7 +24368,7 @@ let moonbitlang_core_immut_list_module : RuntimePackage = RuntimePackage::new(
       #|}
       #|#internal(unsafe, "Panic if the list is empty")
       #|#doc(hidden)
-      #|#deprecated("use `@list` instead", skip_current_package=false)
+      #|#deprecated("use `@list` instead")
       #|pub fn[A : Compare] T::unsafe_maximum(self : T[A]) -> A {
       #|  match self {
       #|    Nil => abort("maximum: empty list")
@@ -24727,7 +24383,7 @@ let moonbitlang_core_immut_list_module : RuntimePackage = RuntimePackage::new(
       #|    }
       #|  }
       #|}
-      #|#deprecated("use `@list` instead", skip_current_package=false)
+      #|#deprecated("use `@list` instead")
       #|pub fn[A : Compare] T::maximum(self : T[A]) -> A? {
       #|  match self {
       #|    Nil => None
@@ -24741,7 +24397,7 @@ let moonbitlang_core_immut_list_module : RuntimePackage = RuntimePackage::new(
       #|}
       #|#internal(unsafe, "Panic if the list is empty")
       #|#doc(hidden)
-      #|#deprecated("use `@list` instead", skip_current_package=false)
+      #|#deprecated("use `@list` instead")
       #|pub fn[A : Compare] T::unsafe_minimum(self : T[A]) -> A {
       #|  match self {
       #|    Nil => abort("minimum: empty list")
@@ -24756,7 +24412,7 @@ let moonbitlang_core_immut_list_module : RuntimePackage = RuntimePackage::new(
       #|    }
       #|  }
       #|}
-      #|#deprecated("use `@list` instead", skip_current_package=false)
+      #|#deprecated("use `@list` instead")
       #|pub fn[A : Compare] T::minimum(self : T[A]) -> A? {
       #|  match self {
       #|    Nil => None
@@ -24768,7 +24424,7 @@ let moonbitlang_core_immut_list_module : RuntimePackage = RuntimePackage::new(
       #|      }
       #|  }
       #|}
-      #|#deprecated("use `@list` instead", skip_current_package=false)
+      #|#deprecated("use `@list` instead")
       #|pub fn[A : Compare] T::sort(self : T[A]) -> T[A] {
       #|  match self {
       #|    Nil => Nil
@@ -24782,21 +24438,21 @@ let moonbitlang_core_immut_list_module : RuntimePackage = RuntimePackage::new(
       #|pub impl[A] Add for T[A] with add(self, other) {
       #|  self.concat(other)
       #|}
-      #|#deprecated("use `@list` instead", skip_current_package=false)
+      #|#deprecated("use `@list` instead")
       #|pub fn[A : Eq] T::contains(self : T[A], value : A) -> Bool {
       #|  loop self {
       #|    Nil => false
       #|    Cons(x, xs) => if x == value { true } else { continue xs }
       #|  }
       #|}
-      #|#deprecated("use `@list` instead", skip_current_package=false)
+      #|#deprecated("use `@list` instead")
       #|pub fn[A, S] unfold(f : (S) -> (A, S)? raise?, init~ : S) -> T[A] raise? {
       #|  match f(init) {
       #|    Some((element, new_state)) => Cons(element, unfold(init=new_state, f))
       #|    None => Nil
       #|  }
       #|}
-      #|#deprecated("use `@list` instead", skip_current_package=false)
+      #|#deprecated("use `@list` instead")
       #|pub fn[A] T::take(self : T[A], n : Int) -> T[A] {
       #|  fn go(n, t) {
       #|    match (n, t) {
@@ -24811,7 +24467,7 @@ let moonbitlang_core_immut_list_module : RuntimePackage = RuntimePackage::new(
       #|    go(n, self)
       #|  }
       #|}
-      #|#deprecated("use `@list` instead", skip_current_package=false)
+      #|#deprecated("use `@list` instead")
       #|pub fn[A] T::drop(self : T[A], n : Int) -> T[A] {
       #|  if n <= 0 {
       #|    self
@@ -24823,21 +24479,21 @@ let moonbitlang_core_immut_list_module : RuntimePackage = RuntimePackage::new(
       #|    }
       #|  }
       #|}
-      #|#deprecated("use `@list` instead", skip_current_package=false)
+      #|#deprecated("use `@list` instead")
       #|pub fn[A] T::take_while(self : T[A], p : (A) -> Bool) -> T[A] {
       #|  match self {
       #|    Nil => Nil
       #|    Cons(x, xs) => if p(x) { Cons(x, xs.take_while(p)) } else { Nil }
       #|  }
       #|}
-      #|#deprecated("use `@list` instead", skip_current_package=false)
+      #|#deprecated("use `@list` instead")
       #|pub fn[A] T::drop_while(self : T[A], p : (A) -> Bool raise?) -> T[A] raise? {
       #|  loop self {
       #|    Nil => Nil
       #|    Cons(x, xs) => if p(x) { continue xs } else { Cons(x, xs) }
       #|  }
       #|}
-      #|#deprecated("use `@list` instead", skip_current_package=false)
+      #|#deprecated("use `@list` instead")
       #|pub fn[A, E] T::scan_left(
       #|  self : T[A],
       #|  f : (E, A) -> E raise?,
@@ -24851,7 +24507,7 @@ let moonbitlang_core_immut_list_module : RuntimePackage = RuntimePackage::new(
       #|    },
       #|  )
       #|}
-      #|#deprecated("use `@list` instead", skip_current_package=false)
+      #|#deprecated("use `@list` instead")
       #|pub fn[A, B] T::scan_right(
       #|  self : T[A],
       #|  f : (A, B) -> B raise?,
@@ -24865,14 +24521,14 @@ let moonbitlang_core_immut_list_module : RuntimePackage = RuntimePackage::new(
       #|    }
       #|  }
       #|}
-      #|#deprecated("use `@list` instead", skip_current_package=false)
+      #|#deprecated("use `@list` instead")
       #|pub fn[A : Eq, B] T::lookup(self : T[(A, B)], v : A) -> B? {
       #|  loop self {
       #|    Nil => None
       #|    Cons((x, y), xs) => if x == v { Some(y) } else { continue xs }
       #|  }
       #|}
-      #|#deprecated("use `@list` instead", skip_current_package=false)
+      #|#deprecated("use `@list` instead")
       #|pub fn[A] T::find(self : T[A], f : (A) -> Bool raise?) -> A? raise? {
       #|  loop self {
       #|    Nil => None
@@ -24884,7 +24540,7 @@ let moonbitlang_core_immut_list_module : RuntimePackage = RuntimePackage::new(
       #|      }
       #|  }
       #|}
-      #|#deprecated("use `@list` instead", skip_current_package=false)
+      #|#deprecated("use `@list` instead")
       #|pub fn[A] T::findi(self : T[A], f : (A, Int) -> Bool raise?) -> A? raise? {
       #|  loop (self, 0) {
       #|    (list, index) =>
@@ -24899,7 +24555,7 @@ let moonbitlang_core_immut_list_module : RuntimePackage = RuntimePackage::new(
       #|      }
       #|  }
       #|}
-      #|#deprecated("use `@list` instead", skip_current_package=false)
+      #|#deprecated("use `@list` instead")
       #|pub fn[A] T::remove_at(self : T[A], index : Int) -> T[A] {
       #|  match (index, self) {
       #|    (0, Cons(_, tail)) => tail
@@ -24907,7 +24563,7 @@ let moonbitlang_core_immut_list_module : RuntimePackage = RuntimePackage::new(
       #|    (_, Nil) => Nil
       #|  }
       #|}
-      #|#deprecated("use `@list` instead", skip_current_package=false)
+      #|#deprecated("use `@list` instead")
       #|pub fn[A : Eq] T::remove(self : T[A], elem : A) -> T[A] {
       #|  match self {
       #|    Nil => Nil
@@ -24919,7 +24575,7 @@ let moonbitlang_core_immut_list_module : RuntimePackage = RuntimePackage::new(
       #|      }
       #|  }
       #|}
-      #|#deprecated("use `@list` instead", skip_current_package=false)
+      #|#deprecated("use `@list` instead")
       #|pub fn[A : Eq] T::is_prefix(self : T[A], prefix : T[A]) -> Bool {
       #|  loop (self, prefix) {
       #|    (_, Nil) => true
@@ -24932,22 +24588,22 @@ let moonbitlang_core_immut_list_module : RuntimePackage = RuntimePackage::new(
       #|      }
       #|  }
       #|}
-      #|#deprecated("use `@list` instead", skip_current_package=false)
+      #|#deprecated("use `@list` instead")
       #|pub fn[A : Eq] T::is_suffix(self : T[A], suffix : T[A]) -> Bool {
       #|  self.rev().is_prefix(suffix.rev())
       #|}
-      #|#deprecated("use `@list` instead", skip_current_package=false)
+      #|#deprecated("use `@list` instead")
       #|pub fn[A] T::intercalate(self : T[T[A]], sep : T[A]) -> T[A] {
       #|  self.intersperse(sep).flatten()
       #|}
       #|pub impl[X] Default for T[X] with default() {
       #|  Nil
       #|}
-      #|#deprecated("use `@list` instead", skip_current_package=false)
+      #|#deprecated("use `@list` instead")
       #|pub fn[X] default() -> T[X] {
       #|  Nil
       #|}
-      #|#deprecated("use `@list` instead", skip_current_package=false)
+      #|#deprecated("use `@list` instead")
       #|pub fn[A] T::iter(self : T[A]) -> Iter[A] {
       #|  Iter::new(yield_ => loop self {
       #|    Nil => IterContinue
@@ -24959,7 +24615,7 @@ let moonbitlang_core_immut_list_module : RuntimePackage = RuntimePackage::new(
       #|    }
       #|  })
       #|}
-      #|#deprecated("use `@list` instead", skip_current_package=false)
+      #|#deprecated("use `@list` instead")
       #|pub fn[A] T::iter2(self : T[A]) -> Iter2[Int, A] {
       #|  Iter2::new(yield_ => loop (self, 0) {
       #|    (Nil, _) => IterEnd
@@ -24971,15 +24627,15 @@ let moonbitlang_core_immut_list_module : RuntimePackage = RuntimePackage::new(
       #|    }
       #|  })
       #|}
-      #|#deprecated("use `@list` instead", skip_current_package=false)
+      #|#deprecated("use `@list` instead")
       #|pub fn[A] from_iter(iter : Iter[A]) -> T[A] {
       #|  iter.fold(init=Nil, (acc, e) => Cons(e, acc)).rev()
       #|}
-      #|#deprecated("use `@list` instead", skip_current_package=false)
+      #|#deprecated("use `@list` instead")
       #|pub fn[A] from_iter_rev(iter : Iter[A]) -> T[A] {
       #|  iter.fold(init=Nil, (acc, e) => Cons(e, acc))
       #|}
-      #|#deprecated("use `@list` instead", skip_current_package=false)
+      #|#deprecated("use `@list` instead")
       #|pub fn[A] of(arr : ArrayView[A]) -> T[A] {
       #|  for i = arr.length() - 1, list = Nil; i >= 0; {
       #|    continue i - 1, Cons(arr[i], list)
@@ -24993,7 +24649,7 @@ let moonbitlang_core_immut_list_module : RuntimePackage = RuntimePackage::new(
       #|) {
       #|  @quickcheck.Arbitrary::arbitrary(size, rs) |> from_array
       #|}
-      #|#deprecated("use `@list` instead", skip_current_package=false)
+      #|#deprecated("use `@list` instead")
       #|pub fn[A] singleton(x : A) -> T[A] {
       #|  Cons(x, Nil)
       #|}
@@ -25078,7 +24734,7 @@ let moonbitlang_core_immut_priority_queue_module : RuntimePackage = RuntimePacka
       #|    }
       #|  }
       #|  arr.sort()
-      #|  arr.rev_inplace()
+      #|  arr.rev_in_place()
       #|  arr
       #|}
       #|pub fn[A : Compare] PriorityQueue::iter(self : PriorityQueue[A]) -> Iter[A] {
@@ -25321,7 +24977,7 @@ let moonbitlang_core_immut_sorted_map_module : RuntimePackage = RuntimePackage::
       #|}
     ),
     "deprecated.mbt": (
-      #|#deprecated("Use `map_with_key` instead. `map` will accept `(K, X) -> Y` in the future.", skip_current_package=false)
+      #|#deprecated("Use `map_with_key` instead. `map` will accept `(K, X) -> Y` in the future.")
       #|#coverage.skip
       #|pub fn[K, X, Y] SortedMap::map(
       #|  self : SortedMap[K, X],
@@ -25329,7 +24985,7 @@ let moonbitlang_core_immut_sorted_map_module : RuntimePackage = RuntimePackage::
       #|) -> SortedMap[K, Y] {
       #|  self.map_with_key((_, value) => f(value))
       #|}
-      #|#deprecated("Use `foldl_with_key` instead. `fold` will accept `(A, K, V) -> A` in the future.", skip_current_package=false)
+      #|#deprecated("Use `foldl_with_key` instead. `fold` will accept `(A, K, V) -> A` in the future.")
       #|pub fn[K, V, A] SortedMap::fold(
       #|  self : SortedMap[K, V],
       #|  init~ : A,
@@ -25337,17 +24993,17 @@ let moonbitlang_core_immut_sorted_map_module : RuntimePackage = RuntimePackage::
       #|) -> A {
       #|  self.foldl_with_key((acc, _k, v) => f(acc, v), init~)
       #|}
-      #|#deprecated("Use `keys_as_iter` instead. `keys` will return `Iter[K]` instead of `Array[K]` in the future.", skip_current_package=false)
+      #|#deprecated("Use `keys_as_iter` instead. `keys` will return `Iter[K]` instead of `Array[K]` in the future.")
       #|#coverage.skip
       #|pub fn[K, V] SortedMap::keys(self : SortedMap[K, V]) -> Array[K] {
       #|  self.iter().map(p => p.0).collect()
       #|}
-      #|#deprecated("Use `values` instead", skip_current_package=false)
+      #|#deprecated("Use `values` instead")
       #|#coverage.skip
       #|pub fn[K, V] SortedMap::elems(self : SortedMap[K, V]) -> Array[V] {
       #|  self.values().collect()
       #|}
-      #|#deprecated("Use `filter_with_key` instead. `filter` will accept `(K, V) -> Bool` in the future.", skip_current_package=false)
+      #|#deprecated("Use `filter_with_key` instead. `filter` will accept `(K, V) -> Bool` in the future.")
       #|#coverage.skip
       #|pub fn[K, V] SortedMap::filter(
       #|  self : SortedMap[K, V],
@@ -26829,25 +26485,40 @@ let moonbitlang_core_int_module : RuntimePackage = RuntimePackage::new(
     "moon.pkg.json": (
       #|{
       #|  "import": ["moonbitlang/core/builtin", "moonbitlang/core/uint"],
-      #|  "test-import": ["moonbitlang/core/bytes"]
+      #|  "test-import": [
+      #|    "moonbitlang/core/bytes",
+      #|    "moonbitlang/core/buffer"
+      #|  ]
       #|}
     ),
     "int.mbt": (
       #|pub let max_value = 2147483647
       #|pub let min_value = -2147483648
-      #|#as_free_fn
-      #|pub fn Int::abs(self : Int) -> Int {
-      #|  if self < 0 {
-      #|    -self
-      #|  } else {
-      #|    self
-      #|  }
+      #|#deprecated("Use Int::abs instead")
+      #|pub fn abs(x : Int) -> Int {
+      #|  Int::abs(x)
       #|}
+      #|#deprecated
+      #|#doc(hidden)
       #|pub fn Int::to_be_bytes(self : Int) -> Bytes {
-      #|  self.reinterpret_as_uint().to_be_bytes()
+      #|  let self = self.reinterpret_as_uint()
+      #|  [
+      #|    (self >> 24).to_byte(),
+      #|    (self >> 16).to_byte(),
+      #|    (self >> 8).to_byte(),
+      #|    self.to_byte(),
+      #|  ]
       #|}
+      #|#deprecated
+      #|#doc(hidden)
       #|pub fn Int::to_le_bytes(self : Int) -> Bytes {
-      #|  self.reinterpret_as_uint().to_le_bytes()
+      #|  let self = self.reinterpret_as_uint()
+      #|  [
+      #|    self.to_byte(),
+      #|    (self >> 8).to_byte(),
+      #|    (self >> 16).to_byte(),
+      #|    (self >> 24).to_byte(),
+      #|  ]
       #|}
     ),
   },
@@ -26856,34 +26527,31 @@ let moonbitlang_core_int_module : RuntimePackage = RuntimePackage::new(
 ///|
 let moonbitlang_core_int16_module : RuntimePackage = RuntimePackage::new(
   "moonbitlang/core/int16",
-  deps={
-    "moonbitlang/core/builtin": moonbitlang_core_builtin_module,
-    "moonbitlang/core/json": moonbitlang_core_json_module,
-  },
+  deps={ "moonbitlang/core/builtin": moonbitlang_core_builtin_module },
   files={
     "moon.pkg.json": (
       #|{
-      #|  "import": ["moonbitlang/core/builtin", "moonbitlang/core/json"],
-      #|  "test-import": ["moonbitlang/core/uint16"]
+      #|  "import": ["moonbitlang/core/builtin"],
+      #|  "test-import": ["moonbitlang/core/uint16", "moonbitlang/core/json"]
       #|}
     ),
     "int16.mbt": (
       #|pub let max_value : Int16 = 32767
       #|pub let min_value : Int16 = -32768
       #|pub impl Add for Int16 with add(self : Int16, that : Int16) -> Int16 {
-      #|  (self.to_int() + that.to_int()).to_int16()
+      #|  Int16::from_int(self.to_int() + that.to_int())
       #|}
       #|pub impl Sub for Int16 with sub(self : Int16, that : Int16) -> Int16 {
-      #|  (self.to_int() - that.to_int()).to_int16()
+      #|  Int16::from_int(self.to_int() - that.to_int())
       #|}
       #|pub impl Mul for Int16 with mul(self : Int16, that : Int16) -> Int16 {
-      #|  (self.to_int() * that.to_int()).to_int16()
+      #|  Int16::from_int(self.to_int() * that.to_int())
       #|}
       #|pub impl Div for Int16 with div(self : Int16, that : Int16) -> Int16 {
-      #|  (self.to_int() / that.to_int()).to_int16()
+      #|  Int16::from_int(self.to_int() / that.to_int())
       #|}
       #|pub impl Mod for Int16 with mod(self : Int16, that : Int16) -> Int16 {
-      #|  (self.to_int() % that.to_int()).to_int16()
+      #|  Int16::from_int(self.to_int() % that.to_int())
       #|}
       #|pub impl Eq for Int16 with equal(self, that) {
       #|  self.to_int() == that.to_int()
@@ -26895,22 +26563,22 @@ let moonbitlang_core_int16_module : RuntimePackage = RuntimePackage::new(
       #|  hasher.combine_int(self.to_int())
       #|}
       #|pub impl Shl for Int16 with shl(self : Int16, that : Int) -> Int16 {
-      #|  (self.to_int() << that).to_int16()
+      #|  Int16::from_int(self.to_int() << that)
       #|}
       #|pub impl Shr for Int16 with shr(self : Int16, that : Int) -> Int16 {
-      #|  (self.to_int() >> that).to_int16()
+      #|  Int16::from_int(self.to_int() >> that)
       #|}
       #|pub impl BitOr for Int16 with lor(self : Int16, that : Int16) -> Int16 {
-      #|  (self.to_int() | that.to_int()).to_int16()
+      #|  Int16::from_int(self.to_int() | that.to_int())
       #|}
       #|pub impl BitAnd for Int16 with land(self : Int16, that : Int16) -> Int16 {
-      #|  (self.to_int() & that.to_int()).to_int16()
+      #|  Int16::from_int(self.to_int() & that.to_int())
       #|}
       #|pub impl BitXOr for Int16 with lxor(self : Int16, that : Int16) -> Int16 {
-      #|  (self.to_int() ^ that.to_int()).to_int16()
+      #|  Int16::from_int(self.to_int() ^ that.to_int())
       #|}
       #|pub impl Neg for Int16 with neg(self : Int16) -> Int16 {
-      #|  (-self.to_int()).to_int16()
+      #|  Int16::from_int(-self.to_int())
       #|}
       #|pub fn Int16::abs(self : Int16) -> Int16 {
       #|  if self < 0 {
@@ -26925,8 +26593,33 @@ let moonbitlang_core_int16_module : RuntimePackage = RuntimePackage::new(
       #|pub impl ToJson for Int16 with to_json(self : Int16) -> Json {
       #|  Json::number(self.to_int().to_double())
       #|}
+      #|pub impl Show for Int16 with output(self, logger) {
+      #|  logger.write_string(self.to_string())
+      #|}
       #|pub fn Int16::reinterpret_as_uint16(self : Int16) -> UInt16 {
       #|  self.to_int().to_uint16()
+      #|}
+      #|pub fn Int16::reinterpret_from_uint16(self : UInt16) -> Int16 {
+      #|  Int16::from_int(self.to_int())
+      #|}
+      #|pub fn Int16::from_int(self : Int) -> Int16 = "%i32_to_i16"
+      #|pub fn Int16::from_byte(self : Byte) -> Int16 = "%byte_to_i16"
+      #|#cfg(not(target="js"))
+      #|pub fn Int16::from_int64(self : Int64) -> Int16 = "%i64_to_i16"
+      #|#cfg(target="js")
+      #|pub fn Int16::from_int64(self : Int64) -> Int16 {
+      #|  Int16::from_int(self.to_int())
+      #|}
+      #|#cfg(target="js")
+      #|pub fn Int16::to_int64(self : Int16) -> Int64 {
+      #|  self.to_int().to_int64()
+      #|}
+      #|#cfg(not(target="js"))
+      #|pub fn Int16::to_int64(self : Int16) -> Int64 = "%i16_to_i64"
+      #|pub fn Int16::to_int(self : Int16) -> Int = "%i16_to_i32"
+      #|pub fn Int16::to_byte(self : Int16) -> Byte = "%i16_to_byte"
+      #|pub fn Int16::to_string(self : Int16, radix? : Int = 10) -> String {
+      #|  self.to_int().to_string(radix~)
       #|}
     ),
   },
@@ -26938,39 +26631,44 @@ let moonbitlang_core_int64_module : RuntimePackage = RuntimePackage::new(
   deps={
     "moonbitlang/core/builtin": moonbitlang_core_builtin_module,
     "moonbitlang/core/uint64": moonbitlang_core_uint64_module,
+    "moonbitlang/core/int16": moonbitlang_core_int16_module,
   },
   files={
     "moon.pkg.json": (
       #|{
-      #|  "import": ["moonbitlang/core/builtin", "moonbitlang/core/uint64"],
-      #|  "test-import": ["moonbitlang/core/bytes"]
+      #|  "import": ["moonbitlang/core/builtin", "moonbitlang/core/uint64", "moonbitlang/core/int16"],
+      #|  "test-import": [
+      #|    "moonbitlang/core/bytes",
+      #|    "moonbitlang/core/buffer"
+      #|  ]
       #|}
     ),
     "int64.mbt": (
       #|pub let max_value = 9223372036854775807L
       #|pub let min_value = -9223372036854775808L
-      #|pub fn Int64::from_int(i : Int) -> Int64 {
-      #|  i.to_int64()
-      #|}
+      #|#deprecated("Use Int64::from_int instead")
+      #|#doc(hidden)
       #|pub fn from_int(i : Int) -> Int64 {
       #|  i.to_int64()
       #|}
-      #|#as_free_fn
-      #|pub fn Int64::abs(self : Int64) -> Int64 {
-      #|  if self < 0L {
-      #|    -self
-      #|  } else {
-      #|    self
-      #|  }
+      #|#deprecated("Use Int64::abs instead")
+      #|#doc(hidden)
+      #|pub fn abs(x : Int64) -> Int64 {
+      #|  Int64::abs(x)
       #|}
+      #|#deprecated
+      #|#doc(hidden)
       #|pub fn Int64::to_be_bytes(self : Int64) -> Bytes {
       #|  self.reinterpret_as_uint64().to_be_bytes()
       #|}
+      #|#deprecated
+      #|#doc(hidden)
       #|pub fn Int64::to_le_bytes(self : Int64) -> Bytes {
       #|  self.reinterpret_as_uint64().to_le_bytes()
       #|}
-      #|pub impl Hash for Int64 with hash_combine(self, hasher) {
-      #|  hasher.combine_int64(self)
+      #|#deprecated("Use `Int16::from_int64` instead")
+      #|pub fn Int64::to_int16(self : Int64) -> Int16 {
+      #|  Int16::from_int64(self)
       #|}
     ),
   },
@@ -27094,7 +26792,7 @@ let moonbitlang_core_json_module : RuntimePackage = RuntimePackage::new(
       #|    String("Infinity") => @float.infinity
       #|    String("-Infinity") => @float.neg_infinity
       #|    Number(n, ..) if n != @double.infinity && n != @double.neg_infinity =>
-      #|      n.to_float()
+      #|      Float::from_double(n)
       #|    _ => decode_error(path, "Float::from_json: expected number")
       #|  }
       #|}
@@ -27133,6 +26831,16 @@ let moonbitlang_core_json_module : RuntimePackage = RuntimePackage::new(
       #|pub impl[X : FromJson] FromJson for Array[X] with from_json(json, path) {
       #|  guard json is Array(a) else {
       #|    decode_error(path, "Array::from_json: expected array")
+      #|  }
+      #|  guard JsonPath::Index(path, index=0) is (Index(_) as new_path)
+      #|  a.mapi((i, x) => {
+      #|    new_path.index = i
+      #|    FromJson::from_json(x, new_path)
+      #|  })
+      #|}
+      #|pub impl[X : FromJson] FromJson for ArrayView[X] with from_json(json, path) {
+      #|  guard json is Array(a) else {
+      #|    decode_error(path, "ArrayView::from_json: expected array")
       #|  }
       #|  guard JsonPath::Index(path, index=0) is (Index(_) as new_path)
       #|  a.mapi((i, x) => {
@@ -28033,11 +27741,7 @@ let moonbitlang_core_json_module : RuntimePackage = RuntimePackage::new(
       #|  let mut start = ctx.offset
       #|  fn flush(end : Int) {
       #|    if start > 0 && end > start {
-      #|      buf.write_substring(
-      #|        ctx.input.data(),
-      #|        ctx.input.start_offset() + start,
-      #|        end - start,
-      #|      )
+      #|      buf.write_view(try! ctx.input[start:end])
       #|    }
       #|  }
       #|  for {
@@ -28773,7 +28477,7 @@ let moonbitlang_core_list_module : RuntimePackage = RuntimePackage::new(
       #|}
     ),
     "deprecated.mbt": (
-      #|#deprecated("use `_.to_array().rev_fold(...)` instead", skip_current_package=false)
+      #|#deprecated("use `_.to_array().rev_fold(...)` instead")
       #|pub fn[A, B] List::rev_fold(self : List[A], init~ : B, f : (B, A) -> B) -> B {
       #|  let xs = self.to_array()
       #|  let mut acc = init
@@ -28782,7 +28486,7 @@ let moonbitlang_core_list_module : RuntimePackage = RuntimePackage::new(
       #|  }
       #|  acc
       #|}
-      #|#deprecated("use `_.rev().foldi(...)` instead", skip_current_package=false)
+      #|#deprecated("use `_.rev().foldi(...)` instead")
       #|pub fn[A, B] List::rev_foldi(
       #|  self : List[A],
       #|  init~ : B,
@@ -28790,7 +28494,7 @@ let moonbitlang_core_list_module : RuntimePackage = RuntimePackage::new(
       #|) -> B {
       #|  self.rev().foldi(init~, (i, b, a) => f(i, b, a))
       #|}
-      #|#deprecated("use `unsafe_tail` instead", skip_current_package=false)
+      #|#deprecated("use `unsafe_tail` instead")
       #|pub fn[A] List::tail(self : List[A]) -> List[A] {
       #|  match self {
       #|    Empty => Empty
@@ -29086,7 +28790,7 @@ let moonbitlang_core_list_module : RuntimePackage = RuntimePackage::new(
       #|    (More(x, tail=xs), More(y, tail=ys), acc) =>
       #|      continue (xs, ys, More((x, y), tail=acc))
       #|  }
-      #|  res.reverse_inplace()
+      #|  res.reverse_in_place()
       #|}
       #|pub fn[A, B] List::flat_map(
       #|  self : List[A],
@@ -29430,7 +29134,7 @@ let moonbitlang_core_list_module : RuntimePackage = RuntimePackage::new(
       #|  f : (B, A) -> B raise?,
       #|  init~ : B,
       #|) -> List[B] raise? {
-      #|  self.rev().scan_left(f, init~).reverse_inplace()
+      #|  self.rev().scan_left(f, init~).reverse_in_place()
       #|}
       #|pub fn[A : Eq, B] List::lookup(self : List[(A, B)], v : A) -> B? {
       #|  loop self {
@@ -29651,7 +29355,7 @@ let moonbitlang_core_list_module : RuntimePackage = RuntimePackage::new(
       #|    hasher.combine(e)
       #|  }
       #|}
-      #|fn[A] List::reverse_inplace(self : List[A]) -> List[A] {
+      #|fn[A] List::reverse_in_place(self : List[A]) -> List[A] {
       #|  match self {
       #|    Empty | More(_, tail=Empty) => self
       #|    More(head, tail~) =>
@@ -29755,12 +29459,12 @@ let moonbitlang_core_math_module : RuntimePackage = RuntimePackage::new(
       #|  ui = ui & 0x80000000
       #|  ui = ui | hx
       #|  let dx = x.to_double()
-      #|  let t = ui.reinterpret_as_float().to_double()
+      #|  let t = Float::reinterpret_from_uint(ui).to_double()
       #|  let r = t * t * t
       #|  let t = t * (dx + dx + r) / (dx + r + r)
       #|  let r = t * t * t
       #|  let t = t * (dx + dx + r) / (dx + r + r)
-      #|  t.to_float()
+      #|  Float::from_double(t)
       #|}
       #|pub fn hypotf(x : Float, y : Float) -> Float {
       #|  let epsilon : Float = 1.1920928955078125e-7
@@ -29838,9 +29542,9 @@ let moonbitlang_core_math_module : RuntimePackage = RuntimePackage::new(
       #|}
     ),
     "deprecated.mbt": (
-      #|#deprecated("Use `PI` instead", skip_current_package=false)
+      #|#deprecated("Use `PI` instead")
       #|pub let pi = 0x3.243F6A8885A308CA8A54
-      #|#deprecated("Use @cmp.maximum instead", skip_current_package=false)
+      #|#deprecated("Use @cmp.maximum instead")
       #|pub fn[T : Compare] maximum(x : T, y : T) -> T {
       #|  if x > y {
       #|    x
@@ -29848,7 +29552,7 @@ let moonbitlang_core_math_module : RuntimePackage = RuntimePackage::new(
       #|    y
       #|  }
       #|}
-      #|#deprecated("Use @cmp.minimum instead", skip_current_package=false)
+      #|#deprecated("Use @cmp.minimum instead")
       #|pub fn[T : Compare] minimum(x : T, y : T) -> T {
       #|  if x > y {
       #|    y
@@ -29928,7 +29632,7 @@ let moonbitlang_core_math_module : RuntimePackage = RuntimePackage::new(
       #|  let y = exp2f_data.poly_scaled[2] * r + 1
       #|  let y = z * r2 + y
       #|  let y = y * s
-      #|  y.to_float()
+      #|  Float::from_double(y)
       #|}
       #|pub fn expm1f(x : Float) -> Float {
       #|  let float_ln2_hi : Float = 6.9314575195e-01 // 0x3f317200
@@ -29969,9 +29673,8 @@ let moonbitlang_core_math_module : RuntimePackage = RuntimePackage::new(
       #|      }
       #|    } else {
       #|      k = (inv_ln2 * x + (if sign { -0.5 } else { 0.5 })).to_int()
-      #|      let t = k.to_float()
-      #|      hi = x - t * float_ln2_hi // t*ln2_hi is exact here
-      #|      lo = t * float_ln2_lo
+      #|      hi = x - Float::from_int(k) * float_ln2_hi // t*ln2_hi is exact here
+      #|      lo = Float::from_int(k) * float_ln2_lo
       #|    }
       #|    x = hi - lo
       #|    c = hi - x - lo
@@ -29999,7 +29702,7 @@ let moonbitlang_core_math_module : RuntimePackage = RuntimePackage::new(
       #|    }
       #|    return (1.0 : Float) + (2.0 : Float) * (x - e)
       #|  }
-      #|  let twopk = ((0x7f + k) << 23).reinterpret_as_float() // 2^k
+      #|  let twopk = Float::reinterpret_from_int((0x7f + k) << 23) // 2^k
       #|  if !(k is (0..=56)) {
       #|    let mut y = x - e + 1.0
       #|    if k == 128 {
@@ -30009,7 +29712,7 @@ let moonbitlang_core_math_module : RuntimePackage = RuntimePackage::new(
       #|    }
       #|    return y - 1.0
       #|  }
-      #|  let uf = ((0x7f - k) << 23).reinterpret_as_float() // 2^-k
+      #|  let uf = Float::reinterpret_from_int((0x7f - k) << 23) // 2^-k
       #|  if k < 23 {
       #|    (x - e + ((1.0 : Float) - uf)) * twopk
       #|  } else {
@@ -30228,8 +29931,8 @@ let moonbitlang_core_math_module : RuntimePackage = RuntimePackage::new(
     "hyperbolic.mbt": (
       #|fn k_expo2f(x : Float) -> Float {
       #|  let k = 235
-      #|  let k_ln2 = (0x4322e3bc).reinterpret_as_float()
-      #|  let scale = ((0x7f + k / 2) << 23).reinterpret_as_float()
+      #|  let k_ln2 = Float::reinterpret_from_int(0x4322e3bc)
+      #|  let scale = Float::reinterpret_from_int((0x7f + k / 2) << 23)
       #|  expf(x - k_ln2) * scale * scale
       #|}
       #|pub fn sinhf(x : Float) -> Float {
@@ -30239,7 +29942,7 @@ let moonbitlang_core_math_module : RuntimePackage = RuntimePackage::new(
       #|    h = -h
       #|  }
       #|  ix = ix & 0x7fffffff
-      #|  let absx = ix.reinterpret_as_float()
+      #|  let absx = Float::reinterpret_from_uint(ix)
       #|  let w = ix
       #|  if w < 0x42b17217 {
       #|    let t = expm1f(absx)
@@ -30257,7 +29960,7 @@ let moonbitlang_core_math_module : RuntimePackage = RuntimePackage::new(
       #|  let mut x = x
       #|  let mut ix = x.reinterpret_as_uint()
       #|  ix = ix & 0x7fffffff
-      #|  x = ix.reinterpret_as_float()
+      #|  x = Float::reinterpret_from_uint(ix)
       #|  let w = ix
       #|  if w < 0x3f317217 {
       #|    if w < 0x3f800000U - (12U << 23) {
@@ -30276,7 +29979,7 @@ let moonbitlang_core_math_module : RuntimePackage = RuntimePackage::new(
       #|  let mut ix = x.reinterpret_as_uint()
       #|  let sign = ix >> 31 != 0
       #|  ix = ix & 0x7fffffff
-      #|  let x = ix.reinterpret_as_float()
+      #|  let x = Float::reinterpret_from_uint(ix)
       #|  let w = ix
       #|  let tt = if w > 0x3f0c9f54 {
       #|    if w > 0x41200000 {
@@ -30305,7 +30008,7 @@ let moonbitlang_core_math_module : RuntimePackage = RuntimePackage::new(
       #|  let i = u & 0x7fffffff
       #|  let sign = u >> 31 != 0
       #|  let ln2 : Float = 0.693147180559945309417232121458176568
-      #|  let x = i.reinterpret_as_float()
+      #|  let x = Float::reinterpret_from_uint(i)
       #|  let x = if i >= 0x3f800000U + (12U << 23) {
       #|    lnf(x) + ln2
       #|  } else if i >= 0x3f800000U + (1U << 23) {
@@ -30339,7 +30042,7 @@ let moonbitlang_core_math_module : RuntimePackage = RuntimePackage::new(
       #|  let u = x.reinterpret_as_uint()
       #|  let sign = u >> 31 != 0
       #|  let u = u & 0x7fffffff
-      #|  let x = u.reinterpret_as_float()
+      #|  let x = Float::reinterpret_from_uint(u)
       #|  let x = if u < 0x3f800000U - (1U << 23) {
       #|    if u < 0x3f800000U - (32U << 23) {
       #|      x
@@ -30584,14 +30287,14 @@ let moonbitlang_core_math_module : RuntimePackage = RuntimePackage::new(
       #|  let iz = ix - (tmp & 0xff800000U)
       #|  let invc = logf_data.invc[i]
       #|  let logc = logf_data.logc[i]
-      #|  let z = iz.reinterpret_as_float().to_double()
+      #|  let z = Float::reinterpret_from_uint(iz).to_double()
       #|  let r = z * invc - 1
       #|  let y0 = logc + k.to_double() * logf_data.ln2
       #|  let r2 = r * r
       #|  let y = logf_data.poly[1] * r + logf_data.poly[2]
       #|  let y = logf_data.poly[0] * r2 + y
       #|  let y = y * r2 + (y0 + r)
-      #|  y.to_float()
+      #|  Float::from_double(y)
       #|}
       #|pub fn ln_1pf(x : Float) -> Float {
       #|  let lg1_f : Float = 0.66666662693
@@ -30630,15 +30333,15 @@ let moonbitlang_core_math_module : RuntimePackage = RuntimePackage::new(
       #|    iu += 0x3f800000U - 0x3f3504f3U
       #|    k = (iu >> 23).reinterpret_as_int() - 0x7f
       #|    if k < 25 {
-      #|      let fui = ui.reinterpret_as_float()
+      #|      let fui = Float::reinterpret_from_uint(ui)
       #|      c = if k >= 2 { one - (fui - x) } else { x - (fui - 1.0) }
-      #|      c /= ui.reinterpret_as_float()
+      #|      c /= Float::reinterpret_from_uint(ui)
       #|    } else {
       #|      c = 0.0
       #|    }
       #|    iu = (iu & 0x007fffff) + 0x3f3504f3
       #|    ui = iu
-      #|    f = ui.reinterpret_as_float() - 1.0
+      #|    f = Float::reinterpret_from_uint(ui) - 1.0
       #|  }
       #|  let s = f / (f + 2.0)
       #|  let z = s * s
@@ -30647,7 +30350,7 @@ let moonbitlang_core_math_module : RuntimePackage = RuntimePackage::new(
       #|  let t2 = z * (lg1_f + w * lg3_f)
       #|  let r = t2 + t1
       #|  let hfsq = f * f * 0.5
-      #|  let dk = k.to_float()
+      #|  let dk = Float::from_int(k)
       #|  s * (hfsq + r) + (dk * float_ln2_lo + c) - hfsq + f + dk * float_ln2_hi
       #|}
     ),
@@ -30948,7 +30651,7 @@ let moonbitlang_core_math_module : RuntimePackage = RuntimePackage::new(
       #|    v = t * ivln2_l - w * ivln2
       #|    t1 = u + v
       #|    i_s = t1.reinterpret_as_int()
-      #|    t1 = (i_s & 0xfffff000).reinterpret_as_float()
+      #|    t1 = Float::reinterpret_from_int(i_s & 0xfffff000)
       #|    t2 = v - (t1 - u)
       #|  } else {
       #|    let mut s2 : Float = 0
@@ -30974,17 +30677,17 @@ let moonbitlang_core_math_module : RuntimePackage = RuntimePackage::new(
       #|      n += 1
       #|      ix -= 0x00800000
       #|    }
-      #|    ax = ix.reinterpret_as_float()
+      #|    ax = Float::reinterpret_from_int(ix)
       #|    u = ax - bp[k]
       #|    v = (1.0 : Float) / (ax + bp[k])
       #|    s = u * v
       #|    s_h = s
       #|    i_s = s_h.reinterpret_as_int()
-      #|    s_h = (i_s & 0xfffff000).reinterpret_as_float()
+      #|    s_h = Float::reinterpret_from_int(i_s & 0xfffff000)
       #|    i_s = (((ix.reinterpret_as_uint() >> 1) & 0xfffff000) | 0x20000000).reinterpret_as_int()
-      #|    t_h = (i_s.reinterpret_as_uint() +
-      #|    0x00400000 +
-      #|    (k.reinterpret_as_uint() << 21)).reinterpret_as_float()
+      #|    t_h = Float::reinterpret_from_uint(
+      #|      i_s.reinterpret_as_uint() + 0x00400000 + (k.reinterpret_as_uint() << 21),
+      #|    )
       #|    t_l = ax - (t_h - bp[k])
       #|    s_l = v * (u - s_h * t_h - s_h * t_l)
       #|    s2 = s * s
@@ -30993,24 +30696,24 @@ let moonbitlang_core_math_module : RuntimePackage = RuntimePackage::new(
       #|    s2 = s_h * s_h
       #|    t_h = (3.0 : Float) + s2 + r
       #|    i_s = t_h.reinterpret_as_int()
-      #|    t_h = (i_s & 0xfffff000).reinterpret_as_float()
+      #|    t_h = Float::reinterpret_from_int(i_s & 0xfffff000)
       #|    t_l = r - (t_h - 3.0 - s2)
       #|    u = s_h * t_h
       #|    v = s_l * t_h + t_l * s
       #|    p_h = u + v
       #|    i_s = p_h.reinterpret_as_int()
-      #|    p_h = (i_s & 0xfffff000).reinterpret_as_float()
+      #|    p_h = Float::reinterpret_from_int(i_s & 0xfffff000)
       #|    p_l = v - (p_h - u)
       #|    z_h = cp_h * p_h // cp_h+cp_l = 2/(3*log2)
       #|    z_l = cp_l * p_h + p_l * cp + dp_l[k]
-      #|    t = n.to_float()
+      #|    t = Float::from_int(n)
       #|    t1 = z_h + z_l + dp_h[k] + t
       #|    i_s = t1.reinterpret_as_int()
-      #|    t1 = (i_s & 0xfffff000).reinterpret_as_float()
+      #|    t1 = Float::reinterpret_from_int(i_s & 0xfffff000)
       #|    t2 = z_l - (t1 - t - dp_h[k] - z_h)
       #|  }
       #|  i_s = y.reinterpret_as_int()
-      #|  y1 = (i_s & 0xfffff000).reinterpret_as_float()
+      #|  y1 = Float::reinterpret_from_int(i_s & 0xfffff000)
       #|  p_l = (y - y1) * t1 + y * t2
       #|  p_h = y1 * t1
       #|  z = p_l + p_h
@@ -31035,7 +30738,7 @@ let moonbitlang_core_math_module : RuntimePackage = RuntimePackage::new(
       #|  if i > 0x3f000000 {
       #|    n = j + (0x00800000 >> (k + 1))
       #|    k = ((n & 0x7fffffff) >> 23) - 0x7f // new k for n
-      #|    t = (n & (0x007fffff >> k).lnot()).reinterpret_as_float()
+      #|    t = Float::reinterpret_from_int(n & (0x007fffff >> k).lnot())
       #|    n = ((n & 0x007fffff) | 0x00800000) >> (23 - k)
       #|    if j < 0 {
       #|      n = -n
@@ -31044,7 +30747,7 @@ let moonbitlang_core_math_module : RuntimePackage = RuntimePackage::new(
       #|  }
       #|  t = p_l + p_h
       #|  i_s = t.reinterpret_as_int()
-      #|  t = (i_s & 0xffff8000).reinterpret_as_float()
+      #|  t = Float::reinterpret_from_int(i_s & 0xffff8000)
       #|  u = t * lg2_h
       #|  v = (p_l - (t - p_h)) * lg2 + t * lg2_l
       #|  z = u + v
@@ -31058,7 +30761,7 @@ let moonbitlang_core_math_module : RuntimePackage = RuntimePackage::new(
       #|  if j >> 23 <= 0 {
       #|    z = scalbnf(z, n)
       #|  } else {
-      #|    z = j.reinterpret_as_float()
+      #|    z = Float::reinterpret_from_int(j)
       #|  }
       #|  sn * z
       #|}
@@ -31664,7 +31367,7 @@ let moonbitlang_core_math_module : RuntimePackage = RuntimePackage::new(
       #|    }
       #|  }
       #|  let u = (0x7f + n) << 23
-      #|  return y * u.reinterpret_as_float()
+      #|  return y * Float::reinterpret_from_int(u)
       #|}
       #|test "scalbn" {
       #|  inspect(scalbn(1.5, 2), content="6")
@@ -31701,12 +31404,12 @@ let moonbitlang_core_math_module : RuntimePackage = RuntimePackage::new(
       #|  if x.abs() <= switch_over {
       #|    let mut j : Float = 0.0
       #|    let mut r : Float = 0.0
-      #|    j = x * (0x3f22f983).reinterpret_as_float() +
-      #|      (0x4b40_0000).reinterpret_as_float()
-      #|    j = (j.reinterpret_as_int() - 0x4b40_0000).to_float()
-      #|    r = x - j * (0x3fc90f80).reinterpret_as_float()
-      #|    r = r - j * (0x37354440).reinterpret_as_float()
-      #|    r = r - j * (0x2c34611a).reinterpret_as_float()
+      #|    j = x * Float::reinterpret_from_int(0x3f22f983) +
+      #|      Float::reinterpret_from_int(0x4b40_0000)
+      #|    j = Float::from_int(j.reinterpret_as_int() - 0x4b40_0000)
+      #|    r = x - j * Float::reinterpret_from_int(0x3fc90f80)
+      #|    r = r - j * Float::reinterpret_from_int(0x37354440)
+      #|    r = r - j * Float::reinterpret_from_int(0x2c34611a)
       #|    return (r, j.to_int())
       #|  }
       #|  let xispos = x > 0.0
@@ -31767,26 +31470,26 @@ let moonbitlang_core_math_module : RuntimePackage = RuntimePackage::new(
       #|    r = r ^ 0x8000_0000
       #|    q = -q
       #|  }
-      #|  let r = r.reinterpret_as_float()
+      #|  let r = Float::reinterpret_from_uint(r)
       #|  return (r, q)
       #|}
       #|fn sinf_poly(x : Float) -> Float {
       #|  let s = x * x
-      #|  let mut r = (0x3640_5000).reinterpret_as_float()
-      #|  r = r * s - (0x3950_3486).reinterpret_as_float()
-      #|  r = r * s + (0x3c08_88c1).reinterpret_as_float()
-      #|  r = r * s - (0x3e2a_aaab).reinterpret_as_float()
+      #|  let mut r = Float::reinterpret_from_int(0x3640_5000)
+      #|  r = r * s - Float::reinterpret_from_int(0x3950_3486)
+      #|  r = r * s + Float::reinterpret_from_int(0x3c08_88c1)
+      #|  r = r * s - Float::reinterpret_from_int(0x3e2a_aaab)
       #|  let t = x * s
       #|  r = r * t + x
       #|  r
       #|}
       #|fn cosf_poly(x : Float) -> Float {
       #|  let s = x * x
-      #|  let mut r = (0x37cd_4000).reinterpret_as_float()
-      #|  r = r * s - (0x3ab6_077d).reinterpret_as_float()
-      #|  r = r * s + (0x3d2a_aaa8).reinterpret_as_float()
-      #|  r = r * s - (0x3f00_0000).reinterpret_as_float()
-      #|  r = r * s + (0x3f80_0000).reinterpret_as_float()
+      #|  let mut r = Float::reinterpret_from_int(0x37cd_4000)
+      #|  r = r * s - Float::reinterpret_from_int(0x3ab6_077d)
+      #|  r = r * s + Float::reinterpret_from_int(0x3d2a_aaa8)
+      #|  r = r * s - Float::reinterpret_from_int(0x3f00_0000)
+      #|  r = r * s + Float::reinterpret_from_int(0x3f80_0000)
       #|  r
       #|}
       #|fn sin_cos_core(x : Float, q : Int) -> Float {
@@ -31813,7 +31516,7 @@ let moonbitlang_core_math_module : RuntimePackage = RuntimePackage::new(
       #|  let s = z * x
       #|  let u = coef[0] + z * coef[1]
       #|  r = x + s * u + s * w * (t + w * r)
-      #|  (if odd { -1.0 / r } else { r }).to_float()
+      #|  Float::from_double(if odd { -1.0 / r } else { r })
       #|}
       #|pub fn sinf(x : Float) -> Float {
       #|  if x.is_nan() || x.is_inf() {
@@ -31861,7 +31564,7 @@ let moonbitlang_core_math_module : RuntimePackage = RuntimePackage::new(
       #|  let ix = hx & 0x7fffffff
       #|  if ix >= 0x3f800000 {
       #|    if ix == 0x3f800000 {
-      #|      return (x.to_double() * pio2 + x1p120).to_float()
+      #|      return Float::from_double(x.to_double() * pio2 + x1p120)
       #|    }
       #|    return @float.not_a_number // asin(|x|>1) is NaN
       #|  }
@@ -31873,7 +31576,7 @@ let moonbitlang_core_math_module : RuntimePackage = RuntimePackage::new(
       #|  }
       #|  let z = ((1.0 : Float) - x.abs()) * 0.5
       #|  let s = z.to_double().sqrt()
-      #|  let x = (pio2 - 2.0 * (s + s * r(z).to_double())).to_float()
+      #|  let x = Float::from_double(pio2 - 2.0 * (s + s * r(z).to_double()))
       #|  if hx >> 31 != 0 {
       #|    -x
       #|  } else {
@@ -32951,7 +32654,9 @@ let moonbitlang_core_option_module : RuntimePackage = RuntimePackage::new(
       #|    "moonbitlang/core/builtin"    
       #|  ],
       #|  "test-import" : [
-      #|    "moonbitlang/core/quickcheck"
+      #|    "moonbitlang/core/quickcheck",
+      #|    "moonbitlang/core/json",
+      #|    "moonbitlang/core/array"
       #|  ],
       #|  "targets": {
       #|    "panic_test.mbt": ["not", "native", "llvm"]
@@ -32959,7 +32664,7 @@ let moonbitlang_core_option_module : RuntimePackage = RuntimePackage::new(
       #|}
     ),
     "deprecated.mbt": (
-      #|#deprecated("Use `if condition { Some(value()) } else { None }` instead", skip_current_package=false)
+      #|#deprecated("Use `if condition { Some(value()) } else { None }` instead")
       #|pub fn[T] when(condition : Bool, value : () -> T) -> T? {
       #|  if condition {
       #|    Some(value())
@@ -32967,7 +32672,7 @@ let moonbitlang_core_option_module : RuntimePackage = RuntimePackage::new(
       #|    None
       #|  }
       #|}
-      #|#deprecated("Use `if !condition { Some(value()) } else { None }` instead", skip_current_package=false)
+      #|#deprecated("Use `if !condition { Some(value()) } else { None }` instead")
       #|pub fn[T] unless(condition : Bool, value : () -> T) -> T? {
       #|  if !condition {
       #|    Some(value())
@@ -32975,11 +32680,11 @@ let moonbitlang_core_option_module : RuntimePackage = RuntimePackage::new(
       #|    None
       #|  }
       #|}
-      #|#deprecated("Use `None` instead", skip_current_package=false)
+      #|#deprecated("Use `None` instead")
       #|pub fn[T] empty() -> T? {
       #|  None
       #|}
-      #|#deprecated("Use `Some(value)` instead", skip_current_package=false)
+      #|#deprecated("Use `Some(value)` instead")
       #|pub fn[T] some(value : T) -> T? {
       #|  Some(value)
       #|}
@@ -33062,11 +32767,11 @@ let moonbitlang_core_prelude_module : RuntimePackage = RuntimePackage::new(
       #|  type SourceLoc,
       #|  type StringBuilder,
       #|}
-      #|pub fn[T] tap(value : T, f : (T) -> Unit) -> T {
+      #|pub fn[T] tap(value : T, f : (T) -> Unit raise) -> T raise {
       #|  f(value)
       #|  value
       #|}
-      #|pub fn[T, R] then(value : T, f : (T) -> R) -> R {
+      #|pub fn[T, R] then(value : T, f : (T) -> R raise?) -> R raise? {
       #|  f(value)
       #|}
       #|pub let null : Json = @builtin.null
@@ -33102,13 +32807,15 @@ let moonbitlang_core_priority_queue_module : RuntimePackage = RuntimePackage::ne
     ),
     "priority_queue.mbt": (
       #|#as_free_fn
-      #|pub fn[A] T::new() -> T[A] {
+      #|pub fn[A] PriorityQueue::new() -> PriorityQueue[A] {
       #|  { len: 0, top: None }
       #|}
       #|#as_free_fn
       #|#alias(of, deprecated="Use from_array instead")
       #|#as_free_fn(of, deprecated="Use from_array instead")
-      #|pub fn[A : Compare] T::from_array(arr : ArrayView[A]) -> T[A] {
+      #|pub fn[A : Compare] PriorityQueue::from_array(
+      #|  arr : ArrayView[A],
+      #|) -> PriorityQueue[A] {
       #|  guard arr is [a0, ..] else { return new() }
       #|  let len = arr.length()
       #|  for i = 1, acc = { content: a0, sibling: None, child: None } {
@@ -33130,11 +32837,13 @@ let moonbitlang_core_priority_queue_module : RuntimePackage = RuntimePackage::ne
       #|      })
       #|  }
       #|}
-      #|pub fn[A] T::copy(self : T[A]) -> T[A] {
-      #|  let new_que : T[A] = { len: self.len, top: copy_node(self.top) }
+      #|pub fn[A] PriorityQueue::copy(self : PriorityQueue[A]) -> PriorityQueue[A] {
+      #|  let new_que : PriorityQueue[A] = { len: self.len, top: copy_node(self.top) }
       #|  new_que
       #|}
-      #|pub fn[A : Compare] T::to_array(self : T[A]) -> Array[A] {
+      #|pub fn[A : Compare] PriorityQueue::to_array(
+      #|  self : PriorityQueue[A],
+      #|) -> Array[A] {
       #|  let arr = Array::new(capacity=self.len)
       #|  let stack : Array[Node[A]?] = [self.top]
       #|  while stack.pop() is Some(node) {
@@ -33148,10 +32857,10 @@ let moonbitlang_core_priority_queue_module : RuntimePackage = RuntimePackage::ne
       #|    }
       #|  }
       #|  arr.sort()
-      #|  arr.rev_inplace()
+      #|  arr.rev_in_place()
       #|  arr
       #|}
-      #|pub fn[A : Compare] T::iter(self : T[A]) -> Iter[A] {
+      #|pub fn[A : Compare] PriorityQueue::iter(self : PriorityQueue[A]) -> Iter[A] {
       #|  Iter::new(yield_ => {
       #|    let arr = self.to_array()
       #|    for i in 0..<arr.length() {
@@ -33163,10 +32872,12 @@ let moonbitlang_core_priority_queue_module : RuntimePackage = RuntimePackage::ne
       #|    }
       #|  })
       #|}
-      #|pub fn[A : Compare] T::iterator(self : T[A]) -> Iterator[A] {
+      #|pub fn[A : Compare] PriorityQueue::iterator(
+      #|  self : PriorityQueue[A],
+      #|) -> Iterator[A] {
       #|  self.to_array().iterator()
       #|}
-      #|pub impl[A : ToJson + Compare] ToJson for T[A] with to_json(self) {
+      #|pub impl[A : ToJson + Compare] ToJson for PriorityQueue[A] with to_json(self) {
       #|  let arr = []
       #|  for x in self {
       #|    arr.push(x.to_json())
@@ -33174,13 +32885,17 @@ let moonbitlang_core_priority_queue_module : RuntimePackage = RuntimePackage::ne
       #|  Json::array(arr)
       #|}
       #|#as_free_fn
-      #|pub fn[K : Compare] T::from_iter(iter : Iter[K]) -> T[K] {
+      #|pub fn[K : Compare] PriorityQueue::from_iter(
+      #|  iter : Iter[K],
+      #|) -> PriorityQueue[K] {
       #|  let s = new()
       #|  iter.each(e => s.push(e))
       #|  s
       #|}
       #|#as_free_fn
-      #|pub fn[K : Compare] T::from_iterator(iter : Iterator[K]) -> T[K] {
+      #|pub fn[K : Compare] PriorityQueue::from_iterator(
+      #|  iter : Iterator[K],
+      #|) -> PriorityQueue[K] {
       #|  let s = new()
       #|  while iter.next() is Some(e) {
       #|    s.push(e)
@@ -33218,19 +32933,19 @@ let moonbitlang_core_priority_queue_module : RuntimePackage = RuntimePackage::ne
       #|    }
       #|  }
       #|}
-      #|pub fn[A] T::length(self : T[A]) -> Int {
+      #|pub fn[A] PriorityQueue::length(self : PriorityQueue[A]) -> Int {
       #|  self.len
       #|}
       #|#internal(unsafe, "Panic if the queue is empty.")
       #|#doc(hidden)
-      #|pub fn[A : Compare] T::unsafe_pop(self : T[A]) -> Unit {
+      #|pub fn[A : Compare] PriorityQueue::unsafe_pop(self : PriorityQueue[A]) -> Unit {
       #|  self.top = match self.top {
       #|    None => abort("The PriorityQueue is empty!")
       #|    Some({ child, .. }) => merges(child)
       #|  }
       #|  self.len -= 1
       #|}
-      #|pub fn[A : Compare] T::pop(self : T[A]) -> A? {
+      #|pub fn[A : Compare] PriorityQueue::pop(self : PriorityQueue[A]) -> A? {
       #|  match self.top {
       #|    None => None
       #|    Some({ content, child, .. }) => {
@@ -33240,7 +32955,10 @@ let moonbitlang_core_priority_queue_module : RuntimePackage = RuntimePackage::ne
       #|    }
       #|  }
       #|}
-      #|pub fn[A : Compare] T::push(self : T[A], value : A) -> Unit {
+      #|pub fn[A : Compare] PriorityQueue::push(
+      #|  self : PriorityQueue[A],
+      #|  value : A,
+      #|) -> Unit {
       #|  let x = { content: value, sibling: None, child: None }
       #|  self.top = match self.top {
       #|    None => Some(x)
@@ -33248,30 +32966,29 @@ let moonbitlang_core_priority_queue_module : RuntimePackage = RuntimePackage::ne
       #|  }
       #|  self.len += 1
       #|}
-      #|pub fn[A] T::peek(self : T[A]) -> A? {
+      #|pub fn[A] PriorityQueue::peek(self : PriorityQueue[A]) -> A? {
       #|  match self.top {
       #|    None => None
       #|    Some({ content, .. }) => Some(content)
       #|  }
       #|}
-      #|pub fn[A] T::clear(self : T[A]) -> Unit {
+      #|pub fn[A] PriorityQueue::clear(self : PriorityQueue[A]) -> Unit {
       #|  self.top = None
       #|  self.len = 0
       #|}
-      #|pub fn[A] T::is_empty(self : T[A]) -> Bool {
+      #|pub fn[A] PriorityQueue::is_empty(self : PriorityQueue[A]) -> Bool {
       #|  self.len == 0
       #|}
-      #|pub impl[A : Show + Compare] Show for T[A] with output(self, logger) {
+      #|pub impl[A : Show + Compare] Show for PriorityQueue[A] with output(self, logger) {
       #|  logger.write_iter(
       #|    self.iter(),
       #|    prefix="@priority_queue.from_array([",
       #|    suffix="])",
       #|  )
       #|}
-      #|pub impl[X : @quickcheck.Arbitrary + Compare] @quickcheck.Arbitrary for T[X] with arbitrary(
-      #|  size,
-      #|  rs,
-      #|) {
+      #|pub impl[X : @quickcheck.Arbitrary + Compare] @quickcheck.Arbitrary for PriorityQueue[
+      #|  X,
+      #|] with arbitrary(size, rs) {
       #|  let len = if size == 0 { 0 } else { rs.next_positive_int() % size }
       #|  guard len > 0 else { return new() }
       #|  for i = 1, acc = { content: X::arbitrary(0, rs), sibling: None, child: None } {
@@ -33284,7 +33001,7 @@ let moonbitlang_core_priority_queue_module : RuntimePackage = RuntimePackage::ne
       #|  }
       #|}
       #|test "priority queue arbitrary" {
-      #|  let samples : Array[T[Int]] = @quickcheck.samples(20)
+      #|  let samples : Array[PriorityQueue[Int]] = @quickcheck.samples(20)
       #|  inspect(
       #|    samples[5:10],
       #|    content="[@priority_queue.from_array([]), @priority_queue.from_array([]), @priority_queue.from_array([0]), @priority_queue.from_array([0, 0]), @priority_queue.from_array([3, 2, 1, 0, 0, 0, 0])]",
@@ -33294,7 +33011,7 @@ let moonbitlang_core_priority_queue_module : RuntimePackage = RuntimePackage::ne
       #|    content="[@priority_queue.from_array([0, 0, 0, -1, -2]), @priority_queue.from_array([8, 4, 0, 0, 0, 0, 0, 0, -2, -5]), @priority_queue.from_array([2, 0, 0, -1]), @priority_queue.from_array([0, 0])]",
       #|  )
       #|}
-      #|pub impl[K] Default for T[K] with default() {
+      #|pub impl[K] Default for PriorityQueue[K] with default() {
       #|  new()
       #|}
     ),
@@ -33304,7 +33021,8 @@ let moonbitlang_core_priority_queue_module : RuntimePackage = RuntimePackage::ne
       #|  mut sibling : Node[A]?
       #|  mut child : Node[A]?
       #|}
-      #|struct T[A] {
+      #|#alias(T, deprecated="Use PriorityQueue instead")
+      #|struct PriorityQueue[A] {
       #|  mut len : Int
       #|  mut top : Node[A]?
       #|}
@@ -33744,15 +33462,18 @@ let moonbitlang_core_quickcheck_module : RuntimePackage = RuntimePackage::new(
 ///|
 let moonbitlang_core_quickcheck_splitmix_module : RuntimePackage = RuntimePackage::new(
   "moonbitlang/core/quickcheck/splitmix",
-  deps={ "moonbitlang/core/builtin": moonbitlang_core_builtin_module },
+  deps={
+    "moonbitlang/core/builtin": moonbitlang_core_builtin_module,
+    "moonbitlang/core/float": moonbitlang_core_float_module,
+  },
   files={
     "moon.pkg.json": (
       #|{
-      #|  "import": ["moonbitlang/core/builtin"]
+      #|  "import": ["moonbitlang/core/builtin", "moonbitlang/core/float"]
       #|}
     ),
     "deprecated.mbt": (
-      #|#deprecated("use `@splitmix.new` instead", skip_current_package=false)
+      #|#deprecated("use `@splitmix.new` instead")
       #|pub fn RandomState::new(seed? : UInt64 = 37) -> RandomState {
       #|  new(seed~)
       #|}
@@ -33764,7 +33485,7 @@ let moonbitlang_core_quickcheck_splitmix_module : RuntimePackage = RuntimePackag
       #|} derive(Show)
       #|let golden_gamma : UInt64 = 0x9e3779b97f4a7c15
       #|let double_ulp : Double = 1.0 / (1L << 53).to_double()
-      #|let float_ulp : Float = 1.0.to_float() / (1L << 24).to_float()
+      #|let float_ulp : Float = 1.0F / Float::from_int64(1L << 24)
       #|pub fn new(seed? : UInt64 = 37) -> RandomState {
       #|  { seed: mix64(seed), gamma: mix_gamma(seed + golden_gamma) }
       #|}
@@ -33803,7 +33524,7 @@ let moonbitlang_core_quickcheck_splitmix_module : RuntimePackage = RuntimePackag
       #|}
       #|pub fn RandomState::next_float(self : RandomState) -> Float {
       #|  let u = self.next_uint64()
-      #|  (u >> 40).to_float() * float_ulp
+      #|  Float::from_uint64(u >> 40) * float_ulp
       #|}
       #|pub fn RandomState::next_double(self : RandomState) -> Double {
       #|  let u = self.next_uint64()
@@ -33857,6 +33578,7 @@ let moonbitlang_core_random_module : RuntimePackage = RuntimePackage::new(
   deps={
     "moonbitlang/core/builtin": moonbitlang_core_builtin_module,
     "moonbitlang/core/double": moonbitlang_core_double_module,
+    "moonbitlang/core/float": moonbitlang_core_float_module,
     "moonbitlang/core/random/internal/random_source": moonbitlang_core_random_internal_random_source_module,
     "moonbitlang/core/bigint": moonbitlang_core_bigint_module,
   },
@@ -33866,24 +33588,24 @@ let moonbitlang_core_random_module : RuntimePackage = RuntimePackage::new(
       #|  "import": [
       #|    "moonbitlang/core/builtin",
       #|    "moonbitlang/core/double",
+      #|    "moonbitlang/core/float",
       #|    "moonbitlang/core/random/internal/random_source",
       #|    "moonbitlang/core/bigint"
       #|  ],
       #|  "test-import": [
-      #|    "moonbitlang/core/float",
       #|    "moonbitlang/core/bench"
       #|  ]
       #|}
     ),
     "deprecated.mbt": (
-      #|#deprecated("Use `Rand::new()` instead", skip_current_package=false)
+      #|#deprecated("Use `Rand::new()` instead")
       #|pub fn new(seed? : Bytes = b"ABCDEFGHIJKLMNOPQRSTUVWXYZ123456") -> Rand {
       #|  if seed.length() != 32 {
       #|    abort("seed must be 32 bytes long")
       #|  }
       #|  @random_source.ChaCha8::new(seed) as &Source
       #|}
-      #|#deprecated("You may use `Rand::chacha8(seed~)` instead of `Rand::new(chacha8(seed~))", skip_current_package=false)
+      #|#deprecated("You may use `Rand::chacha8(seed~)` instead of `Rand::new(chacha8(seed~))")
       #|pub fn chacha8(seed? : Bytes = b"ABCDEFGHIJKLMNOPQRSTUVWXYZ123456") -> &Source {
       #|  @random_source.ChaCha8::new(seed)
       #|}
@@ -33993,7 +33715,7 @@ let moonbitlang_core_random_module : RuntimePackage = RuntimePackage::new(
       #|  inspect(n, content="0.615969772029264")
       #|}
       #|pub fn Rand::float(self : Rand) -> Float {
-      #|  (self.uint() << 8 >> 8).to_float() / (1U << 24).to_float()
+      #|  Float::from_uint(self.uint() << 8 >> 8) / Float::from_uint(1U << 24)
       #|}
       #|pub fn Rand::boolean(self : Rand) -> Bool {
       #|  (self.next() & 1) == 1
@@ -34450,290 +34172,6 @@ let moonbitlang_core_random_internal_random_source_module : RuntimePackage = Run
 )
 
 ///|
-let moonbitlang_core_rational_module : RuntimePackage = RuntimePackage::new(
-  "moonbitlang/core/rational",
-  deps={
-    "moonbitlang/core/builtin": moonbitlang_core_builtin_module,
-    "moonbitlang/core/double": moonbitlang_core_double_module,
-    "moonbitlang/core/int64": moonbitlang_core_int64_module,
-    "moonbitlang/core/quickcheck": moonbitlang_core_quickcheck_module,
-  },
-  files={
-    "moon.pkg.json": (
-      #|{
-      #|  "import": [
-      #|    "moonbitlang/core/builtin",
-      #|    "moonbitlang/core/double",
-      #|    "moonbitlang/core/int64",
-      #|    "moonbitlang/core/quickcheck"
-      #|  ]
-      #|}
-    ),
-    "rational.mbt": (
-      #|#deprecated("Use @rational in module moonbitlang/x instead. Note that you need to rename Rational to Rational64.")
-      #|#coverage.skip
-      #|struct T {
-      #|  numerator : Int64
-      #|  denominator : Int64
-      #|}
-      #|fn gcd(a : Int64, b : Int64) -> Int64 {
-      #|  for a = a, b = b {
-      #|    if b == 0L {
-      #|      break a
-      #|    }
-      #|    continue b, a % b
-      #|  }
-      #|}
-      #|#deprecated("Use @rational in module moonbitlang/x instead. Note that you need to rename Rational to Rational64.")
-      #|#coverage.skip
-      #|pub fn new(numerator : Int64, denominator : Int64) -> T? {
-      #|  if denominator == 0L {
-      #|    None
-      #|  } else {
-      #|    let sign = if (numerator < 0L && denominator < 0L) ||
-      #|      (numerator > 0L && denominator > 0L) {
-      #|      1L
-      #|    } else {
-      #|      -1L
-      #|    }
-      #|    let numerator = numerator.abs()
-      #|    let denominator = denominator.abs()
-      #|    let gcd = gcd(numerator, denominator)
-      #|    Some({ numerator: sign * numerator / gcd, denominator: denominator / gcd })
-      #|  }
-      #|}
-      #|fn new_unchecked(numerator : Int64, denominator : Int64) -> T {
-      #|  let gcd = gcd(numerator.abs(), denominator)
-      #|  { numerator: numerator / gcd, denominator: denominator / gcd }
-      #|}
-      #|#coverage.skip
-      #|pub impl Add for T with add(self : T, other : T) -> T {
-      #|  new_unchecked(
-      #|    self.numerator * other.denominator + other.numerator * self.denominator,
-      #|    self.denominator * other.denominator,
-      #|  )
-      #|}
-      #|#coverage.skip
-      #|pub impl Sub for T with sub(self : T, other : T) -> T {
-      #|  new_unchecked(
-      #|    self.numerator * other.denominator - other.numerator * self.denominator,
-      #|    self.denominator * other.denominator,
-      #|  )
-      #|}
-      #|#coverage.skip
-      #|pub impl Mul for T with mul(self : T, other : T) -> T {
-      #|  new_unchecked(
-      #|    self.numerator * other.numerator,
-      #|    self.denominator * other.denominator,
-      #|  )
-      #|}
-      #|#coverage.skip
-      #|pub impl Div for T with div(self : T, other : T) -> T {
-      #|  if other.numerator < 0L {
-      #|    new_unchecked(
-      #|      self.numerator * -other.denominator,
-      #|      self.denominator * -other.numerator,
-      #|    )
-      #|  } else {
-      #|    new_unchecked(
-      #|      self.numerator * other.denominator,
-      #|      self.denominator * other.numerator,
-      #|    )
-      #|  }
-      #|}
-      #|#deprecated("Use @rational in module moonbitlang/x instead. Note that you need to rename Rational to Rational64.")
-      #|#coverage.skip
-      #|pub fn T::reciprocal(self : T) -> T {
-      #|  if self.numerator < 0L {
-      #|    new_unchecked(-self.denominator, -self.numerator)
-      #|  } else {
-      #|    new_unchecked(self.denominator, self.numerator)
-      #|  }
-      #|}
-      #|#as_free_fn
-      #|#deprecated("Use @rational in module moonbitlang/x instead. Note that you need to rename Rational to Rational64.")
-      #|#coverage.skip
-      #|pub fn T::neg(self : T) -> T {
-      #|  new_unchecked(-self.numerator, self.denominator)
-      #|}
-      #|#as_free_fn
-      #|#deprecated("Use @rational in module moonbitlang/x instead. Note that you need to rename Rational to Rational64.")
-      #|#coverage.skip
-      #|pub fn T::abs(self : T) -> T {
-      #|  new_unchecked(self.numerator.abs(), self.denominator)
-      #|}
-      #|#coverage.skip
-      #|pub impl Eq for T with equal(self : T, other : T) -> Bool {
-      #|  self.numerator * other.denominator == other.numerator * self.denominator
-      #|}
-      #|#coverage.skip
-      #|pub impl Compare for T with compare(self : T, other : T) -> Int {
-      #|  let left = self.numerator * other.denominator
-      #|  let right = other.numerator * self.denominator
-      #|  left.compare(right)
-      #|}
-      #|#deprecated("Use @rational in module moonbitlang/x instead. Note that you need to rename Rational to Rational64.")
-      #|#coverage.skip
-      #|pub fn T::to_double(self : T) -> Double {
-      #|  self.numerator.to_double() / self.denominator.to_double()
-      #|}
-      #|fn[T] nan_error() -> T raise RationalError {
-      #|  raise RationalError("Rational::from_double: cannot convert NaN")
-      #|}
-      #|fn[T] overflow_error() -> T raise RationalError {
-      #|  raise RationalError("Rational::from_double: overflow")
-      #|}
-      #|#deprecated("Use @rational in module moonbitlang/x instead. Note that you need to rename Rational to Rational64.")
-      #|#coverage.skip
-      #|pub(all) suberror RationalError String derive(Show, ToJson)
-      #|#coverage.skip
-      #|pub impl Eq for RationalError with equal(
-      #|  self : RationalError,
-      #|  other : RationalError,
-      #|) -> Bool {
-      #|  match (self, other) {
-      #|    (RationalError(e1), RationalError(e2)) => e1 == e2
-      #|  }
-      #|}
-      #|#deprecated("Use @rational in module moonbitlang/x instead. Note that you need to rename Rational to Rational64.")
-      #|#coverage.skip
-      #|pub fn from_double(value : Double) -> T raise RationalError {
-      #|  if value.is_nan() {
-      #|    nan_error()
-      #|  }
-      #|  let sign = if value < 0.0 { -1L } else { 1L }
-      #|  let value = value.abs()
-      #|  let mut q = value
-      #|  let mut n0 = 0L
-      #|  let mut d0 = 1L
-      #|  let mut n1 = 1L
-      #|  let mut d1 = 0L
-      #|  let t_max = @int64.max_value
-      #|  let t_max_f = t_max.to_double()
-      #|  let epsilon = 1.0 / t_max_f
-      #|  let max_iteration = 30
-      #|  let max_error = 10.0e-20
-      #|  if q > t_max_f {
-      #|    overflow_error()
-      #|  }
-      #|  for i in 0..<max_iteration {
-      #|    if !(q >= -9223372036854775808.0 && q < 9223372036854775808.0) {
-      #|      break // overflow
-      #|    }
-      #|    let a = q.to_int64()
-      #|    let a_f = a.to_double()
-      #|    let f = q - a_f
-      #|    if !(a == 0L) &&
-      #|      (
-      #|        n1 > t_max / a ||
-      #|        d1 > t_max / a ||
-      #|        a * n1 > t_max - n0 ||
-      #|        a * d1 > t_max - d0
-      #|      ) {
-      #|      break
-      #|    }
-      #|    let n = a * n1 + n0
-      #|    let d = a * d1 + d0
-      #|    n0 = n1
-      #|    d0 = d1
-      #|    n1 = n
-      #|    d1 = d
-      #|    let g = gcd(n1, d1)
-      #|    if !(g == 0L) {
-      #|      n1 = n1 / g
-      #|      d1 = d1 / g
-      #|    }
-      #|    let (n_f, d_f) = (n.to_double(), d.to_double())
-      #|    if (n_f / d_f - value).abs() < max_error {
-      #|      break
-      #|    }
-      #|    if f < epsilon {
-      #|      break
-      #|    }
-      #|    q = 1.0 / f
-      #|  }
-      #|  if d1 == 0L {
-      #|    overflow_error()
-      #|  }
-      #|  match new(sign * n1, d1) {
-      #|    Some(r) => r
-      #|    None => abort("Impossible to reach")
-      #|  }
-      #|}
-      #|#as_free_fn
-      #|#deprecated("Use @rational in module moonbitlang/x instead. Note that you need to rename Rational to Rational64.")
-      #|#coverage.skip
-      #|pub fn T::ceil(self : T) -> Int64 {
-      #|  let sign = if self.numerator < 0L { -1L } else { 1L }
-      #|  let quotient = self.numerator / self.denominator
-      #|  if self.numerator % self.denominator == 0L {
-      #|    quotient
-      #|  } else {
-      #|    quotient + (1L + sign) / 2L
-      #|  }
-      #|}
-      #|#as_free_fn
-      #|#deprecated("Use @rational in module moonbitlang/x instead. Note that you need to rename Rational to Rational64.")
-      #|#coverage.skip
-      #|pub fn T::floor(self : T) -> Int64 {
-      #|  let sign = if self.numerator < 0L { -1L } else { 1L }
-      #|  let quotient = self.numerator / self.denominator
-      #|  if self.numerator % self.denominator == 0L {
-      #|    quotient
-      #|  } else {
-      #|    quotient + (-1L + sign) / 2L
-      #|  }
-      #|}
-      #|#as_free_fn
-      #|#deprecated("Use @rational in module moonbitlang/x instead. Note that you need to rename Rational to Rational64.")
-      #|#coverage.skip
-      #|pub fn T::trunc(self : T) -> Int64 {
-      #|  if self.numerator < 0L {
-      #|    -(-self.numerator / self.denominator)
-      #|  } else {
-      #|    self.numerator / self.denominator
-      #|  }
-      #|}
-      #|#deprecated("Use @rational in module moonbitlang/x instead. Note that you need to rename Rational to Rational64.")
-      #|#coverage.skip
-      #|pub fn T::fract(self : T) -> T {
-      #|  new_unchecked(self.numerator % self.denominator, self.denominator)
-      #|}
-      #|#coverage.skip
-      #|pub impl Show for T with output(self, logger) {
-      #|  if self.numerator == 0L {
-      #|    logger.write_char('0')
-      #|  } else if self.denominator == 1L {
-      #|    self.numerator.output(logger)
-      #|  } else {
-      #|    self.numerator.output(logger)
-      #|    logger.write_char('/')
-      #|    self.denominator.output(logger)
-      #|  }
-      #|}
-      #|#coverage.skip
-      #|pub impl @quickcheck.Arbitrary for T with arbitrary(size, rs) {
-      #|  let numerator : Int64 = @quickcheck.Arbitrary::arbitrary(size, rs)
-      #|  let denominator : Int64 = {
-      #|    let d : Int64 = @quickcheck.Arbitrary::arbitrary(size, rs)
-      #|    if d <= 0 {
-      #|      -d + 1
-      #|    } else {
-      #|      d
-      #|    }
-      #|  }
-      #|  new_unchecked(numerator, denominator)
-      #|}
-      #|#deprecated("Use @rational in module moonbitlang/x instead. Note that you need to rename Rational to Rational64.")
-      #|#coverage.skip
-      #|pub fn T::is_integer(self : T) -> Bool {
-      #|  self.denominator == 1L
-      #|}
-    ),
-  },
-)
-
-///|
 let moonbitlang_core_ref_module : RuntimePackage = RuntimePackage::new(
   "moonbitlang/core/ref",
   deps={
@@ -34835,23 +34273,23 @@ let moonbitlang_core_result_module : RuntimePackage = RuntimePackage::new(
       #|}
     ),
     "deprecated.mbt": (
-      #|#deprecated("Use `Ok(value)` instead", skip_current_package=false)
+      #|#deprecated("Use `Ok(value)` instead")
       #|pub fn[T, E] ok(value : T) -> Result[T, E] {
       #|  Ok(value)
       #|}
-      #|#deprecated("Use `Err(value)` instead", skip_current_package=false)
+      #|#deprecated("Use `Err(value)` instead")
       #|pub fn[T, E] err(value : E) -> Result[T, E] {
       #|  Err(value)
       #|}
-      #|#deprecated("use `x is Ok(_)` instead", skip_current_package=false)
+      #|#deprecated("use `x is Ok(_)` instead")
       #|pub fn[T, E] Result::is_ok(self : Result[T, E]) -> Bool {
       #|  self is Ok(_)
       #|}
-      #|#deprecated("use `x is Err(_)` instead", skip_current_package=false)
+      #|#deprecated("use `x is Err(_)` instead")
       #|pub fn[T, E] Result::is_err(self : Result[T, E]) -> Bool {
       #|  self is Err(_)
       #|}
-      #|#deprecated("use `match result { Ok(value) => ok(value); Err(error) => err(error) }` instead", skip_current_package=false)
+      #|#deprecated("use `match result { Ok(value) => ok(value); Err(error) => err(error) }` instead")
       #|pub fn[T, E, V] Result::fold(
       #|  self : Result[T, E],
       #|  ok : (T) -> V,
@@ -35581,14 +35019,14 @@ let moonbitlang_core_sorted_map_module : RuntimePackage = RuntimePackage::new(
       #|}
     ),
     "deprecated.mbt": (
-      #|#deprecated("Use `keys_as_iter` instead. `keys` will return `Iter[K]` instead of `Array[K]` in the future.", skip_current_package=false)
+      #|#deprecated("Use `keys_as_iter` instead. `keys` will return `Iter[K]` instead of `Array[K]` in the future.")
       #|#coverage.skip
       #|pub fn[K, V] SortedMap::keys(self : SortedMap[K, V]) -> Array[K] {
       #|  let keys = Array::new(capacity=self.size)
       #|  self.each(fn(k, _v) { keys.push(k) })
       #|  keys
       #|}
-      #|#deprecated("Use `values_as_iter` instead. `values` will return `Iter[V]` instead of `Array[V]` in the future.", skip_current_package=false)
+      #|#deprecated("Use `values_as_iter` instead. `values` will return `Iter[V]` instead of `Array[V]` in the future.")
       #|#coverage.skip
       #|pub fn[K, V] SortedMap::values(self : SortedMap[K, V]) -> Array[V] {
       #|  let values = Array::new(capacity=self.size)
@@ -37800,7 +37238,7 @@ let moonbitlang_core_strconv_module : RuntimePackage = RuntimePackage::new(
       #|}
     ),
     "deprecated.mbt": (
-      #|#deprecated("Decimal will be changed to private. Use `@strconv.parse_double` instead")
+      #|#deprecated("Decimal will be changed to private. Use `@strconv.parse_double` instead", skip_current_package=true)
       #|struct Decimal {
       #|  digits : FixedArray[Byte]
       #|  mut digits_num : Int
@@ -38592,7 +38030,7 @@ let moonbitlang_core_strconv_module : RuntimePackage = RuntimePackage::new(
       #|pub(open) trait FromStr {
       #|  #as_free_fn
       #|  from_str(StringView) -> Self raise StrConvError = _
-      #|  #deprecated("use `from_str` instead")
+      #|  #deprecated("use `from_str` instead", skip_current_package=true)
       #|  from_string(String) -> Self raise StrConvError = _
       #|}
       #|#deprecated("replace `impl from_string` with `impl from_str`")
@@ -38906,22 +38344,22 @@ let moonbitlang_core_string_module : RuntimePackage = RuntimePackage::new(
       #|}
     ),
     "utils.mbt": (
-      #|fn code_point_of_surrogate_pair(leading : Int, trailing : Int) -> Char {
-      #|  ((leading - 0xD800) * 0x400 + trailing - 0xDC00 + 0x10000).unsafe_to_char()
+      #|fn code_point_of_surrogate_pair(leading : UInt16, trailing : UInt16) -> Char {
+      #|  ((leading - 0xD800).to_int() * 0x400 + trailing.to_int() - 0xDC00 + 0x10000).unsafe_to_char()
       #|}
       #|test "code_point_of_surrogate_pair" {
       #|  let s = "😀"
-      #|  let leading = s.at(0)
-      #|  let trailing = s.at(1)
+      #|  let leading = s.code_unit_at(0)
+      #|  let trailing = s.code_unit_at(1)
       #|  inspect(code_point_of_surrogate_pair(leading, trailing), content="😀")
       #|}
       #|test "is_leading_surrogate" {
-      #|  inspect("🤣".at(0).is_leading_surrogate(), content="true")
-      #|  inspect("🤣".at(1).is_leading_surrogate(), content="false")
+      #|  inspect("🤣".code_unit_at(0).is_leading_surrogate(), content="true")
+      #|  inspect("🤣".code_unit_at(1).is_leading_surrogate(), content="false")
       #|}
       #|test "is_trailing_surrogate" {
-      #|  inspect("🤣".at(0).is_trailing_surrogate(), content="false")
-      #|  inspect("🤣".at(1).is_trailing_surrogate(), content="true")
+      #|  inspect("🤣".code_unit_at(0).is_trailing_surrogate(), content="false")
+      #|  inspect("🤣".code_unit_at(1).is_trailing_surrogate(), content="true")
       #|}
       #|test "is_surrogate" {
       #|  inspect((0xD800).is_surrogate(), content="true") // Leading surrogate
@@ -38934,6 +38372,7 @@ let moonbitlang_core_string_module : RuntimePackage = RuntimePackage::new(
       #|}
     ),
     "view.mbt": (
+      #|#deprecated("Use `StringView` instead")
       #|pub type View = StringView
     ),
   },
@@ -39116,7 +38555,7 @@ let moonbitlang_core_string_regex_internal_regexp_module : RuntimePackage = Runt
       #|  }
       #|  { input, captures, names: self.map, before, after }
       #|}
-      #|#deprecated("Use `Regexp::execute` and `MatchResult::before`/`after` instead.", skip_current_package=false)
+      #|#deprecated("Use `Regexp::execute` and `MatchResult::before`/`after` instead.")
       #|pub fn Regexp::execute_with_remainder(
       #|  self : Regexp,
       #|  input : StringView,
@@ -40649,8 +40088,8 @@ let moonbitlang_core_string_regex_internal_regexp_internal_vm_module : RuntimePa
       #|      let assertion = match pred {
       #|        BeginText => sp == 0
       #|        EndText => sp == content.length()
-      #|        BeginLine => sp == 0 || content[sp - 1] == '\n'
-      #|        EndLine => sp == content.length() || content[sp] == '\n'
+      #|        BeginLine => sp == 0 || content.code_unit_at(sp - 1) == '\n'
+      #|        EndLine => sp == content.length() || content.code_unit_at(sp) == '\n'
       #|        WordBoundary =>
       #|          is_word_char_at(content, sp - 1) != is_word_char_at(content, sp)
       #|        NoWordBoundary =>
@@ -40839,27 +40278,27 @@ let moonbitlang_core_tuple_module : RuntimePackage = RuntimePackage::new(
       #|pub fn[T, U] pair(x : T, y : U) -> (T, U) {
       #|  (x, y)
       #|}
-      #|#deprecated("use `tuple.0` instead", skip_current_package=false)
+      #|#deprecated("use `tuple.0` instead")
       #|#coverage.skip
       #|pub fn[T, U] fst(tuple : (T, U)) -> T {
       #|  tuple.0
       #|}
-      #|#deprecated("use `tuple.1` instead", skip_current_package=false)
+      #|#deprecated("use `tuple.1` instead")
       #|#coverage.skip
       #|pub fn[T, U] snd(tuple : (T, U)) -> U {
       #|  tuple.1
       #|}
-      #|#deprecated("use `{ let (a,b) = tuple; (f(a),b) }` instead", skip_current_package=false)
+      #|#deprecated("use `{ let (a,b) = tuple; (f(a),b) }` instead")
       #|#coverage.skip
       #|pub fn[T, U, V] map_fst(f : (T) -> U, tuple : (T, V)) -> (U, V) {
       #|  (f(tuple.0), tuple.1)
       #|}
-      #|#deprecated("use `{ let (a,b) = tuple; (a,f(b)) }` instead", skip_current_package=false)
+      #|#deprecated("use `{ let (a,b) = tuple; (a,f(b)) }` instead")
       #|#coverage.skip
       #|pub fn[T, U, V] map_snd(f : (T) -> U, tuple : (V, T)) -> (V, U) {
       #|  (tuple.0, f(tuple.1))
       #|}
-      #|#deprecated("use `{ let (a,b) = tuple; (f(a),f(b)) }` instead", skip_current_package=false)
+      #|#deprecated("use `{ let (a,b) = tuple; (f(a),f(b)) }` instead")
       #|#coverage.skip
       #|pub fn[T, U, V, W] map_both(
       #|  f : (T) -> U,
@@ -41292,7 +40731,7 @@ let moonbitlang_core_uint_module : RuntimePackage = RuntimePackage::new(
     "moon.pkg.json": (
       #|{
       #|  "import": ["moonbitlang/core/builtin"],
-      #|  "test-import": ["moonbitlang/core/bytes"]
+      #|  "test-import": ["moonbitlang/core/bytes", "moonbitlang/core/buffer"]
       #|}
     ),
     "uint.mbt": (
@@ -41307,6 +40746,8 @@ let moonbitlang_core_uint_module : RuntimePackage = RuntimePackage::new(
       #|pub fn default() -> UInt {
       #|  0
       #|}
+      #|#deprecated
+      #|#doc(hidden)
       #|pub fn UInt::to_be_bytes(self : UInt) -> Bytes {
       #|  [
       #|    (self >> 24).to_byte(),
@@ -41315,6 +40756,8 @@ let moonbitlang_core_uint_module : RuntimePackage = RuntimePackage::new(
       #|    self.to_byte(),
       #|  ]
       #|}
+      #|#deprecated
+      #|#doc(hidden)
       #|pub fn UInt::to_le_bytes(self : UInt) -> Bytes {
       #|  [
       #|    self.to_byte(),
@@ -41332,80 +40775,21 @@ let moonbitlang_core_uint16_module : RuntimePackage = RuntimePackage::new(
   "moonbitlang/core/uint16",
   deps={
     "moonbitlang/core/builtin": moonbitlang_core_builtin_module,
-    "moonbitlang/core/json": moonbitlang_core_json_module,
+    "moonbitlang/core/int16": moonbitlang_core_int16_module,
   },
   files={
     "moon.pkg.json": (
       #|{
-      #|  "import": ["moonbitlang/core/builtin", "moonbitlang/core/json"],
-      #|  "test-import": ["moonbitlang/core/char"]
+      #|  "import": ["moonbitlang/core/builtin", "moonbitlang/core/int16"],
+      #|  "test-import": ["moonbitlang/core/char", "moonbitlang/core/json"]
       #|}
     ),
     "uint16.mbt": (
       #|pub let max_value : UInt16 = 65535
       #|pub let min_value : UInt16 = 0
-      #|pub impl Add for UInt16 with add(self : UInt16, that : UInt16) -> UInt16 {
-      #|  (self.to_int() + that.to_int()).to_uint16()
-      #|}
-      #|pub impl Sub for UInt16 with sub(self : UInt16, that : UInt16) -> UInt16 {
-      #|  (self.to_int() - that.to_int()).to_uint16()
-      #|}
-      #|pub impl Mul for UInt16 with mul(self : UInt16, that : UInt16) -> UInt16 {
-      #|  (self.to_int() * that.to_int()).to_uint16()
-      #|}
-      #|pub impl Div for UInt16 with div(self : UInt16, that : UInt16) -> UInt16 {
-      #|  (self.to_int() / that.to_int()).to_uint16()
-      #|}
-      #|pub impl Mod for UInt16 with mod(self : UInt16, that : UInt16) -> UInt16 {
-      #|  (self.to_int() % that.to_int()).to_uint16()
-      #|}
-      #|pub impl Eq for UInt16 with equal(self, that) {
-      #|  self.to_int() == that.to_int()
-      #|}
-      #|pub impl Compare for UInt16 with compare(self, that) {
-      #|  self.to_int().compare(that.to_int())
-      #|}
-      #|pub impl Hash for UInt16 with hash_combine(self, hasher) {
-      #|  hasher.combine_int(self.to_int())
-      #|}
-      #|pub impl BitXOr for UInt16 with lxor(self : UInt16, that : UInt16) -> UInt16 {
-      #|  (self.to_int() ^ that.to_int()).to_uint16()
-      #|}
-      #|pub impl Default for UInt16 with default() {
-      #|  0
-      #|}
-      #|pub impl ToJson for UInt16 with to_json(self : UInt16) -> Json {
-      #|  Json::number(self.to_int().to_double())
-      #|}
-      #|pub fn UInt16::to_uint(self : UInt16) -> UInt {
-      #|  self.to_int().reinterpret_as_uint()
-      #|}
-      #|pub fn UInt16::to_uint64(self : UInt16) -> UInt64 {
-      #|  self.to_int().to_uint64()
-      #|}
+      #|#deprecated("Use `Int16::reinterpret_from_uint16` instead")
       #|pub fn UInt16::reinterpret_as_int16(self : UInt16) -> Int16 {
-      #|  self.to_int().to_int16()
-      #|}
-    ),
-    "uint16_char.mbt": (
-      #|pub fn UInt16::is_leading_surrogate(self : Self) -> Bool {
-      #|  self >= 0xD800 && self <= 0xDBFF
-      #|}
-      #|pub fn UInt16::is_trailing_surrogate(self : Self) -> Bool {
-      #|  self >= 0xDC00 && self <= 0xDFFF
-      #|}
-      #|pub fn UInt16::is_surrogate(self : Self) -> Bool {
-      #|  self >= 0xD800 && self <= 0xDFFF
-      #|}
-      #|pub fn UInt16::unsafe_to_char(self : UInt16) -> Char {
-      #|  self.to_int().unsafe_to_char()
-      #|}
-      #|pub fn UInt16::to_char(self : UInt16) -> Char? {
-      #|  if self is (0..=0xD7FF) || self is (0xE000..<_) {
-      #|    Some(self.unsafe_to_char())
-      #|  } else {
-      #|    None
-      #|  }
+      #|  Int16::from_int(self.to_int())
       #|}
     ),
   },
