@@ -8,7 +8,7 @@ let stringbuilder_methods : Map[String, RuntimeFunction] = {
   "write_object": stringbuilder_write_object_fn,
   "write_string": stringbuilder_write_string_fn,
   "write_char": stringbuilder_write_char_fn,
-  "write_substring": stringbuilder_write_substring_fn,
+  "write_view": stringbuilder_write_view_fn,
 }
 
 ///|
@@ -74,14 +74,9 @@ let stringbuilder_write_char_fn : RuntimeFunction = ctx => match ctx.args {
 }
 
 ///|
-let stringbuilder_write_substring_fn : RuntimeFunction = ctx => match ctx.args {
-  [
-    { val: StringBuilder(self), .. },
-    { val: String(str), .. },
-    { val: Int(start, ..), .. },
-    { val: Int(len, ..), .. },
-  ] => {
-    self.write_substring(str, start, len)
+let stringbuilder_write_view_fn : RuntimeFunction = ctx => match ctx.args {
+  [{ val: StringBuilder(self), .. }, { val: StringView(view), .. }] => {
+    self.write_view(view)
     Unit
   }
   _ => Unit

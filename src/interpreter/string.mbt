@@ -3,8 +3,6 @@
 ///|
 pub let string_embedded_code : Map[String, RuntimeFunction] = {
   "%string_length": string_length,
-  "%string_get": string_get_fn,
-  "%string.unsafe_get": string_unsafe_get_fn,
   "%string_add": string_add_fn,
   "%string_eq": string_eq_fn,
   "%string_to_string": string_to_string_fn,
@@ -13,8 +11,6 @@ pub let string_embedded_code : Map[String, RuntimeFunction] = {
 ///|
 let string_methods : Map[String, RuntimeFunction] = {
   "length": string_length,
-  "get": string_get_fn,
-  "unsafe_get": string_unsafe_get_fn,
   "add": string_add_fn,
   "equal": string_eq_fn,
   "to_string": string_to_string_fn,
@@ -50,6 +46,7 @@ let string_methods : Map[String, RuntimeFunction] = {
   "trim_space": string_trim_space_fn,
   "trim_start": string_trim_start_fn,
   "view": string_view_fn,
+  "code_unit_at": string_code_unit_at_fn,
 }
 
 // Core string functions
@@ -61,20 +58,9 @@ let string_length : RuntimeFunction = ctx => match ctx.args {
 }
 
 ///|
-let string_get_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: String(s), .. }, { val: Int(i, ..), .. }] =>
-    if i >= 0 && i < s.length() {
-      Int(s[i], raw=None)
-    } else {
-      Int(0, raw=None)
-    }
-  _ => Int(0, raw=None)
-}
-
-///|
-let string_unsafe_get_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: String(s), .. }, { val: Int(i, ..), .. }] => Int(s[i], raw=None)
-  _ => Int(0, raw=None)
+let string_code_unit_at_fn : RuntimeFunction = ctx => match ctx.args {
+  [{ val: String(s), .. }, { val: Int(i, ..), .. }] => UInt16(s.code_unit_at(i))
+  _ => UInt16(0)
 }
 
 ///|

@@ -7,8 +7,7 @@ test "string_methods" {
   let vm = MoonBitVM::new()
   inspect(vm.eval("let s = \"hello\""), content="()")
   inspect(vm.eval("s.length()"), content="5")
-  inspect(vm.eval("s.get(0)"), content="104")
-  inspect(vm.eval("s.unsafe_get(1)"), content="101")
+  inspect(vm.eval("s.code_unit_at(0)"), content="104")
   inspect(vm.eval("s.to_string()"), content="hello")
 }
 

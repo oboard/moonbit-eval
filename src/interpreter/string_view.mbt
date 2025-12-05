@@ -4,7 +4,7 @@
 let string_view_methods : Map[String, RuntimeFunction] = {
   "length": string_view_length,
   "add": string_view_add,
-  "at": string_view_at,
+  "code_unit_at": string_view_code_unit_at,
   "char_length": string_view_char_length,
   "char_length_eq": string_view_char_length_eq,
   "char_length_ge": string_view_char_length_ge,
@@ -66,9 +66,9 @@ let string_view_add : RuntimeFunction = ctx => match ctx.args {
 }
 
 ///|
-let string_view_at : RuntimeFunction = ctx => match ctx.args {
+let string_view_code_unit_at : RuntimeFunction = ctx => match ctx.args {
   [{ val: StringView(s), .. }, { val: Int(i, ..), .. }] =>
-    Int(s.at(i), raw=None)
+    UInt16(s.code_unit_at(i))
   _ => StringView("")
 }
 
