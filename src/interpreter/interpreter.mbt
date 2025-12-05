@@ -827,7 +827,7 @@ pub fn ClosureInterpreter::visit(
         result = self.pattern_match(arg, cases) catch {
           Break(value) => return value
           Continue(arr) => {
-            arg = Tuple(arr)
+            arg = arr[0]
             is_continue = true
             continue
           }

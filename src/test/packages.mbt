@@ -9,11 +9,12 @@ test "module" {
   assert_eq(vm.eval("let max_value = 1").to_string(), "()")
   assert_eq(vm.eval("max_value").to_string(), "1")
   assert_eq(vm.eval("@int.max_value").to_string(), "2147483647")
-  // println(vm.interpreter.current_module.deps["int"].env.values["max_value"])
-  // println(vm.interpreter.current_module.deps["int"].env.struct_methods)
-  // println(vm.interpreter.current_module.deps["int"].env.struct_methods["Int"])
-  // println(vm.interpreter.current_module.deps["int"].env.struct_methods["Int"]["abs"])
-  assert_eq(vm.eval("@int.abs(-1)").to_string(), "1")
+  // println(vm.interpreter.current_pkg.deps["int"].env.values["max_value"])
+  // println(vm.interpreter.current_pkg.deps["int"].struct_methods)
+  // println(vm.interpreter.current_pkg.deps["int"].struct_methods["Int"])
+  // println(vm.interpreter.current_pkg.deps["int"].struct_methods["Int"]["abs"])
+  inspect(vm.eval("@int.abs(-1)"), content="1")
+  inspect(Int::abs(-1), content="1")
 }
 
 ///|

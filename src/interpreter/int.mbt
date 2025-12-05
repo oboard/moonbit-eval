@@ -15,6 +15,7 @@ pub let int_methods : Map[String, RuntimeFunction] = {
   "to_string": int_to_string_fn,
   "unsafe_to_char": char_from_int_fn,
   "next_power_of_two": int_next_power_of_two_fn,
+  "abs": int_abs_fn,
 }
 
 ///|
@@ -149,5 +150,11 @@ let int_to_string_fn : RuntimeFunction = ctx => match ctx.args {
 /// 计算不小于该整数的最小2的幂
 let int_next_power_of_two_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Int(i, ..), .. }] => Int(i.next_power_of_two(), raw=None)
+  _ => Unit
+}
+
+///|
+let int_abs_fn : RuntimeFunction = ctx => match ctx.args {
+  [{ val: Int(i, ..), .. }] => Int(i.abs(), raw=None)
   _ => Unit
 }
