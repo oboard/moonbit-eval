@@ -328,7 +328,7 @@ fn RuntimeValue::from_constant(c : @syntax.Constant) -> RuntimeValue {
     UInt(s) => UInt(@strconv.parse_uint64(s).to_uint() catch { _ => 0U })
     Int64(s) => Int64(@strconv.parse_int64(s) catch { _ => 0L })
     UInt64(s) => UInt64(@strconv.parse_uint64(s) catch { _ => 0UL })
-    Float(s) => Float(parse_double(s).to_float())
+    Float(s) => Float(Float::from_double(parse_double(s)))
     Double(s) => Double(parse_double(s))
     Byte(s) => {
       let int_val = @strconv.parse_int64(s) catch { _ => 0 }
@@ -382,7 +382,7 @@ pub fn RuntimeValue::overload_literal(
       UInt16(@strconv.parse_uint64(raw).to_uint16() catch { _ => 0 })
     (Int(i, ..), "Byte") => Byte(i.to_byte())
     (Int(i, ..), "Double") => Double(i.to_double())
-    (Int(i, ..), "Float") => Float(i.to_float())
+    (Int(i, ..), "Float") => Float(Float::from_int(i))
     (Int(i, ..), "BigInt") => BigInt(BigInt::from_int(i))
 
     // 字符串字面量重载 (默认String -> Bytes)
@@ -393,7 +393,7 @@ pub fn RuntimeValue::overload_literal(
     (Char(c), "Byte") => Byte(c.to_int().to_byte())
 
     // 浮点数字面量重载 (默认Double -> Float)
-    (Double(d), "Float") => Float(d.to_float())
+    (Double(d), "Float") => Float(Float::from_double(d))
 
     // JSON 类型重载 - 支持基本类型到 JSON 的转换
     (Int(i, ..), "Json") => Json(i.to_json())

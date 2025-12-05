@@ -691,7 +691,6 @@ pub fn ClosureInterpreter::visit(
         (Array(values), Int(index_num, ..)) => values[index_num]
         (ArrayView(values), Int(index_num, ..)) => values[index_num]
         (UninitializedArray(values), Int(index_num, ..)) => values[index_num]
-        (String(values), Int(index_num, ..)) => Int(values[index_num], raw=None)
         (Map(values), index) =>
           match values.get(index) {
             Some(value) => value
@@ -814,12 +813,10 @@ pub fn ClosureInterpreter::visit(
     Raise(err_value~, ..) => raise Raise(self.visit(err_value))
 
     // 处理 Loop 表达式
-    Loop(args~, body~, ..) => {
-      let mut arg : RuntimeValue = Tuple(
-        args.map(arg => self.visit(arg)).to_array(),
-      )
+    Loop(arg~, body~, ..) => {
+      let mut arg : RuntimeValue = self.visit(arg)
       let cases = body.map(case => @syntax.Case::{
-        pattern: Tuple(pats=case.patterns, loc=dummy_loc()),
+        pattern: case.pattern,
         body: case.body,
         guard_: None,
       })

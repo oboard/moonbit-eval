@@ -7,21 +7,21 @@ import(
 )
 
 // Values
-fn add_embedded_fn(MoonBitVM, String, (@interpreter.RuntimeFunctionContext) -> @interpreter.RuntimeValue raise @interpreter.ControlFlow) -> Unit
+pub fn add_embedded_fn(MoonBitVM, String, (@interpreter.RuntimeFunctionContext) -> @interpreter.RuntimeValue raise @interpreter.ControlFlow) -> Unit
 
-fn add_embedded_method(MoonBitVM, String, String, (@interpreter.RuntimeFunctionContext) -> @interpreter.RuntimeValue raise @interpreter.ControlFlow) -> Unit
+pub fn add_embedded_method(MoonBitVM, String, String, (@interpreter.RuntimeFunctionContext) -> @interpreter.RuntimeValue raise @interpreter.ControlFlow) -> Unit
 
-fn add_extern_fn(MoonBitVM, String, (@interpreter.RuntimeFunctionContext) -> @interpreter.RuntimeValue raise @interpreter.ControlFlow) -> Unit
+pub fn add_extern_fn(MoonBitVM, String, (@interpreter.RuntimeFunctionContext) -> @interpreter.RuntimeValue raise @interpreter.ControlFlow) -> Unit
 
-fn code_to_ast(String) -> String
+pub fn code_to_ast(String) -> String
 
-fn eval_result_to_string(EvalResult) -> String
+pub fn eval_result_to_string(EvalResult) -> String
 
-fn expr_to_string(@syntax.Expr) -> String
+pub fn expr_to_string(@syntax.Expr) -> String
 
-fn value_to_json(@interpreter.RuntimeValue) -> String
+pub fn value_to_json(@interpreter.RuntimeValue) -> String
 
-fn value_to_string(@interpreter.RuntimeValue) -> String
+pub fn value_to_string(@interpreter.RuntimeValue) -> String
 
 // Errors
 
@@ -30,15 +30,15 @@ pub enum EvalResult {
   Success(@interpreter.RuntimeValue, @interpreter.ClosureInterpreter)
   Error(String, @interpreter.ClosureInterpreter)
 }
-impl Show for EvalResult
+pub impl Show for EvalResult
 
 pub(all) struct MoonBitVM {
   interpreter : @interpreter.ClosureInterpreter
   log : Bool
 }
-fn MoonBitVM::create(log? : Bool) -> Self
-fn MoonBitVM::eval(Self, String, log? : Bool, top? : Bool) -> EvalResult
-fn MoonBitVM::new(log? : Bool) -> Self
+pub fn MoonBitVM::create(log? : Bool) -> Self
+pub fn MoonBitVM::eval(Self, String, log? : Bool, top? : Bool) -> EvalResult
+pub fn MoonBitVM::new(log? : Bool) -> Self
 
 // Type aliases
 

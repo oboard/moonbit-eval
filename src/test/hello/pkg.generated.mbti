@@ -2,7 +2,7 @@
 package "oboard/moonbit-eval/test/hello"
 
 // Values
-fn hello() -> String
+pub fn hello() -> String
 
 // Errors
 
