@@ -15,7 +15,6 @@ let string_view_methods : Map[String, RuntimeFunction] = {
   "equal": string_view_equal,
   "find": string_view_find,
   "fold": string_view_fold,
-  "get": string_view_get,
   "get_char": string_view_get_char,
   "has_prefix": string_view_has_prefix,
   "has_suffix": string_view_has_suffix,
@@ -145,13 +144,6 @@ let string_view_fold : RuntimeFunction = ctx => match ctx.args {
       }
     })
   _ => String("")
-}
-
-///|
-let string_view_get : RuntimeFunction = ctx => match ctx.args {
-  [{ val: StringView(s), .. }, { val: Int(i, ..), .. }] =>
-    s.get(i).map(Int(_, raw=None)) |> RuntimeValue::from_option
-  _ => StringView("")
 }
 
 ///|

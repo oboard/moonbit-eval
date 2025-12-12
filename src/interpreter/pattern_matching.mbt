@@ -435,32 +435,7 @@ pub fn ClosureInterpreter::pattern_to_runtime_value(
   pattern : @syntax.Pattern,
 ) -> RuntimeValue? {
   match pattern {
-    Constant(c~, ..) =>
-      match c {
-        Int(v) => {
-          let int_val = @strconv.parse_int(v) catch { _ => return None }
-          Some(Int(int_val, raw=None))
-        }
-        Double(v) => {
-          let double_val = @strconv.parse_double(v) catch { _ => return None }
-          Some(Double(double_val))
-        }
-        String(v) => Some(String(v))
-        Char(v) =>
-          if v.length() > 0 && v.get(0) is Some(ch) {
-            Some(Char(ch.unsafe_to_char()))
-          } else {
-            None
-          }
-        Bool(v) => Some(Bool(v))
-        Bytes(_) => None
-        Byte(_) => None
-        Int64(_) => None
-        UInt64(_) => None
-        UInt(_) => None
-        Float(_) => None
-        BigInt(_) => None
-      }
+    Constant(c~, ..) => Some(RuntimeValue::from_constant(c))
     Constr(constr~, ..) =>
       // 查找构造函数的值
       Some(self.current_pkg.find(constr.name.name).unwrap_or(Unit))
