@@ -135,7 +135,7 @@ pub(all) struct ModuleInfo {
   description : String?
   source : String?
 }
-pub async fn ModuleInfo::get_zip_url(Self) -> String noraise
+pub fn ModuleInfo::get_zip_url(Self) -> String
 pub fn ModuleInfo::new(String, version? : String, readme? : String, repository? : String, license? : String, keywords? : Array[String], description? : String, source? : String, deps? : Map[String, String]) -> Self
 pub impl Show for ModuleInfo
 pub impl ToJson for ModuleInfo

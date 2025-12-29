@@ -46,7 +46,7 @@ let string_view_methods : Map[String, RuntimeFunction] = {
   "to_upper": string_view_to_upper,
   "trim": string_view_trim,
   "trim_end": string_view_trim_end,
-  "trim_space": string_view_trim_space,
+  "trim": string_view_trim,
   "trim_start": string_view_trim_start,
   "unsafe_charcode_at": string_view_unsafe_charcode_at,
 }
@@ -381,12 +381,6 @@ let string_view_trim : RuntimeFunction = ctx => match ctx.args {
 let string_view_trim_end : RuntimeFunction = ctx => match ctx.args {
   [{ val: StringView(s), .. }, { val: StringView(char_set), .. }] =>
     StringView(s.trim_end(char_set~))
-  _ => StringView("")
-}
-
-///|
-let string_view_trim_space : RuntimeFunction = ctx => match ctx.args {
-  [{ val: StringView(s), .. }] => StringView(s.trim_space())
   _ => StringView("")
 }
 

@@ -22,7 +22,7 @@ pub(all) struct ModuleInfo {
 } derive(Show, ToJson, FromJson)
 
 ///|
-pub async fn ModuleInfo::get_zip_url(self : ModuleInfo) -> String noraise {
+pub fn ModuleInfo::get_zip_url(self : ModuleInfo) -> String noraise {
   let v = self.version.map_or("", v => "/\{v}")
   "\{url_base}/\{self.name}\{v}.zip"
 }

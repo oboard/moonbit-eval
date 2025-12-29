@@ -173,28 +173,15 @@ let moonbitlang_core_abort_module : RuntimePackage = RuntimePackage::new(
 ///|
 let moonbitlang_core_array_module : RuntimePackage = RuntimePackage::new(
   "moonbitlang/core/array",
-  deps={
-    "moonbitlang/core/builtin": moonbitlang_core_builtin_module,
-    "moonbitlang/core/bytes": moonbitlang_core_bytes_module,
-    "moonbitlang/core/string": moonbitlang_core_string_module,
-    "moonbitlang/core/uint16": moonbitlang_core_uint16_module,
-  },
+  deps={ "moonbitlang/core/builtin": moonbitlang_core_builtin_module },
   files={
     "moon.pkg.json": (
       #|{
       #|  "import": [
-      #|    "moonbitlang/core/builtin",
-      #|    "moonbitlang/core/bytes",
-      #|    "moonbitlang/core/string",
-      #|    "moonbitlang/core/uint16"
+      #|    "moonbitlang/core/builtin"
       #|  ],
       #|  "test-import": [
-      #|    "moonbitlang/core/char",
-      #|    "moonbitlang/core/test",
-      #|    "moonbitlang/core/random",
-      #|    "moonbitlang/core/json",
-      #|    "moonbitlang/core/ref",
-      #|    "moonbitlang/core/quickcheck"
+      #|    "moonbitlang/core/char"
       #|  ],
       #|  "targets": {
       #|    "array_js.mbt": ["js"],
@@ -206,68 +193,6 @@ let moonbitlang_core_array_module : RuntimePackage = RuntimePackage::new(
       #|}
     ),
     "array.mbt": (
-      #|pub fn[T] Array::from_iter(iter : Iter[T]) -> Array[T] {
-      #|  iter.collect()
-      #|}
-      #|pub fn[T] Array::from_iterator(iter : Iterator[T]) -> Array[T] {
-      #|  iter.collect()
-      #|}
-      #|pub fn[T] Array::push_iter(self : Self[T], iter : Iter[T]) -> Unit {
-      #|  for x in iter {
-      #|    self.push(x)
-      #|  }
-      #|}
-      #|pub fn[T] Array::shuffle_in_place(
-      #|  self : Array[T],
-      #|  rand~ : (Int) -> Int,
-      #|) -> Unit {
-      #|  let n = self.length()
-      #|  for i = n - 1; i > 0; i = i - 1 {
-      #|    let j = rand(i + 1) % (i + 1)
-      #|    self.swap(i, j)
-      #|  }
-      #|}
-      #|pub fn[T] Array::shuffle(self : Array[T], rand~ : (Int) -> Int) -> Array[T] {
-      #|  let new_arr = self.copy()
-      #|  Array::shuffle_in_place(new_arr, rand~)
-      #|  new_arr
-      #|}
-      #|pub fn[A, B] Array::filter_map(
-      #|  self : Array[A],
-      #|  f : (A) -> B? raise?,
-      #|) -> Array[B] raise? {
-      #|  let result = []
-      #|  for x in self {
-      #|    if f(x) is Some(x) {
-      #|      result.push(x)
-      #|    }
-      #|  }
-      #|  result
-      #|}
-      #|pub fn[A] Array::last(self : Array[A]) -> A? {
-      #|  match self {
-      #|    [] => None
-      #|    [.., last] => Some(last)
-      #|  }
-      #|}
-      #|pub fn[A, B] Array::zip(self : Array[A], other : Array[B]) -> Array[(A, B)] {
-      #|  let length = if self.length() < other.length() {
-      #|    self.length()
-      #|  } else {
-      #|    other.length()
-      #|  }
-      #|  Array::makei(length, i => (self[i], other[i]))
-      #|}
-      #|pub fn[T1, T2] Array::unzip(self : Array[(T1, T2)]) -> (Array[T1], Array[T2]) {
-      #|  let arr1 : Array[T1] = Array::new(capacity=self.length())
-      #|  let arr2 : Array[T2] = Array::new(capacity=self.length())
-      #|  for pair in self {
-      #|    let (x, y) = pair
-      #|    arr1.push(x)
-      #|    arr2.push(y)
-      #|  }
-      #|  (arr1, arr2)
-      #|}
       #|pub fn[A, B, C] zip_with(
       #|  l : Array[A],
       #|  r : Array[B],
@@ -276,875 +201,10 @@ let moonbitlang_core_array_module : RuntimePackage = RuntimePackage::new(
       #|  let length = if l.length() < r.length() { l.length() } else { r.length() }
       #|  Array::makei(length, i => merge(l[i], r[i]))
       #|}
-      #|pub fn[A, B] Array::zip_to_iter2(
-      #|  self : Array[A],
-      #|  other : Array[B],
-      #|) -> Iter2[A, B] {
-      #|  Iter2::new(yield_ => {
-      #|    let length = if self.length() < other.length() {
-      #|      self.length()
-      #|    } else {
-      #|      other.length()
-      #|    }
-      #|    for i in 0..<length {
-      #|      if yield_(self[i], other[i]) is IterEnd {
-      #|        break IterEnd
-      #|      }
-      #|    } else {
-      #|      IterContinue
-      #|    }
-      #|  })
-      #|}
-      #|pub fn[A : @string.ToStringView] Array::join(
-      #|  self : Array[A],
-      #|  separator : StringView,
-      #|) -> String {
-      #|  self[:].join(separator)
-      #|}
-      #|pub fn[X] Array::iterator(self : Array[X]) -> Iterator[X] {
-      #|  self[:].iterator()
-      #|}
-      #|pub fn[X] Array::rev_iterator(self : Array[X]) -> Iterator[X] {
-      #|  self[:].rev_iterator()
-      #|}
-      #|pub fn[X] Array::iterator2(self : Array[X]) -> Iterator2[Int, X] {
-      #|  self[:].iterator2()
-      #|}
-    ),
-    "array_js.mbt": (
-      #|priv type JSArray
-      #|fn[T] JSArray::ofAnyArray(array : Array[T]) -> JSArray = "%identity"
-      #|fn[T] JSArray::toAnyArray(self : JSArray) -> Array[T] = "%identity"
-      #|fn[T] JSArray::ofAnyFixedArray(array : FixedArray[T]) -> JSArray = "%identity"
-      #|fn[T] JSArray::toAnyFixedArray(self : JSArray) -> FixedArray[T] = "%identity"
-      #|extern "js" fn JSArray::copy(self : JSArray) -> JSArray =
-      #|  #|(arr) => arr.slice(0)
-      #|pub fn[T] Array::copy(self : Array[T]) -> Array[T] {
-      #|  JSArray::ofAnyArray(self).copy().toAnyArray()
-      #|}
-    ),
-    "array_nonjs.mbt": (
-      #|pub fn[T] Array::copy(self : Array[T]) -> Array[T] {
-      #|  let len = self.length()
-      #|  if len == 0 {
-      #|    []
-      #|  } else {
-      #|    let arr = Array::make(len, self[0])
-      #|    Array::unsafe_blit(arr, 0, self, 0, len)
-      #|    arr
-      #|  }
-      #|}
-    ),
-    "bitstring.mbt": (
-      #|fn UInt::extend_sign(self : UInt, len : Int) -> Int {
-      #|  let b = 32 - len
-      #|  self.reinterpret_as_int() << b >> b
-      #|}
-      #|fn UInt64::extend_sign(self : UInt64, len : Int) -> Int64 {
-      #|  let b = 64 - len
-      #|  self.reinterpret_as_int64() << b >> b
-      #|}
-      #|#internal(experimental, "subject to breaking change without notice")
-      #|#doc(hidden)
-      #|pub fn ArrayView::unsafe_extract_bit(
-      #|  bs : ArrayView[Byte],
-      #|  offset : Int,
-      #|  _len : Int,
-      #|) -> UInt {
-      #|  let byte_index = offset >> 3
-      #|  let bit_shift = 7 - (offset & 7)
-      #|  let byte_val = bs.unsafe_get(byte_index).to_uint()
-      #|  (byte_val >> bit_shift) & 1U
-      #|}
-      #|#internal(experimental, "subject to breaking change without notice")
-      #|#doc(hidden)
-      #|pub fn ArrayView::unsafe_extract_bit_signed(
-      #|  bs : ArrayView[Byte],
-      #|  offset : Int,
-      #|  _len : Int,
-      #|) -> Int {
-      #|  let byte_index = offset >> 3
-      #|  let bit_shift = 7 - (offset & 7)
-      #|  let byte_val = bs.unsafe_get(byte_index).to_int()
-      #|  ((byte_val >> bit_shift) & 1) * -1
-      #|}
-      #|#internal(experimental, "subject to breaking change without notice")
-      #|#doc(hidden)
-      #|pub fn ArrayView::unsafe_extract_byte(
-      #|  bs : ArrayView[Byte],
-      #|  offset : Int,
-      #|  len : Int,
-      #|) -> UInt {
-      #|  let byte_index = offset >> 3
-      #|  if (offset & 7) == 0 {
-      #|    let byte = bs.unsafe_get(byte_index)
-      #|    (byte >> (8 - len)).to_uint()
-      #|  } else if (offset & 7) + len <= 8 {
-      #|    let byte = bs.unsafe_get(byte_index).to_uint()
-      #|    let shift = 8 - ((offset & 7) + len)
-      #|    let mask = (1U << len) - 1
-      #|    (byte >> shift) & mask
-      #|  } else {
-      #|    let b0 = bs.unsafe_get(byte_index).to_uint()
-      #|    let b1 = bs.unsafe_get(byte_index + 1).to_uint()
-      #|    let data = (b0 << 8) | b1
-      #|    let bit_mask = (1U << (16 - (offset & 7))) - 1
-      #|    let data = data & bit_mask
-      #|    let shift = 16 - ((offset & 7) + len)
-      #|    data >> shift
-      #|  }
-      #|}
-      #|#internal(experimental, "subject to breaking change without notice")
-      #|#doc(hidden)
-      #|pub fn ArrayView::unsafe_extract_uint_le(
-      #|  bs : ArrayView[Byte],
-      #|  offset : Int,
-      #|  len : Int,
-      #|) -> UInt {
-      #|  let bytes_needed = (len + 7) / 8
-      #|  let b0 = bs.unsafe_extract_byte(offset, 8)
-      #|  match bytes_needed {
-      #|    2 => {
-      #|      let b1 = bs.unsafe_extract_byte(offset + 8, len - 8)
-      #|      (b1 << 8) | b0
-      #|    }
-      #|    3 => {
-      #|      let b1 = bs.unsafe_extract_byte(offset + 8, 8)
-      #|      let b2 = bs.unsafe_extract_byte(offset + 16, len - 16)
-      #|      (b2 << 16) | (b1 << 8) | b0
-      #|    }
-      #|    4 => {
-      #|      let b1 = bs.unsafe_extract_byte(offset + 8, 8)
-      #|      let b2 = bs.unsafe_extract_byte(offset + 16, 8)
-      #|      let b3 = bs.unsafe_extract_byte(offset + 24, len - 24)
-      #|      (b3 << 24) | (b2 << 16) | (b1 << 8) | b0
-      #|    }
-      #|    _ => abort("Invalid byte count for int32 extraction")
-      #|  }
-      #|}
-      #|#internal(experimental, "subject to breaking change without notice")
-      #|#doc(hidden)
-      #|pub fn ArrayView::unsafe_extract_uint_be(
-      #|  bs : ArrayView[Byte],
-      #|  offset : Int,
-      #|  len : Int,
-      #|) -> UInt {
-      #|  let bytes_needed = (len + 7) / 8
-      #|  let b0 = bs.unsafe_extract_byte(offset, 8)
-      #|  match bytes_needed {
-      #|    2 => {
-      #|      let b1 = bs.unsafe_extract_byte(offset + 8, len - 8)
-      #|      let shift = 16 - len
-      #|      let data = (b0 << 8) | (b1 << shift)
-      #|      data >> shift
-      #|    }
-      #|    3 => {
-      #|      let b1 = bs.unsafe_extract_byte(offset + 8, 8)
-      #|      let b2 = bs.unsafe_extract_byte(offset + 16, len - 16)
-      #|      let shift = 24 - len
-      #|      let data = (b0 << 16) | (b1 << 8) | (b2 << shift)
-      #|      data >> shift
-      #|    }
-      #|    4 => {
-      #|      let b1 = bs.unsafe_extract_byte(offset + 8, 8)
-      #|      let b2 = bs.unsafe_extract_byte(offset + 16, 8)
-      #|      let b3 = bs.unsafe_extract_byte(offset + 24, len - 24)
-      #|      let shift = 32 - len
-      #|      let data = (b0 << 24) | (b1 << 16) | (b2 << 8) | (b3 << shift)
-      #|      data >> shift
-      #|    }
-      #|    _ => abort("Invalid byte count for int32 extraction")
-      #|  }
-      #|}
-      #|#internal(experimental, "subject to breaking change without notice")
-      #|#doc(hidden)
-      #|pub fn ArrayView::unsafe_extract_uint64_le(
-      #|  bs : ArrayView[Byte],
-      #|  offset : Int,
-      #|  len : Int,
-      #|) -> UInt64 {
-      #|  let bytes_needed = (len + 7) / 8
-      #|  let b0 = bs.unsafe_extract_byte(offset, 8).to_uint64()
-      #|  let b1 = bs.unsafe_extract_byte(offset + 8, 8).to_uint64()
-      #|  let b2 = bs.unsafe_extract_byte(offset + 16, 8).to_uint64()
-      #|  let b3 = bs.unsafe_extract_byte(offset + 24, 8).to_uint64()
-      #|  match bytes_needed {
-      #|    5 => {
-      #|      let b4 = bs.unsafe_extract_byte(offset + 32, len - 32).to_uint64()
-      #|      (b4 << 32) | (b3 << 24) | (b2 << 16) | (b1 << 8) | b0
-      #|    }
-      #|    6 => {
-      #|      let b4 = bs.unsafe_extract_byte(offset + 32, 8).to_uint64()
-      #|      let b5 = bs.unsafe_extract_byte(offset + 40, len - 40).to_uint64()
-      #|      (b5 << 40) | (b4 << 32) | (b3 << 24) | (b2 << 16) | (b1 << 8) | b0
-      #|    }
-      #|    7 => {
-      #|      let b4 = bs.unsafe_extract_byte(offset + 32, 8).to_uint64()
-      #|      let b5 = bs.unsafe_extract_byte(offset + 40, 8).to_uint64()
-      #|      let b6 = bs.unsafe_extract_byte(offset + 48, len - 48).to_uint64()
-      #|      (b6 << 48) |
-      #|      (b5 << 40) |
-      #|      (b4 << 32) |
-      #|      (b3 << 24) |
-      #|      (b2 << 16) |
-      #|      (b1 << 8) |
-      #|      b0
-      #|    }
-      #|    8 => {
-      #|      let b4 = bs.unsafe_extract_byte(offset + 32, 8).to_uint64()
-      #|      let b5 = bs.unsafe_extract_byte(offset + 40, 8).to_uint64()
-      #|      let b6 = bs.unsafe_extract_byte(offset + 48, 8).to_uint64()
-      #|      let b7 = bs.unsafe_extract_byte(offset + 56, len - 56).to_uint64()
-      #|      (b7 << 56) |
-      #|      (b6 << 48) |
-      #|      (b5 << 40) |
-      #|      (b4 << 32) |
-      #|      (b3 << 24) |
-      #|      (b2 << 16) |
-      #|      (b1 << 8) |
-      #|      b0
-      #|    }
-      #|    _ => abort("Invalid byte count for int64 extraction")
-      #|  }
-      #|}
-      #|#internal(experimental, "subject to breaking change without notice")
-      #|#doc(hidden)
-      #|pub fn ArrayView::unsafe_extract_uint64_be(
-      #|  bs : ArrayView[Byte],
-      #|  offset : Int,
-      #|  len : Int,
-      #|) -> UInt64 {
-      #|  let bytes_needed = (len + 7) / 8
-      #|  let b0 = bs.unsafe_extract_byte(offset, 8).to_uint64()
-      #|  let b1 = bs.unsafe_extract_byte(offset + 8, 8).to_uint64()
-      #|  let b2 = bs.unsafe_extract_byte(offset + 16, 8).to_uint64()
-      #|  let b3 = bs.unsafe_extract_byte(offset + 24, 8).to_uint64()
-      #|  match bytes_needed {
-      #|    5 => {
-      #|      let b4 = bs.unsafe_extract_byte(offset + 32, len - 32).to_uint64()
-      #|      let shift = 40 - len
-      #|      let data = (b0 << 32) |
-      #|        (b1 << 24) |
-      #|        (b2 << 16) |
-      #|        (b3 << 8) |
-      #|        (b4 << shift)
-      #|      data >> shift
-      #|    }
-      #|    6 => {
-      #|      let b4 = bs.unsafe_extract_byte(offset + 32, 8).to_uint64()
-      #|      let b5 = bs.unsafe_extract_byte(offset + 40, len - 40).to_uint64()
-      #|      let shift = 48 - len
-      #|      let data = (b0 << 40) |
-      #|        (b1 << 32) |
-      #|        (b2 << 24) |
-      #|        (b3 << 16) |
-      #|        (b4 << 8) |
-      #|        (b5 << shift)
-      #|      data >> shift
-      #|    }
-      #|    7 => {
-      #|      let b4 = bs.unsafe_extract_byte(offset + 32, 8).to_uint64()
-      #|      let b5 = bs.unsafe_extract_byte(offset + 40, 8).to_uint64()
-      #|      let b6 = bs.unsafe_extract_byte(offset + 48, len - 48).to_uint64()
-      #|      let shift = 56 - len
-      #|      let data = (b0 << 48) |
-      #|        (b1 << 40) |
-      #|        (b2 << 32) |
-      #|        (b3 << 24) |
-      #|        (b4 << 16) |
-      #|        (b5 << 8) |
-      #|        (b6 << shift)
-      #|      data >> shift
-      #|    }
-      #|    8 => {
-      #|      let b4 = bs.unsafe_extract_byte(offset + 32, 8).to_uint64()
-      #|      let b5 = bs.unsafe_extract_byte(offset + 40, 8).to_uint64()
-      #|      let b6 = bs.unsafe_extract_byte(offset + 48, 8).to_uint64()
-      #|      let b7 = bs.unsafe_extract_byte(offset + 56, len - 56).to_uint64()
-      #|      let shift = 64 - len
-      #|      let data = (b0 << 56) |
-      #|        (b1 << 48) |
-      #|        (b2 << 40) |
-      #|        (b3 << 32) |
-      #|        (b4 << 24) |
-      #|        (b5 << 16) |
-      #|        (b6 << 8) |
-      #|        (b7 << shift)
-      #|      data >> shift
-      #|    }
-      #|    _ => abort("Invalid byte count for int64 extraction")
-      #|  }
-      #|}
-      #|#internal(experimental, "subject to breaking change without notice")
-      #|#doc(hidden)
-      #|pub fn ArrayView::unsafe_extract_bytesview(
-      #|  bs : ArrayView[Byte],
-      #|  offset : Int,
-      #|  len : Int,
-      #|) -> ArrayView[Byte] {
-      #|  let start = offset >> 3
-      #|  let end = start + (len >> 3)
-      #|  bs[start:end]
-      #|}
-      #|#internal(experimental, "subject to breaking change without notice")
-      #|#doc(hidden)
-      #|pub fn ArrayView::unsafe_extract_byte_signed(
-      #|  bs : ArrayView[Byte],
-      #|  offset : Int,
-      #|  len : Int,
-      #|) -> Int {
-      #|  let unsigned = bs.unsafe_extract_byte(offset, len)
-      #|  unsigned.extend_sign(len)
-      #|}
-      #|#internal(experimental, "subject to breaking change without notice")
-      #|#doc(hidden)
-      #|pub fn ArrayView::unsafe_extract_int_le(
-      #|  bs : ArrayView[Byte],
-      #|  offset : Int,
-      #|  len : Int,
-      #|) -> Int {
-      #|  let unsigned = bs.unsafe_extract_uint_le(offset, len)
-      #|  unsigned.extend_sign(len)
-      #|}
-      #|#internal(experimental, "subject to breaking change without notice")
-      #|#doc(hidden)
-      #|pub fn ArrayView::unsafe_extract_int_be(
-      #|  bs : ArrayView[Byte],
-      #|  offset : Int,
-      #|  len : Int,
-      #|) -> Int {
-      #|  let unsigned = bs.unsafe_extract_uint_be(offset, len)
-      #|  unsigned.extend_sign(len)
-      #|}
-      #|#internal(experimental, "subject to breaking change without notice")
-      #|#doc(hidden)
-      #|pub fn ArrayView::unsafe_extract_int64_le(
-      #|  bs : ArrayView[Byte],
-      #|  offset : Int,
-      #|  len : Int,
-      #|) -> Int64 {
-      #|  let unsigned = bs.unsafe_extract_uint64_le(offset, len)
-      #|  unsigned.extend_sign(len)
-      #|}
-      #|#internal(experimental, "subject to breaking change without notice")
-      #|#doc(hidden)
-      #|pub fn ArrayView::unsafe_extract_int64_be(
-      #|  bs : ArrayView[Byte],
-      #|  offset : Int,
-      #|  len : Int,
-      #|) -> Int64 {
-      #|  let unsigned = bs.unsafe_extract_uint64_be(offset, len)
-      #|  unsigned.extend_sign(len)
-      #|}
-      #|#internal(experimental, "subject to breaking change without notice")
-      #|#doc(hidden)
-      #|pub fn Array::unsafe_extract_bit(
-      #|  bs : Array[Byte],
-      #|  offset : Int,
-      #|  len : Int,
-      #|) -> UInt {
-      #|  bs[:].unsafe_extract_bit(offset, len)
-      #|}
-      #|#internal(experimental, "subject to breaking change without notice")
-      #|#doc(hidden)
-      #|pub fn Array::unsafe_extract_byte(
-      #|  bs : Array[Byte],
-      #|  offset : Int,
-      #|  len : Int,
-      #|) -> UInt {
-      #|  bs[:].unsafe_extract_byte(offset, len)
-      #|}
-      #|#internal(experimental, "subject to breaking change without notice")
-      #|#doc(hidden)
-      #|pub fn Array::unsafe_extract_uint_le(
-      #|  bs : Array[Byte],
-      #|  offset : Int,
-      #|  len : Int,
-      #|) -> UInt {
-      #|  bs[:].unsafe_extract_uint_le(offset, len)
-      #|}
-      #|#internal(experimental, "subject to breaking change without notice")
-      #|#doc(hidden)
-      #|pub fn Array::unsafe_extract_uint_be(
-      #|  bs : Array[Byte],
-      #|  offset : Int,
-      #|  len : Int,
-      #|) -> UInt {
-      #|  bs[:].unsafe_extract_uint_be(offset, len)
-      #|}
-      #|#internal(experimental, "subject to breaking change without notice")
-      #|#doc(hidden)
-      #|pub fn Array::unsafe_extract_uint64_le(
-      #|  bs : Array[Byte],
-      #|  offset : Int,
-      #|  len : Int,
-      #|) -> UInt64 {
-      #|  bs[:].unsafe_extract_uint64_le(offset, len)
-      #|}
-      #|#internal(experimental, "subject to breaking change without notice")
-      #|#doc(hidden)
-      #|pub fn Array::unsafe_extract_uint64_be(
-      #|  bs : Array[Byte],
-      #|  offset : Int,
-      #|  len : Int,
-      #|) -> UInt64 {
-      #|  bs[:].unsafe_extract_uint64_be(offset, len)
-      #|}
-      #|#internal(experimental, "subject to breaking change without notice")
-      #|#doc(hidden)
-      #|pub fn Array::unsafe_extract_bytesview(
-      #|  bs : Array[Byte],
-      #|  offset : Int,
-      #|  len : Int,
-      #|) -> ArrayView[Byte] {
-      #|  bs[:].unsafe_extract_bytesview(offset, len)
-      #|}
-      #|#internal(experimental, "subject to breaking change without notice")
-      #|#doc(hidden)
-      #|pub fn FixedArray::unsafe_extract_bit(
-      #|  bs : FixedArray[Byte],
-      #|  offset : Int,
-      #|  len : Int,
-      #|) -> UInt {
-      #|  bs[:].unsafe_extract_bit(offset, len)
-      #|}
-      #|#internal(experimental, "subject to breaking change without notice")
-      #|#doc(hidden)
-      #|pub fn FixedArray::unsafe_extract_byte(
-      #|  bs : FixedArray[Byte],
-      #|  offset : Int,
-      #|  len : Int,
-      #|) -> UInt {
-      #|  bs[:].unsafe_extract_byte(offset, len)
-      #|}
-      #|#internal(experimental, "subject to breaking change without notice")
-      #|#doc(hidden)
-      #|pub fn FixedArray::unsafe_extract_uint_le(
-      #|  bs : FixedArray[Byte],
-      #|  offset : Int,
-      #|  len : Int,
-      #|) -> UInt {
-      #|  bs[:].unsafe_extract_uint_le(offset, len)
-      #|}
-      #|#internal(experimental, "subject to breaking change without notice")
-      #|#doc(hidden)
-      #|pub fn FixedArray::unsafe_extract_uint_be(
-      #|  bs : FixedArray[Byte],
-      #|  offset : Int,
-      #|  len : Int,
-      #|) -> UInt {
-      #|  bs[:].unsafe_extract_uint_be(offset, len)
-      #|}
-      #|#internal(experimental, "subject to breaking change without notice")
-      #|#doc(hidden)
-      #|pub fn FixedArray::unsafe_extract_uint64_le(
-      #|  bs : FixedArray[Byte],
-      #|  offset : Int,
-      #|  len : Int,
-      #|) -> UInt64 {
-      #|  bs[:].unsafe_extract_uint64_le(offset, len)
-      #|}
-      #|#internal(experimental, "subject to breaking change without notice")
-      #|#doc(hidden)
-      #|pub fn FixedArray::unsafe_extract_uint64_be(
-      #|  bs : FixedArray[Byte],
-      #|  offset : Int,
-      #|  len : Int,
-      #|) -> UInt64 {
-      #|  bs[:].unsafe_extract_uint64_be(offset, len)
-      #|}
-      #|#internal(experimental, "subject to breaking change without notice")
-      #|#doc(hidden)
-      #|pub fn FixedArray::unsafe_extract_bytesview(
-      #|  bs : FixedArray[Byte],
-      #|  offset : Int,
-      #|  len : Int,
-      #|) -> ArrayView[Byte] {
-      #|  bs[:].unsafe_extract_bytesview(offset, len)
-      #|}
-    ),
-    "blit.mbt": (
-      #|test "copy" {
-      #|  let a : FixedArray[_] = [1, 2, 3, 4]
-      #|  let b = a.copy()
-      #|  inspect(b, content="[1, 2, 3, 4]")
-      #|  inspect(physical_equal(b, a), content="false")
-      #|  let c = FixedArray::make(8, 0)
-      #|  a.blit_to(c, len=4, dst_offset=3)
-      #|  inspect(c, content="[0, 0, 0, 1, 2, 3, 4, 0]")
-      #|  inspect(([] : FixedArray[Int]).copy(), content="[]")
-      #|  a.blit_to(a, len=2, src_offset=1)
-      #|  inspect(a, content="[2, 3, 3, 4]")
-      #|}
-      #|pub fn FixedArray::blit_from_bytesview(
-      #|  self : FixedArray[Byte],
-      #|  bytes_offset : Int,
-      #|  src : BytesView,
-      #|) -> Unit {
-      #|  FixedArray::blit_from_bytes(
-      #|    self,
-      #|    bytes_offset,
-      #|    src.data(),
-      #|    src.start_offset(),
-      #|    src.length(),
-      #|  )
-      #|}
-    ),
-    "blit_js.mbt": (
-      #|pub fn[T] FixedArray::copy(self : FixedArray[T]) -> FixedArray[T] {
-      #|  JSArray::ofAnyFixedArray(self).copy().toAnyFixedArray()
-      #|}
-    ),
-    "blit_nonjs.mbt": (
-      #|pub fn[T] FixedArray::copy(self : FixedArray[T]) -> FixedArray[T] {
-      #|  let len = self.length()
-      #|  if len == 0 {
-      #|    []
-      #|  } else {
-      #|    let arr = FixedArray::make(len, self[0])
-      #|    FixedArray::unsafe_blit(arr, 0, self, 0, len)
-      #|    arr
-      #|  }
-      #|}
-    ),
-    "fixedarray.mbt": "",
-    "sort.mbt": (
-      #|pub fn[T : Compare] Array::sort(self : Array[T]) -> Unit {
-      #|  self.mut_view().sort()
-      #|}
-      #|pub fn[T : Compare] FixedArray::stable_sort(self : FixedArray[T]) -> Unit {
-      #|  self.mut_view().stable_sort()
-      #|}
-    ),
-    "sort_by.mbt": (
-      #|pub fn[T, K : Compare] Array::sort_by_key(
-      #|  self : Array[T],
-      #|  map : (T) -> K,
-      #|) -> Unit {
-      #|  self.mut_view().sort_by_key(map)
-      #|}
-      #|pub fn[T] Array::sort_by(self : Array[T], cmp : (T, T) -> Int) -> Unit {
-      #|  self.mut_view().sort_by(cmp)
-      #|}
-      #|pub fn[T, K : Compare] FixedArray::sort_by_key(
-      #|  self : FixedArray[T],
-      #|  map : (T) -> K,
-      #|) -> Unit {
-      #|  self.mut_view().sort_by_key(map)
-      #|}
-      #|test "@array.sort_by_key/basic" {
-      #|  let arr : FixedArray[_] = [3, 1, 4, 1, 5]
-      #|  arr.sort_by_key(x => x)
-      #|  inspect(arr, content="[1, 1, 3, 4, 5]")
-      #|  let arr2 : FixedArray[_] = [3, 1, 4, 1, 5]
-      #|  arr2.sort_by_key(x => -x)
-      #|  inspect(arr2, content="[5, 4, 3, 1, 1]")
-      #|}
-      #|pub fn[T] FixedArray::sort_by(
-      #|  self : FixedArray[T],
-      #|  cmp : (T, T) -> Int,
-      #|) -> Unit {
-      #|  self.mut_view().sort_by(cmp)
-      #|}
-      #|test "sort_by: basic functionality" {
-      #|  let arr : FixedArray[_] = [5, 3, 2, 4, 1]
-      #|  arr.sort_by((a, b) => a - b)
-      #|  inspect(arr, content="[1, 2, 3, 4, 5]")
-      #|}
-      #|test "sort_by: edge cases" {
-      #|  let empty_arr : FixedArray[Int] = []
-      #|  empty_arr.sort_by((a, b) => a - b)
-      #|  inspect(empty_arr, content="[]")
-      #|  let single_element_arr : FixedArray[_] = [1]
-      #|  single_element_arr.sort_by((a, b) => a - b)
-      #|  inspect(single_element_arr, content="[1]")
-      #|}
-      #|test "sort_by: random cases" {
-      #|  let random_arr1 : FixedArray[_] = [3, 1, 4, 1, 5, 9, 2, 6, 5, 3, 5]
-      #|  random_arr1.sort_by((a, b) => a - b)
-      #|  inspect(random_arr1, content="[1, 1, 2, 3, 3, 4, 5, 5, 5, 6, 9]")
-      #|  let random_arr2 : FixedArray[_] = [7, 1, 8, 2, 8, 1, 8, 2, 8, 4, 5, 9]
-      #|  random_arr2.sort_by((a, b) => a - b)
-      #|  inspect(random_arr2, content="[1, 1, 2, 2, 4, 5, 7, 8, 8, 8, 8, 9]")
-      #|  let random_arr3 : FixedArray[_] = [10, -1, 0, 10, -1, 0, 10, -1, 0]
-      #|  random_arr3.sort_by((a, b) => a - b)
-      #|  inspect(random_arr3, content="[-1, -1, -1, 0, 0, 0, 10, 10, 10]")
-      #|}
-      #|test "sort_by: large array" {
-      #|  let large_arr = FixedArray::makei(1000, i => 1000 - i)
-      #|  large_arr.sort_by((a, b) => a - b)
-      #|  let expected = FixedArray::makei(1000, i => i + 1)
-      #|  inspect(large_arr, content=expected.to_string())
-      #|}
-      #|test "sort_by: negative numbers" {
-      #|  let negative_arr : FixedArray[_] = [-5, -3, -2, -4, -1]
-      #|  negative_arr.sort_by((a, b) => a - b)
-      #|  inspect(negative_arr, content="[-5, -4, -3, -2, -1]")
-      #|}
-      #|test "sort_by: mixed positive and negative numbers" {
-      #|  let mixed_arr : FixedArray[_] = [-5, 3, -2, 4, -1]
-      #|  mixed_arr.sort_by((a, b) => a - b)
-      #|  inspect(mixed_arr, content="[-5, -2, -1, 3, 4]")
-      #|}
-    ),
-    "unsafe_bytes.mbt": (
-      #|#intrinsic("%bytes.unsafe_write_uint64_le")
-      #|pub fn FixedArray::unsafe_write_uint64_le(
-      #|  bytes : FixedArray[Byte],
-      #|  index : Int,
-      #|  value : UInt64,
-      #|) -> Unit {
-      #|  for i in 0..=7 {
-      #|    bytes.unsafe_set(i + index, (value >> (8 * i)).to_byte())
-      #|  }
-      #|}
-      #|#intrinsic("%bytes.unsafe_write_uint64_be")
-      #|pub fn FixedArray::unsafe_write_uint64_be(
-      #|  bytes : FixedArray[Byte],
-      #|  index : Int,
-      #|  value : UInt64,
-      #|) -> Unit {
-      #|  for i in 0..=7 {
-      #|    bytes.unsafe_set(i + index, (value >> (8 * (7 - i))).to_byte())
-      #|  }
-      #|}
-      #|#intrinsic("%bytes.unsafe_write_uint32_le")
-      #|pub fn FixedArray::unsafe_write_uint32_le(
-      #|  bytes : FixedArray[Byte],
-      #|  index : Int,
-      #|  value : UInt,
-      #|) -> Unit {
-      #|  for i in 0..=3 {
-      #|    bytes.unsafe_set(i + index, (value >> (8 * i)).to_byte())
-      #|  }
-      #|}
-      #|#intrinsic("%bytes.unsafe_write_uint32_be")
-      #|pub fn FixedArray::unsafe_write_uint32_be(
-      #|  bytes : FixedArray[Byte],
-      #|  index : Int,
-      #|  value : UInt,
-      #|) -> Unit {
-      #|  for i in 0..=3 {
-      #|    bytes.unsafe_set(i + index, (value >> (8 * (3 - i))).to_byte())
-      #|  }
-      #|}
-      #|#intrinsic("%bytes.unsafe_write_uint16_le")
-      #|pub fn FixedArray::unsafe_write_uint16_le(
-      #|  bytes : FixedArray[Byte],
-      #|  index : Int,
-      #|  value : UInt16,
-      #|) -> Unit {
-      #|  for i in 0..=1 {
-      #|    bytes.unsafe_set(i + index, (value >> (8 * i)).to_byte())
-      #|  }
-      #|}
-      #|#intrinsic("%bytes.unsafe_write_uint16_be")
-      #|pub fn FixedArray::unsafe_write_uint16_be(
-      #|  bytes : FixedArray[Byte],
-      #|  index : Int,
-      #|  value : UInt16,
-      #|) -> Unit {
-      #|  for i in 0..=1 {
-      #|    bytes.unsafe_set(i + index, (value >> (8 * (1 - i))).to_byte())
-      #|  }
-      #|}
     ),
     "view.mbt": (
       #|#deprecated
       #|pub type View[T] = ArrayView[T]
-      #|pub fn[T] ArrayView::each(
-      #|  self : ArrayView[T],
-      #|  f : (T) -> Unit raise?,
-      #|) -> Unit raise? {
-      #|  for v in self {
-      #|    f(v)
-      #|  }
-      #|}
-      #|pub fn[T] ArrayView::eachi(
-      #|  self : ArrayView[T],
-      #|  f : (Int, T) -> Unit raise?,
-      #|) -> Unit raise? {
-      #|  for i, v in self {
-      #|    f(i, v)
-      #|  }
-      #|}
-      #|pub fn[T] ArrayView::all(
-      #|  self : ArrayView[T],
-      #|  f : (T) -> Bool raise?,
-      #|) -> Bool raise? {
-      #|  for v in self {
-      #|    if !f(v) {
-      #|      return false
-      #|    }
-      #|  }
-      #|  true
-      #|}
-      #|pub fn[T] ArrayView::any(
-      #|  self : ArrayView[T],
-      #|  f : (T) -> Bool raise?,
-      #|) -> Bool raise? {
-      #|  for v in self {
-      #|    if f(v) {
-      #|      return true
-      #|    }
-      #|  }
-      #|  false
-      #|}
-      #|pub fn[T : Eq] ArrayView::contains(self : ArrayView[T], value : T) -> Bool {
-      #|  for v in self {
-      #|    if v == value {
-      #|      break true
-      #|    }
-      #|  } else {
-      #|    false
-      #|  }
-      #|}
-      #|pub fn[X] ArrayView::rev_iterator(self : ArrayView[X]) -> Iterator[X] {
-      #|  let mut i = self.length()
-      #|  Iterator::new(fn() {
-      #|    guard i > 0 else { None }
-      #|    i -= 1
-      #|    Some(self.unsafe_get(i))
-      #|  })
-      #|}
-      #|pub fn[X] ArrayView::iterator2(self : ArrayView[X]) -> Iterator2[Int, X] {
-      #|  let mut i = 0
-      #|  Iterator2::new(fn() {
-      #|    guard i < self.length() else { None }
-      #|    let result = Some((i, self.unsafe_get(i)))
-      #|    i += 1
-      #|    result
-      #|  })
-      #|}
-      #|pub fn[A] ArrayView::iter2(self : ArrayView[A]) -> Iter2[Int, A] {
-      #|  Iter2::new(yield_ => for i, v in self {
-      #|    guard yield_(i, v) is IterContinue else { break IterEnd }
-      #|  } else {
-      #|    IterContinue
-      #|  })
-      #|}
-      #|pub fn[A, B] ArrayView::fold(
-      #|  self : ArrayView[A],
-      #|  init~ : B,
-      #|  f : (B, A) -> B raise?,
-      #|) -> B raise? {
-      #|  for i = 0, acc = init; i < self.length(); {
-      #|    continue i + 1, f(acc, self[i])
-      #|  } else {
-      #|    acc
-      #|  }
-      #|}
-      #|pub fn[A, B] ArrayView::rev_fold(
-      #|  self : ArrayView[A],
-      #|  init~ : B,
-      #|  f : (B, A) -> B raise?,
-      #|) -> B raise? {
-      #|  for i = self.length() - 1, acc = init; i >= 0; {
-      #|    continue i - 1, f(acc, self[i])
-      #|  } else {
-      #|    acc
-      #|  }
-      #|}
-      #|pub fn[A, B] ArrayView::foldi(
-      #|  self : ArrayView[A],
-      #|  init~ : B,
-      #|  f : (Int, B, A) -> B raise?,
-      #|) -> B raise? {
-      #|  for i = 0, acc = init; i < self.length(); {
-      #|    continue i + 1, f(i, acc, self[i])
-      #|  } else {
-      #|    acc
-      #|  }
-      #|}
-      #|pub fn[A, B] ArrayView::rev_foldi(
-      #|  self : ArrayView[A],
-      #|  init~ : B,
-      #|  f : (Int, B, A) -> B raise?,
-      #|) -> B raise? {
-      #|  let len = self.length()
-      #|  for i = len - 1, acc = init; i >= 0; {
-      #|    continue i - 1, f(len - i - 1, acc, self[i])
-      #|  } else {
-      #|    acc
-      #|  }
-      #|}
-      #|pub fn[T, U] ArrayView::map(
-      #|  self : ArrayView[T],
-      #|  f : (T) -> U raise?,
-      #|) -> Array[U] raise? {
-      #|  if self.length() == 0 {
-      #|    return []
-      #|  }
-      #|  Array::makei(self.length(), i => f(self[i]))
-      #|}
-      #|pub fn[T, U] ArrayView::mapi(
-      #|  self : ArrayView[T],
-      #|  f : (Int, T) -> U raise?,
-      #|) -> Array[U] raise? {
-      #|  if self.length() == 0 {
-      #|    return []
-      #|  }
-      #|  Array::makei(self.length(), i => f(i, self[i]))
-      #|}
-      #|pub fn[T] ArrayView::filter(
-      #|  self : ArrayView[T],
-      #|  f : (T) -> Bool raise?,
-      #|) -> Array[T] raise? {
-      #|  let arr = []
-      #|  for v in self {
-      #|    if f(v) {
-      #|      arr.push(v)
-      #|    }
-      #|  }
-      #|  arr
-      #|}
-      #|pub fn[T] ArrayView::to_array(self : ArrayView[T]) -> Array[T] {
-      #|  let len = self.length()
-      #|  if len == 0 {
-      #|    []
-      #|  } else {
-      #|    let arr = Array::make(len, self[0])
-      #|    for i, v in self {
-      #|      arr[i] = v
-      #|    }
-      #|    arr
-      #|  }
-      #|}
-      #|pub fn[A : @string.ToStringView] ArrayView::join(
-      #|  self : ArrayView[A],
-      #|  separator : StringView,
-      #|) -> String {
-      #|  match self {
-      #|    [] => ""
-      #|    [hd, .. tl] => {
-      #|      let hd = hd.to_string_view()
-      #|      let mut size_hint = hd.length()
-      #|      for s in tl {
-      #|        size_hint += s.to_string_view().length() + separator.length()
-      #|      }
-      #|      size_hint = size_hint << 1
-      #|      let buf = StringBuilder::new(size_hint~)
-      #|      buf.write_view(hd)
-      #|      if separator is "" {
-      #|        for s in tl {
-      #|          let s = s.to_string_view()
-      #|          buf.write_view(s)
-      #|        }
-      #|      } else {
-      #|        for s in tl {
-      #|          let s = s.to_string_view()
-      #|          buf.write_view(separator)
-      #|          buf.write_view(s)
-      #|        }
-      #|      }
-      #|      buf.to_string()
-      #|    }
-      #|  }
-      #|}
-      #|fn[T] ArrayView::start(self : ArrayView[T]) -> Int = "%arrayview.start"
-      #|pub fn[T] ArrayView::start_offset(self : Self[T]) -> Int {
-      #|  self.start()
-      #|}
     ),
   },
 )
@@ -1927,16 +987,14 @@ let moonbitlang_core_bigint_module : RuntimePackage = RuntimePackage::new(
       #|  #|(x) => x >= -(2n ** 63n) && x < 2n ** 63n
       #|extern "js" fn is_neg(x : BigInt) -> Bool =
       #|  #|(x) => x < 0n
-      #|fn BigInt::limbs(self : Self) -> Iter[UInt] {
-      #|  guard !self.is_zero() else { Iter::singleton(0) }
-      #|  Iter::new(yield_ => for n = self * BigInt::from_int(self.signum())
-      #|                          n > 0
-      #|                          n = n >> 32 {
+      #|fn BigInt::limbs(self : Self) -> Array[UInt] {
+      #|  guard !self.is_zero() else { [0] }
+      #|  let result = []
+      #|  for n = self * BigInt::from_int(self.signum()); n > 0; n = n >> 32 {
       #|    let limb = n.to_uint()
-      #|    guard yield_(limb) is IterContinue else { break IterEnd }
-      #|  } else {
-      #|    IterContinue
-      #|  })
+      #|    result.push(limb)
+      #|  }
+      #|  result
       #|}
     ),
     "bigint_nonjs.mbt": (
@@ -2901,8 +1959,8 @@ let moonbitlang_core_bigint_module : RuntimePackage = RuntimePackage::new(
       #|  inspect(4294967296N.len, content="2") // 2^32
       #|  inspect((-4294967296N).len, content="2") // -2^32
       #|}
-      #|fn BigInt::limbs(self : Self) -> Iter[UInt] {
-      #|  self.limbs.iter().take(self.len)
+      #|fn BigInt::limbs(self : Self) -> Array[UInt] {
+      #|  self.limbs[:self.len].to_array()
       #|}
     ),
     "deprecated.mbt": (
@@ -2939,53 +1997,6 @@ let moonbitlang_core_bool_module : RuntimePackage = RuntimePackage::new(
       #|{
       #|  "import": ["moonbitlang/core/builtin"],
       #|  "test-import": [ "moonbitlang/core/char", "moonbitlang/core/int16" ]
-      #|}
-    ),
-    "bool.mbt": (
-      #|pub fn Bool::to_int(self : Bool) -> Int {
-      #|  if self {
-      #|    1
-      #|  } else {
-      #|    0
-      #|  }
-      #|}
-      #|pub fn Bool::to_int64(self : Bool) -> Int64 {
-      #|  if self {
-      #|    1
-      #|  } else {
-      #|    0
-      #|  }
-      #|}
-      #|pub fn Bool::to_uint(self : Bool) -> UInt {
-      #|  if self {
-      #|    1
-      #|  } else {
-      #|    0
-      #|  }
-      #|}
-      #|pub fn Bool::to_uint64(self : Bool) -> UInt64 {
-      #|  if self {
-      #|    1
-      #|  } else {
-      #|    0
-      #|  }
-      #|}
-      #|pub impl Hash for Bool with hash_combine(self, hasher) {
-      #|  hasher.combine_bool(self)
-      #|}
-      #|pub fn Bool::to_uint16(self : Bool) -> UInt16 {
-      #|  if self {
-      #|    1
-      #|  } else {
-      #|    0
-      #|  }
-      #|}
-      #|pub fn Bool::to_int16(self : Bool) -> Int16 {
-      #|  if self {
-      #|    1
-      #|  } else {
-      #|    0
-      #|  }
       #|}
     ),
   },
@@ -3434,9 +2445,13 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|    "moonbitlang/core/json",
       #|    "moonbitlang/core/bigint",
       #|    "moonbitlang/core/ref",
-      #|    "moonbitlang/core/float"
+      #|    "moonbitlang/core/float",
+      #|    "moonbitlang/core/quickcheck",
+      #|    "moonbitlang/core/test",
+      #|    "moonbitlang/core/random",
+      #|    "moonbitlang/core/int16"
       #|  ],
-      #|  "alert-list": "-test_import_all",
+      #|   "warn-list": "-test_unqualified_package",
       #|  "targets": {
       #|    "int64_js.mbt": ["js"],
       #|    "int64_nonjs.mbt": ["not", "js"],
@@ -3470,17 +2485,14 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|  }
       #|  arr
       #|}
-      #|#locals(value)
-      #|pub fn[T] Array::makei(
-      #|  length : Int,
-      #|  value : (Int) -> T raise?,
-      #|) -> Array[T] raise? {
+      #|#locals(f)
+      #|pub fn[T] Array::makei(length : Int, f : (Int) -> T raise?) -> Array[T] raise? {
       #|  if length <= 0 {
       #|    []
       #|  } else {
       #|    let array = Array::make_uninit(length)
       #|    for i in 0..<length {
-      #|      array.unsafe_set(i, value(i))
+      #|      array.unsafe_set(i, f(i))
       #|    }
       #|    array
       #|  }
@@ -3658,9 +2670,6 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|}
       #|pub fn[T] Array::is_empty(self : Array[T]) -> Bool {
       #|  self.length() == 0
-      #|}
-      #|pub fn[T : Compare] Array::is_sorted(self : Array[T]) -> Bool {
-      #|  self[:].is_sorted()
       #|}
       #|#alias(rev_inplace, deprecated)
       #|pub fn[T] Array::rev_in_place(self : Array[T]) -> Unit {
@@ -4035,25 +3044,13 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|  chunks
       #|}
       #|pub fn[T] Array::iter(self : Array[T]) -> Iter[T] {
-      #|  Iter::new(yield_ => for v in self {
-      #|    guard yield_(v) is IterContinue else { break IterEnd }
-      #|  } else {
-      #|    IterContinue
-      #|  })
+      #|  self.iterator().iter()
       #|}
       #|pub fn[T] Array::rev_iter(self : Array[T]) -> Iter[T] {
-      #|  Iter::new(yield_ => for i = self.length() - 1; i >= 0; i = i - 1 {
-      #|    guard yield_(self.unsafe_get(i)) is IterContinue else { break IterEnd }
-      #|  } else {
-      #|    IterContinue
-      #|  })
+      #|  self.rev_iterator().iter()
       #|}
       #|pub fn[A] Array::iter2(self : Array[A]) -> Iter2[Int, A] {
-      #|  Iter2::new(yield_ => for i, v in self {
-      #|    guard yield_(i, v) is IterContinue else { break IterEnd }
-      #|  } else {
-      #|    IterContinue
-      #|  })
+      #|  self.iterator2().iter2()
       #|}
       #|pub impl[T] Default for Array[T] with default() {
       #|  []
@@ -4085,6 +3082,100 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|    }
       #|  }
       #|  self.unsafe_truncate_to_length(write_idx)
+      #|}
+      #|pub fn[T] Array::from_iter(iter : Iter[T]) -> Array[T] {
+      #|  iter.collect()
+      #|}
+      #|pub fn[T] Array::from_iterator(iter : Iterator[T]) -> Array[T] {
+      #|  iter.collect()
+      #|}
+      #|pub fn[T] Array::push_iter(self : Self[T], iter : Iter[T]) -> Unit {
+      #|  for x in iter {
+      #|    self.push(x)
+      #|  }
+      #|}
+      #|pub fn[T] Array::shuffle_in_place(
+      #|  self : Array[T],
+      #|  rand~ : (Int) -> Int,
+      #|) -> Unit {
+      #|  let n = self.length()
+      #|  for i = n - 1; i > 0; i = i - 1 {
+      #|    let j = rand(i + 1) % (i + 1)
+      #|    self.swap(i, j)
+      #|  }
+      #|}
+      #|pub fn[T] Array::shuffle(self : Array[T], rand~ : (Int) -> Int) -> Array[T] {
+      #|  let new_arr = self.copy()
+      #|  Array::shuffle_in_place(new_arr, rand~)
+      #|  new_arr
+      #|}
+      #|pub fn[A, B] Array::filter_map(
+      #|  self : Array[A],
+      #|  f : (A) -> B? raise?,
+      #|) -> Array[B] raise? {
+      #|  let result = []
+      #|  for x in self {
+      #|    if f(x) is Some(x) {
+      #|      result.push(x)
+      #|    }
+      #|  }
+      #|  result
+      #|}
+      #|pub fn[A] Array::last(self : Array[A]) -> A? {
+      #|  match self {
+      #|    [] => None
+      #|    [.., last] => Some(last)
+      #|  }
+      #|}
+      #|pub fn[A, B] Array::zip(self : Array[A], other : Array[B]) -> Array[(A, B)] {
+      #|  let length = if self.length() < other.length() {
+      #|    self.length()
+      #|  } else {
+      #|    other.length()
+      #|  }
+      #|  Array::makei(length, i => (self[i], other[i]))
+      #|}
+      #|pub fn[T1, T2] Array::unzip(self : Array[(T1, T2)]) -> (Array[T1], Array[T2]) {
+      #|  let arr1 : Array[T1] = Array::new(capacity=self.length())
+      #|  let arr2 : Array[T2] = Array::new(capacity=self.length())
+      #|  for pair in self {
+      #|    let (x, y) = pair
+      #|    arr1.push(x)
+      #|    arr2.push(y)
+      #|  }
+      #|  (arr1, arr2)
+      #|}
+      #|pub fn[A, B] Array::zip_to_iter2(
+      #|  self : Array[A],
+      #|  other : Array[B],
+      #|) -> Iter2[A, B] {
+      #|  let length = if self.length() < other.length() {
+      #|    self.length()
+      #|  } else {
+      #|    other.length()
+      #|  }
+      #|  let mut i = 0
+      #|  Iterator2::new(() => {
+      #|    guard i < length else { None }
+      #|    let elem = (self[i], other[i])
+      #|    i += 1
+      #|    Some(elem)
+      #|  }).iter2()
+      #|}
+      #|pub fn[A : ToStringView] Array::join(
+      #|  self : Array[A],
+      #|  separator : StringView,
+      #|) -> String {
+      #|  self[:].join(separator)
+      #|}
+      #|pub fn[X] Array::iterator(self : Array[X]) -> Iterator[X] {
+      #|  self[:].iterator()
+      #|}
+      #|pub fn[X] Array::rev_iterator(self : Array[X]) -> Iterator[X] {
+      #|  self[:].rev_iterator()
+      #|}
+      #|pub fn[X] Array::iterator2(self : Array[X]) -> Iterator2[Int, X] {
+      #|  self[:].iterator2()
       #|}
     ),
     "array_block.mbt": (
@@ -4287,12 +3378,321 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|}
     ),
     "array_sort.mbt": (
+      #|pub fn[T] MutArrayView::sort_by(self : Self[T], cmp : (T, T) -> Int) -> Unit {
+      #|  fixed_quick_sort_by(self, cmp, None, fixed_get_limit(self.length()))
+      #|}
       #|pub fn[T : Compare] MutArrayView::sort(self : MutArrayView[T]) -> Unit {
       #|  fixed_quick_sort(self, None, fixed_get_limit(self.length()))
       #|}
       #|pub fn[T : Compare] MutArrayView::stable_sort(self : MutArrayView[T]) -> Unit {
       #|  timsort(self)
       #|}
+      #|pub fn[T, K : Compare] MutArrayView::sort_by_key(
+      #|  self : Self[T],
+      #|  map : (T) -> K,
+      #|) -> Unit {
+      #|  fixed_quick_sort_by(
+      #|    self,
+      #|    (a, b) => map(a).compare(map(b)),
+      #|    None,
+      #|    fixed_get_limit(self.length()),
+      #|  )
+      #|}
+      #|pub fn[T : Compare] ArrayView::is_sorted(self : ArrayView[T]) -> Bool {
+      #|  for i in 1..<self.length() {
+      #|    if self[i - 1] > self[i] {
+      #|      break false
+      #|    }
+      #|  } else {
+      #|    true
+      #|  }
+      #|}
+      #|pub fn[T : Compare] Array::is_sorted(self : Array[T]) -> Bool {
+      #|  self[:].is_sorted()
+      #|}
+      #|pub fn[T : Compare] Array::sort(self : Array[T]) -> Unit {
+      #|  self.mut_view().sort()
+      #|}
+      #|pub fn[T, K : Compare] Array::sort_by_key(
+      #|  self : Array[T],
+      #|  map : (T) -> K,
+      #|) -> Unit {
+      #|  self.mut_view().sort_by_key(map)
+      #|}
+      #|pub fn[T] Array::sort_by(self : Array[T], cmp : (T, T) -> Int) -> Unit {
+      #|  self.mut_view().sort_by(cmp)
+      #|}
+      #|pub fn[T : Compare] FixedArray::is_sorted(arr : FixedArray[T]) -> Bool {
+      #|  arr[:].is_sorted()
+      #|}
+      #|pub fn[T : Compare] FixedArray::stable_sort(self : FixedArray[T]) -> Unit {
+      #|  self.mut_view().stable_sort()
+      #|}
+      #|pub fn[T, K : Compare] FixedArray::sort_by_key(
+      #|  self : FixedArray[T],
+      #|  map : (T) -> K,
+      #|) -> Unit {
+      #|  self.mut_view().sort_by_key(map)
+      #|}
+      #|test "FixedArray::sort_by_key/basic" {
+      #|  let arr : FixedArray[_] = [3, 1, 4, 1, 5]
+      #|  arr.sort_by_key(x => x)
+      #|  inspect(arr, content="[1, 1, 3, 4, 5]")
+      #|  let arr2 : FixedArray[_] = [3, 1, 4, 1, 5]
+      #|  arr2.sort_by_key(x => -x)
+      #|  inspect(arr2, content="[5, 4, 3, 1, 1]")
+      #|}
+      #|pub fn[T] FixedArray::sort_by(
+      #|  self : FixedArray[T],
+      #|  cmp : (T, T) -> Int,
+      #|) -> Unit {
+      #|  self.mut_view().sort_by(cmp)
+      #|}
+      #|test "FixedArray::sort_by: basic functionality" {
+      #|  let arr : FixedArray[_] = [5, 3, 2, 4, 1]
+      #|  arr.sort_by((a, b) => a - b)
+      #|  inspect(arr, content="[1, 2, 3, 4, 5]")
+      #|}
+      #|test "FixedArray::sort_by: edge cases" {
+      #|  let empty_arr : FixedArray[Int] = []
+      #|  empty_arr.sort_by((a, b) => a - b)
+      #|  inspect(empty_arr, content="[]")
+      #|  let single_element_arr : FixedArray[_] = [1]
+      #|  single_element_arr.sort_by((a, b) => a - b)
+      #|  inspect(single_element_arr, content="[1]")
+      #|}
+      #|test "FixedArray::sort_by: random cases" {
+      #|  let random_arr1 : FixedArray[_] = [3, 1, 4, 1, 5, 9, 2, 6, 5, 3, 5]
+      #|  random_arr1.sort_by((a, b) => a - b)
+      #|  inspect(random_arr1, content="[1, 1, 2, 3, 3, 4, 5, 5, 5, 6, 9]")
+      #|  let random_arr2 : FixedArray[_] = [7, 1, 8, 2, 8, 1, 8, 2, 8, 4, 5, 9]
+      #|  random_arr2.sort_by((a, b) => a - b)
+      #|  inspect(random_arr2, content="[1, 1, 2, 2, 4, 5, 7, 8, 8, 8, 8, 9]")
+      #|  let random_arr3 : FixedArray[_] = [10, -1, 0, 10, -1, 0, 10, -1, 0]
+      #|  random_arr3.sort_by((a, b) => a - b)
+      #|  inspect(random_arr3, content="[-1, -1, -1, 0, 0, 0, 10, 10, 10]")
+      #|}
+      #|test "FixedArray::sort_by: large array" {
+      #|  let large_arr = FixedArray::makei(1000, i => 1000 - i)
+      #|  large_arr.sort_by((a, b) => a - b)
+      #|  let expected = FixedArray::makei(1000, i => i + 1)
+      #|  inspect(large_arr, content=expected.to_string())
+      #|}
+      #|test "FixedArray::sort_by: negative numbers" {
+      #|  let negative_arr : FixedArray[_] = [-5, -3, -2, -4, -1]
+      #|  negative_arr.sort_by((a, b) => a - b)
+      #|  inspect(negative_arr, content="[-5, -4, -3, -2, -1]")
+      #|}
+      #|test "FixedArray::sort_by: mixed positive and negative numbers" {
+      #|  let mixed_arr : FixedArray[_] = [-5, 3, -2, 4, -1]
+      #|  mixed_arr.sort_by((a, b) => a - b)
+      #|  inspect(mixed_arr, content="[-5, -2, -1, 3, 4]")
+      #|}
+    ),
+    "array_sort_by_impl.mbt": (
+      #|fn[T] fixed_quick_sort_by(
+      #|  arr : MutArrayView[T],
+      #|  cmp : (T, T) -> Int,
+      #|  pred : T?,
+      #|  limit : Int,
+      #|) -> Unit {
+      #|  let mut limit = limit
+      #|  let mut arr = arr
+      #|  let mut pred = pred
+      #|  let mut was_partitioned = true
+      #|  let mut balanced = true
+      #|  let bubble_sort_len = 16
+      #|  while true {
+      #|    let len = arr.length()
+      #|    if len <= bubble_sort_len {
+      #|      if len >= 2 {
+      #|        fixed_bubble_sort_by(arr, cmp)
+      #|      }
+      #|      return
+      #|    }
+      #|    if limit == 0 {
+      #|      fixed_heap_sort_by(arr, cmp)
+      #|      return
+      #|    }
+      #|    let (pivot_index, likely_sorted) = fixed_choose_pivot_by(arr, cmp)
+      #|    if was_partitioned && balanced && likely_sorted {
+      #|      if fixed_try_bubble_sort_by(arr, cmp) {
+      #|        return
+      #|      }
+      #|    }
+      #|    let (pivot, partitioned) = fixed_partition_by(arr, cmp, pivot_index)
+      #|    was_partitioned = partitioned
+      #|    balanced = minimum(pivot, len - pivot) >= len / 8
+      #|    if !balanced {
+      #|      limit -= 1
+      #|    }
+      #|    if pred is Some(pred) {
+      #|      if cmp(pred, arr[pivot]) == 0 {
+      #|        let mut i = pivot
+      #|        while i < len && cmp(pred, arr[i]) == 0 {
+      #|          i = i + 1
+      #|        }
+      #|        arr = arr.slice(i, len)
+      #|        continue
+      #|      }
+      #|    }
+      #|    let left = arr.slice(0, pivot)
+      #|    let right = arr.slice(pivot + 1, len)
+      #|    if left.length() < right.length() {
+      #|      fixed_quick_sort_by(left, cmp, pred, limit)
+      #|      pred = Some(arr[pivot])
+      #|      arr = right
+      #|    } else {
+      #|      fixed_quick_sort_by(right, cmp, Some(arr[pivot]), limit)
+      #|      arr = left
+      #|    }
+      #|  }
+      #|}
+      #|fn[T] fixed_try_bubble_sort_by(
+      #|  arr : MutArrayView[T],
+      #|  cmp : (T, T) -> Int,
+      #|) -> Bool {
+      #|  let max_tries = 8
+      #|  let mut tries = 0
+      #|  for i in 1..<arr.length() {
+      #|    let mut sorted = true
+      #|    for j = i; j > 0 && cmp(arr[j - 1], arr[j]) > 0; j = j - 1 {
+      #|      sorted = false
+      #|      arr.swap(j, j - 1)
+      #|    }
+      #|    if !sorted {
+      #|      tries += 1
+      #|      if tries > max_tries {
+      #|        return false
+      #|      }
+      #|    }
+      #|  }
+      #|  true
+      #|}
+      #|fn[T] fixed_bubble_sort_by(arr : MutArrayView[T], cmp : (T, T) -> Int) -> Unit {
+      #|  for i in 1..<arr.length() {
+      #|    for j = i; j > 0 && cmp(arr[j - 1], arr[j]) > 0; j = j - 1 {
+      #|      arr.swap(j, j - 1)
+      #|    }
+      #|  }
+      #|}
+      #|test "try_bubble_sort" {
+      #|  let arr : FixedArray[_] = [8, 7, 6, 5, 4, 3, 2, 1]
+      #|  let sorted = fixed_try_bubble_sort_by(arr.mut_view(), (a, b) => a - b)
+      #|  inspect(sorted, content="true")
+      #|  assert_eq(arr, [1, 2, 3, 4, 5, 6, 7, 8])
+      #|}
+      #|fn[T] fixed_partition_by(
+      #|  arr : MutArrayView[T],
+      #|  cmp : (T, T) -> Int,
+      #|  pivot_index : Int,
+      #|) -> (Int, Bool) {
+      #|  arr.swap(pivot_index, arr.length() - 1)
+      #|  let pivot = arr[arr.length() - 1]
+      #|  let mut i = 0
+      #|  let mut partitioned = true
+      #|  for j in 0..<(arr.length() - 1) {
+      #|    if cmp(arr[j], pivot) < 0 {
+      #|      if i != j {
+      #|        arr.swap(i, j)
+      #|        partitioned = false
+      #|      }
+      #|      i = i + 1
+      #|    }
+      #|  }
+      #|  arr.swap(i, arr.length() - 1)
+      #|  (i, partitioned)
+      #|}
+      #|fn[T] fixed_choose_pivot_by(
+      #|  arr : MutArrayView[T],
+      #|  cmp : (T, T) -> Int,
+      #|) -> (Int, Bool) {
+      #|  let len = arr.length()
+      #|  let use_median_of_medians = 50
+      #|  let max_swaps = 4 * 3
+      #|  let mut swaps = 0
+      #|  let b = len / 4 * 2
+      #|  if len >= 8 {
+      #|    let a = len / 4 * 1
+      #|    let c = len / 4 * 3
+      #|    let sort_2 = (a : Int, b : Int) => if cmp(arr[a], arr[b]) > 0 {
+      #|      arr.swap(a, b)
+      #|      swaps += 1
+      #|    }
+      #|    let sort_3 = (a : Int, b : Int, c : Int) => {
+      #|      sort_2(a, b)
+      #|      sort_2(b, c)
+      #|      sort_2(a, b)
+      #|    }
+      #|    if len > use_median_of_medians {
+      #|      sort_3(a - 1, a, a + 1)
+      #|      sort_3(b - 1, b, b + 1)
+      #|      sort_3(c - 1, c, c + 1)
+      #|    }
+      #|    sort_3(a, b, c)
+      #|  }
+      #|  if swaps == max_swaps {
+      #|    arr.rev_in_place()
+      #|    (len - b - 1, true)
+      #|  } else {
+      #|    (b, swaps == 0)
+      #|  }
+      #|}
+      #|fn[T] fixed_heap_sort_by(arr : MutArrayView[T], cmp : (T, T) -> Int) -> Unit {
+      #|  let len = arr.length()
+      #|  for i = len / 2 - 1; i >= 0; i = i - 1 {
+      #|    fixed_sift_down_by(arr, i, cmp)
+      #|  }
+      #|  for i = len - 1; i > 0; i = i - 1 {
+      #|    arr.swap(0, i)
+      #|    fixed_sift_down_by(arr.slice(0, i), 0, cmp)
+      #|  }
+      #|}
+      #|fn[T] fixed_sift_down_by(
+      #|  arr : MutArrayView[T],
+      #|  index : Int,
+      #|  cmp : (T, T) -> Int,
+      #|) -> Unit {
+      #|  let mut index = index
+      #|  let len = arr.length()
+      #|  let mut child = index * 2 + 1
+      #|  while child < len {
+      #|    if child + 1 < len && cmp(arr[child], arr[child + 1]) < 0 {
+      #|      child = child + 1
+      #|    }
+      #|    if cmp(arr[index], arr[child]) >= 0 {
+      #|      return
+      #|    }
+      #|    arr.swap(index, child)
+      #|    index = child
+      #|    child = index * 2 + 1
+      #|  }
+      #|}
+      #|test "heap_sort" {
+      #|  fixed_test_sort(arr => fixed_heap_sort_by(arr.mut_view(), (a, b) => a - b))
+      #|}
+      #|test "bubble_sort" {
+      #|  fixed_test_sort(arr => fixed_bubble_sort_by(arr.mut_view(), (a, b) => a - b))
+      #|}
+      #|test "sort" {
+      #|  fixed_test_sort(arr => arr.sort())
+      #|}
+      #|test "sort_by" {
+      #|  let arr = [5, 1, 3, 4, 2]
+      #|  arr.mut_view().sort_by_key(x => -x)
+      #|  assert_eq(arr, [5, 4, 3, 2, 1])
+      #|}
+      #|test "sort_by_fallback" {
+      #|  let arr = FixedArray::makei(100, i => if i % 2 == 0 { 1 } else { 0 })
+      #|  arr
+      #|  .mut_view()
+      #|  .sort_by(
+      #|    (a, b) => if a < b { -1 } else { 1 },
+      #|  )
+      #|  assert_true(arr.is_sorted())
+      #|}
+    ),
+    "array_sort_impl.mbt": (
       #|priv struct TimSortRun {
       #|  len : Int
       #|  start : Int
@@ -4665,9 +4065,6 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|  }
       #|  assert_eq(arr, expected)
       #|}
-      #|pub fn[T : Compare] FixedArray::is_sorted(arr : FixedArray[T]) -> Bool {
-      #|  arr[:].is_sorted()
-      #|}
       #|test "stable_sort_complex" {
       #|  let run_lens = [86, 64, 21, 20, 22]
       #|  let total_len = run_lens.fold(init=0, (acc, x) => acc + x)
@@ -4730,223 +4127,6 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|  }
       #|}
     ),
-    "array_sort_by.mbt": (
-      #|pub fn[T, K : Compare] MutArrayView::sort_by_key(
-      #|  self : Self[T],
-      #|  map : (T) -> K,
-      #|) -> Unit {
-      #|  fixed_quick_sort_by(
-      #|    self,
-      #|    (a, b) => map(a).compare(map(b)),
-      #|    None,
-      #|    fixed_get_limit(self.length()),
-      #|  )
-      #|}
-      #|pub fn[T] MutArrayView::sort_by(self : Self[T], cmp : (T, T) -> Int) -> Unit {
-      #|  fixed_quick_sort_by(self, cmp, None, fixed_get_limit(self.length()))
-      #|}
-      #|fn[T] fixed_quick_sort_by(
-      #|  arr : MutArrayView[T],
-      #|  cmp : (T, T) -> Int,
-      #|  pred : T?,
-      #|  limit : Int,
-      #|) -> Unit {
-      #|  let mut limit = limit
-      #|  let mut arr = arr
-      #|  let mut pred = pred
-      #|  let mut was_partitioned = true
-      #|  let mut balanced = true
-      #|  let bubble_sort_len = 16
-      #|  while true {
-      #|    let len = arr.length()
-      #|    if len <= bubble_sort_len {
-      #|      if len >= 2 {
-      #|        fixed_bubble_sort_by(arr, cmp)
-      #|      }
-      #|      return
-      #|    }
-      #|    if limit == 0 {
-      #|      fixed_heap_sort_by(arr, cmp)
-      #|      return
-      #|    }
-      #|    let (pivot_index, likely_sorted) = fixed_choose_pivot_by(arr, cmp)
-      #|    if was_partitioned && balanced && likely_sorted {
-      #|      if fixed_try_bubble_sort_by(arr, cmp) {
-      #|        return
-      #|      }
-      #|    }
-      #|    let (pivot, partitioned) = fixed_partition_by(arr, cmp, pivot_index)
-      #|    was_partitioned = partitioned
-      #|    balanced = minimum(pivot, len - pivot) >= len / 8
-      #|    if !balanced {
-      #|      limit -= 1
-      #|    }
-      #|    if pred is Some(pred) {
-      #|      if cmp(pred, arr[pivot]) == 0 {
-      #|        let mut i = pivot
-      #|        while i < len && cmp(pred, arr[i]) == 0 {
-      #|          i = i + 1
-      #|        }
-      #|        arr = arr.slice(i, len)
-      #|        continue
-      #|      }
-      #|    }
-      #|    let left = arr.slice(0, pivot)
-      #|    let right = arr.slice(pivot + 1, len)
-      #|    if left.length() < right.length() {
-      #|      fixed_quick_sort_by(left, cmp, pred, limit)
-      #|      pred = Some(arr[pivot])
-      #|      arr = right
-      #|    } else {
-      #|      fixed_quick_sort_by(right, cmp, Some(arr[pivot]), limit)
-      #|      arr = left
-      #|    }
-      #|  }
-      #|}
-      #|fn[T] fixed_try_bubble_sort_by(
-      #|  arr : MutArrayView[T],
-      #|  cmp : (T, T) -> Int,
-      #|) -> Bool {
-      #|  let max_tries = 8
-      #|  let mut tries = 0
-      #|  for i in 1..<arr.length() {
-      #|    let mut sorted = true
-      #|    for j = i; j > 0 && cmp(arr[j - 1], arr[j]) > 0; j = j - 1 {
-      #|      sorted = false
-      #|      arr.swap(j, j - 1)
-      #|    }
-      #|    if !sorted {
-      #|      tries += 1
-      #|      if tries > max_tries {
-      #|        return false
-      #|      }
-      #|    }
-      #|  }
-      #|  true
-      #|}
-      #|fn[T] fixed_bubble_sort_by(arr : MutArrayView[T], cmp : (T, T) -> Int) -> Unit {
-      #|  for i in 1..<arr.length() {
-      #|    for j = i; j > 0 && cmp(arr[j - 1], arr[j]) > 0; j = j - 1 {
-      #|      arr.swap(j, j - 1)
-      #|    }
-      #|  }
-      #|}
-      #|test "try_bubble_sort" {
-      #|  let arr : FixedArray[_] = [8, 7, 6, 5, 4, 3, 2, 1]
-      #|  let sorted = fixed_try_bubble_sort_by(arr.mut_view(), (a, b) => a - b)
-      #|  inspect(sorted, content="true")
-      #|  assert_eq(arr, [1, 2, 3, 4, 5, 6, 7, 8])
-      #|}
-      #|fn[T] fixed_partition_by(
-      #|  arr : MutArrayView[T],
-      #|  cmp : (T, T) -> Int,
-      #|  pivot_index : Int,
-      #|) -> (Int, Bool) {
-      #|  arr.swap(pivot_index, arr.length() - 1)
-      #|  let pivot = arr[arr.length() - 1]
-      #|  let mut i = 0
-      #|  let mut partitioned = true
-      #|  for j in 0..<(arr.length() - 1) {
-      #|    if cmp(arr[j], pivot) < 0 {
-      #|      if i != j {
-      #|        arr.swap(i, j)
-      #|        partitioned = false
-      #|      }
-      #|      i = i + 1
-      #|    }
-      #|  }
-      #|  arr.swap(i, arr.length() - 1)
-      #|  (i, partitioned)
-      #|}
-      #|fn[T] fixed_choose_pivot_by(
-      #|  arr : MutArrayView[T],
-      #|  cmp : (T, T) -> Int,
-      #|) -> (Int, Bool) {
-      #|  let len = arr.length()
-      #|  let use_median_of_medians = 50
-      #|  let max_swaps = 4 * 3
-      #|  let mut swaps = 0
-      #|  let b = len / 4 * 2
-      #|  if len >= 8 {
-      #|    let a = len / 4 * 1
-      #|    let c = len / 4 * 3
-      #|    let sort_2 = (a : Int, b : Int) => if cmp(arr[a], arr[b]) > 0 {
-      #|      arr.swap(a, b)
-      #|      swaps += 1
-      #|    }
-      #|    let sort_3 = (a : Int, b : Int, c : Int) => {
-      #|      sort_2(a, b)
-      #|      sort_2(b, c)
-      #|      sort_2(a, b)
-      #|    }
-      #|    if len > use_median_of_medians {
-      #|      sort_3(a - 1, a, a + 1)
-      #|      sort_3(b - 1, b, b + 1)
-      #|      sort_3(c - 1, c, c + 1)
-      #|    }
-      #|    sort_3(a, b, c)
-      #|  }
-      #|  if swaps == max_swaps {
-      #|    arr.rev_in_place()
-      #|    (len - b - 1, true)
-      #|  } else {
-      #|    (b, swaps == 0)
-      #|  }
-      #|}
-      #|fn[T] fixed_heap_sort_by(arr : MutArrayView[T], cmp : (T, T) -> Int) -> Unit {
-      #|  let len = arr.length()
-      #|  for i = len / 2 - 1; i >= 0; i = i - 1 {
-      #|    fixed_sift_down_by(arr, i, cmp)
-      #|  }
-      #|  for i = len - 1; i > 0; i = i - 1 {
-      #|    arr.swap(0, i)
-      #|    fixed_sift_down_by(arr.slice(0, i), 0, cmp)
-      #|  }
-      #|}
-      #|fn[T] fixed_sift_down_by(
-      #|  arr : MutArrayView[T],
-      #|  index : Int,
-      #|  cmp : (T, T) -> Int,
-      #|) -> Unit {
-      #|  let mut index = index
-      #|  let len = arr.length()
-      #|  let mut child = index * 2 + 1
-      #|  while child < len {
-      #|    if child + 1 < len && cmp(arr[child], arr[child + 1]) < 0 {
-      #|      child = child + 1
-      #|    }
-      #|    if cmp(arr[index], arr[child]) >= 0 {
-      #|      return
-      #|    }
-      #|    arr.swap(index, child)
-      #|    index = child
-      #|    child = index * 2 + 1
-      #|  }
-      #|}
-      #|test "heap_sort" {
-      #|  fixed_test_sort(arr => fixed_heap_sort_by(arr.mut_view(), (a, b) => a - b))
-      #|}
-      #|test "bubble_sort" {
-      #|  fixed_test_sort(arr => fixed_bubble_sort_by(arr.mut_view(), (a, b) => a - b))
-      #|}
-      #|test "sort" {
-      #|  fixed_test_sort(arr => arr.sort())
-      #|}
-      #|test "sort_by" {
-      #|  let arr = [5, 1, 3, 4, 2]
-      #|  arr.mut_view().sort_by_key(x => -x)
-      #|  assert_eq(arr, [5, 4, 3, 2, 1])
-      #|}
-      #|test "sort_by_fallback" {
-      #|  let arr = FixedArray::makei(100, i => if i % 2 == 0 { 1 } else { 0 })
-      #|  arr
-      #|  .mut_view()
-      #|  .sort_by(
-      #|    (a, b) => if a < b { -1 } else { 1 },
-      #|  )
-      #|  assert_true(arr.is_sorted())
-      #|}
-    ),
     "arraycore_js.mbt": (
       #|#external
       #|priv type JSValue
@@ -4956,6 +4136,8 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|priv type JSArray
       #|fn[T] JSArray::ofAnyArray(array : Array[T]) -> JSArray = "%identity"
       #|fn[T] JSArray::toAnyArray(self : JSArray) -> Array[T] = "%identity"
+      #|fn[T] JSArray::ofAnyFixedArray(array : FixedArray[T]) -> JSArray = "%identity"
+      #|fn[T] JSArray::toAnyFixedArray(self : JSArray) -> FixedArray[T] = "%identity"
       #|extern "js" fn JSArray::set_length(self : JSArray, new_len : Int) -> Unit =
       #|  #| (arr, len) => { arr.length = len; }
       #|extern "js" fn JSArray::push(self : JSArray, value : JSValue) -> Unit =
@@ -4982,6 +4164,8 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|  end : Int,
       #|) -> Unit =
       #|  #| (arr, val, start, end) => arr.fill(val, start, end)
+      #|extern "js" fn JSArray::copy(self : JSArray) -> JSArray =
+      #|  #|(arr) => arr.slice(0)
       #|#external
       #|type Array[T]
       #|fn[T] Array::make_uninit(len : Int) -> Array[T] = "%fixedarray.make_uninit"
@@ -5087,6 +4271,9 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|    }
       #|  }
       #|  JSArray::ofAnyArray(self).fill(JSValue::ofAny(value), start, end)
+      #|}
+      #|pub fn[T] Array::copy(self : Array[T]) -> Array[T] {
+      #|  JSArray::ofAnyArray(self).copy().toAnyArray()
       #|}
     ),
     "arraycore_nonjs.mbt": (
@@ -5295,6 +4482,16 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|  }
       #|  self.buf.unchecked_fill(start, value, length - start)
       #|}
+      #|pub fn[T] Array::copy(self : Array[T]) -> Array[T] {
+      #|  let len = self.length()
+      #|  if len == 0 {
+      #|    []
+      #|  } else {
+      #|    let arr = Array::make(len, self[0])
+      #|    Array::unsafe_blit(arr, 0, self, 0, len)
+      #|    arr
+      #|  }
+      #|}
     ),
     "arrayview.mbt": (
       #|#builtin.valtype
@@ -5310,6 +4507,9 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|pub fn[T] ArrayView::length(self : ArrayView[T]) -> Int {
       #|  self.len()
       #|}
+      #|pub fn[T] ArrayView::start_offset(self : Self[T]) -> Int {
+      #|  self.start()
+      #|}
       #|#alias("_[_]")
       #|pub fn[T] ArrayView::at(self : ArrayView[T], index : Int) -> T {
       #|  guard index >= 0 && index < self.len() else {
@@ -5318,6 +4518,11 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|    )
       #|  }
       #|  self.buf()[self.start() + index]
+      #|}
+      #|pub fn[T] ArrayView::get(self : ArrayView[T], index : Int) -> T? {
+      #|  let len = self.length()
+      #|  guard index >= 0 && index < len else { None }
+      #|  Some(self.buf()[self.start() + index])
       #|}
       #|#intrinsic("%arrayview.unsafe_get")
       #|#internal(unsafe, "Panic if index is out of bounds")
@@ -5416,11 +4621,192 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|  })
       #|}
       #|pub fn[A] ArrayView::iter(self : ArrayView[A]) -> Iter[A] {
-      #|  Iter::new(yield_ => for v in self {
-      #|    guard yield_(v) is IterContinue else { break IterEnd }
-      #|  } else {
-      #|    IterContinue
+      #|  self.iterator().iter()
+      #|}
+      #|pub fn[X] ArrayView::rev_iterator(self : ArrayView[X]) -> Iterator[X] {
+      #|  let mut i = self.length()
+      #|  Iterator::new(fn() {
+      #|    guard i > 0 else { None }
+      #|    i -= 1
+      #|    Some(self.unsafe_get(i))
       #|  })
+      #|}
+      #|pub fn[X] ArrayView::iterator2(self : ArrayView[X]) -> Iterator2[Int, X] {
+      #|  let mut i = 0
+      #|  Iterator2::new(fn() {
+      #|    guard i < self.length() else { None }
+      #|    let result = Some((i, self.unsafe_get(i)))
+      #|    i += 1
+      #|    result
+      #|  })
+      #|}
+      #|pub fn[A] ArrayView::iter2(self : ArrayView[A]) -> Iter2[Int, A] {
+      #|  self.iterator2().iter2()
+      #|}
+      #|pub fn[T] ArrayView::each(
+      #|  self : ArrayView[T],
+      #|  f : (T) -> Unit raise?,
+      #|) -> Unit raise? {
+      #|  for v in self {
+      #|    f(v)
+      #|  }
+      #|}
+      #|pub fn[T] ArrayView::eachi(
+      #|  self : ArrayView[T],
+      #|  f : (Int, T) -> Unit raise?,
+      #|) -> Unit raise? {
+      #|  for i, v in self {
+      #|    f(i, v)
+      #|  }
+      #|}
+      #|pub fn[T] ArrayView::all(
+      #|  self : ArrayView[T],
+      #|  f : (T) -> Bool raise?,
+      #|) -> Bool raise? {
+      #|  for v in self {
+      #|    if !f(v) {
+      #|      return false
+      #|    }
+      #|  }
+      #|  true
+      #|}
+      #|pub fn[T] ArrayView::any(
+      #|  self : ArrayView[T],
+      #|  f : (T) -> Bool raise?,
+      #|) -> Bool raise? {
+      #|  for v in self {
+      #|    if f(v) {
+      #|      return true
+      #|    }
+      #|  }
+      #|  false
+      #|}
+      #|pub fn[T : Eq] ArrayView::contains(self : ArrayView[T], value : T) -> Bool {
+      #|  for v in self {
+      #|    if v == value {
+      #|      break true
+      #|    }
+      #|  } else {
+      #|    false
+      #|  }
+      #|}
+      #|pub fn[A, B] ArrayView::fold(
+      #|  self : ArrayView[A],
+      #|  init~ : B,
+      #|  f : (B, A) -> B raise?,
+      #|) -> B raise? {
+      #|  for i = 0, acc = init; i < self.length(); {
+      #|    continue i + 1, f(acc, self[i])
+      #|  } else {
+      #|    acc
+      #|  }
+      #|}
+      #|pub fn[A, B] ArrayView::rev_fold(
+      #|  self : ArrayView[A],
+      #|  init~ : B,
+      #|  f : (B, A) -> B raise?,
+      #|) -> B raise? {
+      #|  for i = self.length() - 1, acc = init; i >= 0; {
+      #|    continue i - 1, f(acc, self[i])
+      #|  } else {
+      #|    acc
+      #|  }
+      #|}
+      #|pub fn[A, B] ArrayView::foldi(
+      #|  self : ArrayView[A],
+      #|  init~ : B,
+      #|  f : (Int, B, A) -> B raise?,
+      #|) -> B raise? {
+      #|  for i = 0, acc = init; i < self.length(); {
+      #|    continue i + 1, f(i, acc, self[i])
+      #|  } else {
+      #|    acc
+      #|  }
+      #|}
+      #|pub fn[A, B] ArrayView::rev_foldi(
+      #|  self : ArrayView[A],
+      #|  init~ : B,
+      #|  f : (Int, B, A) -> B raise?,
+      #|) -> B raise? {
+      #|  let len = self.length()
+      #|  for i = len - 1, acc = init; i >= 0; {
+      #|    continue i - 1, f(len - i - 1, acc, self[i])
+      #|  } else {
+      #|    acc
+      #|  }
+      #|}
+      #|pub fn[T, U] ArrayView::map(
+      #|  self : ArrayView[T],
+      #|  f : (T) -> U raise?,
+      #|) -> Array[U] raise? {
+      #|  if self.length() == 0 {
+      #|    return []
+      #|  }
+      #|  Array::makei(self.length(), i => f(self[i]))
+      #|}
+      #|pub fn[T, U] ArrayView::mapi(
+      #|  self : ArrayView[T],
+      #|  f : (Int, T) -> U raise?,
+      #|) -> Array[U] raise? {
+      #|  if self.length() == 0 {
+      #|    return []
+      #|  }
+      #|  Array::makei(self.length(), i => f(i, self[i]))
+      #|}
+      #|pub fn[T] ArrayView::filter(
+      #|  self : ArrayView[T],
+      #|  f : (T) -> Bool raise?,
+      #|) -> Array[T] raise? {
+      #|  let arr = []
+      #|  for v in self {
+      #|    if f(v) {
+      #|      arr.push(v)
+      #|    }
+      #|  }
+      #|  arr
+      #|}
+      #|pub fn[T] ArrayView::to_array(self : ArrayView[T]) -> Array[T] {
+      #|  let len = self.length()
+      #|  if len == 0 {
+      #|    []
+      #|  } else {
+      #|    let arr = Array::make(len, self[0])
+      #|    for i, v in self {
+      #|      arr[i] = v
+      #|    }
+      #|    arr
+      #|  }
+      #|}
+      #|pub fn[A : ToStringView] ArrayView::join(
+      #|  self : ArrayView[A],
+      #|  separator : StringView,
+      #|) -> String {
+      #|  match self {
+      #|    [] => ""
+      #|    [hd, .. tl] => {
+      #|      let hd = hd.to_string_view()
+      #|      let mut size_hint = hd.length()
+      #|      for s in tl {
+      #|        size_hint += s.to_string_view().length() + separator.length()
+      #|      }
+      #|      size_hint = size_hint << 1
+      #|      let buf = StringBuilder::new(size_hint~)
+      #|      buf.write_view(hd)
+      #|      if separator is "" {
+      #|        for s in tl {
+      #|          let s = s.to_string_view()
+      #|          buf.write_view(s)
+      #|        }
+      #|      } else {
+      #|        for s in tl {
+      #|          let s = s.to_string_view()
+      #|          buf.write_view(separator)
+      #|          buf.write_view(s)
+      #|        }
+      #|      }
+      #|      buf.to_string()
+      #|    }
+      #|  }
       #|}
       #|pub impl[X : Show] Show for ArrayView[X] with output(self, logger) {
       #|  logger.write_iter(self.iter())
@@ -5452,15 +4838,6 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|pub impl[A : Hash] Hash for ArrayView[A] with hash_combine(self, hasher) {
       #|  for e in self {
       #|    hasher.combine(e)
-      #|  }
-      #|}
-      #|pub fn[T : Compare] ArrayView::is_sorted(self : ArrayView[T]) -> Bool {
-      #|  for i in 1..<self.length() {
-      #|    if self[i - 1] > self[i] {
-      #|      break false
-      #|    }
-      #|  } else {
-      #|    true
       #|  }
       #|}
     ),
@@ -5527,9 +4904,83 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
     ),
     "autoloc.mbt": (
       #|pub(all) type SourceLoc
-      #|pub fn SourceLoc::to_string(self : Self) -> String = "%loc_to_string"
+      #|fn SourceLoc::repr(self : Self) -> String = "%loc_to_string"
       #|pub impl Show for SourceLoc with output(self, logger) {
-      #|  logger.write_string(self.to_string())
+      #|  SourceLocRepr::parse(self.repr()).output(logger)
+      #|}
+      #|priv struct SourceLocRepr {
+      #|  pkg : StringView
+      #|  filename : StringView
+      #|  start_line : StringView
+      #|  start_column : StringView
+      #|  end_line : StringView
+      #|  end_column : StringView
+      #|}
+      #|impl Show for SourceLocRepr with output(self, logger) {
+      #|  let pkg = self.pkg
+      #|  let (module_name, package_name) = {
+      #|    guard pkg.find("/") is Some(first_slash) else { (pkg, None) }
+      #|    guard pkg.view(start_offset=first_slash + 1).find("/") is Some(second_slash) else {
+      #|      (pkg, None)
+      #|    }
+      #|    let module_name_end = first_slash + 1 + second_slash
+      #|    (
+      #|      pkg.view(end_offset=module_name_end),
+      #|      Some(pkg.view(start_offset=module_name_end + 1)),
+      #|    )
+      #|  }
+      #|  if package_name is Some(pkg_name) {
+      #|    logger..write_view(pkg_name)..write_char('/')
+      #|  }
+      #|  logger
+      #|  ..write_view(self.filename)
+      #|  ..write_char(':')
+      #|  ..write_view(self.start_line)
+      #|  ..write_char(':')
+      #|  ..write_view(self.start_column)
+      #|  ..write_char('-')
+      #|  ..write_view(self.end_line)
+      #|  ..write_char(':')
+      #|  ..write_view(self.end_column)
+      #|  ..write_char('@')
+      #|  ..write_view(module_name)
+      #|}
+      #|fn SourceLocRepr::parse(repr : String) -> SourceLocRepr {
+      #|  fn parse_loc(view : StringView) -> (StringView, StringView)? {
+      #|    guard view.find(":") is Some(i) else { None }
+      #|    guard i > 0 && i + 1 < view.length() else { None }
+      #|    Some((view.view(end_offset=i), view.view(start_offset=i + 1)))
+      #|  }
+      #|  guard repr is ['@', .. rest]
+      #|  guard rest.find(":") is Some(pkg_end)
+      #|  let pkg = rest.view(start_offset=0, end_offset=pkg_end)
+      #|  guard rest.rev_find("-") is Some(start_loc_end)
+      #|  guard start_loc_end + 1 < rest.length()
+      #|  let end_loc = rest.view(start_offset=start_loc_end + 1)
+      #|  guard parse_loc(end_loc) is Some((end_line, end_column))
+      #|  let rest = rest.view(end_offset=start_loc_end)
+      #|  guard rest.rev_find(":") is Some(start_line_end) &&
+      #|    rest.view(end_offset=start_line_end).rev_find(":") is Some(filename_end)
+      #|  guard filename_end + 1 < rest.length()
+      #|  let start_loc = rest.view(start_offset=filename_end + 1)
+      #|  guard parse_loc(start_loc) is Some((start_line, start_column))
+      #|  guard filename_end > pkg_end + 1
+      #|  let filename = rest.view(start_offset=pkg_end + 1, end_offset=filename_end)
+      #|  { pkg, filename, start_line, start_column, end_line, end_column }
+      #|}
+      #|fn SourceLocRepr::to_json_string(self : SourceLocRepr) -> String {
+      #|  StringBuilder::new()
+      #|  ..write_string("{\"pkg\":\"\{self.pkg}\"")
+      #|  ..write_string(",\"filename\":")
+      #|  ..write_object(self.filename)
+      #|  ..write_string(",\"start_line\":\{self.start_line}")
+      #|  ..write_string(",\"start_column\":\{self.start_column}")
+      #|  ..write_string(",\"end_line\":\{self.end_line}")
+      #|  ..write_string(",\"end_column\":\{self.end_column}}")
+      #|  .to_string()
+      #|}
+      #|pub fn SourceLoc::to_json_string(self : SourceLoc) -> String {
+      #|  SourceLocRepr::parse(self.repr()).to_json_string()
       #|}
       #|pub(all) struct ArgsLoc(Array[SourceLoc?]) derive(Show)
       #|pub fn ArgsLoc::to_json(self : ArgsLoc) -> String {
@@ -5543,11 +4994,831 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|    let item = self[i]
       #|    match item {
       #|      None => buf.write_string("null")
-      #|      Some(loc) => loc.to_string() |> Show::output(buf)
+      #|      Some(loc) => buf.write_string(loc.to_json_string())
       #|    }
       #|  }
       #|  buf.write_char(']')
       #|  buf.to_string()
+      #|}
+    ),
+    "bitstring.mbt": (
+      #|fn UInt::extend_sign(self : UInt, len : Int) -> Int {
+      #|  let b = 32 - len
+      #|  self.reinterpret_as_int() << b >> b
+      #|}
+      #|fn UInt64::extend_sign(self : UInt64, len : Int) -> Int64 {
+      #|  let b = 64 - len
+      #|  self.reinterpret_as_int64() << b >> b
+      #|}
+      #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
+      #|pub fn ArrayView::unsafe_extract_bit(
+      #|  bs : ArrayView[Byte],
+      #|  offset : Int,
+      #|  _len : Int,
+      #|) -> UInt {
+      #|  let byte_index = offset >> 3
+      #|  let bit_shift = 7 - (offset & 7)
+      #|  let byte_val = bs.unsafe_get(byte_index).to_uint()
+      #|  (byte_val >> bit_shift) & 1U
+      #|}
+      #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
+      #|pub fn ArrayView::unsafe_extract_bit_signed(
+      #|  bs : ArrayView[Byte],
+      #|  offset : Int,
+      #|  _len : Int,
+      #|) -> Int {
+      #|  let byte_index = offset >> 3
+      #|  let bit_shift = 7 - (offset & 7)
+      #|  let byte_val = bs.unsafe_get(byte_index).to_int()
+      #|  ((byte_val >> bit_shift) & 1) * -1
+      #|}
+      #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
+      #|pub fn ArrayView::unsafe_extract_byte(
+      #|  bs : ArrayView[Byte],
+      #|  offset : Int,
+      #|  len : Int,
+      #|) -> UInt {
+      #|  let byte_index = offset >> 3
+      #|  if (offset & 7) == 0 {
+      #|    let byte = bs.unsafe_get(byte_index)
+      #|    (byte >> (8 - len)).to_uint()
+      #|  } else if (offset & 7) + len <= 8 {
+      #|    let byte = bs.unsafe_get(byte_index).to_uint()
+      #|    let shift = 8 - ((offset & 7) + len)
+      #|    let mask = (1U << len) - 1
+      #|    (byte >> shift) & mask
+      #|  } else {
+      #|    let b0 = bs.unsafe_get(byte_index).to_uint()
+      #|    let b1 = bs.unsafe_get(byte_index + 1).to_uint()
+      #|    let data = (b0 << 8) | b1
+      #|    let bit_mask = (1U << (16 - (offset & 7))) - 1
+      #|    let data = data & bit_mask
+      #|    let shift = 16 - ((offset & 7) + len)
+      #|    data >> shift
+      #|  }
+      #|}
+      #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
+      #|pub fn ArrayView::unsafe_extract_uint_le(
+      #|  bs : ArrayView[Byte],
+      #|  offset : Int,
+      #|  len : Int,
+      #|) -> UInt {
+      #|  let bytes_needed = (len + 7) / 8
+      #|  let b0 = bs.unsafe_extract_byte(offset, 8)
+      #|  match bytes_needed {
+      #|    2 => {
+      #|      let b1 = bs.unsafe_extract_byte(offset + 8, len - 8)
+      #|      (b1 << 8) | b0
+      #|    }
+      #|    3 => {
+      #|      let b1 = bs.unsafe_extract_byte(offset + 8, 8)
+      #|      let b2 = bs.unsafe_extract_byte(offset + 16, len - 16)
+      #|      (b2 << 16) | (b1 << 8) | b0
+      #|    }
+      #|    4 => {
+      #|      let b1 = bs.unsafe_extract_byte(offset + 8, 8)
+      #|      let b2 = bs.unsafe_extract_byte(offset + 16, 8)
+      #|      let b3 = bs.unsafe_extract_byte(offset + 24, len - 24)
+      #|      (b3 << 24) | (b2 << 16) | (b1 << 8) | b0
+      #|    }
+      #|    _ => abort("Invalid byte count for int32 extraction")
+      #|  }
+      #|}
+      #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
+      #|pub fn ArrayView::unsafe_extract_uint_be(
+      #|  bs : ArrayView[Byte],
+      #|  offset : Int,
+      #|  len : Int,
+      #|) -> UInt {
+      #|  let bytes_needed = (len + 7) / 8
+      #|  let b0 = bs.unsafe_extract_byte(offset, 8)
+      #|  match bytes_needed {
+      #|    2 => {
+      #|      let b1 = bs.unsafe_extract_byte(offset + 8, len - 8)
+      #|      let shift = 16 - len
+      #|      let data = (b0 << 8) | (b1 << shift)
+      #|      data >> shift
+      #|    }
+      #|    3 => {
+      #|      let b1 = bs.unsafe_extract_byte(offset + 8, 8)
+      #|      let b2 = bs.unsafe_extract_byte(offset + 16, len - 16)
+      #|      let shift = 24 - len
+      #|      let data = (b0 << 16) | (b1 << 8) | (b2 << shift)
+      #|      data >> shift
+      #|    }
+      #|    4 => {
+      #|      let b1 = bs.unsafe_extract_byte(offset + 8, 8)
+      #|      let b2 = bs.unsafe_extract_byte(offset + 16, 8)
+      #|      let b3 = bs.unsafe_extract_byte(offset + 24, len - 24)
+      #|      let shift = 32 - len
+      #|      let data = (b0 << 24) | (b1 << 16) | (b2 << 8) | (b3 << shift)
+      #|      data >> shift
+      #|    }
+      #|    _ => abort("Invalid byte count for int32 extraction")
+      #|  }
+      #|}
+      #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
+      #|pub fn ArrayView::unsafe_extract_uint64_le(
+      #|  bs : ArrayView[Byte],
+      #|  offset : Int,
+      #|  len : Int,
+      #|) -> UInt64 {
+      #|  let bytes_needed = (len + 7) / 8
+      #|  let b0 = bs.unsafe_extract_byte(offset, 8).to_uint64()
+      #|  let b1 = bs.unsafe_extract_byte(offset + 8, 8).to_uint64()
+      #|  let b2 = bs.unsafe_extract_byte(offset + 16, 8).to_uint64()
+      #|  let b3 = bs.unsafe_extract_byte(offset + 24, 8).to_uint64()
+      #|  match bytes_needed {
+      #|    5 => {
+      #|      let b4 = bs.unsafe_extract_byte(offset + 32, len - 32).to_uint64()
+      #|      (b4 << 32) | (b3 << 24) | (b2 << 16) | (b1 << 8) | b0
+      #|    }
+      #|    6 => {
+      #|      let b4 = bs.unsafe_extract_byte(offset + 32, 8).to_uint64()
+      #|      let b5 = bs.unsafe_extract_byte(offset + 40, len - 40).to_uint64()
+      #|      (b5 << 40) | (b4 << 32) | (b3 << 24) | (b2 << 16) | (b1 << 8) | b0
+      #|    }
+      #|    7 => {
+      #|      let b4 = bs.unsafe_extract_byte(offset + 32, 8).to_uint64()
+      #|      let b5 = bs.unsafe_extract_byte(offset + 40, 8).to_uint64()
+      #|      let b6 = bs.unsafe_extract_byte(offset + 48, len - 48).to_uint64()
+      #|      (b6 << 48) |
+      #|      (b5 << 40) |
+      #|      (b4 << 32) |
+      #|      (b3 << 24) |
+      #|      (b2 << 16) |
+      #|      (b1 << 8) |
+      #|      b0
+      #|    }
+      #|    8 => {
+      #|      let b4 = bs.unsafe_extract_byte(offset + 32, 8).to_uint64()
+      #|      let b5 = bs.unsafe_extract_byte(offset + 40, 8).to_uint64()
+      #|      let b6 = bs.unsafe_extract_byte(offset + 48, 8).to_uint64()
+      #|      let b7 = bs.unsafe_extract_byte(offset + 56, len - 56).to_uint64()
+      #|      (b7 << 56) |
+      #|      (b6 << 48) |
+      #|      (b5 << 40) |
+      #|      (b4 << 32) |
+      #|      (b3 << 24) |
+      #|      (b2 << 16) |
+      #|      (b1 << 8) |
+      #|      b0
+      #|    }
+      #|    _ => abort("Invalid byte count for int64 extraction")
+      #|  }
+      #|}
+      #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
+      #|pub fn ArrayView::unsafe_extract_uint64_be(
+      #|  bs : ArrayView[Byte],
+      #|  offset : Int,
+      #|  len : Int,
+      #|) -> UInt64 {
+      #|  let bytes_needed = (len + 7) / 8
+      #|  let b0 = bs.unsafe_extract_byte(offset, 8).to_uint64()
+      #|  let b1 = bs.unsafe_extract_byte(offset + 8, 8).to_uint64()
+      #|  let b2 = bs.unsafe_extract_byte(offset + 16, 8).to_uint64()
+      #|  let b3 = bs.unsafe_extract_byte(offset + 24, 8).to_uint64()
+      #|  match bytes_needed {
+      #|    5 => {
+      #|      let b4 = bs.unsafe_extract_byte(offset + 32, len - 32).to_uint64()
+      #|      let shift = 40 - len
+      #|      let data = (b0 << 32) |
+      #|        (b1 << 24) |
+      #|        (b2 << 16) |
+      #|        (b3 << 8) |
+      #|        (b4 << shift)
+      #|      data >> shift
+      #|    }
+      #|    6 => {
+      #|      let b4 = bs.unsafe_extract_byte(offset + 32, 8).to_uint64()
+      #|      let b5 = bs.unsafe_extract_byte(offset + 40, len - 40).to_uint64()
+      #|      let shift = 48 - len
+      #|      let data = (b0 << 40) |
+      #|        (b1 << 32) |
+      #|        (b2 << 24) |
+      #|        (b3 << 16) |
+      #|        (b4 << 8) |
+      #|        (b5 << shift)
+      #|      data >> shift
+      #|    }
+      #|    7 => {
+      #|      let b4 = bs.unsafe_extract_byte(offset + 32, 8).to_uint64()
+      #|      let b5 = bs.unsafe_extract_byte(offset + 40, 8).to_uint64()
+      #|      let b6 = bs.unsafe_extract_byte(offset + 48, len - 48).to_uint64()
+      #|      let shift = 56 - len
+      #|      let data = (b0 << 48) |
+      #|        (b1 << 40) |
+      #|        (b2 << 32) |
+      #|        (b3 << 24) |
+      #|        (b4 << 16) |
+      #|        (b5 << 8) |
+      #|        (b6 << shift)
+      #|      data >> shift
+      #|    }
+      #|    8 => {
+      #|      let b4 = bs.unsafe_extract_byte(offset + 32, 8).to_uint64()
+      #|      let b5 = bs.unsafe_extract_byte(offset + 40, 8).to_uint64()
+      #|      let b6 = bs.unsafe_extract_byte(offset + 48, 8).to_uint64()
+      #|      let b7 = bs.unsafe_extract_byte(offset + 56, len - 56).to_uint64()
+      #|      let shift = 64 - len
+      #|      let data = (b0 << 56) |
+      #|        (b1 << 48) |
+      #|        (b2 << 40) |
+      #|        (b3 << 32) |
+      #|        (b4 << 24) |
+      #|        (b5 << 16) |
+      #|        (b6 << 8) |
+      #|        (b7 << shift)
+      #|      data >> shift
+      #|    }
+      #|    _ => abort("Invalid byte count for int64 extraction")
+      #|  }
+      #|}
+      #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
+      #|pub fn ArrayView::unsafe_extract_bytesview(
+      #|  bs : ArrayView[Byte],
+      #|  offset : Int,
+      #|  len : Int,
+      #|) -> ArrayView[Byte] {
+      #|  let start = offset >> 3
+      #|  let end = start + (len >> 3)
+      #|  bs[start:end]
+      #|}
+      #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
+      #|pub fn ArrayView::unsafe_extract_byte_signed(
+      #|  bs : ArrayView[Byte],
+      #|  offset : Int,
+      #|  len : Int,
+      #|) -> Int {
+      #|  let unsigned = bs.unsafe_extract_byte(offset, len)
+      #|  unsigned.extend_sign(len)
+      #|}
+      #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
+      #|pub fn ArrayView::unsafe_extract_int_le(
+      #|  bs : ArrayView[Byte],
+      #|  offset : Int,
+      #|  len : Int,
+      #|) -> Int {
+      #|  let unsigned = bs.unsafe_extract_uint_le(offset, len)
+      #|  unsigned.extend_sign(len)
+      #|}
+      #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
+      #|pub fn ArrayView::unsafe_extract_int_be(
+      #|  bs : ArrayView[Byte],
+      #|  offset : Int,
+      #|  len : Int,
+      #|) -> Int {
+      #|  let unsigned = bs.unsafe_extract_uint_be(offset, len)
+      #|  unsigned.extend_sign(len)
+      #|}
+      #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
+      #|pub fn ArrayView::unsafe_extract_int64_le(
+      #|  bs : ArrayView[Byte],
+      #|  offset : Int,
+      #|  len : Int,
+      #|) -> Int64 {
+      #|  let unsigned = bs.unsafe_extract_uint64_le(offset, len)
+      #|  unsigned.extend_sign(len)
+      #|}
+      #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
+      #|pub fn ArrayView::unsafe_extract_int64_be(
+      #|  bs : ArrayView[Byte],
+      #|  offset : Int,
+      #|  len : Int,
+      #|) -> Int64 {
+      #|  let unsigned = bs.unsafe_extract_uint64_be(offset, len)
+      #|  unsigned.extend_sign(len)
+      #|}
+      #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
+      #|pub fn Array::unsafe_extract_bit(
+      #|  bs : Array[Byte],
+      #|  offset : Int,
+      #|  len : Int,
+      #|) -> UInt {
+      #|  bs[:].unsafe_extract_bit(offset, len)
+      #|}
+      #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
+      #|pub fn Array::unsafe_extract_byte(
+      #|  bs : Array[Byte],
+      #|  offset : Int,
+      #|  len : Int,
+      #|) -> UInt {
+      #|  bs[:].unsafe_extract_byte(offset, len)
+      #|}
+      #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
+      #|pub fn Array::unsafe_extract_uint_le(
+      #|  bs : Array[Byte],
+      #|  offset : Int,
+      #|  len : Int,
+      #|) -> UInt {
+      #|  bs[:].unsafe_extract_uint_le(offset, len)
+      #|}
+      #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
+      #|pub fn Array::unsafe_extract_uint_be(
+      #|  bs : Array[Byte],
+      #|  offset : Int,
+      #|  len : Int,
+      #|) -> UInt {
+      #|  bs[:].unsafe_extract_uint_be(offset, len)
+      #|}
+      #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
+      #|pub fn Array::unsafe_extract_uint64_le(
+      #|  bs : Array[Byte],
+      #|  offset : Int,
+      #|  len : Int,
+      #|) -> UInt64 {
+      #|  bs[:].unsafe_extract_uint64_le(offset, len)
+      #|}
+      #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
+      #|pub fn Array::unsafe_extract_uint64_be(
+      #|  bs : Array[Byte],
+      #|  offset : Int,
+      #|  len : Int,
+      #|) -> UInt64 {
+      #|  bs[:].unsafe_extract_uint64_be(offset, len)
+      #|}
+      #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
+      #|pub fn Array::unsafe_extract_bytesview(
+      #|  bs : Array[Byte],
+      #|  offset : Int,
+      #|  len : Int,
+      #|) -> ArrayView[Byte] {
+      #|  bs[:].unsafe_extract_bytesview(offset, len)
+      #|}
+      #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
+      #|pub fn FixedArray::unsafe_extract_bit(
+      #|  bs : FixedArray[Byte],
+      #|  offset : Int,
+      #|  len : Int,
+      #|) -> UInt {
+      #|  bs[:].unsafe_extract_bit(offset, len)
+      #|}
+      #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
+      #|pub fn FixedArray::unsafe_extract_byte(
+      #|  bs : FixedArray[Byte],
+      #|  offset : Int,
+      #|  len : Int,
+      #|) -> UInt {
+      #|  bs[:].unsafe_extract_byte(offset, len)
+      #|}
+      #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
+      #|pub fn FixedArray::unsafe_extract_uint_le(
+      #|  bs : FixedArray[Byte],
+      #|  offset : Int,
+      #|  len : Int,
+      #|) -> UInt {
+      #|  bs[:].unsafe_extract_uint_le(offset, len)
+      #|}
+      #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
+      #|pub fn FixedArray::unsafe_extract_uint_be(
+      #|  bs : FixedArray[Byte],
+      #|  offset : Int,
+      #|  len : Int,
+      #|) -> UInt {
+      #|  bs[:].unsafe_extract_uint_be(offset, len)
+      #|}
+      #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
+      #|pub fn FixedArray::unsafe_extract_uint64_le(
+      #|  bs : FixedArray[Byte],
+      #|  offset : Int,
+      #|  len : Int,
+      #|) -> UInt64 {
+      #|  bs[:].unsafe_extract_uint64_le(offset, len)
+      #|}
+      #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
+      #|pub fn FixedArray::unsafe_extract_uint64_be(
+      #|  bs : FixedArray[Byte],
+      #|  offset : Int,
+      #|  len : Int,
+      #|) -> UInt64 {
+      #|  bs[:].unsafe_extract_uint64_be(offset, len)
+      #|}
+      #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
+      #|pub fn FixedArray::unsafe_extract_bytesview(
+      #|  bs : FixedArray[Byte],
+      #|  offset : Int,
+      #|  len : Int,
+      #|) -> ArrayView[Byte] {
+      #|  bs[:].unsafe_extract_bytesview(offset, len)
+      #|}
+      #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
+      #|pub fn BytesView::unsafe_extract_bit(
+      #|  bs : BytesView,
+      #|  offset : Int,
+      #|  _len : Int,
+      #|) -> UInt {
+      #|  let byte_index = offset >> 3
+      #|  let bit_shift = 7 - (offset & 7)
+      #|  let byte_val = bs.unsafe_get(byte_index).to_uint()
+      #|  (byte_val >> bit_shift) & 1U
+      #|}
+      #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
+      #|pub fn BytesView::unsafe_extract_bit_signed(
+      #|  bs : BytesView,
+      #|  offset : Int,
+      #|  _len : Int,
+      #|) -> Int {
+      #|  let byte_index = offset >> 3
+      #|  let bit_shift = 7 - (offset & 7)
+      #|  let byte_val = bs.unsafe_get(byte_index).to_int()
+      #|  ((byte_val >> bit_shift) & 1) * -1
+      #|}
+      #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
+      #|pub fn BytesView::unsafe_extract_byte(
+      #|  bs : BytesView,
+      #|  offset : Int,
+      #|  len : Int,
+      #|) -> UInt {
+      #|  let byte_index = offset >> 3
+      #|  if (offset & 7) == 0 {
+      #|    let byte = bs.unsafe_get(byte_index)
+      #|    (byte >> (8 - len)).to_uint()
+      #|  } else if (offset & 7) + len <= 8 {
+      #|    let byte = bs.unsafe_get(byte_index).to_uint()
+      #|    let shift = 8 - ((offset & 7) + len)
+      #|    let mask = (1U << len) - 1
+      #|    (byte >> shift) & mask
+      #|  } else {
+      #|    let b0 = bs.unsafe_get(byte_index).to_uint()
+      #|    let b1 = bs.unsafe_get(byte_index + 1).to_uint()
+      #|    let data = (b0 << 8) | b1
+      #|    let bit_mask = (1U << (16 - (offset & 7))) - 1
+      #|    let data = data & bit_mask
+      #|    let shift = 16 - ((offset & 7) + len)
+      #|    data >> shift
+      #|  }
+      #|}
+      #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
+      #|pub fn BytesView::unsafe_extract_uint_le(
+      #|  bs : BytesView,
+      #|  offset : Int,
+      #|  len : Int,
+      #|) -> UInt {
+      #|  let bytes_needed = (len + 7) / 8
+      #|  let b0 = bs.unsafe_extract_byte(offset, 8)
+      #|  match bytes_needed {
+      #|    2 => {
+      #|      let b1 = bs.unsafe_extract_byte(offset + 8, len - 8)
+      #|      (b1 << 8) | b0
+      #|    }
+      #|    3 => {
+      #|      let b1 = bs.unsafe_extract_byte(offset + 8, 8)
+      #|      let b2 = bs.unsafe_extract_byte(offset + 16, len - 16)
+      #|      (b2 << 16) | (b1 << 8) | b0
+      #|    }
+      #|    4 => {
+      #|      let b1 = bs.unsafe_extract_byte(offset + 8, 8)
+      #|      let b2 = bs.unsafe_extract_byte(offset + 16, 8)
+      #|      let b3 = bs.unsafe_extract_byte(offset + 24, len - 24)
+      #|      (b3 << 24) | (b2 << 16) | (b1 << 8) | b0
+      #|    }
+      #|    _ => abort("Invalid byte count for int32 extraction")
+      #|  }
+      #|}
+      #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
+      #|pub fn BytesView::unsafe_extract_uint_be(
+      #|  bs : BytesView,
+      #|  offset : Int,
+      #|  len : Int,
+      #|) -> UInt {
+      #|  let bytes_needed = (len + 7) / 8
+      #|  let b0 = bs.unsafe_extract_byte(offset, 8)
+      #|  match bytes_needed {
+      #|    2 => {
+      #|      let b1 = bs.unsafe_extract_byte(offset + 8, len - 8)
+      #|      let shift = 16 - len
+      #|      let data = (b0 << 8) | (b1 << shift)
+      #|      data >> shift
+      #|    }
+      #|    3 => {
+      #|      let b1 = bs.unsafe_extract_byte(offset + 8, 8)
+      #|      let b2 = bs.unsafe_extract_byte(offset + 16, len - 16)
+      #|      let shift = 24 - len
+      #|      let data = (b0 << 16) | (b1 << 8) | (b2 << shift)
+      #|      data >> shift
+      #|    }
+      #|    4 => {
+      #|      let b1 = bs.unsafe_extract_byte(offset + 8, 8)
+      #|      let b2 = bs.unsafe_extract_byte(offset + 16, 8)
+      #|      let b3 = bs.unsafe_extract_byte(offset + 24, len - 24)
+      #|      let shift = 32 - len
+      #|      let data = (b0 << 24) | (b1 << 16) | (b2 << 8) | (b3 << shift)
+      #|      data >> shift
+      #|    }
+      #|    _ => abort("Invalid byte count for int32 extraction")
+      #|  }
+      #|}
+      #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
+      #|pub fn BytesView::unsafe_extract_uint64_le(
+      #|  bs : BytesView,
+      #|  offset : Int,
+      #|  len : Int,
+      #|) -> UInt64 {
+      #|  let bytes_needed = (len + 7) / 8
+      #|  let b0 = bs.unsafe_extract_byte(offset, 8).to_uint64()
+      #|  let b1 = bs.unsafe_extract_byte(offset + 8, 8).to_uint64()
+      #|  let b2 = bs.unsafe_extract_byte(offset + 16, 8).to_uint64()
+      #|  let b3 = bs.unsafe_extract_byte(offset + 24, 8).to_uint64()
+      #|  match bytes_needed {
+      #|    5 => {
+      #|      let b4 = bs.unsafe_extract_byte(offset + 32, len - 32).to_uint64()
+      #|      (b4 << 32) | (b3 << 24) | (b2 << 16) | (b1 << 8) | b0
+      #|    }
+      #|    6 => {
+      #|      let b4 = bs.unsafe_extract_byte(offset + 32, 8).to_uint64()
+      #|      let b5 = bs.unsafe_extract_byte(offset + 40, len - 40).to_uint64()
+      #|      (b5 << 40) | (b4 << 32) | (b3 << 24) | (b2 << 16) | (b1 << 8) | b0
+      #|    }
+      #|    7 => {
+      #|      let b4 = bs.unsafe_extract_byte(offset + 32, 8).to_uint64()
+      #|      let b5 = bs.unsafe_extract_byte(offset + 40, 8).to_uint64()
+      #|      let b6 = bs.unsafe_extract_byte(offset + 48, len - 48).to_uint64()
+      #|      (b6 << 48) |
+      #|      (b5 << 40) |
+      #|      (b4 << 32) |
+      #|      (b3 << 24) |
+      #|      (b2 << 16) |
+      #|      (b1 << 8) |
+      #|      b0
+      #|    }
+      #|    8 => {
+      #|      let b4 = bs.unsafe_extract_byte(offset + 32, 8).to_uint64()
+      #|      let b5 = bs.unsafe_extract_byte(offset + 40, 8).to_uint64()
+      #|      let b6 = bs.unsafe_extract_byte(offset + 48, 8).to_uint64()
+      #|      let b7 = bs.unsafe_extract_byte(offset + 56, len - 56).to_uint64()
+      #|      (b7 << 56) |
+      #|      (b6 << 48) |
+      #|      (b5 << 40) |
+      #|      (b4 << 32) |
+      #|      (b3 << 24) |
+      #|      (b2 << 16) |
+      #|      (b1 << 8) |
+      #|      b0
+      #|    }
+      #|    _ => abort("Invalid byte count for int64 extraction")
+      #|  }
+      #|}
+      #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
+      #|pub fn BytesView::unsafe_extract_uint64_be(
+      #|  bs : BytesView,
+      #|  offset : Int,
+      #|  len : Int,
+      #|) -> UInt64 {
+      #|  let bytes_needed = (len + 7) / 8
+      #|  let b0 = bs.unsafe_extract_byte(offset, 8).to_uint64()
+      #|  let b1 = bs.unsafe_extract_byte(offset + 8, 8).to_uint64()
+      #|  let b2 = bs.unsafe_extract_byte(offset + 16, 8).to_uint64()
+      #|  let b3 = bs.unsafe_extract_byte(offset + 24, 8).to_uint64()
+      #|  match bytes_needed {
+      #|    5 => {
+      #|      let b4 = bs.unsafe_extract_byte(offset + 32, len - 32).to_uint64()
+      #|      let shift = 40 - len
+      #|      let data = (b0 << 32) |
+      #|        (b1 << 24) |
+      #|        (b2 << 16) |
+      #|        (b3 << 8) |
+      #|        (b4 << shift)
+      #|      data >> shift
+      #|    }
+      #|    6 => {
+      #|      let b4 = bs.unsafe_extract_byte(offset + 32, 8).to_uint64()
+      #|      let b5 = bs.unsafe_extract_byte(offset + 40, len - 40).to_uint64()
+      #|      let shift = 48 - len
+      #|      let data = (b0 << 40) |
+      #|        (b1 << 32) |
+      #|        (b2 << 24) |
+      #|        (b3 << 16) |
+      #|        (b4 << 8) |
+      #|        (b5 << shift)
+      #|      data >> shift
+      #|    }
+      #|    7 => {
+      #|      let b4 = bs.unsafe_extract_byte(offset + 32, 8).to_uint64()
+      #|      let b5 = bs.unsafe_extract_byte(offset + 40, 8).to_uint64()
+      #|      let b6 = bs.unsafe_extract_byte(offset + 48, len - 48).to_uint64()
+      #|      let shift = 56 - len
+      #|      let data = (b0 << 48) |
+      #|        (b1 << 40) |
+      #|        (b2 << 32) |
+      #|        (b3 << 24) |
+      #|        (b4 << 16) |
+      #|        (b5 << 8) |
+      #|        (b6 << shift)
+      #|      data >> shift
+      #|    }
+      #|    8 => {
+      #|      let b4 = bs.unsafe_extract_byte(offset + 32, 8).to_uint64()
+      #|      let b5 = bs.unsafe_extract_byte(offset + 40, 8).to_uint64()
+      #|      let b6 = bs.unsafe_extract_byte(offset + 48, 8).to_uint64()
+      #|      let b7 = bs.unsafe_extract_byte(offset + 56, len - 56).to_uint64()
+      #|      let shift = 64 - len
+      #|      let data = (b0 << 56) |
+      #|        (b1 << 48) |
+      #|        (b2 << 40) |
+      #|        (b3 << 32) |
+      #|        (b4 << 24) |
+      #|        (b5 << 16) |
+      #|        (b6 << 8) |
+      #|        (b7 << shift)
+      #|      data >> shift
+      #|    }
+      #|    _ => abort("Invalid byte count for int64 extraction")
+      #|  }
+      #|}
+      #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
+      #|pub fn BytesView::unsafe_extract_bytesview(
+      #|  bs : BytesView,
+      #|  offset : Int,
+      #|  len : Int,
+      #|) -> BytesView {
+      #|  BytesView::make(bs.bytes(), bs.start() + (offset >> 3), len >> 3)
+      #|}
+      #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
+      #|pub fn BytesView::unsafe_extract_byte_signed(
+      #|  bs : BytesView,
+      #|  offset : Int,
+      #|  len : Int,
+      #|) -> Int {
+      #|  let unsigned = bs.unsafe_extract_byte(offset, len)
+      #|  unsigned.extend_sign(len)
+      #|}
+      #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
+      #|pub fn BytesView::unsafe_extract_int_le(
+      #|  bs : BytesView,
+      #|  offset : Int,
+      #|  len : Int,
+      #|) -> Int {
+      #|  let unsigned = bs.unsafe_extract_uint_le(offset, len)
+      #|  unsigned.extend_sign(len)
+      #|}
+      #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
+      #|pub fn BytesView::unsafe_extract_int_be(
+      #|  bs : BytesView,
+      #|  offset : Int,
+      #|  len : Int,
+      #|) -> Int {
+      #|  let unsigned = bs.unsafe_extract_uint_be(offset, len)
+      #|  unsigned.extend_sign(len)
+      #|}
+      #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
+      #|pub fn BytesView::unsafe_extract_int64_le(
+      #|  bs : BytesView,
+      #|  offset : Int,
+      #|  len : Int,
+      #|) -> Int64 {
+      #|  let unsigned = bs.unsafe_extract_uint64_le(offset, len)
+      #|  unsigned.extend_sign(len)
+      #|}
+      #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
+      #|pub fn BytesView::unsafe_extract_int64_be(
+      #|  bs : BytesView,
+      #|  offset : Int,
+      #|  len : Int,
+      #|) -> Int64 {
+      #|  let unsigned = bs.unsafe_extract_uint64_be(offset, len)
+      #|  unsigned.extend_sign(len)
+      #|}
+      #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
+      #|pub fn Bytes::unsafe_extract_bit(bs : Bytes, offset : Int, len : Int) -> UInt {
+      #|  bs[:].unsafe_extract_bit(offset, len)
+      #|}
+      #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
+      #|pub fn Bytes::unsafe_extract_byte(bs : Bytes, offset : Int, len : Int) -> UInt {
+      #|  bs[:].unsafe_extract_byte(offset, len)
+      #|}
+      #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
+      #|pub fn Bytes::unsafe_extract_uint_le(
+      #|  bs : Bytes,
+      #|  offset : Int,
+      #|  len : Int,
+      #|) -> UInt {
+      #|  bs[:].unsafe_extract_uint_le(offset, len)
+      #|}
+      #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
+      #|pub fn Bytes::unsafe_extract_uint_be(
+      #|  bs : Bytes,
+      #|  offset : Int,
+      #|  len : Int,
+      #|) -> UInt {
+      #|  bs[:].unsafe_extract_uint_be(offset, len)
+      #|}
+      #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
+      #|pub fn Bytes::unsafe_extract_uint64_le(
+      #|  bs : Bytes,
+      #|  offset : Int,
+      #|  len : Int,
+      #|) -> UInt64 {
+      #|  bs[:].unsafe_extract_uint64_le(offset, len)
+      #|}
+      #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
+      #|pub fn Bytes::unsafe_extract_uint64_be(
+      #|  bs : Bytes,
+      #|  offset : Int,
+      #|  len : Int,
+      #|) -> UInt64 {
+      #|  bs[:].unsafe_extract_uint64_be(offset, len)
+      #|}
+      #|#internal(experimental, "subject to breaking change without notice")
+      #|#doc(hidden)
+      #|pub fn Bytes::unsafe_extract_bytesview(
+      #|  bs : Bytes,
+      #|  offset : Int,
+      #|  len : Int,
+      #|) -> BytesView {
+      #|  bs[:].unsafe_extract_bytesview(offset, len)
+      #|}
+    ),
+    "bool.mbt": (
+      #|pub fn Bool::to_int(self : Bool) -> Int {
+      #|  if self {
+      #|    1
+      #|  } else {
+      #|    0
+      #|  }
+      #|}
+      #|pub fn Bool::to_int64(self : Bool) -> Int64 {
+      #|  if self {
+      #|    1
+      #|  } else {
+      #|    0
+      #|  }
+      #|}
+      #|pub fn Bool::to_uint(self : Bool) -> UInt {
+      #|  if self {
+      #|    1
+      #|  } else {
+      #|    0
+      #|  }
+      #|}
+      #|pub fn Bool::to_uint64(self : Bool) -> UInt64 {
+      #|  if self {
+      #|    1
+      #|  } else {
+      #|    0
+      #|  }
+      #|}
+      #|pub impl Hash for Bool with hash_combine(self, hasher) {
+      #|  hasher.combine_bool(self)
+      #|}
+      #|pub fn Bool::to_uint16(self : Bool) -> UInt16 {
+      #|  if self {
+      #|    1
+      #|  } else {
+      #|    0
+      #|  }
+      #|}
+      #|pub fn Bool::to_int16(self : Bool) -> Int16 {
+      #|  if self {
+      #|    1
+      #|  } else {
+      #|    0
+      #|  }
       #|}
     ),
     "byte.mbt": (
@@ -5632,6 +5903,16 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|pub fn Byte::to_uint(self : Byte) -> UInt {
       #|  self.to_int().reinterpret_as_uint()
       #|}
+      #|pub fn Byte::to_uint64(self : Byte) -> UInt64 {
+      #|  self.to_uint().to_uint64()
+      #|}
+      #|pub fn Byte::popcnt(self : Byte) -> Int {
+      #|  let mut n = self
+      #|  n = (n & 0x55) + ((n >> 1) & 0x55)
+      #|  n = (n & 0x33) + ((n >> 2) & 0x33)
+      #|  n = (n & 0x0F) + ((n >> 4) & 0x0F)
+      #|  n.to_int()
+      #|}
       #|pub impl Shl for Byte with shl(self : Byte, count : Int) -> Byte {
       #|  (self.to_int() << count).to_byte()
       #|}
@@ -5713,6 +5994,19 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|    unsafe_from_bytes(src),
       #|    src_offset,
       #|    length,
+      #|  )
+      #|}
+      #|pub fn FixedArray::blit_from_bytesview(
+      #|  self : FixedArray[Byte],
+      #|  bytes_offset : Int,
+      #|  src : BytesView,
+      #|) -> Unit {
+      #|  FixedArray::blit_from_bytes(
+      #|    self,
+      #|    bytes_offset,
+      #|    src.bytes(),
+      #|    src.start(),
+      #|    src.len(),
       #|  )
       #|}
       #|pub fn FixedArray::set_utf8_char(
@@ -5825,9 +6119,542 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|    0
       #|  }
       #|}
-      #|fn BytesView::len(self : BytesView) -> Int = "%bytesview.len"
+      #|#alias(of, deprecated="Use Bytes::from_array instead")
+      #|pub fn Bytes::from_array(arr : ArrayView[Byte]) -> Bytes {
+      #|  Bytes::makei(arr.length(), i => arr[i])
+      #|}
+      #|#deprecated("Use Bytes::from_array instead")
+      #|pub fn Bytes::from_fixedarray(arr : FixedArray[Byte], len? : Int) -> Bytes {
+      #|  let len = match len {
+      #|    None => arr.length()
+      #|    Some(x) => {
+      #|      guard 0 <= x && x <= arr.length()
+      #|      x
+      #|    }
+      #|  }
+      #|  let result = unsafe_to_fixedarray(UninitializedArray::make(len))
+      #|  arr.blit_to(result, len~)
+      #|  result.unsafe_reinterpret_as_bytes()
+      #|}
+      #|#label_migration(len, fill=false)
+      #|pub fn Bytes::to_fixedarray(self : Bytes, len? : Int) -> FixedArray[Byte] {
+      #|  let len = match len {
+      #|    None => self.length()
+      #|    Some(x) => {
+      #|      guard 0 <= x && x <= self.length()
+      #|      x
+      #|    }
+      #|  }
+      #|  let arr = unsafe_to_fixedarray(UninitializedArray::make(len))
+      #|  arr.blit_from_bytes(0, self, 0, len)
+      #|  arr
+      #|}
+      #|pub fn BytesView::to_fixedarray(self : BytesView) -> FixedArray[Byte] {
+      #|  let len = self.length()
+      #|  let arr = unsafe_to_fixedarray(UninitializedArray::make(len))
+      #|  arr.blit_from_bytes(0, self.data(), self.start_offset(), len)
+      #|  arr
+      #|}
+      #|pub fn Bytes::from_iter(iter : Iter[Byte]) -> Bytes {
+      #|  Bytes::from_array(iter.collect())
+      #|}
+      #|pub fn Bytes::from_iterator(iter : Iterator[Byte]) -> Bytes {
+      #|  Bytes::from_array(iter.collect())
+      #|}
+      #|pub fn Bytes::to_array(self : Bytes) -> Array[Byte] {
+      #|  let len = self.length()
+      #|  let rv = Array::make(len, b'0')
+      #|  for i in 0..<len {
+      #|    rv[i] = self[i]
+      #|  }
+      #|  rv
+      #|}
+      #|pub fn BytesView::to_array(self : BytesView) -> Array[Byte] {
+      #|  let len = self.length()
+      #|  let rv = Array::make(len, b'0')
+      #|  for i in 0..<len {
+      #|    rv[i] = self[i]
+      #|  }
+      #|  rv
+      #|}
+      #|pub fn Bytes::iter(self : Bytes) -> Iter[Byte] {
+      #|  self.iterator().iter()
+      #|}
+      #|pub fn Bytes::iterator(self : Bytes) -> Iterator[Byte] {
+      #|  let mut i = 0
+      #|  let len = self.length()
+      #|  Iterator::new(fn() {
+      #|    guard i < len else { None }
+      #|    let c = self.unsafe_get(i)
+      #|    i += 1
+      #|    Some(c)
+      #|  })
+      #|}
+      #|pub fn Bytes::iter2(self : Bytes) -> Iter2[Int, Byte] {
+      #|  self.iterator2().iter2()
+      #|}
+      #|pub fn Bytes::iterator2(self : Bytes) -> Iterator2[Int, Byte] {
+      #|  let mut i = 0
+      #|  let len = self.length()
+      #|  Iterator::new(fn() {
+      #|    guard i < len else { None }
+      #|    let result = (i, self.unsafe_get(i))
+      #|    i += 1
+      #|    Some(result)
+      #|  })
+      #|}
+      #|pub impl Default for Bytes with default() {
+      #|  b""
+      #|}
+      #|pub fn Bytes::get(self : Bytes, index : Int) -> Byte? {
+      #|  guard index >= 0 && index < self.length() else { None }
+      #|  Some(self[index])
+      #|}
+      #|fn unsafe_to_fixedarray(array : UninitializedArray[Byte]) -> FixedArray[Byte] = "%identity"
+      #|pub impl Add for Bytes with add(self : Bytes, other : Bytes) -> Bytes {
+      #|  let len_self = self.length()
+      #|  let len_other = other.length()
+      #|  let rv : FixedArray[Byte] = FixedArray::make(len_self + len_other, 0)
+      #|  for i in 0..<len_self {
+      #|    rv[i] = self[i]
+      #|  }
+      #|  for i in 0..<len_other {
+      #|    rv[len_self + i] = other[i]
+      #|  }
+      #|  unsafe_to_bytes(rv)
+      #|}
+      #|pub impl Hash for Bytes with hash_combine(self, hasher) {
+      #|  hasher.combine(self[:])
+      #|}
+      #|pub fn Bytes::repeat(self : Self, count : Int) -> Bytes {
+      #|  if count <= 0 || self.length() == 0 {
+      #|    return []
+      #|  }
+      #|  if count == 1 {
+      #|    return self
+      #|  }
+      #|  let len = self.length()
+      #|  let total = len * count
+      #|  guard total / count == len
+      #|  let arr = FixedArray::make(total, (0 : Byte))
+      #|  arr.blit_from_bytes(0, self, 0, len)
+      #|  let mut filled = len
+      #|  while filled < total {
+      #|    let remaining = total - filled
+      #|    let copy_len = if filled < remaining { filled } else { remaining }
+      #|    let src = unsafe_to_bytes(arr)
+      #|    arr.blit_from_bytes(filled, src, 0, copy_len)
+      #|    filled = filled + copy_len
+      #|  }
+      #|  unsafe_to_bytes(arr)
+      #|}
+    ),
+    "bytes_find.mbt": (
+      #|pub fn BytesView::find(target : BytesView, pattern : BytesView) -> Int? {
+      #|  let target_len = target.length()
+      #|  let pattern_len = pattern.length()
+      #|  for i in 0..=(target_len - pattern_len) {
+      #|    for j in 0..<pattern_len {
+      #|      guard target.unsafe_get(i + j) == pattern.unsafe_get(j) else { break }
+      #|    } else {
+      #|      return Some(i)
+      #|    }
+      #|  } else {
+      #|    None
+      #|  }
+      #|}
+      #|pub fn Bytes::find(target : Bytes, pattern : BytesView) -> Int? {
+      #|  target[:].find(pattern)
+      #|}
+      #|pub fn BytesView::rev_find(target : BytesView, pattern : BytesView) -> Int? {
+      #|  let target_len = target.length()
+      #|  let pattern_len = pattern.length()
+      #|  for i = target_len - pattern_len; i >= 0; i = i - 1 {
+      #|    for j in 0..<pattern_len {
+      #|      guard target.unsafe_get(i + j) == pattern.unsafe_get(j) else { break }
+      #|    } else {
+      #|      return Some(i)
+      #|    }
+      #|  } else {
+      #|    None
+      #|  }
+      #|}
+      #|pub fn Bytes::rev_find(target : Bytes, pattern : BytesView) -> Int? {
+      #|  target[:].rev_find(pattern)
+      #|}
+    ),
+    "bytes_unsafe.mbt": (
+      #|#intrinsic("%bytes.unsafe_write_uint64_le")
+      #|pub fn FixedArray::unsafe_write_uint64_le(
+      #|  bytes : FixedArray[Byte],
+      #|  index : Int,
+      #|  value : UInt64,
+      #|) -> Unit {
+      #|  for i in 0..=7 {
+      #|    bytes.unsafe_set(i + index, (value >> (8 * i)).to_byte())
+      #|  }
+      #|}
+      #|#intrinsic("%bytes.unsafe_write_uint64_be")
+      #|pub fn FixedArray::unsafe_write_uint64_be(
+      #|  bytes : FixedArray[Byte],
+      #|  index : Int,
+      #|  value : UInt64,
+      #|) -> Unit {
+      #|  for i in 0..=7 {
+      #|    bytes.unsafe_set(i + index, (value >> (8 * (7 - i))).to_byte())
+      #|  }
+      #|}
+      #|#intrinsic("%bytes.unsafe_write_uint32_le")
+      #|pub fn FixedArray::unsafe_write_uint32_le(
+      #|  bytes : FixedArray[Byte],
+      #|  index : Int,
+      #|  value : UInt,
+      #|) -> Unit {
+      #|  for i in 0..=3 {
+      #|    bytes.unsafe_set(i + index, (value >> (8 * i)).to_byte())
+      #|  }
+      #|}
+      #|#intrinsic("%bytes.unsafe_write_uint32_be")
+      #|pub fn FixedArray::unsafe_write_uint32_be(
+      #|  bytes : FixedArray[Byte],
+      #|  index : Int,
+      #|  value : UInt,
+      #|) -> Unit {
+      #|  for i in 0..=3 {
+      #|    bytes.unsafe_set(i + index, (value >> (8 * (3 - i))).to_byte())
+      #|  }
+      #|}
+      #|#intrinsic("%bytes.unsafe_write_uint16_le")
+      #|pub fn FixedArray::unsafe_write_uint16_le(
+      #|  bytes : FixedArray[Byte],
+      #|  index : Int,
+      #|  value : UInt16,
+      #|) -> Unit {
+      #|  for i in 0..=1 {
+      #|    bytes.unsafe_set(i + index, (value >> (8 * i)).to_byte())
+      #|  }
+      #|}
+      #|#intrinsic("%bytes.unsafe_write_uint16_be")
+      #|pub fn FixedArray::unsafe_write_uint16_be(
+      #|  bytes : FixedArray[Byte],
+      #|  index : Int,
+      #|  value : UInt16,
+      #|) -> Unit {
+      #|  for i in 0..=1 {
+      #|    bytes.unsafe_set(i + index, (value >> (8 * (1 - i))).to_byte())
+      #|  }
+      #|}
+      #|#intrinsic("%bytes.unsafe_read_uint64_le")
+      #|#doc(hidden)
+      #|pub fn Bytes::unsafe_read_uint64_le(bytes : Bytes, index : Int) -> UInt64 {
+      #|  let mut result : UInt64 = 0
+      #|  for i in 0..=7 {
+      #|    result = result | (bytes.unsafe_get(i + index).to_uint64() << (8 * i))
+      #|  }
+      #|  result
+      #|}
+      #|#intrinsic("%bytes.unsafe_read_uint64_be")
+      #|#doc(hidden)
+      #|pub fn Bytes::unsafe_read_uint64_be(bytes : Bytes, index : Int) -> UInt64 {
+      #|  let mut result : UInt64 = 0
+      #|  for i in 0..=7 {
+      #|    result = result | (bytes.unsafe_get(i + index).to_uint64() << (8 * (7 - i)))
+      #|  }
+      #|  result
+      #|}
+      #|#intrinsic("%bytes.unsafe_read_uint32_le")
+      #|#doc(hidden)
+      #|pub fn Bytes::unsafe_read_uint32_le(bytes : Bytes, index : Int) -> UInt {
+      #|  let mut result : UInt = 0
+      #|  for i in 0..=3 {
+      #|    result = result | (bytes.unsafe_get(i + index).to_uint() << (8 * i))
+      #|  }
+      #|  result
+      #|}
+      #|#intrinsic("%bytes.unsafe_read_uint32_be")
+      #|#doc(hidden)
+      #|pub fn Bytes::unsafe_read_uint32_be(bytes : Bytes, index : Int) -> UInt {
+      #|  let mut result : UInt = 0
+      #|  for i in 0..=3 {
+      #|    result = result | (bytes.unsafe_get(i + index).to_uint() << (8 * (3 - i)))
+      #|  }
+      #|  result
+      #|}
+      #|#intrinsic("%bytes.unsafe_read_uint16_le")
+      #|#doc(hidden)
+      #|pub fn Bytes::unsafe_read_uint16_le(bytes : Bytes, index : Int) -> UInt16 {
+      #|  let mut result : UInt16 = 0
+      #|  for i in 0..=1 {
+      #|    result = result | (bytes.unsafe_get(i + index).to_uint16() << (8 * i))
+      #|  }
+      #|  result
+      #|}
+      #|#intrinsic("%bytes.unsafe_read_uint16_be")
+      #|#doc(hidden)
+      #|pub fn Bytes::unsafe_read_uint16_be(bytes : Bytes, index : Int) -> UInt16 {
+      #|  let mut result : UInt16 = 0
+      #|  for i in 0..=1 {
+      #|    result = result | (bytes.unsafe_get(i + index).to_uint16() << (8 * (1 - i)))
+      #|  }
+      #|  result
+      #|}
+      #|#doc(hidden)
+      #|pub fn BytesView::unsafe_read_uint64_le(
+      #|  bytes : BytesView,
+      #|  index : Int,
+      #|) -> UInt64 {
+      #|  bytes.bytes().unsafe_read_uint64_le(bytes.start() + index)
+      #|}
+      #|#doc(hidden)
+      #|pub fn BytesView::unsafe_read_uint64_be(
+      #|  bytes : BytesView,
+      #|  index : Int,
+      #|) -> UInt64 {
+      #|  bytes.bytes().unsafe_read_uint64_be(bytes.start() + index)
+      #|}
+      #|#doc(hidden)
+      #|pub fn BytesView::unsafe_read_uint32_le(bytes : BytesView, index : Int) -> UInt {
+      #|  bytes.bytes().unsafe_read_uint32_le(bytes.start() + index)
+      #|}
+      #|#doc(hidden)
+      #|pub fn BytesView::unsafe_read_uint32_be(bytes : BytesView, index : Int) -> UInt {
+      #|  bytes.bytes().unsafe_read_uint32_be(bytes.start() + index)
+      #|}
+      #|#doc(hidden)
+      #|pub fn BytesView::unsafe_read_uint16_le(
+      #|  bytes : BytesView,
+      #|  index : Int,
+      #|) -> UInt16 {
+      #|  bytes.bytes().unsafe_read_uint16_le(bytes.start() + index)
+      #|}
+      #|#doc(hidden)
+      #|pub fn BytesView::unsafe_read_uint16_be(
+      #|  bytes : BytesView,
+      #|  index : Int,
+      #|) -> UInt16 {
+      #|  bytes.bytes().unsafe_read_uint16_be(bytes.start() + index)
+      #|}
+    ),
+    "bytesview.mbt": (
       #|fn BytesView::bytes(self : BytesView) -> Bytes = "%bytesview.bytes"
       #|fn BytesView::start(self : BytesView) -> Int = "%bytesview.start"
+      #|fn BytesView::len(self : BytesView) -> Int = "%bytesview.len"
+      #|fn BytesView::make(b : Bytes, start : Int, len : Int) -> BytesView = "%bytesview.make"
+      #|pub fn BytesView::length(self : BytesView) -> Int {
+      #|  self.len()
+      #|}
+      #|#alias("_[_]")
+      #|pub fn BytesView::at(self : BytesView, index : Int) -> Byte {
+      #|  guard index >= 0 && index < self.length() else {
+      #|    abort(
+      #|      "index out of bounds: the len is from 0 to \{self.length()} but the index is \{index}",
+      #|    )
+      #|  }
+      #|  self.bytes()[self.start() + index]
+      #|}
+      #|pub fn BytesView::get(self : BytesView, index : Int) -> Byte? {
+      #|  guard index >= 0 && index < self.length() else { None }
+      #|  Some(self.bytes().unsafe_get(self.start() + index))
+      #|}
+      #|#internal(unsafe, "Panic if index is out of bounds")
+      #|#doc(hidden)
+      #|pub fn BytesView::unsafe_get(self : BytesView, index : Int) -> Byte {
+      #|  self.bytes()[self.start() + index]
+      #|}
+      #|#alias("_[_:_]")
+      #|pub fn Bytes::sub(self : Bytes, start? : Int = 0, end? : Int) -> BytesView {
+      #|  let len = self.length()
+      #|  let end = match end {
+      #|    None => len
+      #|    Some(end) => if end < 0 { len + end } else { end }
+      #|  }
+      #|  let start = if start < 0 { len + start } else { start }
+      #|  guard start >= 0 && start <= end && end <= len else {
+      #|    abort("Invalid index for View")
+      #|  }
+      #|  BytesView::make(self, start, end - start)
+      #|}
+      #|#alias("_[_:_]")
+      #|pub fn BytesView::sub(
+      #|  self : BytesView,
+      #|  start? : Int = 0,
+      #|  end? : Int,
+      #|) -> BytesView {
+      #|  let len = self.length()
+      #|  let end = match end {
+      #|    None => len
+      #|    Some(end) => if end < 0 { len + end } else { end }
+      #|  }
+      #|  let start = if start < 0 { len + start } else { start }
+      #|  guard start >= 0 && start <= end && end <= len else {
+      #|    abort("Invalid index for View")
+      #|  }
+      #|  BytesView::make(self.bytes(), self.start() + start, end - start)
+      #|}
+      #|pub fn BytesView::iter(self : BytesView) -> Iter[Byte] {
+      #|  self.iterator().iter()
+      #|}
+      #|pub fn BytesView::iter2(self : BytesView) -> Iter2[Int, Byte] {
+      #|  self.iterator2().iter2()
+      #|}
+      #|pub fn BytesView::iterator(self : BytesView) -> Iterator[Byte] {
+      #|  let mut i = 0
+      #|  let len = self.length()
+      #|  Iterator::new(fn() {
+      #|    guard i < len else { None }
+      #|    let result = self.unsafe_get(i)
+      #|    i += 1
+      #|    Some(result)
+      #|  })
+      #|}
+      #|pub fn BytesView::iterator2(self : BytesView) -> Iterator2[Int, Byte] {
+      #|  let mut i = 0
+      #|  let len = self.length()
+      #|  Iterator2::new(fn() {
+      #|    guard i < len else { None }
+      #|    let result = (i, self.unsafe_get(i))
+      #|    i += 1
+      #|    Some(result)
+      #|  })
+      #|}
+      #|#deprecated("Use bits pattern directly")
+      #|#doc(hidden)
+      #|pub fn BytesView::to_uint_be(self : BytesView) -> UInt {
+      #|  (self[0].to_uint() << 24) +
+      #|  (self[1].to_uint() << 16) +
+      #|  (self[2].to_uint() << 8) +
+      #|  self[3].to_uint()
+      #|}
+      #|#deprecated("Use bits pattern directly")
+      #|#doc(hidden)
+      #|pub fn BytesView::to_uint_le(self : BytesView) -> UInt {
+      #|  self[0].to_uint() +
+      #|  (self[1].to_uint() << 8) +
+      #|  (self[2].to_uint() << 16) +
+      #|  (self[3].to_uint() << 24)
+      #|}
+      #|#deprecated("Use bits pattern directly")
+      #|#doc(hidden)
+      #|pub fn BytesView::to_uint64_be(self : BytesView) -> UInt64 {
+      #|  (self[0].to_uint().to_uint64() << 56) +
+      #|  (self[1].to_uint().to_uint64() << 48) +
+      #|  (self[2].to_uint().to_uint64() << 40) +
+      #|  (self[3].to_uint().to_uint64() << 32) +
+      #|  (self[4].to_uint().to_uint64() << 24) +
+      #|  (self[5].to_uint().to_uint64() << 16) +
+      #|  (self[6].to_uint().to_uint64() << 8) +
+      #|  self[7].to_uint().to_uint64()
+      #|}
+      #|#deprecated("Use bits pattern directly")
+      #|#doc(hidden)
+      #|pub fn BytesView::to_uint64_le(self : BytesView) -> UInt64 {
+      #|  self[0].to_uint().to_uint64() +
+      #|  (self[1].to_uint().to_uint64() << 8) +
+      #|  (self[2].to_uint().to_uint64() << 16) +
+      #|  (self[3].to_uint().to_uint64() << 24) +
+      #|  (self[4].to_uint().to_uint64() << 32) +
+      #|  (self[5].to_uint().to_uint64() << 40) +
+      #|  (self[6].to_uint().to_uint64() << 48) +
+      #|  (self[7].to_uint().to_uint64() << 56)
+      #|}
+      #|#deprecated
+      #|#doc(hidden)
+      #|pub fn BytesView::to_int_be(self : BytesView) -> Int {
+      #|  guard self is [u32be(u32), ..]
+      #|  u32.reinterpret_as_int()
+      #|}
+      #|#deprecated
+      #|#doc(hidden)
+      #|pub fn BytesView::to_int_le(self : BytesView) -> Int {
+      #|  guard self is [u32le(u32), ..]
+      #|  u32.reinterpret_as_int()
+      #|}
+      #|#deprecated
+      #|#doc(hidden)
+      #|pub fn BytesView::to_int64_be(self : BytesView) -> Int64 {
+      #|  guard self is [u64be(u64), ..]
+      #|  u64.reinterpret_as_int64()
+      #|}
+      #|#deprecated
+      #|#doc(hidden)
+      #|pub fn BytesView::to_int64_le(self : BytesView) -> Int64 {
+      #|  guard self is [u64le(u64), ..]
+      #|  u64.reinterpret_as_int64()
+      #|}
+      #|#deprecated("Use bits pattern directly")
+      #|#doc(hidden)
+      #|pub fn BytesView::to_double_be(self : BytesView) -> Double {
+      #|  guard self is [u64be(u64), ..]
+      #|  u64.reinterpret_as_double()
+      #|}
+      #|#deprecated("Use bits pattern directly")
+      #|#doc(hidden)
+      #|pub fn BytesView::to_double_le(self : BytesView) -> Double {
+      #|  guard self is [u64le(u64), ..]
+      #|  u64.reinterpret_as_double()
+      #|}
+      #|pub impl Show for BytesView with output(self, logger) {
+      #|  logger.write_string("b\"")
+      #|  for byte in self {
+      #|    if byte is (' '..='~') && byte != '"' && byte != '\\' {
+      #|      logger.write_char(byte.to_char())
+      #|    } else {
+      #|      logger..write_string("\\x")..write_string(byte.to_hex())
+      #|    }
+      #|  }
+      #|  logger.write_string("\"")
+      #|}
+      #|pub impl Show for Bytes with output(self, logger) {
+      #|  BytesView::output(self[:], logger)
+      #|}
+      #|pub impl Eq for BytesView with equal(self, other) -> Bool {
+      #|  guard self.length() == other.length() else { return false }
+      #|  for i in 0..<self.length() {
+      #|    guard self.unsafe_get(i) == other.unsafe_get(i) else { return false }
+      #|  }
+      #|  true
+      #|}
+      #|pub impl Compare for BytesView with compare(self, other) -> Int {
+      #|  let self_len = self.length()
+      #|  let other_len = other.length()
+      #|  let cmp = self_len.compare(other_len)
+      #|  guard cmp == 0 else { return cmp }
+      #|  for i in 0..<self_len {
+      #|    let b1 = self.unsafe_get(i)
+      #|    let b2 = other.unsafe_get(i)
+      #|    let cmp = b1.compare(b2)
+      #|    guard cmp == 0 else { return cmp }
+      #|  }
+      #|  0
+      #|}
+      #|pub fn BytesView::data(self : BytesView) -> Bytes {
+      #|  self.bytes()
+      #|}
+      #|pub fn BytesView::start_offset(self : BytesView) -> Int {
+      #|  self.start()
+      #|}
+      #|pub fn BytesView::to_bytes(self : BytesView) -> Bytes {
+      #|  if self.length() == self.bytes().length() {
+      #|    return self.bytes()
+      #|  }
+      #|  let bytes = FixedArray::make(self.length(), (0 : Byte))
+      #|  bytes.blit_from_bytes(0, self.bytes(), self.start_offset(), self.length())
+      #|  unsafe_to_bytes(bytes)
+      #|}
+      #|pub impl ToJson for BytesView with to_json(self) -> Json {
+      #|  let sb = StringBuilder::new()
+      #|  for byte in self {
+      #|    if byte is (' '..='~') && byte != '"' && byte != '\\' {
+      #|      sb.write_char(byte.to_char())
+      #|    } else {
+      #|      sb..write_string("\\x")..write_string(byte.to_hex())
+      #|    }
+      #|  }
+      #|  Json::string(sb.to_string())
+      #|}
+      #|pub impl ToJson for Bytes with to_json(self : Bytes) -> Json {
+      #|  BytesView::to_json(self[:])
+      #|}
     ),
     "char.mbt": (
       #|fn Char::to_hex(char : Char) -> String {
@@ -6285,8 +7112,8 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|) -> Unit raise InspectError {
       #|  let actual = obj.to_string()
       #|  if actual != content {
-      #|    let loc = loc.to_string().escape()
-      #|    let args_loc = args_loc.to_json().escape()
+      #|    let loc = loc.to_json_string()
+      #|    let args_loc = args_loc.to_json()
       #|    let expect_escaped = content.escape()
       #|    let actual_escaped = actual.escape()
       #|    let expect_base64 = "\"\{base64_encode_string_codepoint(content)}\""
@@ -6605,18 +7432,10 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|}
       #|#intrinsic("%iter.from_array")
       #|pub fn[T] FixedArray::iter(self : FixedArray[T]) -> Iter[T] {
-      #|  Iter::new(yield_ => for v in self {
-      #|    guard yield_(v) is IterContinue else { break IterEnd }
-      #|  } else {
-      #|    IterContinue
-      #|  })
+      #|  self.iterator().iter()
       #|}
       #|pub fn[T] FixedArray::iter2(self : FixedArray[T]) -> Iter2[Int, T] {
-      #|  Iter2::new(yield_ => for i, v in self {
-      #|    guard yield_(i, v) is IterContinue else { break IterEnd }
-      #|  } else {
-      #|    IterContinue
-      #|  })
+      #|  self.iterator2().iter2()
       #|}
       #|pub impl[X] Default for FixedArray[X] with default() {
       #|  []
@@ -7475,6 +8294,24 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|}
       #|pub fn[X] FixedArray::iterator(self : FixedArray[X]) -> Iterator[X] {
       #|  self[:].iterator()
+      #|}
+      #|pub fn[X] FixedArray::iterator2(self : FixedArray[X]) -> Iterator2[Int, X] {
+      #|  self[:].iterator2()
+      #|}
+      #|#cfg(not(target="js"))
+      #|pub fn[T] FixedArray::copy(self : FixedArray[T]) -> FixedArray[T] {
+      #|  let len = self.length()
+      #|  if len == 0 {
+      #|    []
+      #|  } else {
+      #|    let arr = FixedArray::make(len, self[0])
+      #|    FixedArray::unsafe_blit(arr, 0, self, 0, len)
+      #|    arr
+      #|  }
+      #|}
+      #|#cfg(target="js")
+      #|pub fn[T] FixedArray::copy(self : FixedArray[T]) -> FixedArray[T] {
+      #|  JSArray::ofAnyFixedArray(self).copy().toAnyFixedArray()
       #|}
     ),
     "fixedarray_block.mbt": (
@@ -8481,7 +9318,16 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
     "intrinsics.mbt": (
       #|pub fn[T] ignore(t : T) -> Unit = "%ignore"
       #|pub fn[T] physical_equal(a : T, b : T) -> Bool = "%refeq"
-      #|pub using @abort {abort}
+      #|#callsite(autofill(loc))
+      #|pub fn[T] abort(string : String, loc~ : SourceLoc) -> T {
+      #|  @abort.abort(
+      #|    (
+      #|      $|\{string}
+      #|      $|  at \{loc}
+      #|      $|
+      #|    ),
+      #|  )
+      #|}
       #|pub fn[T] panic() -> T = "%panic"
       #|pub fn not(x : Bool) -> Bool = "%bool_not"
       #|pub impl Eq for Bool with equal(self : Bool, other : Bool) -> Bool = "%bool_eq"
@@ -8549,6 +9395,8 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|pub impl Div for Double with div(self, other) = "%f64_div"
       #|pub fn Double::sqrt(self : Double) -> Double = "%f64_sqrt"
       #|pub impl Eq for Double with equal(self : Double, other : Double) -> Bool = "%f64_eq"
+      #|#deprecated("Use `a != b` instead")
+      #|#doc(hidden)
       #|pub fn Double::op_neq(self : Double, other : Double) -> Bool = "%f64_ne"
       #|pub impl Compare for Double with compare(self, other) = "%f64_compare"
       #|pub impl Compare for Double with op_lt(x, y) = "%f64.lt"
@@ -8616,11 +9464,11 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|pub fn[T] FixedArray::make(len : Int, init : T) -> FixedArray[T] = "%fixedarray.make"
       #|#alias(charcode_length, deprecated)
       #|pub fn String::length(self : String) -> Int = "%string_length"
-      #|#alias(charcode_at)
+      #|#deprecated("Use `_[_]` instead which returns UInt16")
+      #|pub fn String::charcode_at(self : String, idx : Int) -> Int = "%string_get"
       #|#alias("_[_]")
-      #|#deprecated("Use `code_unit_at` instead which returns UInt16")
-      #|pub fn String::at(self : String, idx : Int) -> Int = "%string_get"
-      #|pub fn String::code_unit_at(self : String, idx : Int) -> UInt16 = "%string_get"
+      #|#alias(code_unit_at)
+      #|pub fn String::at(self : String, idx : Int) -> UInt16 = "%string_get"
       #|#internal(unsafe, "Panic if index is out of bounds.")
       #|#doc(hidden)
       #|pub fn String::unsafe_charcode_at(self : String, idx : Int) -> Int = "%string.unsafe_get"
@@ -8645,6 +9493,8 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|pub impl Div for UInt with div(self, other) = "%u32.div"
       #|pub impl Mod for UInt with mod(self, other) = "%u32.mod"
       #|pub impl Eq for UInt with equal(self : UInt, other : UInt) -> Bool = "%u32.eq"
+      #|#deprecated("Use `a != b` instead")
+      #|#doc(hidden)
       #|pub fn UInt::op_neq(self : UInt, other : UInt) -> Bool = "%u32.ne"
       #|pub impl Compare for UInt with compare(self, other) = "%u32.compare"
       #|pub impl Compare for UInt with op_lt(x, y) = "%u32.lt"
@@ -8757,6 +9607,7 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|pub fn[T] Iter::count(self : Iter[T]) -> Int {
       #|  self.fold((acc, _) => acc + 1, init=0)
       #|}
+      #|#deprecated("`Iter::new`, and the internal iterator type `Iter`, is deprecated. Create an external iterator `Iterator`, and use `Iterator::iter` to migrate usage of `Iter::new`. `Iter` will become an alias of `Iterator` in the future. See https://github.com/moonbitlang/core/pull/3050 for more details.")
       #|pub fn[T] Iter::new(f : ((T) -> IterResult) -> IterResult) -> Iter[T] {
       #|  Iter(f)
       #|}
@@ -9146,6 +9997,7 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|  }
       #|  logger.write_string("]")
       #|}
+      #|#deprecated("`Iter2::new`, and the internal iterator type `Iter2`, is deprecated. Create an external iterator `Iterator2`, and use `Iterator2::iter2` to migrate usage of `Iter2::new`. `Iter2` will become an alias of `Iterator2` in the future. See https://github.com/moonbitlang/core/pull/3050 for more details.")
       #|pub fn[A, B] Iter2::new(
       #|  f : ((A, B) -> IterResult) -> IterResult,
       #|) -> Iter2[A, B] {
@@ -9159,7 +10011,7 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|  |> ignore
       #|}
       #|pub fn[A, B] Iter2::iter(self : Iter2[A, B]) -> Iter[(A, B)] {
-      #|  Iter::new(yield_ => self.run((a, b) => yield_((a, b))))
+      #|  Iter(yield_ => self.run((a, b) => yield_((a, b))))
       #|}
       #|pub fn[A, B] Iter2::iter2(self : Iter2[A, B]) -> Iter2[A, B] {
       #|  self
@@ -9497,7 +10349,7 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|  result
       #|}
       #|pub fn[X] Iterator::iter(self : Iterator[X]) -> Iter[X] {
-      #|  Iter::new(yield_ => while self.next() is Some(x) {
+      #|  Iter(yield_ => while self.next() is Some(x) {
       #|    guard yield_(x) is IterContinue else { break IterEnd }
       #|  } else {
       #|    IterContinue
@@ -9507,7 +10359,7 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|  self
       #|}
       #|pub fn[X] Iterator::iter2(self : Iterator[X]) -> Iter2[Int, X] {
-      #|  Iter2::new(fn(yield_) {
+      #|  Iter2(fn(yield_) {
       #|    let mut i = 0
       #|    while self.next() is Some(x) {
       #|      guard yield_(i, x) is IterContinue else { break IterEnd }
@@ -9641,6 +10493,13 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|}
       #|pub fn[X, Y] Iterator2::next(self : Iterator2[X, Y]) -> (X, Y)? {
       #|  self.0.next()
+      #|}
+      #|pub fn[X, Y] Iterator2::iter2(self : Iterator2[X, Y]) -> Iter2[X, Y] {
+      #|  Iter2(yield_ => while self.next() is Some((x, y)) {
+      #|    guard yield_(x, y) is IterContinue else { break IterEnd }
+      #|  } else {
+      #|    IterContinue
+      #|  })
       #|}
       #|pub impl[X : Show, Y : Show] Show for Iterator2[X, Y] with output(self, logger) {
       #|  self.0.output(logger)
@@ -10153,13 +11012,7 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|  self.tail = -1
       #|}
       #|pub fn[K, V] Map::iter(self : Map[K, V]) -> Iter[(K, V)] {
-      #|  Iter::new(yield_ => loop self.head {
-      #|    Some({ key, value, next, .. }) => {
-      #|      guard yield_((key, value)) is IterContinue else { break IterEnd }
-      #|      continue next
-      #|    }
-      #|    None => break IterContinue
-      #|  })
+      #|  self.iterator().iter()
       #|}
       #|pub fn[K, V] Map::iterator(self : Map[K, V]) -> Iterator[(K, V)] {
       #|  let mut curr_entry = self.head
@@ -10177,31 +11030,31 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|  self.iterator()
       #|}
       #|pub fn[K, V] Map::iter2(self : Map[K, V]) -> Iter2[K, V] {
-      #|  Iter2::new(yield_ => loop self.head {
-      #|    Some({ key, value, next, .. }) => {
-      #|      guard yield_(key, value) is IterContinue else { break IterEnd }
-      #|      continue next
-      #|    }
-      #|    None => IterContinue
-      #|  })
+      #|  self.iterator2().iter2()
       #|}
       #|pub fn[K, V] Map::keys(self : Map[K, V]) -> Iter[K] {
-      #|  Iter::new(yield_ => loop self.head {
-      #|    Some({ key, next, .. }) => {
-      #|      guard yield_(key) is IterContinue else { break IterEnd }
-      #|      continue next
+      #|  let mut curr_entry = self.head
+      #|  Iterator::new(fn() {
+      #|    match curr_entry {
+      #|      Some({ key, next, .. }) => {
+      #|        curr_entry = next
+      #|        Some(key)
+      #|      }
+      #|      None => None
       #|    }
-      #|    None => IterContinue
-      #|  })
+      #|  }).iter()
       #|}
       #|pub fn[K, V] Map::values(self : Map[K, V]) -> Iter[V] {
-      #|  Iter::new(yield_ => loop self.head {
-      #|    Some({ value, next, .. }) => {
-      #|      guard yield_(value) is IterContinue else { break IterEnd }
-      #|      continue next
+      #|  let mut curr_entry = self.head
+      #|  Iterator::new(fn() {
+      #|    match curr_entry {
+      #|      Some({ value, next, .. }) => {
+      #|        curr_entry = next
+      #|        Some(value)
+      #|      }
+      #|      None => None
       #|    }
-      #|    None => IterContinue
-      #|  })
+      #|  }).iter()
       #|}
       #|pub fn[K, V] Map::to_array(self : Map[K, V]) -> Array[(K, V)] {
       #|  let arr = Array::make_uninit(self.size)
@@ -11098,6 +11951,192 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|}
     ),
     "result.mbt": (
+      #|pub fn[T, E, U] Result::map(self : Result[T, E], f : (T) -> U) -> Result[U, E] {
+      #|  match self {
+      #|    Ok(value) => Ok(f(value))
+      #|    Err(err) => Err(err)
+      #|  }
+      #|}
+      #|test "map" {
+      #|  let x : Result[Int, Unit] = Ok(6)
+      #|  let y = x.map((v : Int) => v * 7)
+      #|  let z : Result[Int, Int] = Err(3)
+      #|  let w = z.map((v : Int) => v * 7)
+      #|  assert_eq(y, Ok(42))
+      #|  assert_eq(w, Err(3))
+      #|}
+      #|pub fn[T, E, F] Result::map_err(
+      #|  self : Result[T, E],
+      #|  f : (E) -> F,
+      #|) -> Result[T, F] {
+      #|  match self {
+      #|    Ok(value) => Ok(value)
+      #|    Err(err) => Err(f(err))
+      #|  }
+      #|}
+      #|test "map_err" {
+      #|  let x : Result[Int, String] = Err("error")
+      #|  let y = x.map_err((v : String) => v + "!")
+      #|  let z : Result[Int, Int] = Ok(6)
+      #|  let w = z.map_err((v : Int) => v + 6)
+      #|  assert_eq(y, Err("error!"))
+      #|  assert_eq(w, Ok(6))
+      #|}
+      #|#alias(or)
+      #|pub fn[T, E] Result::unwrap_or(self : Result[T, E], default : T) -> T {
+      #|  match self {
+      #|    Ok(value) => value
+      #|    Err(_) => default
+      #|  }
+      #|}
+      #|test "unwrap_or" {
+      #|  let x : Result[Int, String] = Ok(3)
+      #|  let y : Result[Int, String] = Err("error")
+      #|  assert_eq(x.unwrap_or(5), 3)
+      #|  assert_eq(y.unwrap_or(5), 5)
+      #|}
+      #|#alias(or_else)
+      #|pub fn[T, E] Result::unwrap_or_else(
+      #|  self : Result[T, E],
+      #|  default : () -> T raise?,
+      #|) -> T raise? {
+      #|  match self {
+      #|    Ok(value) => value
+      #|    Err(_) => default()
+      #|  }
+      #|}
+      #|test "unwrap_or_else" {
+      #|  let x : Result[Int, String] = Ok(3)
+      #|  let y : Result[Int, String] = Err("error")
+      #|  assert_eq(x.unwrap_or_else(() => 5), 3)
+      #|  assert_eq(y.unwrap_or_else(() => 5), 5)
+      #|}
+      #|pub fn[T, E] Result::flatten(self : Result[Result[T, E], E]) -> Result[T, E] {
+      #|  match self {
+      #|    Ok(value) => value
+      #|    Err(err) => Err(err)
+      #|  }
+      #|}
+      #|test "flatten" {
+      #|  let x : Result[Result[Int, String], String] = Ok(Ok(6))
+      #|  let y = x.flatten()
+      #|  let z : Result[Result[Int, String], String] = Err("error")
+      #|  let w = z.flatten()
+      #|  assert_eq(y, Ok(6))
+      #|  assert_eq(w, Err("error"))
+      #|}
+      #|pub fn[T, E, U] Result::bind(
+      #|  self : Result[T, E],
+      #|  g : (T) -> Result[U, E],
+      #|) -> Result[U, E] {
+      #|  match self {
+      #|    Ok(value) => g(value)
+      #|    Err(err) => Err(err)
+      #|  }
+      #|}
+      #|test "bind" {
+      #|  let x : Result[Int, String] = Ok(6)
+      #|  let y = x.bind((v : Int) => Ok(v * 7))
+      #|  assert_eq(y, Ok(42))
+      #|}
+      #|pub fn[T, E] Result::to_option(self : Result[T, E]) -> T? {
+      #|  match self {
+      #|    Ok(value) => Some(value)
+      #|    Err(_) => None
+      #|  }
+      #|}
+      #|test "to_option" {
+      #|  let x : Result[Int, String] = Ok(6)
+      #|  let y : Result[Int, String] = Err("error")
+      #|  let z = x.to_option()
+      #|  let w = y.to_option()
+      #|  assert_eq(z, Some(6))
+      #|  assert_eq(w, None)
+      #|}
+      #|pub impl[T : Compare, E : Compare] Compare for Result[T, E] with compare(
+      #|  self : Result[T, E],
+      #|  other : Result[T, E],
+      #|) -> Int {
+      #|  match (self, other) {
+      #|    (Ok(x), Ok(y)) => x.compare(y)
+      #|    (Ok(_), Err(_)) => -1
+      #|    (Err(_), Ok(_)) => 1
+      #|    (Err(x), Err(y)) => x.compare(y)
+      #|  }
+      #|}
+      #|test "compare" {
+      #|  let ok1 = Result::Ok(1)
+      #|  let ok2 = Result::Ok(2)
+      #|  let err1 = Result::Err(1)
+      #|  let err2 = Result::Err(2)
+      #|  assert_eq(0, ok1.compare(ok1))
+      #|  assert_eq(0, err2.compare(Result::Err(2)))
+      #|  assert_eq(-1, ok1.compare(ok2))
+      #|  assert_eq(1, ok2.compare(ok1))
+      #|  assert_eq(-1, err1.compare(err2))
+      #|  assert_eq(1, err2.compare(err1))
+      #|  assert_eq(-1, ok2.compare(err1))
+      #|  assert_eq(1, err1.compare(ok2))
+      #|}
+      #|pub fn[T, E] Result::unwrap(self : Result[T, E]) -> T {
+      #|  match self {
+      #|    Ok(x) => x
+      #|    Err(_) => abort("called `Result::unwrap()` on an `Err` value")
+      #|  }
+      #|}
+      #|pub fn[T, E] Result::unwrap_err(self : Result[T, E]) -> E {
+      #|  match self {
+      #|    Ok(_) => abort("called `Result::unwrap_err()` on an `Ok` value")
+      #|    Err(e) => e
+      #|  }
+      #|}
+      #|test "show" {
+      #|  let ok : Result[_, String] = Ok("hello")
+      #|  inspect(
+      #|    ok,
+      #|    content=(
+      #|      #|Ok("hello")
+      #|    ),
+      #|  )
+      #|  let err : Result[String, _] = Err("world")
+      #|  inspect(
+      #|    err,
+      #|    content=(
+      #|      #|Err("world")
+      #|    ),
+      #|  )
+      #|}
+      #|pub fn[T : Default, E] Result::unwrap_or_default(self : Result[T, E]) -> T {
+      #|  match self {
+      #|    Ok(value) => value
+      #|    Err(_) => T::default()
+      #|  }
+      #|}
+      #|test "unwrap_or_default" {
+      #|  let x : Result[Int, String] = Ok(3)
+      #|  let y : Result[Int, String] = Err("error")
+      #|  assert_eq(x.unwrap_or_default(), 3)
+      #|  assert_eq(y.unwrap_or_default(), 0)
+      #|}
+      #|pub fn[T, E : Error] Result::unwrap_or_error(self : Result[T, E]) -> T raise E {
+      #|  match self {
+      #|    Ok(x) => x
+      #|    Err(e) => raise e
+      #|  }
+      #|}
+      #|test "unwrap exn" {
+      #|  (try
+      #|    (Err(Failure("This is serious")) : Result[Unit, Failure]).unwrap_or_error()
+      #|    |> Ok
+      #|  catch {
+      #|    Failure(msg) => Err(msg)
+      #|  })
+      #|  |> inspect(
+      #|    content=(
+      #|      #|Err("This is serious")
+      #|    ),
+      #|  )
+      #|}
       #|pub impl[T : Eq, E : Eq] Eq for Result[T, E] with equal(self, other) {
       #|  match (self, other) {
       #|    (Ok(x), Ok(y)) => x == y
@@ -11373,23 +12412,7 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|  })
       #|}
       #|pub fn String::iter(self : String) -> Iter[Char] {
-      #|  Iter::new(yield_ => {
-      #|    let len = self.length()
-      #|    for index in 0..<len {
-      #|      let c1 = self.unsafe_charcode_at(index)
-      #|      if c1.is_leading_surrogate() && index + 1 < len {
-      #|        let c2 = self.unsafe_charcode_at(index + 1)
-      #|        if c2.is_trailing_surrogate() {
-      #|          let c = code_point_of_surrogate_pair(c1, c2)
-      #|          guard yield_(c) is IterContinue else { break IterEnd }
-      #|          continue index + 2
-      #|        }
-      #|      }
-      #|      guard yield_(c1.unsafe_to_char()) is IterContinue else { break IterEnd }
-      #|    } else {
-      #|      IterContinue
-      #|    }
-      #|  })
+      #|  self.iterator().iter()
       #|}
       #|pub fn String::iterator(self : String) -> Iterator[Char] {
       #|  let len = self.length()
@@ -11410,47 +12433,13 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|  })
       #|}
       #|pub fn String::iter2(self : String) -> Iter2[Int, Char] {
-      #|  Iter2::new(yield_ => {
-      #|    let len = self.length()
-      #|    for index = 0, n = 0; index < len; index = index + 1, n = n + 1 {
-      #|      let c1 = self.unsafe_charcode_at(index)
-      #|      if c1.is_leading_surrogate() && index + 1 < len {
-      #|        let c2 = self.unsafe_charcode_at(index + 1)
-      #|        if c2.is_trailing_surrogate() {
-      #|          let c = code_point_of_surrogate_pair(c1, c2)
-      #|          guard yield_(n, c) is IterContinue else { break IterEnd }
-      #|          continue index + 2, n + 1
-      #|        }
-      #|      }
-      #|      guard yield_(n, c1.unsafe_to_char()) is IterContinue else {
-      #|        break IterEnd
-      #|      }
-      #|    } else {
-      #|      IterContinue
-      #|    }
-      #|  })
+      #|  self.iterator2().iter2()
       #|}
       #|pub fn String::iterator2(self : String) -> Iterator2[Int, Char] {
       #|  self.iterator().iterator2()
       #|}
       #|pub fn String::rev_iter(self : String) -> Iter[Char] {
-      #|  Iter::new(yield_ => {
-      #|    let len = self.length()
-      #|    for index = len - 1; index >= 0; index = index - 1 {
-      #|      let c1 = self.unsafe_charcode_at(index)
-      #|      if c1.is_trailing_surrogate() && index - 1 >= 0 {
-      #|        let c2 = self.unsafe_charcode_at(index - 1)
-      #|        if c2.is_leading_surrogate() {
-      #|          let c = code_point_of_surrogate_pair(c2, c1)
-      #|          guard yield_(c) is IterContinue else { break IterEnd }
-      #|          continue index - 2
-      #|        }
-      #|      }
-      #|      guard yield_(c1.unsafe_to_char()) is IterContinue else { break IterEnd }
-      #|    } else {
-      #|      IterContinue
-      #|    }
-      #|  })
+      #|  self.rev_iterator().iter()
       #|}
       #|pub fn String::rev_iterator(self : String) -> Iterator[Char] {
       #|  let len = self.length()
@@ -11600,6 +12589,17 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|    buf.write_char(c)
       #|  }
       #|  buf.to_string()
+      #|}
+    ),
+    "string_like.mbt": (
+      #|pub trait ToStringView {
+      #|  to_string_view(Self) -> StringView
+      #|}
+      #|pub impl ToStringView for String with to_string_view(self) -> StringView {
+      #|  self[:]
+      #|}
+      #|pub impl ToStringView for StringView with to_string_view(self) -> StringView {
+      #|  self
       #|}
     ),
     "string_methods.mbt": (
@@ -12041,9 +13041,11 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|    [c, .. rest] as v => if chars.contains_char(c) { continue rest } else { v }
       #|  }
       #|}
-      #|#label_migration(chars, allow_positional=true)
       #|#label_migration(chars, alias=char_set)
-      #|pub fn String::trim_start(self : String, chars~ : StringView) -> StringView {
+      #|pub fn String::trim_start(
+      #|  self : String,
+      #|  chars? : StringView = "\t\n\r ",
+      #|) -> StringView {
       #|  self[:].trim_start(chars~)
       #|}
       #|test "trim_start" {
@@ -12060,20 +13062,21 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|  inspect("aaaabc".trim_start(chars="a"), content="bc")
       #|  inspect("aaaa".trim_start(chars="a"), content="")
       #|}
-      #|#label_migration(chars, allow_positional=true)
       #|#label_migration(chars, alias=char_set)
       #|pub fn StringView::trim_end(
       #|  self : StringView,
-      #|  chars~ : StringView,
+      #|  chars? : StringView = "\t\n\r ",
       #|) -> StringView {
       #|  loop self {
       #|    [] as v => v
       #|    [.. rest, c] as v => if chars.contains_char(c) { continue rest } else { v }
       #|  }
       #|}
-      #|#label_migration(chars, allow_positional=true)
       #|#label_migration(chars, alias=char_set)
-      #|pub fn String::trim_end(self : String, chars~ : StringView) -> StringView {
+      #|pub fn String::trim_end(
+      #|  self : String,
+      #|  chars? : StringView = "\t\n\r ",
+      #|) -> StringView {
       #|  self[:].trim_end(chars~)
       #|}
       #|test "trim_end" {
@@ -12089,14 +13092,18 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|  inspect("abcccc".trim_end(chars="c"), content="ab")
       #|  inspect("cccc".trim_end(chars="c"), content="")
       #|}
-      #|#label_migration(chars, allow_positional=true)
       #|#label_migration(chars, alias=char_set)
-      #|pub fn StringView::trim(self : StringView, chars~ : StringView) -> StringView {
+      #|pub fn StringView::trim(
+      #|  self : StringView,
+      #|  chars? : StringView = "\t\n\r ",
+      #|) -> StringView {
       #|  self.trim_start(chars~).trim_end(chars~)
       #|}
-      #|#label_migration(chars, allow_positional=true)
       #|#label_migration(chars, alias=char_set)
-      #|pub fn String::trim(self : String, chars~ : StringView) -> StringView {
+      #|pub fn String::trim(
+      #|  self : String,
+      #|  chars? : StringView = "\t\n\r ",
+      #|) -> StringView {
       #|  self[:].trim(chars~)
       #|}
       #|test "trim" {
@@ -12116,23 +13123,25 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|  inspect("  hello world  ".trim(chars=" "), content="hello world")
       #|  inspect("abcabc".trim(chars="abc"), content="")
       #|}
+      #|#deprecated("Use `trim` with default whitespace characters instead")
       #|pub fn StringView::trim_space(self : StringView) -> StringView {
-      #|  self.trim(chars=" \n\r\t")
+      #|  self.trim()
       #|}
+      #|#deprecated("Use `trim` with default whitespace characters instead")
       #|pub fn String::trim_space(self : String) -> StringView {
-      #|  self[:].trim_space()
+      #|  self.trim()
       #|}
-      #|test "trim_space" {
-      #|  inspect("hello".trim_space(), content="hello")
-      #|  inspect("  hello  ".trim_space(), content="hello")
-      #|  inspect("hello  ".trim_space(), content="hello")
-      #|  inspect("  hello".trim_space(), content="hello")
-      #|  inspect("\t\nhello\r\n".trim_space(), content="hello")
-      #|  inspect("  hello world  ".trim_space(), content="hello world")
-      #|  inspect("  ".trim_space(), content="")
-      #|  inspect("\n\r\t".trim_space(), content="")
-      #|  inspect("".trim_space(), content="")
-      #|  inspect("  hello\nworld\t".trim_space(), content="hello\nworld")
+      #|test "trim whitespace for string" {
+      #|  inspect("hello".trim(), content="hello")
+      #|  inspect("  hello  ".trim(), content="hello")
+      #|  inspect("hello  ".trim(), content="hello")
+      #|  inspect("  hello".trim(), content="hello")
+      #|  inspect("\t\nhello\r\n".trim(), content="hello")
+      #|  inspect("  hello world  ".trim(), content="hello world")
+      #|  inspect("  ".trim(), content="")
+      #|  inspect("\n\r\t".trim(), content="")
+      #|  inspect("".trim(), content="")
+      #|  inspect("  hello\nworld\t".trim(), content="hello\nworld")
       #|}
       #|pub fn StringView::is_empty(self : StringView) -> Bool {
       #|  self.length() == 0
@@ -12154,7 +13163,7 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|  inspect(non_empty_view.is_empty(), content="false")
       #|}
       #|pub fn StringView::is_blank(self : StringView) -> Bool {
-      #|  self.trim_space().is_empty()
+      #|  self.trim().is_empty()
       #|}
       #|pub fn String::is_blank(self : String) -> Bool {
       #|  self[:].is_blank()
@@ -12311,17 +13320,16 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|  if sep_len == 0 {
       #|    return self.iter().map(c => c.to_string().view())
       #|  }
-      #|  Iter::new(yield_ => {
-      #|    let mut view = self
-      #|    while view.find(sep) is Some(end) {
-      #|      guard yield_(view.view(end_offset=end)) is IterContinue else {
-      #|        break IterEnd
-      #|      }
-      #|      view = view.view(start_offset=end + sep_len)
-      #|    } else {
-      #|      yield_(view)
+      #|  let mut remaining = Some(self)
+      #|  Iterator::new(() => {
+      #|    guard remaining is Some(view) else { None }
+      #|    guard view.find(sep) is Some(end) else {
+      #|      remaining = None
+      #|      Some(view)
       #|    }
-      #|  })
+      #|    remaining = Some(view.view(start_offset=end + sep_len))
+      #|    Some(view.view(end_offset=end))
+      #|  }).iter()
       #|}
       #|pub fn String::split(self : String, sep : StringView) -> Iter[StringView] {
       #|  self[:].split(sep)
@@ -12635,15 +13643,19 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|pub fn[A] StringView::fold(
       #|  self : StringView,
       #|  init~ : A,
-      #|  f : (A, Char) -> A,
-      #|) -> A {
+      #|  f : (A, Char) -> A raise?,
+      #|) -> A raise? {
       #|  let mut rv = init
       #|  for c in self {
       #|    rv = f(rv, c)
       #|  }
       #|  rv
       #|}
-      #|pub fn[A] String::fold(self : String, init~ : A, f : (A, Char) -> A) -> A {
+      #|pub fn[A] String::fold(
+      #|  self : String,
+      #|  init~ : A,
+      #|  f : (A, Char) -> A raise?,
+      #|) -> A raise? {
       #|  self[:].fold(init~, f)
       #|}
       #|test "fold" {
@@ -12659,18 +13671,31 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|    104 + 101 + 108 + 108 + 111,
       #|  )
       #|}
+      #|test "fold with raise" {
+      #|  let result = try? "hello".fold(init=0, (acc, c) => {
+      #|    if c == 'l' {
+      #|      raise Failure("found l")
+      #|    }
+      #|    acc + 1
+      #|  })
+      #|  inspect(result, content="Err(Failure(\"found l\"))")
+      #|}
       #|pub fn[A] StringView::rev_fold(
       #|  self : StringView,
       #|  init~ : A,
-      #|  f : (A, Char) -> A,
-      #|) -> A {
+      #|  f : (A, Char) -> A raise?,
+      #|) -> A raise? {
       #|  let mut rv = init
       #|  for c in self.rev_iter() {
       #|    rv = f(rv, c)
       #|  }
       #|  rv
       #|}
-      #|pub fn[A] String::rev_fold(self : String, init~ : A, f : (A, Char) -> A) -> A {
+      #|pub fn[A] String::rev_fold(
+      #|  self : String,
+      #|  init~ : A,
+      #|  f : (A, Char) -> A raise?,
+      #|) -> A raise? {
       #|  self[:].rev_fold(init~, f)
       #|}
       #|test "rev_fold" {
@@ -12686,10 +13711,21 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|    111 + 108 + 108 + 101 + 104,
       #|  )
       #|}
+      #|test "rev_fold with raise" {
+      #|  let result = try? "hello".rev_fold(init=0, (acc, c) => {
+      #|    if c == 'l' {
+      #|      raise Failure("found l")
+      #|    }
+      #|    acc + 1
+      #|  })
+      #|  inspect(result, content="Err(Failure(\"found l\"))")
+      #|}
+      #|#deprecated("The return type is about to change to `UInt16?` in a future release. Please check boundaries manually and use `String::code_unit_at` instead.", skip_current_package=true)
       #|pub fn String::get(self : String, idx : Int) -> Int? {
       #|  guard idx >= 0 && idx < self.length() else { return None }
       #|  Some(self.unsafe_charcode_at(idx))
       #|}
+      #|#deprecated("The return type is about to change to `UInt16?` in a future release. Please check boundaries manually and use `StringView::code_unit_at` instead.", skip_current_package=true)
       #|pub fn StringView::get(self : StringView, idx : Int) -> Int? {
       #|  guard idx >= 0 && idx < self.length() else { return None }
       #|  Some(self.unsafe_charcode_at(idx))
@@ -12909,14 +13945,8 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|fn StringView::end(self : StringView) -> Int = "%stringview.end"
       #|fn StringView::make_view(str : String, start : Int, end : Int) -> StringView = "%stringview.make"
       #|#alias("_[_]")
-      #|#deprecated("Use `code_unit_at` instead which returns UInt16")
-      #|pub fn StringView::at(self : StringView, index : Int) -> Int {
-      #|  guard index >= 0 && index < self.length() else {
-      #|    abort("Index out of bounds")
-      #|  }
-      #|  self.str().unsafe_charcode_at(self.start() + index)
-      #|}
-      #|pub fn StringView::code_unit_at(self : StringView, index : Int) -> UInt16 {
+      #|#alias(code_unit_at)
+      #|pub fn StringView::at(self : StringView, index : Int) -> UInt16 {
       #|  guard index >= 0 && index < self.length() else {
       #|    abort("Index out of bounds")
       #|  }
@@ -12994,20 +14024,7 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|  self.str().unsafe_substring(start=self.start(), end=self.end())
       #|}
       #|pub fn StringView::iter(self : StringView) -> Iter[Char] {
-      #|  Iter::new(yield_ => for index in self.start()..<self.end() {
-      #|    let c1 = self.str().unsafe_charcode_at(index)
-      #|    if c1.is_leading_surrogate() && index + 1 < self.end() {
-      #|      let c2 = self.str().unsafe_charcode_at(index + 1)
-      #|      if c2.is_trailing_surrogate() {
-      #|        let c = code_point_of_surrogate_pair(c1, c2)
-      #|        guard yield_(c) is IterContinue else { break IterEnd }
-      #|        continue index + 2
-      #|      }
-      #|    }
-      #|    guard yield_(c1.unsafe_to_char()) is IterContinue else { break IterEnd }
-      #|  } else {
-      #|    IterContinue
-      #|  })
+      #|  self.iterator().iter()
       #|}
       #|pub fn StringView::iterator(self : StringView) -> Iterator[Char] {
       #|  let start = self.start()
@@ -13028,25 +14045,7 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|  })
       #|}
       #|pub fn StringView::iter2(self : StringView) -> Iter2[Int, Char] {
-      #|  Iter2::new(yield_ => {
-      #|    let len = self.length()
-      #|    for index = 0, n = 0; index < len; index = index + 1, n = n + 1 {
-      #|      let c1 = self.str().unsafe_charcode_at(self.start() + index)
-      #|      if c1.is_leading_surrogate() && index + 1 < len {
-      #|        let c2 = self.str().unsafe_charcode_at(self.start() + index + 1)
-      #|        if c2.is_trailing_surrogate() {
-      #|          let c = code_point_of_surrogate_pair(c1, c2)
-      #|          guard yield_(n, c) is IterContinue else { break IterEnd }
-      #|          continue index + 2, n + 1
-      #|        }
-      #|      }
-      #|      guard yield_(n, c1.unsafe_to_char()) is IterContinue else {
-      #|        break IterEnd
-      #|      }
-      #|    } else {
-      #|      IterContinue
-      #|    }
-      #|  })
+      #|  self.iterator2().iter2()
       #|}
       #|pub fn StringView::iterator2(self : StringView) -> Iterator2[Int, Char] {
       #|  let start = self.start()
@@ -13072,22 +14071,7 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|  })
       #|}
       #|pub fn StringView::rev_iter(self : StringView) -> Iter[Char] {
-      #|  Iter::new(yield_ => for index = self.end() - 1
-      #|                          index >= self.start()
-      #|                          index = index - 1 {
-      #|    let c1 = self.str().unsafe_charcode_at(index)
-      #|    if c1.is_trailing_surrogate() && index - 1 >= 0 {
-      #|      let c2 = self.str().unsafe_charcode_at(index - 1)
-      #|      if c2.is_leading_surrogate() {
-      #|        let c = code_point_of_surrogate_pair(c2, c1)
-      #|        guard yield_(c) is IterContinue else { break IterEnd }
-      #|        continue index - 2
-      #|      }
-      #|    }
-      #|    guard yield_(c1.unsafe_to_char()) is IterContinue else { break IterEnd }
-      #|  } else {
-      #|    IterContinue
-      #|  })
+      #|  self.rev_iterator().iter()
       #|}
       #|pub fn StringView::rev_iterator(self : StringView) -> Iterator[Char] {
       #|  let start = self.start()
@@ -15749,16 +16733,6 @@ let moonbitlang_core_byte_module : RuntimePackage = RuntimePackage::new(
     "byte.mbt": (
       #|pub let max_value : Byte = b'\xFF'
       #|pub let min_value : Byte = b'\x00'
-      #|pub fn Byte::to_uint64(self : Byte) -> UInt64 {
-      #|  self.to_uint().to_uint64()
-      #|}
-      #|pub fn Byte::popcnt(self : Byte) -> Int {
-      #|  let mut n = self
-      #|  n = (n & 0x55) + ((n >> 1) & 0x55)
-      #|  n = (n & 0x33) + ((n >> 2) & 0x33)
-      #|  n = (n & 0x0F) + ((n >> 4) & 0x0F)
-      #|  n.to_int()
-      #|}
     ),
   },
 )
@@ -15766,22 +16740,16 @@ let moonbitlang_core_byte_module : RuntimePackage = RuntimePackage::new(
 ///|
 let moonbitlang_core_bytes_module : RuntimePackage = RuntimePackage::new(
   "moonbitlang/core/bytes",
-  deps={
-    "moonbitlang/core/builtin": moonbitlang_core_builtin_module,
-    "moonbitlang/core/byte": moonbitlang_core_byte_module,
-    "moonbitlang/core/uint16": moonbitlang_core_uint16_module,
-  },
+  deps={ "moonbitlang/core/builtin": moonbitlang_core_builtin_module },
   files={
     "moon.pkg.json": (
       #|{
       #|  "import": [
-      #|    "moonbitlang/core/builtin", 
-      #|    "moonbitlang/core/byte",
-      #|    "moonbitlang/core/uint16"
+      #|    "moonbitlang/core/builtin"
       #|  ],
       #|  "test-import": [
       #|    "moonbitlang/core/array",
-      #|    "moonbitlang/core/double", 
+      #|    "moonbitlang/core/double",
       #|    "moonbitlang/core/uint",
       #|    "moonbitlang/core/uint64",
       #|    "moonbitlang/core/test",
@@ -15792,871 +16760,32 @@ let moonbitlang_core_bytes_module : RuntimePackage = RuntimePackage::new(
       #|  ]
       #|}
     ),
-    "bitstring.mbt": (
-      #|fn UInt::extend_sign(self : UInt, len : Int) -> Int {
-      #|  let b = 32 - len
-      #|  self.reinterpret_as_int() << b >> b
-      #|}
-      #|fn UInt64::extend_sign(self : UInt64, len : Int) -> Int64 {
-      #|  let b = 64 - len
-      #|  self.reinterpret_as_int64() << b >> b
-      #|}
-      #|#internal(experimental, "subject to breaking change without notice")
-      #|#doc(hidden)
-      #|pub fn BytesView::unsafe_extract_bit(
-      #|  bs : BytesView,
-      #|  offset : Int,
-      #|  _len : Int,
-      #|) -> UInt {
-      #|  let byte_index = offset >> 3
-      #|  let bit_shift = 7 - (offset & 7)
-      #|  let byte_val = bs.unsafe_get(byte_index).to_uint()
-      #|  (byte_val >> bit_shift) & 1U
-      #|}
-      #|#internal(experimental, "subject to breaking change without notice")
-      #|#doc(hidden)
-      #|pub fn BytesView::unsafe_extract_bit_signed(
-      #|  bs : BytesView,
-      #|  offset : Int,
-      #|  _len : Int,
-      #|) -> Int {
-      #|  let byte_index = offset >> 3
-      #|  let bit_shift = 7 - (offset & 7)
-      #|  let byte_val = bs.unsafe_get(byte_index).to_int()
-      #|  ((byte_val >> bit_shift) & 1) * -1
-      #|}
-      #|#internal(experimental, "subject to breaking change without notice")
-      #|#doc(hidden)
-      #|pub fn BytesView::unsafe_extract_byte(
-      #|  bs : BytesView,
-      #|  offset : Int,
-      #|  len : Int,
-      #|) -> UInt {
-      #|  let byte_index = offset >> 3
-      #|  if (offset & 7) == 0 {
-      #|    let byte = bs.unsafe_get(byte_index)
-      #|    (byte >> (8 - len)).to_uint()
-      #|  } else if (offset & 7) + len <= 8 {
-      #|    let byte = bs.unsafe_get(byte_index).to_uint()
-      #|    let shift = 8 - ((offset & 7) + len)
-      #|    let mask = (1U << len) - 1
-      #|    (byte >> shift) & mask
-      #|  } else {
-      #|    let b0 = bs.unsafe_get(byte_index).to_uint()
-      #|    let b1 = bs.unsafe_get(byte_index + 1).to_uint()
-      #|    let data = (b0 << 8) | b1
-      #|    let bit_mask = (1U << (16 - (offset & 7))) - 1
-      #|    let data = data & bit_mask
-      #|    let shift = 16 - ((offset & 7) + len)
-      #|    data >> shift
-      #|  }
-      #|}
-      #|#internal(experimental, "subject to breaking change without notice")
-      #|#doc(hidden)
-      #|pub fn BytesView::unsafe_extract_uint_le(
-      #|  bs : BytesView,
-      #|  offset : Int,
-      #|  len : Int,
-      #|) -> UInt {
-      #|  let bytes_needed = (len + 7) / 8
-      #|  let b0 = bs.unsafe_extract_byte(offset, 8)
-      #|  match bytes_needed {
-      #|    2 => {
-      #|      let b1 = bs.unsafe_extract_byte(offset + 8, len - 8)
-      #|      (b1 << 8) | b0
-      #|    }
-      #|    3 => {
-      #|      let b1 = bs.unsafe_extract_byte(offset + 8, 8)
-      #|      let b2 = bs.unsafe_extract_byte(offset + 16, len - 16)
-      #|      (b2 << 16) | (b1 << 8) | b0
-      #|    }
-      #|    4 => {
-      #|      let b1 = bs.unsafe_extract_byte(offset + 8, 8)
-      #|      let b2 = bs.unsafe_extract_byte(offset + 16, 8)
-      #|      let b3 = bs.unsafe_extract_byte(offset + 24, len - 24)
-      #|      (b3 << 24) | (b2 << 16) | (b1 << 8) | b0
-      #|    }
-      #|    _ => abort("Invalid byte count for int32 extraction")
-      #|  }
-      #|}
-      #|#internal(experimental, "subject to breaking change without notice")
-      #|#doc(hidden)
-      #|pub fn BytesView::unsafe_extract_uint_be(
-      #|  bs : BytesView,
-      #|  offset : Int,
-      #|  len : Int,
-      #|) -> UInt {
-      #|  let bytes_needed = (len + 7) / 8
-      #|  let b0 = bs.unsafe_extract_byte(offset, 8)
-      #|  match bytes_needed {
-      #|    2 => {
-      #|      let b1 = bs.unsafe_extract_byte(offset + 8, len - 8)
-      #|      let shift = 16 - len
-      #|      let data = (b0 << 8) | (b1 << shift)
-      #|      data >> shift
-      #|    }
-      #|    3 => {
-      #|      let b1 = bs.unsafe_extract_byte(offset + 8, 8)
-      #|      let b2 = bs.unsafe_extract_byte(offset + 16, len - 16)
-      #|      let shift = 24 - len
-      #|      let data = (b0 << 16) | (b1 << 8) | (b2 << shift)
-      #|      data >> shift
-      #|    }
-      #|    4 => {
-      #|      let b1 = bs.unsafe_extract_byte(offset + 8, 8)
-      #|      let b2 = bs.unsafe_extract_byte(offset + 16, 8)
-      #|      let b3 = bs.unsafe_extract_byte(offset + 24, len - 24)
-      #|      let shift = 32 - len
-      #|      let data = (b0 << 24) | (b1 << 16) | (b2 << 8) | (b3 << shift)
-      #|      data >> shift
-      #|    }
-      #|    _ => abort("Invalid byte count for int32 extraction")
-      #|  }
-      #|}
-      #|#internal(experimental, "subject to breaking change without notice")
-      #|#doc(hidden)
-      #|pub fn BytesView::unsafe_extract_uint64_le(
-      #|  bs : BytesView,
-      #|  offset : Int,
-      #|  len : Int,
-      #|) -> UInt64 {
-      #|  let bytes_needed = (len + 7) / 8
-      #|  let b0 = bs.unsafe_extract_byte(offset, 8).to_uint64()
-      #|  let b1 = bs.unsafe_extract_byte(offset + 8, 8).to_uint64()
-      #|  let b2 = bs.unsafe_extract_byte(offset + 16, 8).to_uint64()
-      #|  let b3 = bs.unsafe_extract_byte(offset + 24, 8).to_uint64()
-      #|  match bytes_needed {
-      #|    5 => {
-      #|      let b4 = bs.unsafe_extract_byte(offset + 32, len - 32).to_uint64()
-      #|      (b4 << 32) | (b3 << 24) | (b2 << 16) | (b1 << 8) | b0
-      #|    }
-      #|    6 => {
-      #|      let b4 = bs.unsafe_extract_byte(offset + 32, 8).to_uint64()
-      #|      let b5 = bs.unsafe_extract_byte(offset + 40, len - 40).to_uint64()
-      #|      (b5 << 40) | (b4 << 32) | (b3 << 24) | (b2 << 16) | (b1 << 8) | b0
-      #|    }
-      #|    7 => {
-      #|      let b4 = bs.unsafe_extract_byte(offset + 32, 8).to_uint64()
-      #|      let b5 = bs.unsafe_extract_byte(offset + 40, 8).to_uint64()
-      #|      let b6 = bs.unsafe_extract_byte(offset + 48, len - 48).to_uint64()
-      #|      (b6 << 48) |
-      #|      (b5 << 40) |
-      #|      (b4 << 32) |
-      #|      (b3 << 24) |
-      #|      (b2 << 16) |
-      #|      (b1 << 8) |
-      #|      b0
-      #|    }
-      #|    8 => {
-      #|      let b4 = bs.unsafe_extract_byte(offset + 32, 8).to_uint64()
-      #|      let b5 = bs.unsafe_extract_byte(offset + 40, 8).to_uint64()
-      #|      let b6 = bs.unsafe_extract_byte(offset + 48, 8).to_uint64()
-      #|      let b7 = bs.unsafe_extract_byte(offset + 56, len - 56).to_uint64()
-      #|      (b7 << 56) |
-      #|      (b6 << 48) |
-      #|      (b5 << 40) |
-      #|      (b4 << 32) |
-      #|      (b3 << 24) |
-      #|      (b2 << 16) |
-      #|      (b1 << 8) |
-      #|      b0
-      #|    }
-      #|    _ => abort("Invalid byte count for int64 extraction")
-      #|  }
-      #|}
-      #|#internal(experimental, "subject to breaking change without notice")
-      #|#doc(hidden)
-      #|pub fn BytesView::unsafe_extract_uint64_be(
-      #|  bs : BytesView,
-      #|  offset : Int,
-      #|  len : Int,
-      #|) -> UInt64 {
-      #|  let bytes_needed = (len + 7) / 8
-      #|  let b0 = bs.unsafe_extract_byte(offset, 8).to_uint64()
-      #|  let b1 = bs.unsafe_extract_byte(offset + 8, 8).to_uint64()
-      #|  let b2 = bs.unsafe_extract_byte(offset + 16, 8).to_uint64()
-      #|  let b3 = bs.unsafe_extract_byte(offset + 24, 8).to_uint64()
-      #|  match bytes_needed {
-      #|    5 => {
-      #|      let b4 = bs.unsafe_extract_byte(offset + 32, len - 32).to_uint64()
-      #|      let shift = 40 - len
-      #|      let data = (b0 << 32) |
-      #|        (b1 << 24) |
-      #|        (b2 << 16) |
-      #|        (b3 << 8) |
-      #|        (b4 << shift)
-      #|      data >> shift
-      #|    }
-      #|    6 => {
-      #|      let b4 = bs.unsafe_extract_byte(offset + 32, 8).to_uint64()
-      #|      let b5 = bs.unsafe_extract_byte(offset + 40, len - 40).to_uint64()
-      #|      let shift = 48 - len
-      #|      let data = (b0 << 40) |
-      #|        (b1 << 32) |
-      #|        (b2 << 24) |
-      #|        (b3 << 16) |
-      #|        (b4 << 8) |
-      #|        (b5 << shift)
-      #|      data >> shift
-      #|    }
-      #|    7 => {
-      #|      let b4 = bs.unsafe_extract_byte(offset + 32, 8).to_uint64()
-      #|      let b5 = bs.unsafe_extract_byte(offset + 40, 8).to_uint64()
-      #|      let b6 = bs.unsafe_extract_byte(offset + 48, len - 48).to_uint64()
-      #|      let shift = 56 - len
-      #|      let data = (b0 << 48) |
-      #|        (b1 << 40) |
-      #|        (b2 << 32) |
-      #|        (b3 << 24) |
-      #|        (b4 << 16) |
-      #|        (b5 << 8) |
-      #|        (b6 << shift)
-      #|      data >> shift
-      #|    }
-      #|    8 => {
-      #|      let b4 = bs.unsafe_extract_byte(offset + 32, 8).to_uint64()
-      #|      let b5 = bs.unsafe_extract_byte(offset + 40, 8).to_uint64()
-      #|      let b6 = bs.unsafe_extract_byte(offset + 48, 8).to_uint64()
-      #|      let b7 = bs.unsafe_extract_byte(offset + 56, len - 56).to_uint64()
-      #|      let shift = 64 - len
-      #|      let data = (b0 << 56) |
-      #|        (b1 << 48) |
-      #|        (b2 << 40) |
-      #|        (b3 << 32) |
-      #|        (b4 << 24) |
-      #|        (b5 << 16) |
-      #|        (b6 << 8) |
-      #|        (b7 << shift)
-      #|      data >> shift
-      #|    }
-      #|    _ => abort("Invalid byte count for int64 extraction")
-      #|  }
-      #|}
-      #|#internal(experimental, "subject to breaking change without notice")
-      #|#doc(hidden)
-      #|pub fn BytesView::unsafe_extract_bytesview(
-      #|  bs : BytesView,
-      #|  offset : Int,
-      #|  len : Int,
-      #|) -> BytesView {
-      #|  BytesView::make(bs.bytes(), bs.start() + (offset >> 3), len >> 3)
-      #|}
-      #|#internal(experimental, "subject to breaking change without notice")
-      #|#doc(hidden)
-      #|pub fn BytesView::unsafe_extract_byte_signed(
-      #|  bs : BytesView,
-      #|  offset : Int,
-      #|  len : Int,
-      #|) -> Int {
-      #|  let unsigned = bs.unsafe_extract_byte(offset, len)
-      #|  unsigned.extend_sign(len)
-      #|}
-      #|#internal(experimental, "subject to breaking change without notice")
-      #|#doc(hidden)
-      #|pub fn BytesView::unsafe_extract_int_le(
-      #|  bs : BytesView,
-      #|  offset : Int,
-      #|  len : Int,
-      #|) -> Int {
-      #|  let unsigned = bs.unsafe_extract_uint_le(offset, len)
-      #|  unsigned.extend_sign(len)
-      #|}
-      #|#internal(experimental, "subject to breaking change without notice")
-      #|#doc(hidden)
-      #|pub fn BytesView::unsafe_extract_int_be(
-      #|  bs : BytesView,
-      #|  offset : Int,
-      #|  len : Int,
-      #|) -> Int {
-      #|  let unsigned = bs.unsafe_extract_uint_be(offset, len)
-      #|  unsigned.extend_sign(len)
-      #|}
-      #|#internal(experimental, "subject to breaking change without notice")
-      #|#doc(hidden)
-      #|pub fn BytesView::unsafe_extract_int64_le(
-      #|  bs : BytesView,
-      #|  offset : Int,
-      #|  len : Int,
-      #|) -> Int64 {
-      #|  let unsigned = bs.unsafe_extract_uint64_le(offset, len)
-      #|  unsigned.extend_sign(len)
-      #|}
-      #|#internal(experimental, "subject to breaking change without notice")
-      #|#doc(hidden)
-      #|pub fn BytesView::unsafe_extract_int64_be(
-      #|  bs : BytesView,
-      #|  offset : Int,
-      #|  len : Int,
-      #|) -> Int64 {
-      #|  let unsigned = bs.unsafe_extract_uint64_be(offset, len)
-      #|  unsigned.extend_sign(len)
-      #|}
-      #|#internal(experimental, "subject to breaking change without notice")
-      #|#doc(hidden)
-      #|pub fn Bytes::unsafe_extract_bit(bs : Bytes, offset : Int, len : Int) -> UInt {
-      #|  bs[:].unsafe_extract_bit(offset, len)
-      #|}
-      #|#internal(experimental, "subject to breaking change without notice")
-      #|#doc(hidden)
-      #|pub fn Bytes::unsafe_extract_byte(bs : Bytes, offset : Int, len : Int) -> UInt {
-      #|  bs[:].unsafe_extract_byte(offset, len)
-      #|}
-      #|#internal(experimental, "subject to breaking change without notice")
-      #|#doc(hidden)
-      #|pub fn Bytes::unsafe_extract_uint_le(
-      #|  bs : Bytes,
-      #|  offset : Int,
-      #|  len : Int,
-      #|) -> UInt {
-      #|  bs[:].unsafe_extract_uint_le(offset, len)
-      #|}
-      #|#internal(experimental, "subject to breaking change without notice")
-      #|#doc(hidden)
-      #|pub fn Bytes::unsafe_extract_uint_be(
-      #|  bs : Bytes,
-      #|  offset : Int,
-      #|  len : Int,
-      #|) -> UInt {
-      #|  bs[:].unsafe_extract_uint_be(offset, len)
-      #|}
-      #|#internal(experimental, "subject to breaking change without notice")
-      #|#doc(hidden)
-      #|pub fn Bytes::unsafe_extract_uint64_le(
-      #|  bs : Bytes,
-      #|  offset : Int,
-      #|  len : Int,
-      #|) -> UInt64 {
-      #|  bs[:].unsafe_extract_uint64_le(offset, len)
-      #|}
-      #|#internal(experimental, "subject to breaking change without notice")
-      #|#doc(hidden)
-      #|pub fn Bytes::unsafe_extract_uint64_be(
-      #|  bs : Bytes,
-      #|  offset : Int,
-      #|  len : Int,
-      #|) -> UInt64 {
-      #|  bs[:].unsafe_extract_uint64_be(offset, len)
-      #|}
-      #|#internal(experimental, "subject to breaking change without notice")
-      #|#doc(hidden)
-      #|pub fn Bytes::unsafe_extract_bytesview(
-      #|  bs : Bytes,
-      #|  offset : Int,
-      #|  len : Int,
-      #|) -> BytesView {
-      #|  bs[:].unsafe_extract_bytesview(offset, len)
-      #|}
-    ),
-    "bytes.mbt": (
-      #|#as_free_fn(deprecated)
-      #|#alias(of, deprecated="Use from_array instead")
-      #|#as_free_fn(of, deprecated="Use from_array instead")
-      #|pub fn Bytes::from_array(arr : ArrayView[Byte]) -> Bytes {
-      #|  Bytes::makei(arr.length(), i => arr[i])
-      #|}
-      #|#as_free_fn(deprecated)
-      #|#deprecated("Use Bytes::from_array instead")
-      #|pub fn Bytes::from_fixedarray(arr : FixedArray[Byte], len? : Int) -> Bytes {
-      #|  let len = match len {
-      #|    None => arr.length()
-      #|    Some(x) => {
-      #|      guard 0 <= x && x <= arr.length()
-      #|      x
-      #|    }
-      #|  }
-      #|  let result = unsafe_to_fixedarray(UninitializedArray::make(len))
-      #|  arr.blit_to(result, len~)
-      #|  result.unsafe_reinterpret_as_bytes()
-      #|}
-      #|#label_migration(len, fill=false)
-      #|pub fn Bytes::to_fixedarray(self : Bytes, len? : Int) -> FixedArray[Byte] {
-      #|  let len = match len {
-      #|    None => self.length()
-      #|    Some(x) => {
-      #|      guard 0 <= x && x <= self.length()
-      #|      x
-      #|    }
-      #|  }
-      #|  let arr = unsafe_to_fixedarray(UninitializedArray::make(len))
-      #|  arr.blit_from_bytes(0, self, 0, len)
-      #|  arr
-      #|}
-      #|pub fn BytesView::to_fixedarray(self : BytesView) -> FixedArray[Byte] {
-      #|  let len = self.length()
-      #|  let arr = unsafe_to_fixedarray(UninitializedArray::make(len))
-      #|  arr.blit_from_bytes(0, self.data(), self.start_offset(), len)
-      #|  arr
-      #|}
-      #|#as_free_fn(deprecated)
-      #|pub fn Bytes::from_iter(iter : Iter[Byte]) -> Bytes {
-      #|  Bytes::from_array(iter.collect())
-      #|}
-      #|#as_free_fn(deprecated)
-      #|pub fn Bytes::from_iterator(iter : Iterator[Byte]) -> Bytes {
-      #|  Bytes::from_array(iter.collect())
-      #|}
-      #|pub fn Bytes::to_array(self : Bytes) -> Array[Byte] {
-      #|  let len = self.length()
-      #|  let rv = Array::make(len, b'0')
-      #|  for i in 0..<len {
-      #|    rv[i] = self[i]
-      #|  }
-      #|  rv
-      #|}
-      #|pub fn BytesView::to_array(self : BytesView) -> Array[Byte] {
-      #|  let len = self.length()
-      #|  let rv = Array::make(len, b'0')
-      #|  for i in 0..<len {
-      #|    rv[i] = self[i]
-      #|  }
-      #|  rv
-      #|}
-      #|pub fn Bytes::iter(self : Bytes) -> Iter[Byte] {
-      #|  Iter::new(yield_ => for i in 0..<self.length() {
-      #|    if yield_(self[i]) is IterEnd {
-      #|      break IterEnd
-      #|    }
-      #|  } else {
-      #|    IterContinue
-      #|  })
-      #|}
-      #|pub fn Bytes::iterator(self : Bytes) -> Iterator[Byte] {
-      #|  let mut i = 0
-      #|  let len = self.length()
-      #|  Iterator::new(fn() {
-      #|    guard i < len else { None }
-      #|    let c = self.unsafe_get(i)
-      #|    i += 1
-      #|    Some(c)
-      #|  })
-      #|}
-      #|pub fn Bytes::iter2(self : Bytes) -> Iter2[Int, Byte] {
-      #|  Iter2::new(yield_ => for i in 0..<self.length() {
-      #|    if yield_(i, self[i]) is IterEnd {
-      #|      break IterEnd
-      #|    }
-      #|  } else {
-      #|    IterContinue
-      #|  })
-      #|}
-      #|pub fn Bytes::iterator2(self : Bytes) -> Iterator2[Int, Byte] {
-      #|  let mut i = 0
-      #|  let len = self.length()
-      #|  Iterator::new(fn() {
-      #|    guard i < len else { None }
-      #|    let result = (i, self.unsafe_get(i))
-      #|    i += 1
-      #|    Some(result)
-      #|  })
-      #|}
-      #|pub impl Default for Bytes with default() {
-      #|  b""
-      #|}
-      #|pub fn default() -> Bytes {
-      #|  b""
-      #|}
-      #|pub fn Bytes::get(self : Bytes, index : Int) -> Byte? {
-      #|  guard index >= 0 && index < self.length() else { None }
-      #|  Some(self[index])
-      #|}
-      #|fn unsafe_to_bytes(array : FixedArray[Byte]) -> Bytes = "%identity"
-      #|fn unsafe_to_fixedarray(array : UninitializedArray[Byte]) -> FixedArray[Byte] = "%identity"
-      #|pub impl Add for Bytes with add(self : Bytes, other : Bytes) -> Bytes {
-      #|  let len_self = self.length()
-      #|  let len_other = other.length()
-      #|  let rv : FixedArray[Byte] = FixedArray::make(len_self + len_other, 0)
-      #|  for i in 0..<len_self {
-      #|    rv[i] = self[i]
-      #|  }
-      #|  for i in 0..<len_other {
-      #|    rv[len_self + i] = other[i]
-      #|  }
-      #|  unsafe_to_bytes(rv)
-      #|}
-      #|pub impl Hash for Bytes with hash_combine(self, hasher) {
-      #|  hasher.combine(self[:])
-      #|}
-      #|pub fn Bytes::repeat(self : Self, count : Int) -> Bytes {
-      #|  if count <= 0 || self.length() == 0 {
-      #|    return []
-      #|  }
-      #|  if count == 1 {
-      #|    return self
-      #|  }
-      #|  let len = self.length()
-      #|  let total = len * count
-      #|  guard total / count == len
-      #|  let arr = FixedArray::make(total, (0 : Byte))
-      #|  arr.blit_from_bytes(0, self, 0, len)
-      #|  let mut filled = len
-      #|  while filled < total {
-      #|    let remaining = total - filled
-      #|    let copy_len = if filled < remaining { filled } else { remaining }
-      #|    let src = unsafe_to_bytes(arr)
-      #|    arr.blit_from_bytes(filled, src, 0, copy_len)
-      #|    filled = filled + copy_len
-      #|  }
-      #|  unsafe_to_bytes(arr)
-      #|}
-    ),
-    "methods.mbt": (
-      #|pub fn BytesView::find(target : BytesView, pattern : BytesView) -> Int? {
-      #|  let target_len = target.length()
-      #|  let pattern_len = pattern.length()
-      #|  for i in 0..=(target_len - pattern_len) {
-      #|    for j in 0..<pattern_len {
-      #|      guard target.unsafe_get(i + j) == pattern.unsafe_get(j) else { break }
-      #|    } else {
-      #|      return Some(i)
-      #|    }
-      #|  } else {
-      #|    None
-      #|  }
-      #|}
-      #|pub fn Bytes::find(target : Bytes, pattern : BytesView) -> Int? {
-      #|  target[:].find(pattern)
-      #|}
-      #|pub fn BytesView::rev_find(target : BytesView, pattern : BytesView) -> Int? {
-      #|  let target_len = target.length()
-      #|  let pattern_len = pattern.length()
-      #|  for i = target_len - pattern_len; i >= 0; i = i - 1 {
-      #|    for j in 0..<pattern_len {
-      #|      guard target.unsafe_get(i + j) == pattern.unsafe_get(j) else { break }
-      #|    } else {
-      #|      return Some(i)
-      #|    }
-      #|  } else {
-      #|    None
-      #|  }
-      #|}
-      #|pub fn Bytes::rev_find(target : Bytes, pattern : BytesView) -> Int? {
-      #|  target[:].rev_find(pattern)
-      #|}
-    ),
-    "unsafe_bytes.mbt": (
-      #|#intrinsic("%bytes.unsafe_read_uint64_le")
-      #|#doc(hidden)
-      #|pub fn Bytes::unsafe_read_uint64_le(bytes : Bytes, index : Int) -> UInt64 {
-      #|  let mut result : UInt64 = 0
-      #|  for i in 0..=7 {
-      #|    result = result | (bytes.unsafe_get(i + index).to_uint64() << (8 * i))
-      #|  }
-      #|  result
-      #|}
-      #|#intrinsic("%bytes.unsafe_read_uint64_be")
-      #|#doc(hidden)
-      #|pub fn Bytes::unsafe_read_uint64_be(bytes : Bytes, index : Int) -> UInt64 {
-      #|  let mut result : UInt64 = 0
-      #|  for i in 0..=7 {
-      #|    result = result | (bytes.unsafe_get(i + index).to_uint64() << (8 * (7 - i)))
-      #|  }
-      #|  result
-      #|}
-      #|#intrinsic("%bytes.unsafe_read_uint32_le")
-      #|#doc(hidden)
-      #|pub fn Bytes::unsafe_read_uint32_le(bytes : Bytes, index : Int) -> UInt {
-      #|  let mut result : UInt = 0
-      #|  for i in 0..=3 {
-      #|    result = result | (bytes.unsafe_get(i + index).to_uint() << (8 * i))
-      #|  }
-      #|  result
-      #|}
-      #|#intrinsic("%bytes.unsafe_read_uint32_be")
-      #|#doc(hidden)
-      #|pub fn Bytes::unsafe_read_uint32_be(bytes : Bytes, index : Int) -> UInt {
-      #|  let mut result : UInt = 0
-      #|  for i in 0..=3 {
-      #|    result = result | (bytes.unsafe_get(i + index).to_uint() << (8 * (3 - i)))
-      #|  }
-      #|  result
-      #|}
-      #|#intrinsic("%bytes.unsafe_read_uint16_le")
-      #|#doc(hidden)
-      #|pub fn Bytes::unsafe_read_uint16_le(bytes : Bytes, index : Int) -> UInt16 {
-      #|  let mut result : UInt16 = 0
-      #|  for i in 0..=1 {
-      #|    result = result | (bytes.unsafe_get(i + index).to_uint16() << (8 * i))
-      #|  }
-      #|  result
-      #|}
-      #|#intrinsic("%bytes.unsafe_read_uint16_be")
-      #|#doc(hidden)
-      #|pub fn Bytes::unsafe_read_uint16_be(bytes : Bytes, index : Int) -> UInt16 {
-      #|  let mut result : UInt16 = 0
-      #|  for i in 0..=1 {
-      #|    result = result | (bytes.unsafe_get(i + index).to_uint16() << (8 * (1 - i)))
-      #|  }
-      #|  result
-      #|}
-      #|#doc(hidden)
-      #|pub fn BytesView::unsafe_read_uint64_le(
-      #|  bytes : BytesView,
-      #|  index : Int,
-      #|) -> UInt64 {
-      #|  bytes.bytes().unsafe_read_uint64_le(bytes.start() + index)
-      #|}
-      #|#doc(hidden)
-      #|pub fn BytesView::unsafe_read_uint64_be(
-      #|  bytes : BytesView,
-      #|  index : Int,
-      #|) -> UInt64 {
-      #|  bytes.bytes().unsafe_read_uint64_be(bytes.start() + index)
-      #|}
-      #|#doc(hidden)
-      #|pub fn BytesView::unsafe_read_uint32_le(bytes : BytesView, index : Int) -> UInt {
-      #|  bytes.bytes().unsafe_read_uint32_le(bytes.start() + index)
-      #|}
-      #|#doc(hidden)
-      #|pub fn BytesView::unsafe_read_uint32_be(bytes : BytesView, index : Int) -> UInt {
-      #|  bytes.bytes().unsafe_read_uint32_be(bytes.start() + index)
-      #|}
-      #|#doc(hidden)
-      #|pub fn BytesView::unsafe_read_uint16_le(
-      #|  bytes : BytesView,
-      #|  index : Int,
-      #|) -> UInt16 {
-      #|  bytes.bytes().unsafe_read_uint16_le(bytes.start() + index)
-      #|}
-      #|#doc(hidden)
-      #|pub fn BytesView::unsafe_read_uint16_be(
-      #|  bytes : BytesView,
-      #|  index : Int,
-      #|) -> UInt16 {
-      #|  bytes.bytes().unsafe_read_uint16_be(bytes.start() + index)
-      #|}
-    ),
-    "view.mbt": (
+    "alias.mbt": (
       #|#builtin.valtype
       #|#deprecated("Use `BytesView` instead")
       #|pub type View = BytesView
-      #|fn BytesView::bytes(self : BytesView) -> Bytes = "%bytesview.bytes"
-      #|fn BytesView::start(self : BytesView) -> Int = "%bytesview.start"
-      #|fn BytesView::make(b : Bytes, start : Int, len : Int) -> BytesView = "%bytesview.make"
-      #|pub fn BytesView::length(self : BytesView) -> Int {
-      #|  self.len()
+      #|pub fn default() -> Bytes {
+      #|  b""
       #|}
-      #|fn BytesView::len(self : BytesView) -> Int = "%bytesview.len"
-      #|#alias("_[_]")
-      #|pub fn BytesView::at(self : BytesView, index : Int) -> Byte {
-      #|  guard index >= 0 && index < self.length() else {
-      #|    abort(
-      #|      "index out of bounds: the len is from 0 to \{self.length()} but the index is \{index}",
-      #|    )
-      #|  }
-      #|  self.bytes()[self.start() + index]
+      #|#deprecated("Use `Bytes::from_array` instead")
+      #|pub fn from_fixedarray(arr : FixedArray[Byte], len? : Int) -> Bytes {
+      #|  Bytes::from_array(arr[:len.unwrap_or(arr.length())])
       #|}
-      #|pub fn BytesView::get(self : BytesView, index : Int) -> Byte? {
-      #|  guard index >= 0 && index < self.length() else { None }
-      #|  Some(self.bytes().unsafe_get(self.start() + index))
+      #|#deprecated("Use `Bytes::from_iter` instead")
+      #|pub fn from_iter(iter : Iter[Byte]) -> Bytes {
+      #|  Bytes::from_iter(iter)
       #|}
-      #|#internal(unsafe, "Panic if index is out of bounds")
-      #|#doc(hidden)
-      #|pub fn BytesView::unsafe_get(self : BytesView, index : Int) -> Byte {
-      #|  self.bytes()[self.start() + index]
+      #|#deprecated("Use `Bytes::from_iterator` instead")
+      #|pub fn from_iterator(iter : Iterator[Byte]) -> Bytes {
+      #|  Bytes::from_array(iter.collect())
       #|}
-      #|#alias("_[_:_]")
-      #|pub fn Bytes::sub(self : Bytes, start? : Int = 0, end? : Int) -> BytesView {
-      #|  let len = self.length()
-      #|  let end = match end {
-      #|    None => len
-      #|    Some(end) => if end < 0 { len + end } else { end }
-      #|  }
-      #|  let start = if start < 0 { len + start } else { start }
-      #|  guard start >= 0 && start <= end && end <= len else {
-      #|    abort("Invalid index for View")
-      #|  }
-      #|  BytesView::make(self, start, end - start)
+      #|#deprecated("Use `Bytes::from_array` instead")
+      #|pub fn of(arr : ArrayView[Byte]) -> Bytes {
+      #|  Bytes::from_array(arr)
       #|}
-      #|#alias("_[_:_]")
-      #|pub fn BytesView::sub(
-      #|  self : BytesView,
-      #|  start? : Int = 0,
-      #|  end? : Int,
-      #|) -> BytesView {
-      #|  let len = self.length()
-      #|  let end = match end {
-      #|    None => len
-      #|    Some(end) => if end < 0 { len + end } else { end }
-      #|  }
-      #|  let start = if start < 0 { len + start } else { start }
-      #|  guard start >= 0 && start <= end && end <= len else {
-      #|    abort("Invalid index for View")
-      #|  }
-      #|  BytesView::make(self.bytes(), self.start() + start, end - start)
-      #|}
-      #|pub fn BytesView::iter(self : BytesView) -> Iter[Byte] {
-      #|  Iter::new(yield_ => for i in 0..<self.length() {
-      #|    guard yield_(self[i]) is IterContinue else { break IterEnd }
-      #|  } else {
-      #|    IterContinue
-      #|  })
-      #|}
-      #|pub fn BytesView::iter2(self : BytesView) -> Iter2[Int, Byte] {
-      #|  Iter2::new(yield_ => for i in 0..<self.length() {
-      #|    if yield_(i, self[i]) is IterEnd {
-      #|      break IterEnd
-      #|    }
-      #|  } else {
-      #|    IterContinue
-      #|  })
-      #|}
-      #|pub fn BytesView::iterator(self : BytesView) -> Iterator[Byte] {
-      #|  let mut i = 0
-      #|  let len = self.length()
-      #|  Iterator::new(fn() {
-      #|    guard i < len else { None }
-      #|    let result = self.unsafe_get(i)
-      #|    i += 1
-      #|    Some(result)
-      #|  })
-      #|}
-      #|pub fn BytesView::iterator2(self : BytesView) -> Iterator2[Int, Byte] {
-      #|  let mut i = 0
-      #|  let len = self.length()
-      #|  Iterator2::new(fn() {
-      #|    guard i < len else { None }
-      #|    let result = (i, self.unsafe_get(i))
-      #|    i += 1
-      #|    Some(result)
-      #|  })
-      #|}
-      #|#deprecated("Use bits pattern directly")
-      #|#doc(hidden)
-      #|pub fn BytesView::to_uint_be(self : BytesView) -> UInt {
-      #|  (self[0].to_uint() << 24) +
-      #|  (self[1].to_uint() << 16) +
-      #|  (self[2].to_uint() << 8) +
-      #|  self[3].to_uint()
-      #|}
-      #|#deprecated("Use bits pattern directly")
-      #|#doc(hidden)
-      #|pub fn BytesView::to_uint_le(self : BytesView) -> UInt {
-      #|  self[0].to_uint() +
-      #|  (self[1].to_uint() << 8) +
-      #|  (self[2].to_uint() << 16) +
-      #|  (self[3].to_uint() << 24)
-      #|}
-      #|#deprecated("Use bits pattern directly")
-      #|#doc(hidden)
-      #|pub fn BytesView::to_uint64_be(self : BytesView) -> UInt64 {
-      #|  (self[0].to_uint().to_uint64() << 56) +
-      #|  (self[1].to_uint().to_uint64() << 48) +
-      #|  (self[2].to_uint().to_uint64() << 40) +
-      #|  (self[3].to_uint().to_uint64() << 32) +
-      #|  (self[4].to_uint().to_uint64() << 24) +
-      #|  (self[5].to_uint().to_uint64() << 16) +
-      #|  (self[6].to_uint().to_uint64() << 8) +
-      #|  self[7].to_uint().to_uint64()
-      #|}
-      #|#deprecated("Use bits pattern directly")
-      #|#doc(hidden)
-      #|pub fn BytesView::to_uint64_le(self : BytesView) -> UInt64 {
-      #|  self[0].to_uint().to_uint64() +
-      #|  (self[1].to_uint().to_uint64() << 8) +
-      #|  (self[2].to_uint().to_uint64() << 16) +
-      #|  (self[3].to_uint().to_uint64() << 24) +
-      #|  (self[4].to_uint().to_uint64() << 32) +
-      #|  (self[5].to_uint().to_uint64() << 40) +
-      #|  (self[6].to_uint().to_uint64() << 48) +
-      #|  (self[7].to_uint().to_uint64() << 56)
-      #|}
-      #|#deprecated
-      #|#doc(hidden)
-      #|pub fn BytesView::to_int_be(self : BytesView) -> Int {
-      #|  guard self is [u32be(u32), ..]
-      #|  u32.reinterpret_as_int()
-      #|}
-      #|#deprecated
-      #|#doc(hidden)
-      #|pub fn BytesView::to_int_le(self : BytesView) -> Int {
-      #|  guard self is [u32le(u32), ..]
-      #|  u32.reinterpret_as_int()
-      #|}
-      #|#deprecated
-      #|#doc(hidden)
-      #|pub fn BytesView::to_int64_be(self : BytesView) -> Int64 {
-      #|  guard self is [u64be(u64), ..]
-      #|  u64.reinterpret_as_int64()
-      #|}
-      #|#deprecated
-      #|#doc(hidden)
-      #|pub fn BytesView::to_int64_le(self : BytesView) -> Int64 {
-      #|  guard self is [u64le(u64), ..]
-      #|  u64.reinterpret_as_int64()
-      #|}
-      #|#deprecated("Use bits pattern directly")
-      #|#doc(hidden)
-      #|pub fn BytesView::to_double_be(self : BytesView) -> Double {
-      #|  guard self is [u64be(u64), ..]
-      #|  u64.reinterpret_as_double()
-      #|}
-      #|#deprecated("Use bits pattern directly")
-      #|#doc(hidden)
-      #|pub fn BytesView::to_double_le(self : BytesView) -> Double {
-      #|  guard self is [u64le(u64), ..]
-      #|  u64.reinterpret_as_double()
-      #|}
-      #|pub impl Show for BytesView with output(self, logger) {
-      #|  logger.write_string("b\"")
-      #|  for byte in self {
-      #|    if byte is (' '..='~') && byte != '"' && byte != '\\' {
-      #|      logger.write_char(byte.to_char())
-      #|    } else {
-      #|      logger..write_string("\\x")..write_string(byte.to_hex())
-      #|    }
-      #|  }
-      #|  logger.write_string("\"")
-      #|}
-      #|pub impl Show for Bytes with output(self, logger) {
-      #|  BytesView::output(self[:], logger)
-      #|}
-      #|pub impl Eq for BytesView with equal(self, other) -> Bool {
-      #|  guard self.length() == other.length() else { return false }
-      #|  for i in 0..<self.length() {
-      #|    guard self.unsafe_get(i) == other.unsafe_get(i) else { return false }
-      #|  }
-      #|  true
-      #|}
-      #|pub impl Compare for BytesView with compare(self, other) -> Int {
-      #|  let self_len = self.length()
-      #|  let other_len = other.length()
-      #|  let cmp = self_len.compare(other_len)
-      #|  guard cmp == 0 else { return cmp }
-      #|  for i in 0..<self_len {
-      #|    let b1 = self.unsafe_get(i)
-      #|    let b2 = other.unsafe_get(i)
-      #|    let cmp = b1.compare(b2)
-      #|    guard cmp == 0 else { return cmp }
-      #|  }
-      #|  0
-      #|}
-      #|pub fn BytesView::data(self : BytesView) -> Bytes {
-      #|  self.bytes()
-      #|}
-      #|pub fn BytesView::start_offset(self : BytesView) -> Int {
-      #|  self.start()
-      #|}
-      #|pub fn BytesView::to_bytes(self : BytesView) -> Bytes {
-      #|  if self.length() == self.bytes().length() {
-      #|    return self.bytes()
-      #|  }
-      #|  let bytes = FixedArray::make(self.length(), (0 : Byte))
-      #|  bytes.blit_from_bytes(0, self.bytes(), self.start_offset(), self.length())
-      #|  unsafe_to_bytes(bytes)
-      #|}
-      #|pub impl ToJson for BytesView with to_json(self) -> Json {
-      #|  let sb = StringBuilder::new()
-      #|  for byte in self {
-      #|    if byte is (' '..='~') && byte != '"' && byte != '\\' {
-      #|      sb.write_char(byte.to_char())
-      #|    } else {
-      #|      sb..write_string("\\x")..write_string(byte.to_hex())
-      #|    }
-      #|  }
-      #|  Json::string(sb.to_string())
-      #|}
-      #|pub impl ToJson for Bytes with to_json(self : Bytes) -> Json {
-      #|  BytesView::to_json(self[:])
+      #|#deprecated("Use `Bytes::from_array` instead")
+      #|pub fn from_array(arr : ArrayView[Byte]) -> Bytes {
+      #|  Bytes::from_array(arr)
       #|}
     ),
   },
@@ -17369,25 +17498,7 @@ let moonbitlang_core_deque_module : RuntimePackage = RuntimePackage::new(
       #|  }
       #|}
       #|pub fn[A] Deque::iter(self : Deque[A]) -> Iter[A] {
-      #|  Iter::new(yield_ => {
-      #|    guard !self.is_empty() else { IterContinue }
-      #|    let { head, buf, len, .. } = self
-      #|    let cap = buf.length()
-      #|    let head_len = cap - head
-      #|    if head_len >= len {
-      #|      for i in head..<(head + len) {
-      #|        guard yield_(buf[i]) is IterContinue else { return IterEnd }
-      #|      }
-      #|    } else {
-      #|      for i in head..<cap {
-      #|        guard yield_(buf[i]) is IterContinue else { return IterEnd }
-      #|      }
-      #|      for i in 0..<(len - head_len) {
-      #|        guard yield_(buf[i]) is IterContinue else { return IterEnd }
-      #|      }
-      #|    }
-      #|    IterContinue
-      #|  })
+      #|  self.iterator().iter()
       #|}
       #|pub fn[A] Deque::iterator(self : Deque[A]) -> Iterator[A] {
       #|  let mut index = 0
@@ -17399,29 +17510,7 @@ let moonbitlang_core_deque_module : RuntimePackage = RuntimePackage::new(
       #|  })
       #|}
       #|pub fn[A] Deque::iter2(self : Deque[A]) -> Iter2[Int, A] {
-      #|  Iter2::new(yield_ => {
-      #|    guard !self.is_empty() else { IterContinue }
-      #|    let { head, buf, len, .. } = self
-      #|    let cap = buf.length()
-      #|    let head_len = cap - head
-      #|    let mut j = 0
-      #|    if head_len >= len {
-      #|      for i in head..<(head + len) {
-      #|        guard yield_(j, buf[i]) is IterContinue else { return IterEnd }
-      #|        j += 1
-      #|      }
-      #|    } else {
-      #|      for i in head..<cap {
-      #|        guard yield_(j, buf[i]) is IterContinue else { return IterEnd }
-      #|        j += 1
-      #|      }
-      #|      for i in 0..<(len - head_len) {
-      #|        guard yield_(j, buf[i]) is IterContinue else { return IterEnd }
-      #|        j += 1
-      #|      }
-      #|    }
-      #|    IterContinue
-      #|  })
+      #|  self.iterator2().iter2()
       #|}
       #|pub fn[A] Deque::iterator2(self : Deque[A]) -> Iterator2[Int, A] {
       #|  let mut index = 0
@@ -17433,25 +17522,7 @@ let moonbitlang_core_deque_module : RuntimePackage = RuntimePackage::new(
       #|  })
       #|}
       #|pub fn[A] Deque::rev_iter(self : Deque[A]) -> Iter[A] {
-      #|  Iter::new(yield_ => {
-      #|    guard !self.is_empty() else { IterContinue }
-      #|    let { head, buf, len, .. } = self
-      #|    let cap = buf.length()
-      #|    let head_len = cap - head
-      #|    if head_len >= len {
-      #|      for i = head + len - 1; i >= head; i = i - 1 {
-      #|        guard yield_(buf[i]) is IterContinue else { return IterEnd }
-      #|      }
-      #|    } else {
-      #|      for i = len - head_len - 1; i >= 0; i = i - 1 {
-      #|        guard yield_(buf[i]) is IterContinue else { return IterEnd }
-      #|      }
-      #|      for i = cap - 1; i >= head; i = i - 1 {
-      #|        guard yield_(buf[i]) is IterContinue else { return IterEnd }
-      #|      }
-      #|    }
-      #|    IterContinue
-      #|  })
+      #|  self.rev_iterator().iter()
       #|}
       #|pub fn[A] Deque::rev_iterator(self : Deque[A]) -> Iterator[A] {
       #|  let mut index = self.len
@@ -17462,29 +17533,7 @@ let moonbitlang_core_deque_module : RuntimePackage = RuntimePackage::new(
       #|  })
       #|}
       #|pub fn[A] Deque::rev_iter2(self : Deque[A]) -> Iter2[Int, A] {
-      #|  Iter2::new(yield_ => {
-      #|    guard !self.is_empty() else { IterContinue }
-      #|    let { head, buf, len, .. } = self
-      #|    let cap = buf.length()
-      #|    let head_len = cap - head
-      #|    let mut j = 0
-      #|    if head_len >= len {
-      #|      for i = head + len - 1; i >= head; i = i - 1 {
-      #|        guard yield_(j, buf[i]) is IterContinue else { return IterEnd }
-      #|        j += 1
-      #|      }
-      #|    } else {
-      #|      for i = len - head_len - 1; i >= 0; i = i - 1 {
-      #|        guard yield_(j, buf[i]) is IterContinue else { return IterEnd }
-      #|        j += 1
-      #|      }
-      #|      for i = cap - 1; i >= head; i = i - 1 {
-      #|        guard yield_(j, buf[i]) is IterContinue else { return IterEnd }
-      #|        j += 1
-      #|      }
-      #|    }
-      #|    IterContinue
-      #|  })
+      #|  self.rev_iterator2().iter2()
       #|}
       #|pub fn[A] Deque::rev_iterator2(self : Deque[A]) -> Iterator2[Int, A] {
       #|  let mut rev_index = self.len
@@ -17819,7 +17868,6 @@ let moonbitlang_core_double_module : RuntimePackage = RuntimePackage::new(
   "moonbitlang/core/double",
   deps={
     "moonbitlang/core/builtin": moonbitlang_core_builtin_module,
-    "moonbitlang/core/int64": moonbitlang_core_int64_module,
     "moonbitlang/core/uint64": moonbitlang_core_uint64_module,
     "moonbitlang/core/double/internal/ryu": moonbitlang_core_double_internal_ryu_module,
   },
@@ -17828,11 +17876,13 @@ let moonbitlang_core_double_module : RuntimePackage = RuntimePackage::new(
       #|{
       #|  "import": [
       #|    "moonbitlang/core/builtin",
-      #|    "moonbitlang/core/int64",
       #|    "moonbitlang/core/uint64",
       #|    "moonbitlang/core/double/internal/ryu"
       #|  ],
-      #|  "test-import": ["moonbitlang/core/bytes"],
+      #|  "test-import": [
+      #|    "moonbitlang/core/bytes",
+      #|    "moonbitlang/core/buffer"
+      #|  ],
       #|  "targets": {
       #|    "exp_js.mbt": ["js"],
       #|    "exp_nonjs.mbt": ["not", "js"],
@@ -17940,9 +17990,13 @@ let moonbitlang_core_double_module : RuntimePackage = RuntimePackage::new(
       #|    ) ||
       #|    diff <= absolute_tolerance
       #|}
+      #|#deprecated
+      #|#doc(hidden)
       #|pub fn Double::to_be_bytes(self : Double) -> Bytes {
       #|  self.reinterpret_as_uint64().to_be_bytes()
       #|}
+      #|#deprecated
+      #|#doc(hidden)
       #|pub fn Double::to_le_bytes(self : Double) -> Bytes {
       #|  self.reinterpret_as_uint64().to_le_bytes()
       #|}
@@ -18474,7 +18528,7 @@ let moonbitlang_core_double_internal_ryu_module : RuntimePackage = RuntimePackag
       #|  ]
       #|}
     ),
-    "common.mbt": (
+    "ryu.mbt": (
       #|fn pow5bits(e : Int) -> Int {
       #|  ((e * 1217359).reinterpret_as_uint() >> 19).reinterpret_as_int() + 1
       #|}
@@ -18494,8 +18548,6 @@ let moonbitlang_core_double_internal_ryu_module : RuntimePackage = RuntimePackag
       #|fn log10Pow2(e : Int) -> Int {
       #|  ((e * 78913).reinterpret_as_uint() >> 18).reinterpret_as_int()
       #|}
-    ),
-    "ryu.mbt": (
       #|fn string_from_bytes(bytes : FixedArray[Byte], from : Int, to : Int) -> String {
       #|  let buf = StringBuilder::new(size_hint=bytes.length())
       #|  for i in from..<to {
@@ -19863,20 +19915,15 @@ let moonbitlang_core_float_module : RuntimePackage = RuntimePackage::new(
       #|  end : Float,
       #|  inclusive? : Bool = false,
       #|) -> Iter[Float] {
-      #|  Iter::new(yield_ => {
-      #|    let mut i = self
-      #|    while i < end || (inclusive && i == end) {
-      #|      if yield_(i) is IterEnd {
-      #|        break IterEnd
-      #|      }
-      #|      if i == end {
-      #|        break IterContinue
-      #|      }
+      #|  let mut i = self
+      #|  Iterator::new(() => {
+      #|    guard i < end || (inclusive && i == end) else { None }
+      #|    let result = i
+      #|    if i != end {
       #|      i += 1
-      #|    } else {
-      #|      IterContinue
       #|    }
-      #|  })
+      #|    Some(result)
+      #|  }).iter()
       #|}
       #|pub fn Float::until(
       #|  self : Float,
@@ -19887,24 +19934,23 @@ let moonbitlang_core_float_module : RuntimePackage = RuntimePackage::new(
       #|  if step == 0.0 {
       #|    return Iter::empty()
       #|  }
-      #|  Iter::new(yield_ => {
-      #|    let mut i = self
-      #|    while (step > 0.0 && i < end) ||
-      #|          (step < 0.0 && i > end) ||
-      #|          (inclusive && i == end) {
-      #|      if yield_(i) is IterEnd {
-      #|        break IterEnd
-      #|      }
-      #|      let next = i + step
-      #|      if (step > 0.0 && next >= i) || (step < 0.0 && next <= i) {
-      #|        i = next
-      #|      } else {
-      #|        break IterContinue
-      #|      }
-      #|    } else {
-      #|      IterContinue
+      #|  let mut curr_value = Some(self)
+      #|  let iter = Iterator::new(() => {
+      #|    guard curr_value is Some(i) else { None }
+      #|    guard (step > 0.0 && i < end) ||
+      #|      (step < 0.0 && i > end) ||
+      #|      (inclusive && i == end) else {
+      #|      None
       #|    }
+      #|    let next = i + step
+      #|    if (step > 0.0 && next >= i) || (step < 0.0 && next <= i) {
+      #|      curr_value = Some(next)
+      #|    } else {
+      #|      curr_value = None
+      #|    }
+      #|    Some(i)
       #|  })
+      #|  iter.iter()
       #|}
       #|pub fn Float::to_double(self : Float) -> Double = "%f32.to_f64"
       #|pub impl ToJson for Float with to_json(self : Float) -> Json {
@@ -19918,6 +19964,8 @@ let moonbitlang_core_float_module : RuntimePackage = RuntimePackage::new(
       #|pub impl Mul for Float with mul(self, other) = "%f32.mul"
       #|pub impl Div for Float with div(self, other) = "%f32.div"
       #|pub impl Eq for Float with equal(self : Float, other : Float) -> Bool = "%f32.eq"
+      #|#deprecated("Use `a != b` instead")
+      #|#doc(hidden)
       #|pub fn Float::op_neq(self : Float, other : Float) -> Bool = "%f32.ne"
       #|pub impl Compare for Float with compare(self, other) = "%f32.compare"
       #|pub impl Compare for Float with op_lt(x, y) = "%f32.lt"
@@ -20601,13 +20649,7 @@ let moonbitlang_core_hashmap_module : RuntimePackage = RuntimePackage::new(
       #|  self.size = 0
       #|}
       #|pub fn[K, V] HashMap::iter(self : HashMap[K, V]) -> Iter[(K, V)] {
-      #|  Iter::new(yield_ => for entry in self.entries {
-      #|    if entry is Some({ key, value, .. }) {
-      #|      guard yield_((key, value)) is IterContinue else { break IterEnd }
-      #|    }
-      #|  } else {
-      #|    IterContinue
-      #|  })
+      #|  self.iterator().iter()
       #|}
       #|pub fn[K, V] HashMap::iterator(self : HashMap[K, V]) -> Iterator[(K, V)] {
       #|  let mut i = 0
@@ -20628,13 +20670,7 @@ let moonbitlang_core_hashmap_module : RuntimePackage = RuntimePackage::new(
       #|  self.iterator()
       #|}
       #|pub fn[K, V] HashMap::iter2(self : HashMap[K, V]) -> Iter2[K, V] {
-      #|  Iter2::new(yield_ => for entry in self.entries {
-      #|    if entry is Some({ key, value, .. }) {
-      #|      guard yield_(key, value) is IterContinue else { break IterEnd }
-      #|    }
-      #|  } else {
-      #|    IterContinue
-      #|  })
+      #|  self.iterator2().iter2()
       #|}
       #|#as_free_fn
       #|pub fn[K : Hash + Eq, V] HashMap::from_iter(
@@ -20729,22 +20765,30 @@ let moonbitlang_core_hashmap_module : RuntimePackage = RuntimePackage::new(
       #|  logger.write_string("])")
       #|}
       #|pub fn[K, V] HashMap::keys(self : HashMap[K, V]) -> Iter[K] {
-      #|  Iter::new(yield_ => for entry in self.entries {
+      #|  let mut i = 0
+      #|  let iter = Iterator::new(() => while i < self.entries.length() {
+      #|    let entry = self.entries[i]
+      #|    i += 1
       #|    if entry is Some({ key, .. }) {
-      #|      guard yield_(key) is IterContinue else { break IterEnd }
+      #|      break Some(key)
       #|    }
       #|  } else {
-      #|    IterContinue
+      #|    None
       #|  })
+      #|  iter.iter()
       #|}
       #|pub fn[K, V] HashMap::values(self : HashMap[K, V]) -> Iter[V] {
-      #|  Iter::new(yield_ => for entry in self.entries {
+      #|  let mut i = 0
+      #|  let iter = Iterator::new(() => while i < self.entries.length() {
+      #|    let entry = self.entries[i]
+      #|    i += 1
       #|    if entry is Some({ value, .. }) {
-      #|      guard yield_(value) is IterContinue else { break IterEnd }
+      #|      break Some(value)
       #|    }
       #|  } else {
-      #|    IterContinue
+      #|    None
       #|  })
+      #|  iter.iter()
       #|}
       #|#locals(f)
       #|pub fn[K, V] HashMap::retain(self : HashMap[K, V], f : (K, V) -> Bool) -> Unit {
@@ -21003,13 +21047,7 @@ let moonbitlang_core_hashset_module : RuntimePackage = RuntimePackage::new(
       #|  self.size = 0
       #|}
       #|pub fn[K] HashSet::iter(self : HashSet[K]) -> Iter[K] {
-      #|  Iter::new(yield_ => for entry in self.entries {
-      #|    if entry is Some({ key, .. }) {
-      #|      guard yield_(key) is IterContinue else { break IterEnd }
-      #|    }
-      #|  } else {
-      #|    IterContinue
-      #|  })
+      #|  self.iterator().iter()
       #|}
       #|pub fn[K] HashSet::iterator(self : HashSet[K]) -> Iterator[K] {
       #|  let mut i = 0
@@ -21483,7 +21521,7 @@ let moonbitlang_core_immut_array_module : RuntimePackage = RuntimePackage::new(
       #|  self.concat(other)
       #|}
       #|pub fn[A] T::iter(self : T[A]) -> Iter[A] {
-      #|  self.tree.iter()
+      #|  self.tree.iterator().iter()
       #|}
       #|pub fn[A] T::iterator(self : T[A]) -> Iterator[A] {
       #|  self.tree.iterator()
@@ -21797,18 +21835,6 @@ let moonbitlang_core_immut_array_module : RuntimePackage = RuntimePackage::new(
       #|    Node(ns, _) => ns.each(t => t.each(f))
       #|  }
       #|}
-      #|fn[A] Tree::iter(self : Tree[A]) -> Iter[A] {
-      #|  Iter::new(yield_ => match self {
-      #|    Empty => IterContinue
-      #|    Leaf(l) => l.iter().run(yield_)
-      #|    Node(ns, _) =>
-      #|      for n in ns {
-      #|        guard n.iter().run(yield_) is IterContinue else { break IterEnd }
-      #|      } else {
-      #|        IterContinue
-      #|      }
-      #|  })
-      #|}
       #|fn[A] Tree::iterator(self : Tree[A]) -> Iterator[A] {
       #|  let mut curr_tree = self
       #|  let mut curr_index = 0
@@ -21818,6 +21844,7 @@ let moonbitlang_core_immut_array_module : RuntimePackage = RuntimePackage::new(
       #|      Node(children, _) as t if curr_index < children.length() => {
       #|        let child = children.unsafe_get(curr_index)
       #|        parents.push((t, curr_index + 1))
+      #|        curr_tree = child
       #|        curr_index = 0
       #|        continue child
       #|      }
@@ -23000,11 +23027,7 @@ let moonbitlang_core_immut_hashmap_module : RuntimePackage = RuntimePackage::new
       #|  self.iterator()
       #|}
       #|pub fn[K, V] HashMap::iter2(self : HashMap[K, V]) -> Iter2[K, V] {
-      #|  Iter2::new(yield_ => for kv in self {
-      #|    guard yield_(kv.0, kv.1) is IterContinue else { break IterEnd }
-      #|  } else {
-      #|    IterContinue
-      #|  })
+      #|  self.iterator2().iter2()
       #|}
       #|#as_free_fn
       #|pub fn[K : Eq + Hash, V] HashMap::from_iter(
@@ -23902,10 +23925,8 @@ let moonbitlang_core_immut_list_module : RuntimePackage = RuntimePackage::new(
       #|    "moonbitlang/core/json",
       #|    "moonbitlang/core/option"
       #|  ],
-      #|  "test-import": [
-      #|    "moonbitlang/core/double"
-      #|  ],
-      #|  "alert-list": "-deprecated",
+      #|  "test-import": ["moonbitlang/core/double"],
+      #|  "warn-list": "-deprecated",
       #|  "targets": {
       #|    "panic_test.mbt": ["not", "native", "llvm"]
       #|  }
@@ -24738,14 +24759,7 @@ let moonbitlang_core_immut_priority_queue_module : RuntimePackage = RuntimePacka
       #|  arr
       #|}
       #|pub fn[A : Compare] PriorityQueue::iter(self : PriorityQueue[A]) -> Iter[A] {
-      #|  Iter::new(yield_ => {
-      #|    let arr = self.to_array()
-      #|    for i in 0..<arr.length() {
-      #|      guard yield_(arr[i]) is IterContinue else { break IterEnd }
-      #|    } else {
-      #|      IterContinue
-      #|    }
-      #|  })
+      #|  self.iterator().iter()
       #|}
       #|pub fn[A : Compare] PriorityQueue::iterator(
       #|  self : PriorityQueue[A],
@@ -25618,22 +25632,7 @@ let moonbitlang_core_immut_sorted_map_module : RuntimePackage = RuntimePackage::
       #|  }
       #|}
       #|pub fn[K, V] SortedMap::iter(self : SortedMap[K, V]) -> Iter[(K, V)] {
-      #|  Iter::new(yield_ => {
-      #|    fn go(t) {
-      #|      match t {
-      #|        Empty => IterContinue
-      #|        Tree(k, value~, l, r, ..) =>
-      #|          if go(l) is IterEnd {
-      #|            IterEnd
-      #|          } else if yield_((k, value)) is IterEnd {
-      #|            IterEnd
-      #|          } else {
-      #|            go(r)
-      #|          }
-      #|      }
-      #|    }
-      #|    go(self)
-      #|  })
+      #|  self.iterator().iter()
       #|}
       #|pub fn[K, V] SortedMap::iterator(self : SortedMap[K, V]) -> Iterator[(K, V)] {
       #|  let mut curr_node = self
@@ -25660,22 +25659,7 @@ let moonbitlang_core_immut_sorted_map_module : RuntimePackage = RuntimePackage::
       #|  self.iterator()
       #|}
       #|pub fn[K, V] SortedMap::iter2(self : SortedMap[K, V]) -> Iter2[K, V] {
-      #|  Iter2::new(yield_ => {
-      #|    fn go(t) {
-      #|      match t {
-      #|        Empty => IterContinue
-      #|        Tree(k, value~, l, r, ..) =>
-      #|          if go(l) is IterEnd {
-      #|            IterEnd
-      #|          } else if yield_(k, value) is IterEnd {
-      #|            IterEnd
-      #|          } else {
-      #|            go(r)
-      #|          }
-      #|      }
-      #|    }
-      #|    go(self)
-      #|  })
+      #|  self.iterator2().iter2()
       #|}
       #|#as_free_fn
       #|pub fn[K : Compare, V] SortedMap::from_iter(
@@ -25728,22 +25712,7 @@ let moonbitlang_core_immut_sorted_set_module : RuntimePackage = RuntimePackage::
     "deprecated.mbt": "",
     "generic.mbt": (
       #|pub fn[A] SortedSet::iter(self : SortedSet[A]) -> Iter[A] {
-      #|  Iter::new(yield_ => {
-      #|    fn go(t) {
-      #|      match t {
-      #|        Empty => IterContinue
-      #|        Node(left~, right~, value~, ..) =>
-      #|          if go(left) is IterEnd {
-      #|            IterEnd
-      #|          } else if yield_(value) is IterEnd {
-      #|            IterEnd
-      #|          } else {
-      #|            go(right)
-      #|          }
-      #|      }
-      #|    }
-      #|    go(self)
-      #|  })
+      #|  self.iterator().iter()
       #|}
       #|pub fn[A] SortedSet::iterator(self : SortedSet[A]) -> Iterator[A] {
       #|  let mut curr_node = self
@@ -26990,10 +26959,12 @@ let moonbitlang_core_json_module : RuntimePackage = RuntimePackage::new(
       #|}
     ),
     "json.mbt": (
+      #|#deprecated("Suggestion: `if json is Null { Some(()) } else { None }`")
       #|pub fn Json::as_null(self : Json) -> Unit? {
       #|  guard self is Null else { return None }
       #|  Some(())
       #|}
+      #|#deprecated("Suggestion: `if json is True { Some(true) } else if json is False { Some(false) } else { None }`")
       #|pub fn Json::as_bool(self : Json) -> Bool? {
       #|  match self {
       #|    True => Some(true)
@@ -27001,32 +26972,40 @@ let moonbitlang_core_json_module : RuntimePackage = RuntimePackage::new(
       #|    _ => None
       #|  }
       #|}
+      #|#deprecated("Suggestion: `if json is Number(n) { Some(n) } else { None }`")
       #|pub fn Json::as_number(self : Json) -> Double? {
       #|  guard self is Number(n, ..) else { return None }
       #|  Some(n)
       #|}
+      #|#deprecated("Suggestion: `if json is String(s) { Some(s) } else { None }`")
       #|pub fn Json::as_string(self : Json) -> String? {
       #|  guard self is String(s) else { return None }
       #|  Some(s)
       #|}
+      #|#deprecated("Suggestion: `if json is Array(array) { Some(array) } else { None }`")
       #|pub fn Json::as_array(self : Json) -> Array[Json]? {
       #|  guard self is Array(arr) else { return None }
       #|  Some(arr)
       #|}
+      #|#deprecated("Suggestion: `if json is Array(array) { array.get(index) } else { None }`")
       #|pub fn Json::item(self : Json, index : Int) -> Json? {
-      #|  match self.as_array() {
-      #|    Some(arr) => arr.get(index)
-      #|    None => None
+      #|  if self is Array(arr) {
+      #|    arr.get(index)
+      #|  } else {
+      #|    None
       #|  }
       #|}
+      #|#deprecated
       #|pub fn Json::as_object(self : Json) -> Map[String, Json]? {
       #|  guard self is Object(obj) else { return None }
       #|  Some(obj)
       #|}
+      #|#deprecated("Suggestion: `if json is Object(obj) { obj.get(key) } else { None }`")
       #|pub fn Json::value(self : Json, key : String) -> Json? {
-      #|  match self.as_object() {
-      #|    Some(obj) => obj.get(key)
-      #|    None => None
+      #|  if self is Object(obj) {
+      #|    obj.get(key)
+      #|  } else {
+      #|    None
       #|  }
       #|}
       #|fn indent_str(level : Int, indent : Int) -> String {
@@ -27225,8 +27204,8 @@ let moonbitlang_core_json_module : RuntimePackage = RuntimePackage::new(
       #|  loc~ : SourceLoc,
       #|  args_loc~ : ArgsLoc,
       #|) -> Unit raise InspectError {
-      #|  let loc = loc.to_string().escape()
-      #|  let args_loc = args_loc.to_json().escape()
+      #|  let loc = loc.to_json_string()
+      #|  let args_loc = args_loc.to_json()
       #|  let actual = obj.to_json().stringify(escape_slash=false)
       #|  let want = match content {
       #|    None => "".to_json().stringify(escape_slash=false)
@@ -27820,6 +27799,7 @@ let moonbitlang_core_json_module : RuntimePackage = RuntimePackage::new(
       #|    _ => return false
       #|  }
       #|}
+      #|#label_migration(max_nesting_depth, fill=false)
       #|pub fn parse(
       #|  input : StringView,
       #|  max_nesting_depth? : Int = 1024,
@@ -29247,15 +29227,7 @@ let moonbitlang_core_list_module : RuntimePackage = RuntimePackage::new(
       #|  Empty
       #|}
       #|pub fn[A] List::iter(self : List[A]) -> Iter[A] {
-      #|  Iter::new(yield_ => loop self {
-      #|    Empty => IterContinue
-      #|    More(head, tail~) => {
-      #|      if yield_(head) is IterEnd {
-      #|        break IterEnd
-      #|      }
-      #|      continue tail
-      #|    }
-      #|  })
+      #|  self.iterator().iter()
       #|}
       #|pub fn[A] List::iterator(self : List[A]) -> Iterator[A] {
       #|  let mut next = self
@@ -29270,15 +29242,7 @@ let moonbitlang_core_list_module : RuntimePackage = RuntimePackage::new(
       #|  })
       #|}
       #|pub fn[A] List::iter2(self : List[A]) -> Iter2[Int, A] {
-      #|  Iter2::new(yield_ => loop (self, 0) {
-      #|    (Empty, _) => IterEnd
-      #|    (More(head, tail~), i) => {
-      #|      if yield_(i, head) is IterEnd {
-      #|        break IterEnd
-      #|      }
-      #|      continue (tail, i + 1)
-      #|    }
-      #|  })
+      #|  self.iterator2().iter2()
       #|}
       #|pub fn[A] List::iterator2(self : List[A]) -> Iterator2[Int, A] {
       #|  let mut i = 0
@@ -29741,11 +29705,15 @@ let moonbitlang_core_math_module : RuntimePackage = RuntimePackage::new(
       #|  let ori_x = x
       #|  let mut x = x
       #|  let one = 1.0
-      #|  let halF = [0.5, -0.5]
+      #|  let halF : ReadOnlyArray[Double] = [0.5, -0.5]
       #|  let o_threshold = 7.09782712893383973096e+02
       #|  let u_threshold = -7.45133219101941108420e+02
-      #|  let ln2HI = [6.93147180369123816490e-01, -6.93147180369123816490e-01]
-      #|  let ln2LO = [1.90821492927058770002e-10, -1.90821492927058770002e-10]
+      #|  let ln2HI : ReadOnlyArray[Double] = [
+      #|    6.93147180369123816490e-01, -6.93147180369123816490e-01,
+      #|  ]
+      #|  let ln2LO : ReadOnlyArray[Double] = [
+      #|    1.90821492927058770002e-10, -1.90821492927058770002e-10,
+      #|  ]
       #|  let invln2 = 1.44269504088896338700e+00
       #|  let p1 = 1.66666666666666019037e-01
       #|  let p2 = -2.77777777770155933842e-03
@@ -31888,15 +31856,15 @@ let moonbitlang_core_math_module : RuntimePackage = RuntimePackage::new(
       #|  if x.is_nan() || x == 0.0 {
       #|    return x
       #|  }
-      #|  let atan_hi = [
+      #|  let atan_hi : ReadOnlyArray[Double] = [
       #|    4.63647609000806093515e-01, 7.85398163397448278999e-01, 9.82793723247329054082e-01,
       #|    1.57079632679489655800e+00,
       #|  ]
-      #|  let atan_lo = [
+      #|  let atan_lo : ReadOnlyArray[Double] = [
       #|    2.26987774529616870924e-17, 3.06161699786838301793e-17, 1.39033110312309984516e-17,
       #|    6.12323399573676603587e-17,
       #|  ]
-      #|  let a_t = [
+      #|  let a_t : ReadOnlyArray[Double] = [
       #|    3.33333333333329318027e-01, -1.99999999998764832476e-01, 1.42857142725034663711e-01,
       #|    -1.11111104054623557880e-01, 9.09088713343650656196e-02, -7.69187620504482999495e-02,
       #|    6.66107313738753120669e-02, -5.83357013379057348645e-02, 4.97687799461593236017e-02,
@@ -32130,7 +32098,7 @@ let moonbitlang_core_math_module : RuntimePackage = RuntimePackage::new(
       #|  nx : Int,
       #|  prec : Int,
       #|) -> Int {
-      #|  let init_jk = [2, 3, 4, 6]
+      #|  let init_jk : ReadOnlyArray[Int] = [2, 3, 4, 6]
       #|  let two24 : Double = 16777216.0 // 0x41700000, 0x00000000
       #|  let twon24 : Double = 5.96046447753906250000e-08 // 0x3E700000, 0x00000000
       #|  let mut jz : Int = 0
@@ -32436,7 +32404,7 @@ let moonbitlang_core_math_module : RuntimePackage = RuntimePackage::new(
       #|  let mut v = 0.0
       #|  let mut w = 0.0
       #|  let mut s = 0.0
-      #|  let t = [
+      #|  let t : ReadOnlyArray[Double] = [
       #|    3.33333333333334091986e-01, // 3FD55555, 55555563 */
       #|     1.33333333333201242699e-01, // 3FC11111, 1110FE7A */
       #|     5.39682539762260521377e-02, // 3FABA1BA, 1BB341FE */
@@ -32701,6 +32669,7 @@ let moonbitlang_core_prelude_module : RuntimePackage = RuntimePackage::new(
     "moonbitlang/core/builtin": moonbitlang_core_builtin_module,
     "moonbitlang/core/bigint": moonbitlang_core_bigint_module,
     "moonbitlang/core/set": moonbitlang_core_set_module,
+    "moonbitlang/core/json": moonbitlang_core_json_module,
   },
   files={
     "moon.pkg.json": (
@@ -32708,9 +32677,10 @@ let moonbitlang_core_prelude_module : RuntimePackage = RuntimePackage::new(
       #|  "import": [
       #|    "moonbitlang/core/builtin",
       #|    "moonbitlang/core/bigint",
-      #|    "moonbitlang/core/set"
+      #|    "moonbitlang/core/set",
+      #|    "moonbitlang/core/json"
       #|  ],
-      #|  "alert-list": "-test_import_all"
+      #|  "warn-list": "-test_unqualified_package"
       #|}
     ),
     "prelude.mbt": (
@@ -32752,6 +32722,7 @@ let moonbitlang_core_prelude_module : RuntimePackage = RuntimePackage::new(
       #|  type ArgsLoc,
       #|  type Array,
       #|  type ArrayView,
+      #|  type MutArrayView,
       #|  type UninitializedArray,
       #|  type Failure,
       #|  type Hasher,
@@ -32775,6 +32746,7 @@ let moonbitlang_core_prelude_module : RuntimePackage = RuntimePackage::new(
       #|  f(value)
       #|}
       #|pub let null : Json = @builtin.null
+      #|pub using @json {trait FromJson}
     ),
   },
 )
@@ -32861,16 +32833,7 @@ let moonbitlang_core_priority_queue_module : RuntimePackage = RuntimePackage::ne
       #|  arr
       #|}
       #|pub fn[A : Compare] PriorityQueue::iter(self : PriorityQueue[A]) -> Iter[A] {
-      #|  Iter::new(yield_ => {
-      #|    let arr = self.to_array()
-      #|    for i in 0..<arr.length() {
-      #|      if yield_(arr[i]) is IterEnd {
-      #|        break IterEnd
-      #|      }
-      #|    } else {
-      #|      IterContinue
-      #|    }
-      #|  })
+      #|  self.iterator().iter()
       #|}
       #|pub fn[A : Compare] PriorityQueue::iterator(
       #|  self : PriorityQueue[A],
@@ -33201,15 +33164,7 @@ let moonbitlang_core_queue_module : RuntimePackage = RuntimePackage::new(
       #|  }
       #|}
       #|pub fn[A] Queue::iter(self : Queue[A]) -> Iter[A] {
-      #|  Iter::new(yield_ => loop self.first {
-      #|    Some({ content, next }) => {
-      #|      if yield_(content) is IterEnd {
-      #|        break IterEnd
-      #|      }
-      #|      continue next
-      #|    }
-      #|    None => IterContinue
-      #|  })
+      #|  self.iterator().iter()
       #|}
       #|pub fn[A] Queue::iterator(self : Queue[A]) -> Iterator[A] {
       #|  let mut next_node = self.first
@@ -33405,15 +33360,19 @@ let moonbitlang_core_quickcheck_module : RuntimePackage = RuntimePackage::new(
       #|  }
       #|  s
       #|}
-      #|pub impl[X : Arbitrary] Arbitrary for Iter[X] with arbitrary(size, rs) {
+      #|pub impl[X : Arbitrary] Arbitrary for Iterator[X] with arbitrary(size, rs) {
       #|  let len = if size == 0 { 0 } else { rs.next_positive_int() % size }
-      #|  Iter::new(yield_ => for i in 0..<len {
-      #|    if yield_(X::arbitrary(i, rs)) is IterEnd {
-      #|      break IterEnd
-      #|    }
-      #|  } else {
-      #|    IterContinue
+      #|  let mut i = 0
+      #|  Iterator::new(() => {
+      #|    guard i < len else { None }
+      #|    let elem = X::arbitrary(i, rs)
+      #|    i += 1
+      #|    Some(elem)
       #|  })
+      #|}
+      #|pub impl[X : Arbitrary] Arbitrary for Iter[X] with arbitrary(size, rs) {
+      #|  let iter : Iterator[X] = Arbitrary::arbitrary(size, rs)
+      #|  iter.iter()
       #|}
       #|pub fn[T : Arbitrary] gen(size? : Int, state? : @splitmix.RandomState) -> T {
       #|  let size = match size {
@@ -33431,6 +33390,16 @@ let moonbitlang_core_quickcheck_module : RuntimePackage = RuntimePackage::new(
       #|    None
       #|  } else {
       #|    Some(Arbitrary::arbitrary(i, rs))
+      #|  }
+      #|}
+      #|pub impl[T : Arbitrary, E : Arbitrary] Arbitrary for Result[T, E] with arbitrary(
+      #|  size,
+      #|  rs,
+      #|) {
+      #|  if Arbitrary::arbitrary(size, rs) {
+      #|    Ok(T::arbitrary(size, rs))
+      #|  } else {
+      #|    Err(E::arbitrary(size, rs))
       #|  }
       #|}
       #|pub impl[X : Arbitrary] Arbitrary for FixedArray[X] with arbitrary(size, rs) {
@@ -34259,14 +34228,11 @@ let moonbitlang_core_ref_module : RuntimePackage = RuntimePackage::new(
 ///|
 let moonbitlang_core_result_module : RuntimePackage = RuntimePackage::new(
   "moonbitlang/core/result",
-  deps={
-    "moonbitlang/core/builtin": moonbitlang_core_builtin_module,
-    "moonbitlang/core/quickcheck": moonbitlang_core_quickcheck_module,
-  },
+  deps={ "moonbitlang/core/builtin": moonbitlang_core_builtin_module },
   files={
     "moon.pkg.json": (
       #|{
-      #|  "import": ["moonbitlang/core/builtin", "moonbitlang/core/quickcheck"],
+      #|  "import": ["moonbitlang/core/builtin"],
       #|  "targets": {
       #|    "panic_test.mbt": ["not", "native", "llvm"]
       #|  }
@@ -34298,230 +34264,6 @@ let moonbitlang_core_result_module : RuntimePackage = RuntimePackage::new(
       #|  match self {
       #|    Ok(value) => ok(value)
       #|    Err(error) => err(error)
-      #|  }
-      #|}
-    ),
-    "result.mbt": (
-      #|pub fn[T, E, U] Result::map(self : Result[T, E], f : (T) -> U) -> Result[U, E] {
-      #|  match self {
-      #|    Ok(value) => Ok(f(value))
-      #|    Err(err) => Err(err)
-      #|  }
-      #|}
-      #|test "map" {
-      #|  let x : Result[Int, Unit] = Ok(6)
-      #|  let y = x.map((v : Int) => v * 7)
-      #|  let z : Result[Int, Int] = Err(3)
-      #|  let w = z.map((v : Int) => v * 7)
-      #|  assert_eq(y, Ok(42))
-      #|  assert_eq(w, Err(3))
-      #|}
-      #|pub fn[T, E, F] Result::map_err(
-      #|  self : Result[T, E],
-      #|  f : (E) -> F,
-      #|) -> Result[T, F] {
-      #|  match self {
-      #|    Ok(value) => Ok(value)
-      #|    Err(err) => Err(f(err))
-      #|  }
-      #|}
-      #|test "map_err" {
-      #|  let x : Result[Int, String] = Err("error")
-      #|  let y = x.map_err((v : String) => v + "!")
-      #|  let z : Result[Int, Int] = Ok(6)
-      #|  let w = z.map_err((v : Int) => v + 6)
-      #|  assert_eq(y, Err("error!"))
-      #|  assert_eq(w, Ok(6))
-      #|}
-      #|pub fn[T, E] Result::or(self : Result[T, E], default : T) -> T {
-      #|  match self {
-      #|    Ok(value) => value
-      #|    Err(_) => default
-      #|  }
-      #|}
-      #|test "or" {
-      #|  let x : Result[Int, String] = Ok(6)
-      #|  let y : Result[Int, String] = Err("error")
-      #|  let z = x.or(0)
-      #|  let w = y.or(0)
-      #|  assert_eq(z, 6)
-      #|  assert_eq(w, 0)
-      #|}
-      #|pub fn[T, E] Result::or_else(self : Result[T, E], default : () -> T) -> T {
-      #|  match self {
-      #|    Ok(value) => value
-      #|    Err(_) => default()
-      #|  }
-      #|}
-      #|test "or_else" {
-      #|  let x : Result[Int, String] = Ok(6)
-      #|  let y : Result[Int, String] = Err("error")
-      #|  let z = x.or_else(() => 0)
-      #|  let w = y.or_else(() => 0)
-      #|  assert_eq(z, 6)
-      #|  assert_eq(w, 0)
-      #|}
-      #|pub fn[T, E] Result::flatten(self : Result[Result[T, E], E]) -> Result[T, E] {
-      #|  match self {
-      #|    Ok(value) => value
-      #|    Err(err) => Err(err)
-      #|  }
-      #|}
-      #|test "flatten" {
-      #|  let x : Result[Result[Int, String], String] = Ok(Ok(6))
-      #|  let y = x.flatten()
-      #|  let z : Result[Result[Int, String], String] = Err("error")
-      #|  let w = z.flatten()
-      #|  assert_eq(y, Ok(6))
-      #|  assert_eq(w, Err("error"))
-      #|}
-      #|pub fn[T, E, U] Result::bind(
-      #|  self : Result[T, E],
-      #|  g : (T) -> Result[U, E],
-      #|) -> Result[U, E] {
-      #|  match self {
-      #|    Ok(value) => g(value)
-      #|    Err(err) => Err(err)
-      #|  }
-      #|}
-      #|test "bind" {
-      #|  let x : Result[Int, String] = Ok(6)
-      #|  let y = x.bind((v : Int) => Ok(v * 7))
-      #|  assert_eq(y, Ok(42))
-      #|}
-      #|pub fn[T, E] Result::to_option(self : Result[T, E]) -> T? {
-      #|  match self {
-      #|    Ok(value) => Some(value)
-      #|    Err(_) => None
-      #|  }
-      #|}
-      #|test "to_option" {
-      #|  let x : Result[Int, String] = Ok(6)
-      #|  let y : Result[Int, String] = Err("error")
-      #|  let z = x.to_option()
-      #|  let w = y.to_option()
-      #|  assert_eq(z, Some(6))
-      #|  assert_eq(w, None)
-      #|}
-      #|pub impl[T : Compare, E : Compare] Compare for Result[T, E] with compare(
-      #|  self : Result[T, E],
-      #|  other : Result[T, E],
-      #|) -> Int {
-      #|  match (self, other) {
-      #|    (Ok(x), Ok(y)) => x.compare(y)
-      #|    (Ok(_), Err(_)) => -1
-      #|    (Err(_), Ok(_)) => 1
-      #|    (Err(x), Err(y)) => x.compare(y)
-      #|  }
-      #|}
-      #|test "compare" {
-      #|  let ok1 = Result::Ok(1)
-      #|  let ok2 = Result::Ok(2)
-      #|  let err1 = Result::Err(1)
-      #|  let err2 = Result::Err(2)
-      #|  assert_eq(0, ok1.compare(ok1))
-      #|  assert_eq(0, err2.compare(Result::Err(2)))
-      #|  assert_eq(-1, ok1.compare(ok2))
-      #|  assert_eq(1, ok2.compare(ok1))
-      #|  assert_eq(-1, err1.compare(err2))
-      #|  assert_eq(1, err2.compare(err1))
-      #|  assert_eq(-1, ok2.compare(err1))
-      #|  assert_eq(1, err1.compare(ok2))
-      #|}
-      #|pub fn[T, E] Result::unwrap(self : Result[T, E]) -> T {
-      #|  match self {
-      #|    Ok(x) => x
-      #|    Err(_) => abort("called `Result::unwrap()` on an `Err` value")
-      #|  }
-      #|}
-      #|pub fn[T, E] Result::unwrap_err(self : Result[T, E]) -> E {
-      #|  match self {
-      #|    Ok(_) => abort("called `Result::unwrap_err()` on an `Ok` value")
-      #|    Err(e) => e
-      #|  }
-      #|}
-      #|test "show" {
-      #|  let ok : Result[_, String] = Ok("hello")
-      #|  inspect(
-      #|    ok,
-      #|    content=(
-      #|      #|Ok("hello")
-      #|    ),
-      #|  )
-      #|  let err : Result[String, _] = Err("world")
-      #|  inspect(
-      #|    err,
-      #|    content=(
-      #|      #|Err("world")
-      #|    ),
-      #|  )
-      #|}
-      #|pub fn[T, E] Result::unwrap_or(self : Result[T, E], default : T) -> T {
-      #|  match self {
-      #|    Ok(value) => value
-      #|    Err(_) => default
-      #|  }
-      #|}
-      #|test "unwrap_or" {
-      #|  let x : Result[Int, String] = Ok(3)
-      #|  let y : Result[Int, String] = Err("error")
-      #|  assert_eq(x.unwrap_or(5), 3)
-      #|  assert_eq(y.unwrap_or(5), 5)
-      #|}
-      #|pub fn[T, E] Result::unwrap_or_else(
-      #|  self : Result[T, E],
-      #|  default : () -> T raise?,
-      #|) -> T raise? {
-      #|  match self {
-      #|    Ok(value) => value
-      #|    Err(_) => default()
-      #|  }
-      #|}
-      #|test "unwrap_or_else" {
-      #|  let x : Result[Int, String] = Ok(3)
-      #|  let y : Result[Int, String] = Err("error")
-      #|  assert_eq(x.unwrap_or_else(() => 5), 3)
-      #|  assert_eq(y.unwrap_or_else(() => 5), 5)
-      #|}
-      #|pub fn[T : Default, E] Result::unwrap_or_default(self : Result[T, E]) -> T {
-      #|  match self {
-      #|    Ok(value) => value
-      #|    Err(_) => T::default()
-      #|  }
-      #|}
-      #|test "unwrap_or_default" {
-      #|  let x : Result[Int, String] = Ok(3)
-      #|  let y : Result[Int, String] = Err("error")
-      #|  assert_eq(x.unwrap_or_default(), 3)
-      #|  assert_eq(y.unwrap_or_default(), 0)
-      #|}
-      #|pub fn[T, E : Error] Result::unwrap_or_error(self : Result[T, E]) -> T raise E {
-      #|  match self {
-      #|    Ok(x) => x
-      #|    Err(e) => raise e
-      #|  }
-      #|}
-      #|test "unwrap exn" {
-      #|  (try
-      #|    (Err(Failure("This is serious")) : Result[Unit, Failure]).unwrap_or_error()
-      #|    |> Ok
-      #|  catch {
-      #|    Failure(msg) => Err(msg)
-      #|  })
-      #|  |> inspect(
-      #|    content=(
-      #|      #|Err("This is serious")
-      #|    ),
-      #|  )
-      #|}
-      #|pub impl[T : @quickcheck.Arbitrary, E : @quickcheck.Arbitrary] @quickcheck.Arbitrary for Result[
-      #|  T,
-      #|  E,
-      #|] with arbitrary(size, rs) {
-      #|  if @quickcheck.Arbitrary::arbitrary(size, rs) {
-      #|    Ok(T::arbitrary(size, rs))
-      #|  } else {
-      #|    Err(E::arbitrary(size, rs))
       #|  }
       #|}
     ),
@@ -34826,13 +34568,7 @@ let moonbitlang_core_set_module : RuntimePackage = RuntimePackage::new(
       #|  self.tail = -1
       #|}
       #|pub fn[K] Set::iter(self : Set[K]) -> Iter[K] {
-      #|  Iter::new(yield_ => loop self.head {
-      #|    Some({ key, next, .. }) => {
-      #|      guard yield_(key) is IterContinue else { break IterEnd }
-      #|      continue next
-      #|    }
-      #|    None => break IterContinue
-      #|  })
+      #|  self.iterator().iter()
       #|}
       #|pub fn[K] Set::iterator(self : Set[K]) -> Iterator[K] {
       #|  let mut curr_entry = self.head
@@ -35165,40 +34901,38 @@ let moonbitlang_core_sorted_map_module : RuntimePackage = RuntimePackage::new(
       #|  })
       #|}
       #|pub fn[K, V] SortedMap::keys_as_iter(self : SortedMap[K, V]) -> Iter[K] {
-      #|  Iter::new(fn(yield_) {
-      #|    fn go(x : Node[K, V]?) {
-      #|      match x {
-      #|        None => IterContinue
-      #|        Some({ left, right, key, .. }) =>
-      #|          if go(left) is IterEnd {
-      #|            IterEnd
-      #|          } else if yield_(key) is IterEnd {
-      #|            IterEnd
-      #|          } else {
-      #|            go(right)
-      #|          }
+      #|  let todo_list = []
+      #|  let mut next_node = self.root
+      #|  Iterator::new(fn() {
+      #|    loop next_node {
+      #|      Some({ left, key, value: _, right, height: _ }) => {
+      #|        todo_list.push((key, right))
+      #|        continue left
       #|      }
+      #|      None if todo_list.pop() is Some((key, right)) => {
+      #|        next_node = right
+      #|        Some(key)
+      #|      }
+      #|      None => None
       #|    }
-      #|    go(self.root)
-      #|  })
+      #|  }).iter()
       #|}
       #|pub fn[K, V] SortedMap::values_as_iter(self : SortedMap[K, V]) -> Iter[V] {
-      #|  Iter::new(fn(yield_) {
-      #|    fn go(x : Node[K, V]?) {
-      #|      match x {
-      #|        None => IterContinue
-      #|        Some({ left, right, value, .. }) =>
-      #|          if go(left) is IterEnd {
-      #|            IterEnd
-      #|          } else if yield_(value) is IterEnd {
-      #|            IterEnd
-      #|          } else {
-      #|            go(right)
-      #|          }
+      #|  let todo_list = []
+      #|  let mut next_node = self.root
+      #|  Iterator::new(fn() {
+      #|    loop next_node {
+      #|      Some({ left, key: _, value, right, height: _ }) => {
+      #|        todo_list.push((value, right))
+      #|        continue left
       #|      }
+      #|      None if todo_list.pop() is Some((value, right)) => {
+      #|        next_node = right
+      #|        Some(value)
+      #|      }
+      #|      None => None
       #|    }
-      #|    go(self.root)
-      #|  })
+      #|  }).iter()
       #|}
       #|pub fn[K, V] SortedMap::to_array(self : SortedMap[K, V]) -> Array[(K, V)] {
       #|  let arr = Array::new(capacity=self.size)
@@ -35206,40 +34940,10 @@ let moonbitlang_core_sorted_map_module : RuntimePackage = RuntimePackage::new(
       #|  arr
       #|}
       #|pub fn[K, V] SortedMap::iter(self : SortedMap[K, V]) -> Iter[(K, V)] {
-      #|  Iter::new(yield_ => {
-      #|    fn go(x : Node[K, V]?) {
-      #|      match x {
-      #|        None => IterContinue
-      #|        Some({ left, right, key, value, .. }) =>
-      #|          if go(left) is IterEnd {
-      #|            IterEnd
-      #|          } else if yield_((key, value)) is IterEnd {
-      #|            IterEnd
-      #|          } else {
-      #|            go(right)
-      #|          }
-      #|      }
-      #|    }
-      #|    go(self.root)
-      #|  })
+      #|  self.iterator().iter()
       #|}
       #|pub fn[K, V] SortedMap::iter2(self : SortedMap[K, V]) -> Iter2[K, V] {
-      #|  Iter2::new(yield_ => {
-      #|    fn go(x : Node[K, V]?) {
-      #|      match x {
-      #|        None => IterContinue
-      #|        Some({ left, right, key, value, .. }) =>
-      #|          if go(left) is IterEnd {
-      #|            IterEnd
-      #|          } else if yield_(key, value) is IterEnd {
-      #|            IterEnd
-      #|          } else {
-      #|            go(right)
-      #|          }
-      #|      }
-      #|    }
-      #|    go(self.root)
-      #|  })
+      #|  self.iterator2().iter2()
       #|}
       #|pub fn[K, V] SortedMap::iterator(self : SortedMap[K, V]) -> Iterator[(K, V)] {
       #|  let todo_list = []
@@ -35290,29 +34994,32 @@ let moonbitlang_core_sorted_map_module : RuntimePackage = RuntimePackage::new(
       #|  low : K,
       #|  high : K,
       #|) -> Iter2[K, V] {
-      #|  Iter2::new(yield_ => {
-      #|    fn go(x : Node[K, V]?) {
-      #|      match x {
-      #|        None => IterContinue
-      #|        Some({ left, right, key, value, .. }) => {
-      #|          let cmp_key_low = key.compare(low)
-      #|          let cmp_key_high = key.compare(high)
-      #|          if cmp_key_low > 0 && go(left) is IterEnd {
-      #|            IterEnd
-      #|          } else if cmp_key_low >= 0 &&
-      #|            cmp_key_high <= 0 &&
-      #|            yield_(key, value) is IterEnd {
-      #|            IterEnd
-      #|          } else if cmp_key_high < 0 {
-      #|            go(right)
-      #|          } else {
-      #|            IterContinue
-      #|          }
+      #|  let todo_list = []
+      #|  let mut next_node = self.root
+      #|  Iterator2::new(fn() {
+      #|    loop next_node {
+      #|      Some({ left, key, value, right, height: _ }) => {
+      #|        let cmp_key_low = key.compare(low)
+      #|        let cmp_key_high = key.compare(high)
+      #|        if cmp_key_low < 0 {
+      #|          continue right
+      #|        } else if cmp_key_high > 0 {
+      #|          continue left
+      #|        } else if left is None {
+      #|          next_node = right
+      #|          Some((key, value))
+      #|        } else {
+      #|          todo_list.push((key, value, right))
+      #|          continue left
       #|        }
       #|      }
+      #|      None if todo_list.pop() is Some((key, value, right)) => {
+      #|        next_node = right
+      #|        Some((key, value))
+      #|      }
+      #|      None => None
       #|    }
-      #|    go(self.root)
-      #|  })
+      #|  }).iter2()
       #|}
       #|pub fn[K, V] SortedMap::copy(self : SortedMap[K, V]) -> SortedMap[K, V] {
       #|  fn copy_node(node : Node[K, V]?) -> Node[K, V]? {
@@ -36034,22 +35741,7 @@ let moonbitlang_core_sorted_set_module : RuntimePackage = RuntimePackage::new(
       #|  }
       #|}
       #|pub fn[V] SortedSet::iter(self : SortedSet[V]) -> Iter[V] {
-      #|  Iter::new(yield_ => {
-      #|    fn go(x : Node[V]?) {
-      #|      match x {
-      #|        None => IterContinue
-      #|        Some({ left, right, value, .. }) =>
-      #|          if go(left) is IterEnd {
-      #|            IterEnd
-      #|          } else if yield_(value) is IterEnd {
-      #|            IterEnd
-      #|          } else {
-      #|            go(right)
-      #|          }
-      #|      }
-      #|    }
-      #|    go(self.root)
-      #|  })
+      #|  self.iterator().iter()
       #|}
       #|pub fn[V] SortedSet::iterator(self : SortedSet[V]) -> Iterator[V] {
       #|  let mut curr_node = self.root
@@ -36105,29 +35797,31 @@ let moonbitlang_core_sorted_set_module : RuntimePackage = RuntimePackage::new(
       #|  low : V,
       #|  high : V,
       #|) -> Iter[V] {
-      #|  Iter::new(yield_ => {
-      #|    fn go(x : Node[V]?) {
-      #|      match x {
-      #|        None => IterContinue
-      #|        Some({ left, right, value, .. }) => {
-      #|          let cmp_key_low = value.compare(low)
-      #|          let cmp_key_high = value.compare(high)
-      #|          if cmp_key_low > 0 && go(left) is IterEnd {
-      #|            IterEnd
-      #|          } else if cmp_key_low >= 0 &&
-      #|            cmp_key_high <= 0 &&
-      #|            yield_(value) is IterEnd {
-      #|            IterEnd
-      #|          } else if cmp_key_high < 0 {
-      #|            go(right)
-      #|          } else {
-      #|            IterContinue
-      #|          }
-      #|        }
+      #|  let mut curr_node = self.root
+      #|  let parents = []
+      #|  let iter = Iterator::new(() => loop curr_node {
+      #|    Some({ value, left, right, height: _ }) => {
+      #|      let cmp_key_low = value.compare(low)
+      #|      let cmp_key_high = value.compare(high)
+      #|      if cmp_key_low < 0 {
+      #|        continue right
+      #|      } else if cmp_key_high > 0 {
+      #|        continue left
+      #|      } else if left is None {
+      #|        curr_node = right
+      #|        Some(value)
+      #|      } else {
+      #|        parents.push((value, right))
+      #|        continue left
       #|      }
       #|    }
-      #|    go(self.root)
+      #|    None if parents.pop() is Some((value, right)) => {
+      #|      curr_node = right
+      #|      Some(value)
+      #|    }
+      #|    None => None
       #|  })
+      #|  iter.iter()
       #|}
       #|fn[V] replace_root_with_min(root : Node[V], node : Node[V]) -> Node[V]? {
       #|  let (l, r) = (node.left, node.right)
@@ -38332,17 +38026,6 @@ let moonbitlang_core_string_module : RuntimePackage = RuntimePackage::new(
       #|  ""
       #|}
     ),
-    "string_like.mbt": (
-      #|pub trait ToStringView {
-      #|  to_string_view(Self) -> StringView
-      #|}
-      #|pub impl ToStringView for String with to_string_view(self) -> StringView {
-      #|  self[:]
-      #|}
-      #|pub impl ToStringView for StringView with to_string_view(self) -> StringView {
-      #|  self
-      #|}
-    ),
     "utils.mbt": (
       #|fn code_point_of_surrogate_pair(leading : UInt16, trailing : UInt16) -> Char {
       #|  ((leading - 0xD800).to_int() * 0x400 + trailing.to_int() - 0xDC00 + 0x10000).unsafe_to_char()
@@ -38374,6 +38057,7 @@ let moonbitlang_core_string_module : RuntimePackage = RuntimePackage::new(
     "view.mbt": (
       #|#deprecated("Use `StringView` instead")
       #|pub type View = StringView
+      #|pub using @builtin {trait ToStringView}
     ),
   },
 )
@@ -40225,8 +39909,8 @@ let moonbitlang_core_test_module : RuntimePackage = RuntimePackage::new(
       #|  loc~ : SourceLoc,
       #|  args_loc~ : ArgsLoc,
       #|) -> Unit raise SnapshotError {
-      #|  let loc = loc.to_string().escape()
-      #|  let args_loc = args_loc.to_json().escape()
+      #|  let loc = loc.to_json_string()
+      #|  let args_loc = args_loc.to_json()
       #|  let actual = self.buffer.to_string().escape()
       #|  let expect = filename.escape()
       #|  raise SnapshotError(

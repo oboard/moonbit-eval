@@ -334,7 +334,7 @@ let string_trim_end_fn : RuntimeFunction = ctx => match ctx.args {
 
 ///|
 let string_trim_space_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: String(s), .. }] => StringView(s.trim_space())
+  [{ val: String(s), .. }] => StringView(s.trim())
   _ => StringView("")
 }
 
