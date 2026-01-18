@@ -186,7 +186,7 @@ pub fn ClosureInterpreter::parse_type(
         args=args.map(arg => self.parse_type(arg)),
         res=self.parse_type(res),
         err=self.parse_error_type(err),
-        is_async~,
+        is_async=is_async is Some(_),
       )
     Tuple(tys~, ..) => Tuple(tys.map(ty => self.parse_type(ty)))
     Name(constr_id={ id, .. }, tys~, ..) => {
@@ -213,7 +213,7 @@ fn ClosureInterpreter::parse_function_type(
   func : @syntax.Func,
 ) -> RuntimeType {
   match func {
-    Lambda(parameters~, error_type~, is_async~, body~, return_type~, ..) => {
+    { parameters, error_type, is_async, body, return_type, .. } => {
       let param_types = parameters.map(param => match param {
         DiscardPositional(ty~, ..) =>
           self.parse_type(ty.unwrap_or(Any(loc=dummy_loc())))
@@ -232,10 +232,9 @@ fn ClosureInterpreter::parse_function_type(
         args=param_types,
         res=return_type,
         err=self.parse_error_type(error_type),
-        is_async~,
+        is_async=is_async is Some(_),
       )
     }
-    _ => Any
   }
 }
 

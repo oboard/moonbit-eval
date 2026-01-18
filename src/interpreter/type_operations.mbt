@@ -150,7 +150,7 @@ pub fn ClosureInterpreter::get_function_type_string(
 ) -> String {
   // 从函数中提取参数和返回类型信息
   match func {
-    Lambda(parameters~, return_type~, body~, ..) => {
+    { parameters, return_type, body, .. } => {
       let param_strs = []
       for param in parameters {
         let param_str = match param {
@@ -192,6 +192,5 @@ pub fn ClosureInterpreter::get_function_type_string(
         }
       }
     }
-    _ => "<function>"
   }
 }

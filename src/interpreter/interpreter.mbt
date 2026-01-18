@@ -136,6 +136,7 @@ pub fn ClosureInterpreter::top_visit(
 ) -> RuntimeValue {
   match node {
     TopView(_) => Unit
+    TopUsing(_) => Unit
     TopImpl(self_ty~, trait_~, method_name~, params~, body~, ..) => {
       // 处理 trait 实现，如 impl Show for A with to_string
       let type_name = match self_ty {
@@ -153,23 +154,17 @@ pub fn ClosureInterpreter::top_visit(
       match body {
         DeclBody(expr~, ..) => {
           // 构造函数对象
-          let func = @syntax.Func::Lambda(
-            parameters=params,
-            params_loc={
-              start: { fname: "", lnum: 0, bol: 0, cnum: 0 },
-              end: { fname: "", lnum: 0, bol: 0, cnum: 0 },
-            },
-            body=expr,
-            return_type=None,
-            error_type=@syntax.ErrorType::NoErrorType,
-            kind=@syntax.FnKind::Lambda,
-            has_error=None,
-            is_async=false,
-            loc={
-              start: { fname: "", lnum: 0, bol: 0, cnum: 0 },
-              end: { fname: "", lnum: 0, bol: 0, cnum: 0 },
-            },
-          )
+          let func = @syntax.Func::{
+            parameters: params,
+            params_loc: dummy_loc(),
+            body: expr,
+            return_type: None,
+            error_type: @syntax.ErrorType::NoErrorType,
+            kind: @syntax.FnKind::Lambda,
+            has_error: None,
+            is_async: None,
+            loc: dummy_loc(),
+          }
 
           // 如果能确定类型名，将 trait 方法注册为结构体方法
           match type_name {
@@ -352,17 +347,17 @@ pub fn ClosureInterpreter::top_visit(
 
           // 保持原始的返回类型，不在这里进行推导
           let inferred_return_type = fun_decl.return_type
-          let func = @syntax.Func::Lambda(
-            parameters=fun_decl.decl_params.unwrap_or(@list.new()),
-            params_loc=loc,
-            body=expr,
-            return_type=inferred_return_type,
-            error_type=fun_decl.error_type,
-            kind=@syntax.FnKind::Lambda,
-            has_error=fun_decl.has_error,
-            is_async=fun_decl.is_async,
-            loc~,
-          )
+          let func = @syntax.Func::{
+            parameters: fun_decl.decl_params.unwrap_or(@list.new()),
+            params_loc: loc,
+            body: expr,
+            return_type: inferred_return_type,
+            error_type: fun_decl.error_type,
+            kind: @syntax.FnKind::Lambda,
+            has_error: fun_decl.has_error,
+            is_async: fun_decl.is_async,
+            loc,
+          }
           if type_name is Some(type_name) {
             self.define_struct_method(
               self.current_pkg,

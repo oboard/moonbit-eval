@@ -74,17 +74,17 @@ pub fn ClosureInterpreter::top_func_def_to_closure(
 ) -> (String?, RuntimeValue) {
   if func
     is TopFuncDef(fun_decl~, decl_body=DeclBody(local_types=_, expr=body), loc~) {
-    let func = @syntax.Func::Lambda(
-      parameters=fun_decl.decl_params.unwrap_or(@list.new()),
-      params_loc=loc,
-      body~,
-      return_type=fun_decl.return_type,
-      error_type=fun_decl.error_type,
-      kind=Arrow,
-      has_error=fun_decl.has_error,
-      is_async=fun_decl.is_async,
-      loc~,
-    )
+    let func = @syntax.Func::{
+      parameters: fun_decl.decl_params.unwrap_or(@list.new()),
+      params_loc: loc,
+      body,
+      return_type: fun_decl.return_type,
+      error_type: fun_decl.error_type,
+      kind: @syntax.FnKind::Arrow,
+      has_error: fun_decl.has_error,
+      is_async: fun_decl.is_async,
+      loc,
+    }
     let type_name = match fun_decl {
       { type_name: Some({ name: Ident(name~), .. }), .. } => Some(name)
       { type_name: Some({ name: Dot(id~, ..), .. }), .. } => Some(id)

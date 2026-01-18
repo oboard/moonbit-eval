@@ -20,7 +20,7 @@ pub fn ClosureInterpreter::create_function(
   let closure_env = pkg.env.create_closure_env()
   {
     val: ctx => match func {
-      @syntax.Func::Lambda(parameters~, body~, return_type~, ..) => {
+      { parameters, body, return_type, .. } => {
         // 切换到闭包捕获的环境
         let old_mod = self.current_pkg
         let old_env = pkg.env
@@ -50,7 +50,6 @@ pub fn ClosureInterpreter::create_function(
           _ => result
         }
       }
-      _ => self.error("invalid function")
     },
     ty: self.parse_function_type(func),
   }

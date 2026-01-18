@@ -10,7 +10,7 @@ pub fn ClosureInterpreter::call_closure(
   name? : String,
 ) -> RuntimeValue raise ControlFlow {
   match function {
-    @syntax.Func::Lambda(_) => {
+    { kind: @syntax.FnKind::Lambda, .. } => {
       // 在旧环境中解释参数值并转换为RuntimeArgument
       let runtime_args = self.convert_to_runtime_arguments(args)
 

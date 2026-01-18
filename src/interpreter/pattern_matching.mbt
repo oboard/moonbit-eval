@@ -126,10 +126,10 @@ fn format_pattern(pattern : @syntax.Pattern) -> String {
       }
       "{ " + field_strs.join(", ") + " }"
     }
-    Range(lhs~, rhs~, inclusive~, ..) => {
+    Range(lhs~, rhs~, kind~, ..) => {
       let lhs_str = format_pattern(lhs)
       let rhs_str = format_pattern(rhs)
-      let op = if inclusive { "..=" } else { ".." }
+      let op = if kind is Inclusive { "..=" } else { ".." }
       lhs_str + op + rhs_str
     }
     Constr(constr~, args~, ..) => {
@@ -285,8 +285,8 @@ pub fn ClosureInterpreter::match_case(
       }
 
     // Range模式匹配
-    Range(lhs~, rhs~, inclusive~, ..) =>
-      self.runtime_value_in_range(value, lhs, rhs, inclusive)
+    Range(lhs~, rhs~, kind~, ..) =>
+      self.runtime_value_in_range(value, lhs, rhs, kind)
 
     // Constructor模式匹配
     Constr(constr~, args=pattern_args, ..) =>
@@ -375,8 +375,9 @@ pub fn ClosureInterpreter::runtime_value_in_range(
   value : RuntimeValue,
   lhs : @syntax.Pattern,
   rhs : @syntax.Pattern,
-  inclusive : Bool,
+  kind : @syntax.RangeKind,
 ) -> Bool {
+  let inclusive = kind is Inclusive
   // 将模式转换为运行时值
   let lhs_value = self.pattern_to_runtime_value(lhs)
   let rhs_value = self.pattern_to_runtime_value(rhs)

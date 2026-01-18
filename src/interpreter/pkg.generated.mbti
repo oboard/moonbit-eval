@@ -103,7 +103,7 @@ pub fn ClosureInterpreter::pattern_match(Self, RuntimeValue, @list.List[@syntax.
 pub fn ClosureInterpreter::pattern_to_runtime_value(Self, @syntax.Pattern) -> RuntimeValue?
 pub fn ClosureInterpreter::pop_scope(Self) -> Unit
 pub fn ClosureInterpreter::push_scope(Self, RuntimeLocation) -> Unit
-pub fn ClosureInterpreter::runtime_value_in_range(Self, RuntimeValue, @syntax.Pattern, @syntax.Pattern, Bool) -> Bool
+pub fn ClosureInterpreter::runtime_value_in_range(Self, RuntimeValue, @syntax.Pattern, @syntax.Pattern, @syntax.RangeKind) -> Bool
 pub fn ClosureInterpreter::top_eval(Self, String) -> Unit
 pub fn ClosureInterpreter::top_func_def_to_closure(Self, RuntimePackage, @syntax.Impl, name? : String) -> (String?, RuntimeValue)
 pub fn ClosureInterpreter::top_visit(Self, @syntax.Impl) -> RuntimeValue

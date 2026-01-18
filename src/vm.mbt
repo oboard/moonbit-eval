@@ -55,7 +55,10 @@ pub fn expr_to_string(expr : @syntax.Expr) -> String {
         BigInt(str) => str
       }
     Unit(..) => "()"
-    Function(func=Lambda(parameters~, return_type~, ..), ..) => {
+    Function(
+      func={ kind: @syntax.FnKind::Lambda, parameters, return_type, .. },
+      ..
+    ) => {
       // 辅助函数：将Type转换为字符串
       fn type_to_string(ty : @syntax.Type) -> String {
         match ty {
