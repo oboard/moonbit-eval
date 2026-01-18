@@ -141,15 +141,16 @@ let fixedarray_iter_fn : RuntimeFunction = ctx => match ctx.args {
 /// FixedArray::iter2 操作 - 获取带索引的迭代器
 let fixedarray_iter2_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: FixedArray(arr), .. }] => {
-    let iter2_impl = Iter2::new(yield_fn => {
-      for i in 0..<arr.length() {
-        match yield_fn(Int(i, raw=None), arr[i]) {
-          IterEnd => return IterEnd
-          IterContinue => ()
-        }
-      }
-      IterEnd
+    let len = arr.length()
+    let mut index = 0
+    let iterator = Iter2::new(fn() {
+      guard index < len else { None }
+      let key = Int(index, raw=None)
+      let value = arr[index]
+      index += 1
+      Some((key, value))
     })
+    let iter2_impl = iterator.iter2()
     Iter2(iter2_impl)
   }
   _ => Unit

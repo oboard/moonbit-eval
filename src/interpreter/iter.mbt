@@ -111,7 +111,7 @@ let iter_nth_fn : RuntimeFunction = ctx => match ctx.args {
 
 ///|
 let iter_peek_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Iter(iter), .. }] => RuntimeValue::from_option(iter.peek())
+  [{ val: Iter(iter), .. }] => RuntimeValue::from_option(iter.next())
   _ => Unit
 }
 
@@ -452,7 +452,7 @@ let iter_map_option_fn : RuntimeFunction = ctx => match ctx.args {
 let iter_map_while_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: Iter(iter), .. }, { val: Fn(func), .. }] => {
     let result = Array::new()
-    let should_continue = { val: true }
+    let should_continue = Ref::{ val: true }
     iter.each(fn(val) {
       if should_continue.val {
         try {

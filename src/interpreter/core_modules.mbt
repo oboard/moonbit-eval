@@ -3050,7 +3050,7 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|  self.rev_iterator().iter()
       #|}
       #|pub fn[A] Array::iter2(self : Array[A]) -> Iter2[Int, A] {
-      #|  self.iterator2().iter2()
+      #|  self.Iter2().iter2()
       #|}
       #|pub impl[T] Default for Array[T] with default() {
       #|  []
@@ -3155,7 +3155,7 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|    other.length()
       #|  }
       #|  let mut i = 0
-      #|  Iterator2::new(() => {
+      #|  Iter2::new(() => {
       #|    guard i < length else { None }
       #|    let elem = (self[i], other[i])
       #|    i += 1
@@ -3174,8 +3174,8 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|pub fn[X] Array::rev_iterator(self : Array[X]) -> Iterator[X] {
       #|  self[:].rev_iterator()
       #|}
-      #|pub fn[X] Array::iterator2(self : Array[X]) -> Iterator2[Int, X] {
-      #|  self[:].iterator2()
+      #|pub fn[X] Array::Iter2(self : Array[X]) -> Iter2[Int, X] {
+      #|  self[:].Iter2()
       #|}
     ),
     "array_block.mbt": (
@@ -4631,9 +4631,9 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|    Some(self.unsafe_get(i))
       #|  })
       #|}
-      #|pub fn[X] ArrayView::iterator2(self : ArrayView[X]) -> Iterator2[Int, X] {
+      #|pub fn[X] ArrayView::Iter2(self : ArrayView[X]) -> Iter2[Int, X] {
       #|  let mut i = 0
-      #|  Iterator2::new(fn() {
+      #|  Iter2::new(fn() {
       #|    guard i < self.length() else { None }
       #|    let result = Some((i, self.unsafe_get(i)))
       #|    i += 1
@@ -4641,7 +4641,7 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|  })
       #|}
       #|pub fn[A] ArrayView::iter2(self : ArrayView[A]) -> Iter2[Int, A] {
-      #|  self.iterator2().iter2()
+      #|  self.Iter2().iter2()
       #|}
       #|pub fn[T] ArrayView::each(
       #|  self : ArrayView[T],
@@ -6191,9 +6191,9 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|  })
       #|}
       #|pub fn Bytes::iter2(self : Bytes) -> Iter2[Int, Byte] {
-      #|  self.iterator2().iter2()
+      #|  self.Iter2().iter2()
       #|}
-      #|pub fn Bytes::iterator2(self : Bytes) -> Iterator2[Int, Byte] {
+      #|pub fn Bytes::Iter2(self : Bytes) -> Iter2[Int, Byte] {
       #|  let mut i = 0
       #|  let len = self.length()
       #|  Iterator::new(fn() {
@@ -6495,7 +6495,7 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|  self.iterator().iter()
       #|}
       #|pub fn BytesView::iter2(self : BytesView) -> Iter2[Int, Byte] {
-      #|  self.iterator2().iter2()
+      #|  self.Iter2().iter2()
       #|}
       #|pub fn BytesView::iterator(self : BytesView) -> Iterator[Byte] {
       #|  let mut i = 0
@@ -6507,10 +6507,10 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|    Some(result)
       #|  })
       #|}
-      #|pub fn BytesView::iterator2(self : BytesView) -> Iterator2[Int, Byte] {
+      #|pub fn BytesView::Iter2(self : BytesView) -> Iter2[Int, Byte] {
       #|  let mut i = 0
       #|  let len = self.length()
-      #|  Iterator2::new(fn() {
+      #|  Iter2::new(fn() {
       #|    guard i < len else { None }
       #|    let result = (i, self.unsafe_get(i))
       #|    i += 1
@@ -7435,7 +7435,7 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|  self.iterator().iter()
       #|}
       #|pub fn[T] FixedArray::iter2(self : FixedArray[T]) -> Iter2[Int, T] {
-      #|  self.iterator2().iter2()
+      #|  self.Iter2().iter2()
       #|}
       #|pub impl[X] Default for FixedArray[X] with default() {
       #|  []
@@ -8295,8 +8295,8 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|pub fn[X] FixedArray::iterator(self : FixedArray[X]) -> Iterator[X] {
       #|  self[:].iterator()
       #|}
-      #|pub fn[X] FixedArray::iterator2(self : FixedArray[X]) -> Iterator2[Int, X] {
-      #|  self[:].iterator2()
+      #|pub fn[X] FixedArray::Iter2(self : FixedArray[X]) -> Iter2[Int, X] {
+      #|  self[:].Iter2()
       #|}
       #|#cfg(not(target="js"))
       #|pub fn[T] FixedArray::copy(self : FixedArray[T]) -> FixedArray[T] {
@@ -9997,7 +9997,7 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|  }
       #|  logger.write_string("]")
       #|}
-      #|#deprecated("`Iter2::new`, and the internal iterator type `Iter2`, is deprecated. Create an external iterator `Iterator2`, and use `Iterator2::iter2` to migrate usage of `Iter2::new`. `Iter2` will become an alias of `Iterator2` in the future. See https://github.com/moonbitlang/core/pull/3050 for more details.")
+      #|#deprecated("`Iter2::new`, and the internal iterator type `Iter2`, is deprecated. Create an external iterator `Iter2`, and use `Iter2::iter2` to migrate usage of `Iter2::new`. `Iter2` will become an alias of `Iter2` in the future. See https://github.com/moonbitlang/core/pull/3050 for more details.")
       #|pub fn[A, B] Iter2::new(
       #|  f : ((A, B) -> IterResult) -> IterResult,
       #|) -> Iter2[A, B] {
@@ -10369,9 +10369,9 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|    }
       #|  })
       #|}
-      #|pub fn[X] Iterator::iterator2(self : Iterator[X]) -> Iterator2[Int, X] {
+      #|pub fn[X] Iterator::Iter2(self : Iterator[X]) -> Iter2[Int, X] {
       #|  let mut i = 0
-      #|  Iterator2::new(fn() {
+      #|  Iter2::new(fn() {
       #|    match self.next() {
       #|      None => None
       #|      Some(x) => {
@@ -10481,27 +10481,27 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|  }
       #|  Some(res)
       #|}
-      #|pub(all) struct Iterator2[X, Y](Iterator[(X, Y)])
-      #|pub fn[X, Y] Iterator2::new(f : () -> (X, Y)?) -> Iterator2[X, Y] {
-      #|  Iterator2(Iterator::new(f))
+      #|pub(all) struct Iter2[X, Y](Iterator[(X, Y)])
+      #|pub fn[X, Y] Iter2::new(f : () -> (X, Y)?) -> Iter2[X, Y] {
+      #|  Iter2(Iterator::new(f))
       #|}
-      #|pub fn[X, Y] Iterator2::iterator(self : Iterator2[X, Y]) -> Iterator[(X, Y)] {
+      #|pub fn[X, Y] Iter2::iterator(self : Iter2[X, Y]) -> Iterator[(X, Y)] {
       #|  self.0
       #|}
-      #|pub fn[X, Y] Iterator2::iterator2(self : Iterator2[X, Y]) -> Iterator2[X, Y] {
+      #|pub fn[X, Y] Iter2::Iter2(self : Iter2[X, Y]) -> Iter2[X, Y] {
       #|  self
       #|}
-      #|pub fn[X, Y] Iterator2::next(self : Iterator2[X, Y]) -> (X, Y)? {
+      #|pub fn[X, Y] Iter2::next(self : Iter2[X, Y]) -> (X, Y)? {
       #|  self.0.next()
       #|}
-      #|pub fn[X, Y] Iterator2::iter2(self : Iterator2[X, Y]) -> Iter2[X, Y] {
+      #|pub fn[X, Y] Iter2::iter2(self : Iter2[X, Y]) -> Iter2[X, Y] {
       #|  Iter2(yield_ => while self.next() is Some((x, y)) {
       #|    guard yield_(x, y) is IterContinue else { break IterEnd }
       #|  } else {
       #|    IterContinue
       #|  })
       #|}
-      #|pub impl[X : Show, Y : Show] Show for Iterator2[X, Y] with output(self, logger) {
+      #|pub impl[X : Show, Y : Show] Show for Iter2[X, Y] with output(self, logger) {
       #|  self.0.output(logger)
       #|}
     ),
@@ -11026,11 +11026,11 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|    }
       #|  })
       #|}
-      #|pub fn[K, V] Map::iterator2(self : Map[K, V]) -> Iterator2[K, V] {
+      #|pub fn[K, V] Map::Iter2(self : Map[K, V]) -> Iter2[K, V] {
       #|  self.iterator()
       #|}
       #|pub fn[K, V] Map::iter2(self : Map[K, V]) -> Iter2[K, V] {
-      #|  self.iterator2().iter2()
+      #|  self.Iter2().iter2()
       #|}
       #|pub fn[K, V] Map::keys(self : Map[K, V]) -> Iter[K] {
       #|  let mut curr_entry = self.head
@@ -11447,9 +11447,9 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|    Some(self.unsafe_get(i))
       #|  })
       #|}
-      #|pub fn[X] MutArrayView::iterator2(self : MutArrayView[X]) -> Iterator2[Int, X] {
+      #|pub fn[X] MutArrayView::Iter2(self : MutArrayView[X]) -> Iter2[Int, X] {
       #|  let mut i = 0
-      #|  Iterator2::new(fn() {
+      #|  Iter2::new(fn() {
       #|    guard i < self.length() else { None }
       #|    let result = Some((i, self.unsafe_get(i)))
       #|    i += 1
@@ -12433,10 +12433,10 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|  })
       #|}
       #|pub fn String::iter2(self : String) -> Iter2[Int, Char] {
-      #|  self.iterator2().iter2()
+      #|  self.Iter2().iter2()
       #|}
-      #|pub fn String::iterator2(self : String) -> Iterator2[Int, Char] {
-      #|  self.iterator().iterator2()
+      #|pub fn String::Iter2(self : String) -> Iter2[Int, Char] {
+      #|  self.iterator().Iter2()
       #|}
       #|pub fn String::rev_iter(self : String) -> Iter[Char] {
       #|  self.rev_iterator().iter()
@@ -14045,14 +14045,14 @@ let moonbitlang_core_builtin_module : RuntimePackage = RuntimePackage::new(
       #|  })
       #|}
       #|pub fn StringView::iter2(self : StringView) -> Iter2[Int, Char] {
-      #|  self.iterator2().iter2()
+      #|  self.Iter2().iter2()
       #|}
-      #|pub fn StringView::iterator2(self : StringView) -> Iterator2[Int, Char] {
+      #|pub fn StringView::Iter2(self : StringView) -> Iter2[Int, Char] {
       #|  let start = self.start()
       #|  let end = self.end()
       #|  let mut index = start
       #|  let mut char_index = 0
-      #|  Iterator2::new(fn() {
+      #|  Iter2::new(fn() {
       #|    guard index < end else { None }
       #|    let c1 = self.str().unsafe_charcode_at(index)
       #|    if c1.is_leading_surrogate() && index + 1 < self.end() {
@@ -17510,11 +17510,11 @@ let moonbitlang_core_deque_module : RuntimePackage = RuntimePackage::new(
       #|  })
       #|}
       #|pub fn[A] Deque::iter2(self : Deque[A]) -> Iter2[Int, A] {
-      #|  self.iterator2().iter2()
+      #|  self.Iter2().iter2()
       #|}
-      #|pub fn[A] Deque::iterator2(self : Deque[A]) -> Iterator2[Int, A] {
+      #|pub fn[A] Deque::Iter2(self : Deque[A]) -> Iter2[Int, A] {
       #|  let mut index = 0
-      #|  Iterator2::new(fn() {
+      #|  Iter2::new(fn() {
       #|    guard index < self.len else { None }
       #|    let result = (index, self.buf[(self.head + index) % self.buf.length()])
       #|    index += 1
@@ -17533,11 +17533,11 @@ let moonbitlang_core_deque_module : RuntimePackage = RuntimePackage::new(
       #|  })
       #|}
       #|pub fn[A] Deque::rev_iter2(self : Deque[A]) -> Iter2[Int, A] {
-      #|  self.rev_iterator2().iter2()
+      #|  self.rev_Iter2().iter2()
       #|}
-      #|pub fn[A] Deque::rev_iterator2(self : Deque[A]) -> Iterator2[Int, A] {
+      #|pub fn[A] Deque::rev_Iter2(self : Deque[A]) -> Iter2[Int, A] {
       #|  let mut rev_index = self.len
-      #|  Iterator2::new(fn() {
+      #|  Iter2::new(fn() {
       #|    guard rev_index > 0 else { None }
       #|    let index = self.len - rev_index
       #|    rev_index -= 1
@@ -20666,11 +20666,11 @@ let moonbitlang_core_hashmap_module : RuntimePackage = RuntimePackage::new(
       #|    }
       #|  })
       #|}
-      #|pub fn[K, V] HashMap::iterator2(self : HashMap[K, V]) -> Iterator2[K, V] {
+      #|pub fn[K, V] HashMap::Iter2(self : HashMap[K, V]) -> Iter2[K, V] {
       #|  self.iterator()
       #|}
       #|pub fn[K, V] HashMap::iter2(self : HashMap[K, V]) -> Iter2[K, V] {
-      #|  self.iterator2().iter2()
+      #|  self.Iter2().iter2()
       #|}
       #|#as_free_fn
       #|pub fn[K : Hash + Eq, V] HashMap::from_iter(
@@ -23023,11 +23023,11 @@ let moonbitlang_core_immut_hashmap_module : RuntimePackage = RuntimePackage::new
       #|    }
       #|  })
       #|}
-      #|pub fn[K, V] HashMap::iterator2(self : HashMap[K, V]) -> Iterator2[K, V] {
+      #|pub fn[K, V] HashMap::Iter2(self : HashMap[K, V]) -> Iter2[K, V] {
       #|  self.iterator()
       #|}
       #|pub fn[K, V] HashMap::iter2(self : HashMap[K, V]) -> Iter2[K, V] {
-      #|  self.iterator2().iter2()
+      #|  self.Iter2().iter2()
       #|}
       #|#as_free_fn
       #|pub fn[K : Eq + Hash, V] HashMap::from_iter(
@@ -25655,11 +25655,11 @@ let moonbitlang_core_immut_sorted_map_module : RuntimePackage = RuntimePackage::
       #|    }
       #|  })
       #|}
-      #|pub fn[K, V] SortedMap::iterator2(self : SortedMap[K, V]) -> Iterator2[K, V] {
+      #|pub fn[K, V] SortedMap::Iter2(self : SortedMap[K, V]) -> Iter2[K, V] {
       #|  self.iterator()
       #|}
       #|pub fn[K, V] SortedMap::iter2(self : SortedMap[K, V]) -> Iter2[K, V] {
-      #|  self.iterator2().iter2()
+      #|  self.Iter2().iter2()
       #|}
       #|#as_free_fn
       #|pub fn[K : Compare, V] SortedMap::from_iter(
@@ -29242,12 +29242,12 @@ let moonbitlang_core_list_module : RuntimePackage = RuntimePackage::new(
       #|  })
       #|}
       #|pub fn[A] List::iter2(self : List[A]) -> Iter2[Int, A] {
-      #|  self.iterator2().iter2()
+      #|  self.Iter2().iter2()
       #|}
-      #|pub fn[A] List::iterator2(self : List[A]) -> Iterator2[Int, A] {
+      #|pub fn[A] List::Iter2(self : List[A]) -> Iter2[Int, A] {
       #|  let mut i = 0
       #|  let mut next = self
-      #|  Iterator2::new(fn() {
+      #|  Iter2::new(fn() {
       #|    match next {
       #|      Empty => None
       #|      More(head, tail~) => {
@@ -32729,7 +32729,7 @@ let moonbitlang_core_prelude_module : RuntimePackage = RuntimePackage::new(
       #|  type Iter,
       #|  type Iterator,
       #|  type Iter2,
-      #|  type Iterator2,
+      #|  type Iter2,
       #|  type IterResult,
       #|  type Json,
       #|  type Map,
@@ -34943,7 +34943,7 @@ let moonbitlang_core_sorted_map_module : RuntimePackage = RuntimePackage::new(
       #|  self.iterator().iter()
       #|}
       #|pub fn[K, V] SortedMap::iter2(self : SortedMap[K, V]) -> Iter2[K, V] {
-      #|  self.iterator2().iter2()
+      #|  self.Iter2().iter2()
       #|}
       #|pub fn[K, V] SortedMap::iterator(self : SortedMap[K, V]) -> Iterator[(K, V)] {
       #|  let todo_list = []
@@ -34962,7 +34962,7 @@ let moonbitlang_core_sorted_map_module : RuntimePackage = RuntimePackage::new(
       #|    }
       #|  })
       #|}
-      #|pub fn[K, V] SortedMap::iterator2(self : SortedMap[K, V]) -> Iterator2[K, V] {
+      #|pub fn[K, V] SortedMap::Iter2(self : SortedMap[K, V]) -> Iter2[K, V] {
       #|  self.iterator()
       #|}
       #|#as_free_fn
@@ -34996,7 +34996,7 @@ let moonbitlang_core_sorted_map_module : RuntimePackage = RuntimePackage::new(
       #|) -> Iter2[K, V] {
       #|  let todo_list = []
       #|  let mut next_node = self.root
-      #|  Iterator2::new(fn() {
+      #|  Iter2::new(fn() {
       #|    loop next_node {
       #|      Some({ left, key, value, right, height: _ }) => {
       #|        let cmp_key_low = key.compare(low)

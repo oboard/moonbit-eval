@@ -173,14 +173,19 @@ let array_view_iter_fn : RuntimeFunction = ctx => match ctx.args {
 ///|
 /// ArrayView iter2 方法
 let array_view_iter2_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: ArrayView(self), .. }] =>
-    Iter2(
-      Iter2::new(yield_ => for i, v in self {
-        guard yield_(Int(i, raw=None), v) is IterContinue else { break IterEnd }
-      } else {
-        IterContinue
-      }),
-    )
+  [{ val: ArrayView(self), .. }] => {
+    let len = self.length()
+    let mut index = 0
+    let iterator = Iter2::new(fn() {
+      guard index < len else { None }
+      let key = Int(index, raw=None)
+      let value = self[index]
+      index += 1
+      Some((key, value))
+    })
+    let iter2_impl = iterator.iter2()
+    Iter2(iter2_impl)
+  }
   _ => Unit
 }
 

@@ -93,7 +93,7 @@ let string_make_fn : RuntimeFunction = ctx => match ctx.args {
 ///|
 let string_iter_fn : RuntimeFunction = ctx => match ctx.args {
   [{ val: String(s), .. }] => Iter(s.iter().map(Char(_)))
-  _ => Iter(Iter::new(_ => IterEnd))
+  _ => panic()
 }
 
 ///|

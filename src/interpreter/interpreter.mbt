@@ -104,7 +104,7 @@ pub fn ClosureInterpreter::load_package(
       is Ok({ "targets": Object(targets_map), .. }) {
       for file_name, option_json in targets_map {
         let option_list = if option_json is Array(arr) {
-          arr.map(i => i.as_string().unwrap_or(""))
+          arr.map(i => if i is String(s) { s } else { "" })
         } else {
           continue
         }
@@ -904,15 +904,7 @@ pub fn ClosureInterpreter::visit(
                 (Int(start, ..), Int(end, ..)) =>
                   Some(
                     RuntimeValue::Iter(
-                      Iter::new(visit_fn => {
-                        for i in start..<end {
-                          match visit_fn(Int(i, raw=None)) {
-                            IterEnd => return IterEnd
-                            IterContinue => ()
-                          }
-                        }
-                        IterEnd
-                      }),
+                      start.until(end).map(fn(i) { Int(i, raw=None) }),
                     ),
                   )
                 _ => None
@@ -925,15 +917,9 @@ pub fn ClosureInterpreter::visit(
                 (Int(start, ..), Int(end, ..)) =>
                   Some(
                     RuntimeValue::Iter(
-                      Iter::new(visit_fn => {
-                        for i in start..=end {
-                          match visit_fn(Int(i, raw=None)) {
-                            IterEnd => return IterEnd
-                            IterContinue => ()
-                          }
-                        }
-                        IterEnd
-                      }),
+                      start
+                      .until(end, inclusive=true)
+                      .map(fn(i) { Int(i, raw=None) }),
                     ),
                   )
                 _ => None

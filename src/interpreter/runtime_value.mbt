@@ -767,48 +767,52 @@ pub fn type_to_string(ty : @syntax.Type) -> String {
 pub fn RuntimeValue::iter2(self : RuntimeValue) -> RuntimeValue {
   match self {
     Array(arr) => {
-      // 将数组转换为 Iter2，每个元素是 (index, value) 元组
-      let iter_impl = Iter2::new(fn(f) {
-        for i = 0; i < arr.length(); i = i + 1 {
-          match f(Int(i, raw=None), arr[i]) {
-            IterEnd => return IterEnd
-            IterContinue => ()
-          }
-        }
-        IterEnd
+      let len = arr.length()
+      let mut index = 0
+      let iterator = Iter2::new(fn() {
+        guard index < len else { None }
+        let key = Int(index, raw=None)
+        let value = arr[index]
+        index += 1
+        Some((key, value))
       })
+      let iter_impl = iterator.iter2()
       Iter2(iter_impl)
     }
     String(str) => {
-      // 将字符串转换为 Iter2，每个元素是 (index, char) 元组
       let chars = str.to_array()
-      let iter_impl = Iter2::new(fn(f) {
-        for i = 0; i < chars.length(); i = i + 1 {
-          match f(Int(i, raw=None), Char(chars[i])) {
-            IterEnd => return IterEnd
-            IterContinue => ()
-          }
-        }
-        IterEnd
+      let len = chars.length()
+      let mut index = 0
+      let iterator = Iter2::new(fn() {
+        guard index < len else { None }
+        let key = Int(index, raw=None)
+        let value = Char(chars[index])
+        index += 1
+        Some((key, value))
       })
+      let iter_impl = iterator.iter2()
       Iter2(iter_impl)
     }
     StringBuilder(sb) => {
-      // 将 StringBuilder 转换为 Iter2，每个元素是 (index, char) 元组
       let str = sb.to_string()
       let chars = str.to_array()
-      let iter_impl = Iter2::new(f => {
-        for i = 0; i < chars.length(); i = i + 1 {
-          match f(Int(i, raw=None), Char(chars[i])) {
-            IterEnd => return IterEnd
-            IterContinue => ()
-          }
-        }
-        IterEnd
+      let len = chars.length()
+      let mut index = 0
+      let iterator = Iter2::new(fn() {
+        guard index < len else { None }
+        let key = Int(index, raw=None)
+        let value = Char(chars[index])
+        index += 1
+        Some((key, value))
       })
+      let iter_impl = iterator.iter2()
       Iter2(iter_impl)
     }
-    _ => Iter2(Iter2::new(_ => IterEnd))
+    _ => {
+      let iterator = Iter2::new(fn() { None })
+      let iter_impl = iterator.iter2()
+      Iter2(iter_impl)
+    }
   }
 }
 

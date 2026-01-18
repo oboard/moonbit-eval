@@ -347,13 +347,18 @@ let array_iter_fn : RuntimeFunction = ctx => match ctx.args {
 
 ///|
 let array_iter2_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Array(arr), .. }] =>
-    Iter2(
-      Iter2::new(yield_ => for i, v in arr {
-        guard yield_(Int(i, raw=None), v) is IterContinue else { break IterEnd }
-      } else {
-        IterContinue
-      }),
-    )
+  [{ val: Array(arr), .. }] => {
+    let len = arr.length()
+    let mut index = 0
+    let iterator = Iter2::new(fn() {
+      guard index < len else { None }
+      let key = Int(index, raw=None)
+      let value = arr[index]
+      index += 1
+      Some((key, value))
+    })
+    let iter2_impl = iterator.iter2()
+    Iter2(iter2_impl)
+  }
   _ => Unit
 }
