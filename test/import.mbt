@@ -3,7 +3,7 @@ test "import" {
   let vm = MoonBitVM::new()
   vm.eval(
     (
-      #|require("hello", "./src/test/hello")
+      #|require("hello", "./test/hello")
     ),
   )
   |> ignore

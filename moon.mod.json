@@ -12,6 +12,5 @@
     "moonbit",
     "eval"
   ],
-  "description": "MoonBit Eval Package",
-  "source": "src"
+  "description": "MoonBit Eval Package"
 }
