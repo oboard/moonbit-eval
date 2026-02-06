@@ -49,355 +49,450 @@ let string_view_methods : Map[String, RuntimeFunction] = {
   "trim": string_view_trim,
   "trim_start": string_view_trim_start,
   "unsafe_charcode_at": string_view_unsafe_charcode_at,
+  "unsafe_get": string_view_unsafe_charcode_at,
 }
 
 ///|
-let string_view_length : RuntimeFunction = ctx => match ctx.args {
-  [{ val: StringView(s), .. }] => Int(s.length(), raw=None)
-  _ => Int(0, raw=None)
+let string_view_length : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: StringView(s), .. }] => Int(s.length(), raw=None)
+    _ => Int(0, raw=None)
+  }
 }
 
 ///|
-let string_view_add : RuntimeFunction = ctx => match ctx.args {
-  [{ val: StringView(s1), .. }, { val: StringView(s2), .. }] =>
-    StringView(s1 + s2)
-  _ => StringView("")
+let string_view_add : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: StringView(s1), .. }, { val: StringView(s2), .. }] =>
+      StringView(s1 + s2)
+    _ => StringView("")
+  }
 }
 
 ///|
-let string_view_code_unit_at : RuntimeFunction = ctx => match ctx.args {
-  [{ val: StringView(s), .. }, { val: Int(i, ..), .. }] =>
-    UInt16(s.code_unit_at(i))
-  _ => StringView("")
+let string_view_code_unit_at : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: StringView(s), .. }, { val: Int(i, ..), .. }] =>
+      UInt16(s.code_unit_at(i))
+    _ => StringView("")
+  }
 }
 
 ///|
-let string_view_char_length : RuntimeFunction = ctx => match ctx.args {
-  [{ val: StringView(s), .. }] => Int(s.char_length(), raw=None)
-  _ => Int(0, raw=None)
+let string_view_char_length : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: StringView(s), .. }] => Int(s.char_length(), raw=None)
+    _ => Int(0, raw=None)
+  }
 }
 
 ///|
-let string_view_char_length_eq : RuntimeFunction = ctx => match ctx.args {
-  [{ val: StringView(s), .. }, { val: Int(n, ..), .. }] =>
-    Bool(s.char_length() == n)
-  _ => Bool(false)
+let string_view_char_length_eq : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: StringView(s), .. }, { val: Int(n, ..), .. }] =>
+      Bool(s.char_length() == n)
+    _ => Bool(false)
+  }
 }
 
 ///|
-let string_view_char_length_ge : RuntimeFunction = ctx => match ctx.args {
-  [{ val: StringView(s), .. }, { val: Int(n, ..), .. }] =>
-    Bool(s.char_length() >= n)
-  _ => Bool(false)
+let string_view_char_length_ge : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: StringView(s), .. }, { val: Int(n, ..), .. }] =>
+      Bool(s.char_length() >= n)
+    _ => Bool(false)
+  }
 }
 
 ///|
-let string_view_compare : RuntimeFunction = ctx => match ctx.args {
-  [{ val: StringView(s1), .. }, { val: StringView(s2), .. }] =>
-    Int(s1.compare(s2), raw=None)
-  _ => Int(0, raw=None)
+let string_view_compare : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: StringView(s1), .. }, { val: StringView(s2), .. }] =>
+      Int(s1.compare(s2), raw=None)
+    _ => Int(0, raw=None)
+  }
 }
 
 ///|
-let string_view_contains : RuntimeFunction = ctx => match ctx.args {
-  [{ val: StringView(s), .. }, { val: StringView(sub), .. }] =>
-    Bool(s.contains(sub))
-  _ => Bool(false)
+let string_view_contains : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: StringView(s), .. }, { val: StringView(sub), .. }] =>
+      Bool(s.contains(sub))
+    _ => Bool(false)
+  }
 }
 
 ///|
-let string_view_data : RuntimeFunction = ctx => match ctx.args {
-  [{ val: StringView(s), .. }] => String(s.data())
-  _ => String("")
+let string_view_data : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: StringView(s), .. }] => String(s.data())
+    _ => String("")
+  }
 }
 
 ///|
-let string_view_default : RuntimeFunction = ctx => match ctx.args {
-  _ => StringView("")
+let string_view_default : RuntimeFunction = ctx => {
+  match ctx.args {
+    _ => StringView("")
+  }
 }
 
 ///|
-let string_view_equal : RuntimeFunction = ctx => match ctx.args {
-  [{ val: StringView(s1), .. }, { val: StringView(s2), .. }] => Bool(s1 == s2)
-  _ => Bool(false)
+let string_view_equal : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: StringView(s1), .. }, { val: StringView(s2), .. }] => Bool(s1 == s2)
+    _ => Bool(false)
+  }
 }
 
 ///|
-let string_view_find : RuntimeFunction = ctx => match ctx.args {
-  [{ val: StringView(s), .. }, { val: StringView(sub), .. }] =>
-    match s.find(sub) {
-      Some(i) => Int(i, raw=None)
-      None => Int(-1, raw=None)
-    }
-  _ => Int(-1, raw=None)
-}
-
-///|
-let string_view_fold : RuntimeFunction = ctx => match ctx.args {
-  [{ val: StringView(s), .. }, { val: init, .. }, { val: Fn(func), .. }, ..] =>
-    s.fold(init~, fn(acc, char) {
-      ctx.context.call(func.val, ctx.pkg, [
-        { val: acc, kind: Positional },
-        { val: Char(char), kind: Positional },
-      ]) catch {
-        _ => Unit
+let string_view_find : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: StringView(s), .. }, { val: StringView(sub), .. }] =>
+      match s.find(sub) {
+        Some(i) => Int(i, raw=None)
+        None => Int(-1, raw=None)
       }
-    })
-  _ => String("")
+    _ => Int(-1, raw=None)
+  }
 }
 
 ///|
-let string_view_get_char : RuntimeFunction = ctx => match ctx.args {
-  [{ val: StringView(s), .. }, { val: Int(i, ..), .. }] =>
-    s.get_char(i).map(Char(_)) |> RuntimeValue::from_option
-  _ => StringView("")
+let string_view_fold : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: StringView(s), .. }, { val: init, .. }, { val: Fn(func), .. }, ..] =>
+      s.fold(init~, fn(acc, char) {
+        ctx.context.call(func.val, ctx.pkg, [
+          { val: acc, kind: Positional },
+          { val: Char(char), kind: Positional },
+        ]) catch {
+          _ => Unit
+        }
+      })
+    _ => String("")
+  }
 }
 
 ///|
-let string_view_has_prefix : RuntimeFunction = ctx => match ctx.args {
-  [{ val: StringView(s), .. }, { val: StringView(prefix), .. }] =>
-    Bool(s.has_prefix(prefix))
-  _ => Bool(false)
+let string_view_get_char : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: StringView(s), .. }, { val: Int(i, ..), .. }] =>
+      s.get_char(i).map(x => Char(x)) |> RuntimeValue::from_option
+    _ => StringView("")
+  }
 }
 
 ///|
-let string_view_has_suffix : RuntimeFunction = ctx => match ctx.args {
-  [{ val: StringView(s), .. }, { val: StringView(suffix), .. }] =>
-    Bool(s.has_suffix(suffix))
-  _ => Bool(false)
+let string_view_has_prefix : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: StringView(s), .. }, { val: StringView(prefix), .. }] =>
+      Bool(s.has_prefix(prefix))
+    _ => Bool(false)
+  }
 }
 
 ///|
-let string_view_is_blank : RuntimeFunction = ctx => match ctx.args {
-  [{ val: StringView(s), .. }] => Bool(s.is_blank())
-  _ => Bool(false)
+let string_view_has_suffix : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: StringView(s), .. }, { val: StringView(suffix), .. }] =>
+      Bool(s.has_suffix(suffix))
+    _ => Bool(false)
+  }
 }
 
 ///|
-let string_view_is_empty : RuntimeFunction = ctx => match ctx.args {
-  [{ val: StringView(s), .. }] => Bool(s.is_empty())
-  _ => Bool(false)
+let string_view_is_blank : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: StringView(s), .. }] => Bool(s.is_blank())
+    _ => Bool(false)
+  }
 }
 
 ///|
-let string_view_iter : RuntimeFunction = ctx => match ctx.args {
-  [{ val: StringView(s), .. }] => Iter(s.iter().map(Char(_)))
-  _ => Iter(Iter::empty())
+let string_view_is_empty : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: StringView(s), .. }] => Bool(s.is_empty())
+    _ => Bool(false)
+  }
 }
 
 ///|
-let string_view_offset_of_nth_char : RuntimeFunction = ctx => match ctx.args {
-  [{ val: StringView(s), .. }, { val: Int(n, ..), .. }] =>
-    RuntimeValue::from_option(s.offset_of_nth_char(n).map(Int(_, raw=None)))
-  _ => Int(-1, raw=None)
+let string_view_iter : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: StringView(s), .. }] => Iter(s.iter().map(x => Char(x)))
+    _ => Iter(Iter::empty())
+  }
 }
 
 ///|
-let string_view_op_add : RuntimeFunction = ctx => match ctx.args {
-  [{ val: StringView(s1), .. }, { val: StringView(s2), .. }] =>
-    StringView(s1 + s2)
-  _ => StringView("")
+let string_view_offset_of_nth_char : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: StringView(s), .. }, { val: Int(n, ..), .. }] =>
+      RuntimeValue::from_option(
+        s.offset_of_nth_char(n).map(x => Int(x, raw=None)),
+      )
+    _ => Int(-1, raw=None)
+  }
 }
 
 ///|
-let string_view_op_equal : RuntimeFunction = ctx => match ctx.args {
-  [{ val: StringView(s1), .. }, { val: StringView(s2), .. }] => Bool(s1 == s2)
-  _ => Bool(false)
+let string_view_op_add : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: StringView(s1), .. }, { val: StringView(s2), .. }] =>
+      StringView(s1 + s2)
+    _ => StringView("")
+  }
 }
 
 ///|
-let string_view_pad_end : RuntimeFunction = ctx => match ctx.args {
-  [
-    { val: StringView(s), .. },
-    { val: Int(total_width, ..), .. },
-    { val: Char(padding_char), .. },
-  ] => StringView(s.pad_end(total_width, padding_char))
-  _ => StringView("")
+let string_view_op_equal : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: StringView(s1), .. }, { val: StringView(s2), .. }] => Bool(s1 == s2)
+    _ => Bool(false)
+  }
 }
 
 ///|
-let string_view_pad_start : RuntimeFunction = ctx => match ctx.args {
-  [
-    { val: StringView(s), .. },
-    { val: Int(total_width, ..), .. },
-    { val: Char(padding_char), .. },
-  ] => StringView(s.pad_start(total_width, padding_char))
-  _ => StringView("")
+let string_view_pad_end : RuntimeFunction = ctx => {
+  match ctx.args {
+    [
+      { val: StringView(s), .. },
+      { val: Int(total_width, ..), .. },
+      { val: Char(padding_char), .. },
+    ] => StringView(s.pad_end(total_width, padding_char))
+    _ => StringView("")
+  }
 }
 
 ///|
-let string_view_repeat : RuntimeFunction = ctx => match ctx.args {
-  [{ val: StringView(s), .. }, { val: Int(n, ..), .. }] =>
-    StringView(s.repeat(n))
-  _ => StringView("")
+let string_view_pad_start : RuntimeFunction = ctx => {
+  match ctx.args {
+    [
+      { val: StringView(s), .. },
+      { val: Int(total_width, ..), .. },
+      { val: Char(padding_char), .. },
+    ] => StringView(s.pad_start(total_width, padding_char))
+    _ => StringView("")
+  }
 }
 
 ///|
-let string_view_replace : RuntimeFunction = ctx => match ctx.args {
-  [
-    { val: StringView(s), .. },
-    { val: StringView(old), .. },
-    { val: StringView(new), .. },
-  ] => StringView(s.replace(old~, new~))
-  _ => StringView("")
+let string_view_repeat : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: StringView(s), .. }, { val: Int(n, ..), .. }] =>
+      StringView(s.repeat(n))
+    _ => StringView("")
+  }
 }
 
 ///|
-let string_view_replace_all : RuntimeFunction = ctx => match ctx.args {
-  [
-    { val: StringView(s), .. },
-    { val: String(from), .. },
-    { val: String(to), .. },
-  ] => StringView(s.replace_all(old=from, new=to))
-  _ => StringView("")
+let string_view_replace : RuntimeFunction = ctx => {
+  match ctx.args {
+    [
+      { val: StringView(s), .. },
+      { val: StringView(old), .. },
+      { val: StringView(new), .. },
+    ] => StringView(s.replace(old~, new~))
+    _ => StringView("")
+  }
 }
 
 ///|
-let string_view_rev : RuntimeFunction = ctx => match ctx.args {
-  [{ val: StringView(s), .. }] => StringView(s.rev())
-  _ => StringView("")
+let string_view_replace_all : RuntimeFunction = ctx => {
+  match ctx.args {
+    [
+      { val: StringView(s), .. },
+      { val: String(from), .. },
+      { val: String(to), .. },
+    ] => StringView(s.replace_all(old=from, new=to))
+    _ => StringView("")
+  }
 }
 
 ///|
-let string_view_rev_find : RuntimeFunction = ctx => match ctx.args {
-  [{ val: StringView(s), .. }, { val: StringView(sub), .. }] =>
-    match s.rev_find(sub) {
-      Some(i) => Int(i, raw=None)
-      None => Int(-1, raw=None)
-    }
-  _ => Int(-1, raw=None)
+let string_view_rev : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: StringView(s), .. }] => StringView(s.rev())
+    _ => StringView("")
+  }
 }
 
 ///|
-let string_view_rev_fold : RuntimeFunction = ctx => match ctx.args {
-  [
-    { val: StringView(s), .. },
-    { val: init, kind: Labelled("init") },
-    { val: Fn(func), .. },
-    ..,
-  ] =>
-    s.rev_fold(init~, fn(acc, char) {
-      ctx.context.call(func.val, ctx.pkg, [
-        { val: acc, kind: Positional },
-        { val: Char(char), kind: Positional },
-      ]) catch {
-        _ => Unit
+let string_view_rev_find : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: StringView(s), .. }, { val: StringView(sub), .. }] =>
+      match s.rev_find(sub) {
+        Some(i) => Int(i, raw=None)
+        None => Int(-1, raw=None)
       }
-    })
-  _ => Unit
+    _ => Int(-1, raw=None)
+  }
 }
 
 ///|
-let string_view_rev_iter : RuntimeFunction = ctx => match ctx.args {
-  [{ val: StringView(s), .. }] => Iter(s.rev_iter().map(Char(_)))
-  _ => Iter(Iter::empty())
+let string_view_rev_fold : RuntimeFunction = ctx => {
+  match ctx.args {
+    [
+      { val: StringView(s), .. },
+      { val: init, kind: Labelled("init") },
+      { val: Fn(func), .. },
+      ..,
+    ] =>
+      s.rev_fold(init~, fn(acc, char) {
+        ctx.context.call(func.val, ctx.pkg, [
+          { val: acc, kind: Positional },
+          { val: Char(char), kind: Positional },
+        ]) catch {
+          _ => Unit
+        }
+      })
+    _ => Unit
+  }
 }
 
 ///|
-let string_view_split : RuntimeFunction = ctx => match ctx.args {
-  [{ val: StringView(s), .. }, { val: String(sep), .. }] =>
-    Iter(s.split(sep).map(StringView(_)))
-  [{ val: StringView(s), .. }, { val: StringView(sep), .. }] =>
-    Iter(s.split(sep).map(StringView(_)))
-  _ => Iter(Iter::empty())
+let string_view_rev_iter : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: StringView(s), .. }] => Iter(s.rev_iter().map(x => Char(x)))
+    _ => Iter(Iter::empty())
+  }
 }
 
 ///|
-let string_view_start_offset : RuntimeFunction = ctx => match ctx.args {
-  [{ val: StringView(s), .. }] => Int(s.start_offset(), raw=None)
-  _ => Int(0, raw=None)
+let string_view_split : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: StringView(s), .. }, { val: String(sep), .. }] =>
+      Iter(s.split(sep).map(x => StringView(x)))
+    [{ val: StringView(s), .. }, { val: StringView(sep), .. }] =>
+      Iter(s.split(sep).map(x => StringView(x)))
+    _ => Iter(Iter::empty())
+  }
 }
 
 ///|
-let string_view_strip_prefix : RuntimeFunction = ctx => match ctx.args {
-  [{ val: StringView(s), .. }, { val: StringView(prefix), .. }] =>
-    match s.strip_prefix(prefix) {
-      Some(rest) => StringView(rest)
-      None => StringView(s)
-    }
-  _ => StringView("")
+let string_view_start_offset : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: StringView(s), .. }] => Int(s.start_offset(), raw=None)
+    _ => Int(0, raw=None)
+  }
 }
 
 ///|
-let string_view_strip_suffix : RuntimeFunction = ctx => match ctx.args {
-  [{ val: StringView(s), .. }, { val: StringView(suffix), .. }] =>
-    match s.strip_suffix(suffix) {
-      Some(rest) => StringView(rest)
-      None => StringView(s)
-    }
-  _ => StringView("")
+let string_view_strip_prefix : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: StringView(s), .. }, { val: StringView(prefix), .. }] =>
+      match s.strip_prefix(prefix) {
+        Some(rest) => StringView(rest)
+        None => StringView(s)
+      }
+    _ => StringView("")
+  }
 }
 
 ///|
-let string_view_to_array : RuntimeFunction = ctx => match ctx.args {
-  [{ val: StringView(s), .. }] => Array(s.to_array().map(Char(_)))
-  _ => Array([])
+let string_view_strip_suffix : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: StringView(s), .. }, { val: StringView(suffix), .. }] =>
+      match s.strip_suffix(suffix) {
+        Some(rest) => StringView(rest)
+        None => StringView(s)
+      }
+    _ => StringView("")
+  }
 }
 
 ///|
-let string_view_to_bytes : RuntimeFunction = ctx => match ctx.args {
-  [{ val: StringView(s), .. }] => Bytes(@encoding/utf8.encode(s))
-  _ => Bytes(b"")
+let string_view_to_array : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: StringView(s), .. }] => Array(s.to_array().map(x => Char(x)))
+    _ => Array([])
+  }
 }
 
 ///|
-let string_view_to_json : RuntimeFunction = ctx => match ctx.args {
-  [{ val: StringView(s), .. }] => Json(s.to_json())
-  _ => String("\"\"")
+let string_view_to_bytes : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: StringView(s), .. }] => Bytes(@encoding/utf8.encode(s))
+    _ => Bytes(b"")
+  }
 }
 
 ///|
-let string_view_to_lower : RuntimeFunction = ctx => match ctx.args {
-  [{ val: StringView(s), .. }] => StringView(s.to_lower())
-  _ => StringView("")
+let string_view_to_json : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: StringView(s), .. }] => Json(s.to_json())
+    _ => String("\"\"")
+  }
 }
 
 ///|
-let string_view_to_string : RuntimeFunction = ctx => match ctx.args {
-  [{ val: StringView(s), .. }] => String(s.to_string())
-  _ => String("")
+let string_view_to_lower : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: StringView(s), .. }] => StringView(s.to_lower())
+    _ => StringView("")
+  }
 }
 
 ///|
-let string_view_to_string_view_view : RuntimeFunction = ctx => match ctx.args {
-  [{ val: StringView(s), .. }] => StringView(s)
-  _ => StringView("")
+let string_view_to_string : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: StringView(s), .. }] => String(s.to_string())
+    _ => String("")
+  }
 }
 
 ///|
-let string_view_to_upper : RuntimeFunction = ctx => match ctx.args {
-  [{ val: StringView(s), .. }] => StringView(s.to_upper())
-  _ => StringView("")
+let string_view_to_string_view_view : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: StringView(s), .. }] => StringView(s)
+    _ => StringView("")
+  }
 }
 
 ///|
-let string_view_trim : RuntimeFunction = ctx => match ctx.args {
-  [{ val: StringView(s), .. }, { val: StringView(char_set), .. }] =>
-    StringView(s.trim(char_set~))
-  _ => StringView("")
+let string_view_to_upper : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: StringView(s), .. }] => StringView(s.to_upper())
+    _ => StringView("")
+  }
 }
 
 ///|
-let string_view_trim_end : RuntimeFunction = ctx => match ctx.args {
-  [{ val: StringView(s), .. }, { val: StringView(char_set), .. }] =>
-    StringView(s.trim_end(char_set~))
-  _ => StringView("")
+let string_view_trim : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: StringView(s), .. }, { val: StringView(char_set), .. }] =>
+      StringView(s.trim(char_set~))
+    _ => StringView("")
+  }
 }
 
 ///|
-let string_view_trim_start : RuntimeFunction = ctx => match ctx.args {
-  [{ val: StringView(s), .. }, { val: StringView(char_set), .. }] =>
-    StringView(s.trim_start(char_set~))
-  _ => StringView("")
+let string_view_trim_end : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: StringView(s), .. }, { val: StringView(char_set), .. }] =>
+      StringView(s.trim_end(char_set~))
+    _ => StringView("")
+  }
 }
 
 ///|
-let string_view_unsafe_charcode_at : RuntimeFunction = ctx => match ctx.args {
-  [{ val: StringView(s), .. }, { val: Int(i, ..), .. }] =>
-    if i >= 0 && i < s.length() {
-      Int(s.unsafe_charcode_at(i), raw=None)
-    } else {
-      Int(0, raw=None)
-    }
-  _ => Int(0, raw=None)
+let string_view_trim_start : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: StringView(s), .. }, { val: StringView(char_set), .. }] =>
+      StringView(s.trim_start(char_set~))
+    _ => StringView("")
+  }
+}
+
+///|
+let string_view_unsafe_charcode_at : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: StringView(s), .. }, { val: Int(i, ..), .. }] =>
+      if i >= 0 && i < s.length() {
+        UInt16(s.unsafe_get(i))
+      } else {
+        UInt16(0)
+      }
+    _ => UInt16(0)
+  }
 }

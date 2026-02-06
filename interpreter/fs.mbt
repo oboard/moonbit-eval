@@ -38,15 +38,17 @@ pub let fs_methods : Map[String, RuntimeFunction] = {
 }
 
 ///|
-let fs_read_file_fn : RuntimeFunction = ctx => if ctx.args
-  is [{ val: String(path), .. }] {
-  Array(
-    (@fs.read_dir(path) catch { IOError(msg) => raise Raise(String(msg)) }).map(
-      String(_),
-    ),
-  )
-} else {
-  Unit
+let fs_read_file_fn : RuntimeFunction = ctx => {
+  if ctx.args is [{ val: String(path), .. }] {
+    Array(
+      (@fs.read_dir(path) catch { IOError(msg) => raise Raise(String(msg)) }).map(x => {
+          String(x)
+        },
+      ),
+    )
+  } else {
+    Unit
+  }
 }
 
 ///|
@@ -70,63 +72,70 @@ let fs_write_file_fn : RuntimeFunction = ctx => {
 }
 
 ///|
-let fs_is_dir_fn : RuntimeFunction = ctx => if ctx.args
-  is [{ val: String(path), .. }] {
-  Bool(@fs.is_dir(path) catch { IOError(msg) => raise Raise(String(msg)) })
-} else {
-  Unit
+let fs_is_dir_fn : RuntimeFunction = ctx => {
+  if ctx.args is [{ val: String(path), .. }] {
+    Bool(@fs.is_dir(path) catch { IOError(msg) => raise Raise(String(msg)) })
+  } else {
+    Unit
+  }
 }
 
 ///|
-let fs_is_file_fn : RuntimeFunction = ctx => if ctx.args
-  is [{ val: String(path), .. }] {
-  Bool(@fs.is_file(path) catch { IOError(msg) => raise Raise(String(msg)) })
-} else {
-  Unit
+let fs_is_file_fn : RuntimeFunction = ctx => {
+  if ctx.args is [{ val: String(path), .. }] {
+    Bool(@fs.is_file(path) catch { IOError(msg) => raise Raise(String(msg)) })
+  } else {
+    Unit
+  }
 }
 
 ///|
-let fs_path_exists_fn : RuntimeFunction = ctx => if ctx.args
-  is [{ val: String(path), .. }] {
-  Bool(@fs.path_exists(path))
-} else {
-  Unit
+let fs_path_exists_fn : RuntimeFunction = ctx => {
+  if ctx.args is [{ val: String(path), .. }] {
+    Bool(@fs.path_exists(path))
+  } else {
+    Unit
+  }
 }
 
 ///|
-let fs_read_dir_fn : RuntimeFunction = ctx => if ctx.args
-  is [{ val: String(path), .. }] {
-  Array(
-    (@fs.read_dir(path) catch { IOError(msg) => raise Raise(String(msg)) }).map(
-      String(_),
-    ),
-  )
-} else {
-  Unit
+let fs_read_dir_fn : RuntimeFunction = ctx => {
+  if ctx.args is [{ val: String(path), .. }] {
+    Array(
+      (@fs.read_dir(path) catch { IOError(msg) => raise Raise(String(msg)) }).map(x => {
+          String(x)
+        },
+      ),
+    )
+  } else {
+    Unit
+  }
 }
 
 ///|
-let fs_read_file_to_bytes_fn : RuntimeFunction = ctx => if ctx.args
-  is [{ val: String(path), .. }] {
-  Bytes(
-    @fs.read_file_to_bytes(path) catch {
-      IOError(msg) => raise Raise(String(msg))
-    },
-  )
-} else {
-  Unit
+let fs_read_file_to_bytes_fn : RuntimeFunction = ctx => {
+  if ctx.args is [{ val: String(path), .. }] {
+    Bytes(
+      @fs.read_file_to_bytes(path) catch {
+        IOError(msg) => raise Raise(String(msg))
+      },
+    )
+  } else {
+    Unit
+  }
 }
 
 ///|
-let fs_read_file_to_string_fn : RuntimeFunction = ctx => if ctx.args
-  is [{ val: String(path), .. }] {
-  String(
-    @fs.read_file_to_string(path) catch {
-      IOError(msg) => raise Raise(String(msg))
-    },
-  )
-} else {
-  Unit
+let fs_read_file_to_string_fn : RuntimeFunction = ctx => {
+  if ctx.args is [{ val: String(path), .. }] {
+    String(
+      @fs.read_file_to_string(path) catch {
+        IOError(msg) => raise Raise(String(msg))
+      },
+    )
+  } else {
+    Unit
+  }
 }
 
 ///|

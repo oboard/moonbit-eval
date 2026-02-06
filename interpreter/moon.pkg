@@ -1,0 +1,18 @@
+import {
+  "moonbitlang/core/list",
+  "moonbitlang/core/array",
+  "moonbitlang/core/json",
+  "moonbitlang/core/bigint",
+  "moonbitlang/core/buffer",
+  "moonbitlang/core/string",
+  "moonbitlang/core/hashmap",
+  "moonbitlang/core/strconv",
+  "moonbitlang/core/encoding/utf8" @encoding/utf8,
+  "moonbitlang/x/encoding",
+  "moonbitlang/parser/syntax",
+  "moonbitlang/parser/basic",
+  "moonbitlang/parser",
+  "moonbitlang/parser/tokens",
+  "moonbitlang/parser/attribute",
+  "moonbitlang/x/fs",
+}

@@ -38,327 +38,393 @@ pub let array_methods : Map[String, RuntimeFunction] = {
 
 ///|
 /// 数组排序
-let array_sort_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Array(arr), .. }] => {
-    arr.sort()
-    Unit
+let array_sort_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: Array(arr), .. }] => {
+      arr.sort()
+      Unit
+    }
+    _ => Unit
   }
-  _ => Unit
 }
 
 ///|
 /// 数组zip操作
-let array_zip_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Array(arr1), .. }, { val: Array(arr2), .. }] =>
-    Array(arr1.zip(arr2).map(pair => Tuple([pair.0, pair.1])))
-  _ => Unit
+let array_zip_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: Array(arr1), .. }, { val: Array(arr2), .. }] =>
+      Array(arr1.zip(arr2).map(pair => Tuple([pair.0, pair.1])))
+    _ => Unit
+  }
 }
 
 ///|
 /// 数组make操作
-let array_make_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Int(len, ..), .. }, { val, .. }] => Array(Array::make(len, val))
-  _ => Unit
+let array_make_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: Int(len, ..), .. }, { val, .. }] => Array(Array::make(len, val))
+    _ => Unit
+  }
 }
 
 ///|
 /// 数组new操作
-let array_new_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Int(len, ..), kind: LabelledOption("capacity") }] =>
-    Array(Array::new(capacity=len))
-  _ => Array(Array::new())
+let array_new_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: Int(len, ..), kind: LabelledOption("capacity") }] =>
+      Array(Array::new(capacity=len))
+    _ => Array(Array::new())
+  }
 }
 
 ///|
 /// 数组长度
-let array_length_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Array(arr), .. }] => Int(arr.length(), raw=None)
-  _ => Unit
+let array_length_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: Array(arr), .. }] => Int(arr.length(), raw=None)
+    _ => Unit
+  }
 }
 
 ///|
 /// 数组push操作
-let array_push_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Array(arr), .. }, { val, .. }] => {
-    arr.push(val)
-    Array(arr)
+let array_push_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: Array(arr), .. }, { val, .. }] => {
+      arr.push(val)
+      Array(arr)
+    }
+    _ => Unit
   }
-  _ => Unit
 }
 
 ///|
 /// 数组clear操作
-let array_clear_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Array(arr), .. }] => {
-    arr.clear()
-    Unit
+let array_clear_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: Array(arr), .. }] => {
+      arr.clear()
+      Unit
+    }
+    _ => Unit
   }
-  _ => Unit
 }
 
 ///|
 /// 数组is_empty操作
-let array_is_empty_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Array(arr), .. }] => Bool(arr.is_empty())
-  _ => Unit
+let array_is_empty_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: Array(arr), .. }] => Bool(arr.is_empty())
+    _ => Unit
+  }
 }
 
 ///|
 /// 数组reverse操作
-let array_rev_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Array(arr), .. }] => Array(arr.rev())
-  _ => Unit
+let array_rev_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: Array(arr), .. }] => Array(arr.rev())
+    _ => Unit
+  }
 }
 
 ///|
 /// 数组copy操作
-let array_copy_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Array(arr), .. }] => Array(arr.copy())
-  _ => Unit
+let array_copy_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: Array(arr), .. }] => Array(arr.copy())
+    _ => Unit
+  }
 }
 
 ///|
 /// 数组join操作
-let array_join_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Array(arr), .. }, { val: String(sep), .. }] =>
-    String(arr.map(v => v.to_string()).join(sep))
-  _ => Unit
+let array_join_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: Array(arr), .. }, { val: String(sep), .. }] =>
+      String(arr.map(v => v.to_string()).join(sep))
+    _ => Unit
+  }
 }
 
 ///|
 /// 数组swap操作
-let array_swap_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Array(arr), .. }, { val: Int(i, ..), .. }, { val: Int(j, ..), .. }] => {
-    arr.swap(i, j)
-    Unit
+let array_swap_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: Array(arr), .. }, { val: Int(i, ..), .. }, { val: Int(j, ..), .. }] => {
+      arr.swap(i, j)
+      Unit
+    }
+    _ => Unit
   }
-  _ => Unit
 }
 
 ///|
 /// 数组get操作
-let array_get_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Array(arr), .. }, { val: Int(i, ..), .. }] =>
-    RuntimeValue::from_option(arr.get(i))
-  _ => Unit
+let array_get_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: Array(arr), .. }, { val: Int(i, ..), .. }] =>
+      RuntimeValue::from_option(arr.get(i))
+    _ => Unit
+  }
 }
 
 ///|
 /// 数组append操作
-let array_append_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Array(arr), .. }, { val: Array(arr2), .. }] => {
-    arr.append(arr2)
-    Unit
+let array_append_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: Array(arr), .. }, { val: Array(arr2), .. }] => {
+      arr.append(arr2)
+      Unit
+    }
+    _ => Unit
   }
-  _ => Unit
 }
 
 ///|
 /// 数组set操作
-let array_set_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Array(arr), .. }, { val: Int(i, ..), .. }, { val, .. }] => {
-    arr[i] = val
-    Unit
+let array_set_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: Array(arr), .. }, { val: Int(i, ..), .. }, { val, .. }] => {
+      arr[i] = val
+      Unit
+    }
+    _ => Unit
   }
-  _ => Unit
 }
 
 ///|
 /// 数组pop操作
-let array_pop_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Array(arr), .. }] => RuntimeValue::from_option(arr.pop())
-  _ => Unit
+let array_pop_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: Array(arr), .. }] => RuntimeValue::from_option(arr.pop())
+    _ => Unit
+  }
 }
 
 ///|
 /// 数组insert操作
-let array_insert_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Array(arr), .. }, { val: Int(i, ..), .. }, { val, .. }] => {
-    arr.insert(i, val)
-    Unit
+let array_insert_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: Array(arr), .. }, { val: Int(i, ..), .. }, { val, .. }] => {
+      arr.insert(i, val)
+      Unit
+    }
+    _ => Unit
   }
-  _ => Unit
 }
 
 ///|
 /// 数组remove操作
-let array_remove_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Array(arr), .. }, { val: Int(i, ..), .. }] => arr.remove(i)
-  _ => Unit
+let array_remove_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: Array(arr), .. }, { val: Int(i, ..), .. }] => arr.remove(i)
+    _ => Unit
+  }
 }
 
 ///|
 /// 数组contains操作
-let array_contains_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Array(arr), .. }, { val, .. }] => Bool(arr.contains(val))
-  _ => Unit
+let array_contains_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: Array(arr), .. }, { val, .. }] => Bool(arr.contains(val))
+    _ => Unit
+  }
 }
 
 ///|
 /// 数组search操作
-let array_search_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Array(arr), .. }, { val, .. }] =>
-    RuntimeValue::from_option(arr.search(val).map(fn(i) { Int(i, raw=None) }))
-  _ => Unit
+let array_search_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: Array(arr), .. }, { val, .. }] =>
+      RuntimeValue::from_option(arr.search(val).map(fn(i) { Int(i, raw=None) }))
+    _ => Unit
+  }
 }
 
 ///|
 /// 数组capacity操作
-let array_capacity_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Array(arr), .. }] => Int(arr.capacity(), raw=None)
-  _ => Unit
+let array_capacity_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: Array(arr), .. }] => Int(arr.capacity(), raw=None)
+    _ => Unit
+  }
 }
 
 ///|
 /// 数组resize操作
-let array_resize_fn : RuntimeFunction = ctx => match ctx.args {
-  [
-    { val: Array(arr), .. },
-    { val: Int(new_size, ..), .. },
-    { val: fill_val, .. },
-    ..,
-  ] => {
-    arr.resize(new_size, fill_val)
-    Unit
+let array_resize_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [
+      { val: Array(arr), .. },
+      { val: Int(new_size, ..), .. },
+      { val: fill_val, .. },
+      ..,
+    ] => {
+      arr.resize(new_size, fill_val)
+      Unit
+    }
+    _ => Unit
   }
-  _ => Unit
 }
 
 ///|
 /// 数组truncate操作
-let array_truncate_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Array(arr), .. }, { val: Int(len, ..), .. }] => {
-    arr.truncate(len)
-    Unit
+let array_truncate_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: Array(arr), .. }, { val: Int(len, ..), .. }] => {
+      arr.truncate(len)
+      Unit
+    }
+    _ => Unit
   }
-  _ => Unit
 }
 
 ///|
 /// 数组reserve_capacity操作
-let array_reserve_capacity_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Array(arr), .. }, { val: Int(additional, ..), .. }] => {
-    arr.reserve_capacity(additional)
-    Unit
+let array_reserve_capacity_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: Array(arr), .. }, { val: Int(additional, ..), .. }] => {
+      arr.reserve_capacity(additional)
+      Unit
+    }
+    _ => Unit
   }
-  _ => Unit
 }
 
 ///|
 /// 数组each操作
-let array_each_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Array(arr), .. }, { val: Fn(f), .. }] => {
-    arr.each(fn(val) {
-      ctx.context.call(f.val, ctx.pkg, [{ val, kind: Positional }]) |> ignore
-    })
-    Unit
+let array_each_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: Array(arr), .. }, { val: Fn(f), .. }] => {
+      arr.each(val => {
+        ctx.context.call(f.val, ctx.pkg, [{ val, kind: Positional }]) |> ignore
+      })
+      Unit
+    }
+    _ => Unit
   }
-  _ => Unit
 }
 
 ///|
 /// 数组eachi操作
-let array_eachi_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Array(arr), .. }, { val: Fn(f), .. }] => {
-    arr.eachi(fn(i, val) {
-      ctx.context.call(f.val, ctx.pkg, [
-        { val: Int(i, raw=None), kind: Positional },
-        { val, kind: Positional },
-      ])
-      |> ignore
-    })
-    Unit
+let array_eachi_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: Array(arr), .. }, { val: Fn(f), .. }] => {
+      arr.eachi((i, val) => {
+        ctx.context.call(f.val, ctx.pkg, [
+          { val: Int(i, raw=None), kind: Positional },
+          { val, kind: Positional },
+        ])
+        |> ignore
+      })
+      Unit
+    }
+    _ => Unit
   }
-  _ => Unit
 }
 
 ///|
 /// 数组map操作
-let array_map_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Array(arr), .. }, { val: Fn(f), .. }] => {
-    let new_arr = arr.map(fn(val) {
-      ctx.context.call(f.val, ctx.pkg, [{ val, kind: Positional }])
-    })
-    Array(new_arr)
+let array_map_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: Array(arr), .. }, { val: Fn(f), .. }] => {
+      let new_arr = arr.map(val => {
+        ctx.context.call(f.val, ctx.pkg, [{ val, kind: Positional }])
+      })
+      Array(new_arr)
+    }
+    _ => Unit
   }
-  _ => Unit
 }
 
 ///|
 /// 数组mapi操作
-let array_mapi_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Array(arr), .. }, { val: Fn(f), .. }] => {
-    let new_arr = arr.mapi(fn(i, val) {
-      ctx.context.call(f.val, ctx.pkg, [
-        { val: Int(i, raw=None), kind: Positional },
-        { val, kind: Positional },
-      ])
-    })
-    Array(new_arr)
+let array_mapi_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: Array(arr), .. }, { val: Fn(f), .. }] => {
+      let new_arr = arr.mapi((i, val) => {
+        ctx.context.call(f.val, ctx.pkg, [
+          { val: Int(i, raw=None), kind: Positional },
+          { val, kind: Positional },
+        ])
+      })
+      Array(new_arr)
+    }
+    _ => Unit
   }
-  _ => Unit
 }
 
 ///|
 /// 数组filter操作
-let array_filter_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Array(arr), .. }, { val: Fn(f), .. }] => {
-    let new_arr = arr.filter(fn(val) {
-      ctx.context.call(f.val, ctx.pkg, [{ val, kind: Positional }])
-      is Bool(true)
-    })
-    Array(new_arr)
+let array_filter_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: Array(arr), .. }, { val: Fn(f), .. }] => {
+      let new_arr = arr.filter(val => {
+        ctx.context.call(f.val, ctx.pkg, [{ val, kind: Positional }])
+        is Bool(true)
+      })
+      Array(new_arr)
+    }
+    _ => Unit
   }
-  _ => Unit
 }
 
 ///|
 /// 数组fold操作
-let array_fold_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Array(arr), .. }, { val: init_val, .. }, { val: Fn(f), .. }, ..] =>
-    arr.fold(init=init_val, fn(acc, val) {
-      ctx.context.call(f.val, ctx.pkg, [
-        { val: acc, kind: Positional },
-        { val, kind: Positional },
-      ])
-    })
-  _ => Unit
+let array_fold_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: Array(arr), .. }, { val: init_val, .. }, { val: Fn(f), .. }, ..] =>
+      arr.fold(init=init_val, (acc, val) => {
+        ctx.context.call(f.val, ctx.pkg, [
+          { val: acc, kind: Positional },
+          { val, kind: Positional },
+        ])
+      })
+    _ => Unit
+  }
 }
 
 ///|
 /// 数组index_of操作
-let array_search_by_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Array(arr), .. }, { val: Fn(f), .. }] => {
-    let index = arr.search_by(val => (try? ctx.context.call(f.val, ctx.pkg, [
-        { val, kind: Positional },
-      ]))
-      is Ok(Bool(true)))
-    RuntimeValue::from_option(index.map(Int(_, raw=None)))
+let array_search_by_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: Array(arr), .. }, { val: Fn(f), .. }] => {
+      let index = arr.search_by(val => {
+        (try? ctx.context.call(f.val, ctx.pkg, [{ val, kind: Positional }]))
+        is Ok(Bool(true))
+      })
+      RuntimeValue::from_option(index.map(x => Int(x, raw=None)))
+    }
+    _ => Unit
   }
-  _ => Unit
 }
 
 ///|
 /// 数组iter操作
-let array_iter_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Array(arr), .. }] => Iter(arr.iter())
-  _ => Unit
+let array_iter_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: Array(arr), .. }] => Iter(arr.iter())
+    _ => Unit
+  }
 }
 
 ///|
-let array_iter2_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Array(arr), .. }] => {
-    let len = arr.length()
-    let mut index = 0
-    let iterator = Iter2::new(fn() {
-      guard index < len else { None }
-      let key = Int(index, raw=None)
-      let value = arr[index]
-      index += 1
-      Some((key, value))
-    })
-    let iter2_impl = iterator.iter2()
-    Iter2(iter2_impl)
+let array_iter2_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: Array(arr), .. }] => {
+      let len = arr.length()
+      let mut index = 0
+      let iterator = Iter2::new(fn() {
+        guard index < len else { None }
+        let key = Int(index, raw=None)
+        let value = arr[index]
+        index += 1
+        Some((key, value))
+      })
+      let iter2_impl = iterator.iter2()
+      Iter2(iter2_impl)
+    }
+    _ => Unit
   }
-  _ => Unit
 }

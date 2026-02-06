@@ -141,8 +141,10 @@ pub fn ClosureInterpreter::lookup_current_function(
   self : ClosureInterpreter,
 ) -> String {
   let buf = @buffer.new()
-  self.call_stack.each(frame => if frame is FunctionCall(name) {
-    buf.write_string("\{name} => ")
+  self.call_stack.each(frame => {
+    if frame is FunctionCall(name) {
+      buf.write_string("\{name} => ")
+    }
   })
   buf.to_string()
 }

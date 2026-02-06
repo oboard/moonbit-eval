@@ -12,72 +12,88 @@ let stringbuilder_methods : Map[String, RuntimeFunction] = {
 }
 
 ///|
-let stringbuilder_new_fn : RuntimeFunction = _ => StringBuilder(
-  StringBuilder::new(),
-)
-
-///|
-let stringbuilder_is_empty_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: StringBuilder(self), .. }] => Bool(self.is_empty())
-  _ => Bool(false)
+let stringbuilder_new_fn : RuntimeFunction = _ => {
+  StringBuilder(StringBuilder::new())
 }
 
 ///|
-let stringbuilder_reset_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: StringBuilder(self), .. }] => {
-    self.reset()
-    Unit
+let stringbuilder_is_empty_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: StringBuilder(self), .. }] => Bool(self.is_empty())
+    _ => Bool(false)
   }
-  _ => Unit
 }
 
 ///|
-let stringbuilder_to_string_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: StringBuilder(self), .. }] => String(self.to_string())
-  _ => String("")
-}
-
-///|
-let stringbuilder_write_iter_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: StringBuilder(self), .. }, { val: Iter(iter), .. }] => {
-    self.write_iter(iter.map(x => if x is Char(c) { c } else { panic() }))
-    Unit
+let stringbuilder_reset_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: StringBuilder(self), .. }] => {
+      self.reset()
+      Unit
+    }
+    _ => Unit
   }
-  _ => Unit
 }
 
 ///|
-let stringbuilder_write_object_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: StringBuilder(self), .. }, { val: str, .. }] => {
-    self.write_object(str)
-    Unit
+let stringbuilder_to_string_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: StringBuilder(self), .. }] => String(self.to_string())
+    _ => String("")
   }
-  _ => Unit
 }
 
 ///|
-let stringbuilder_write_string_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: StringBuilder(self), .. }, { val: String(str), .. }] => {
-    self.write_string(str)
-    Unit
+let stringbuilder_write_iter_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: StringBuilder(self), .. }, { val: Iter(iter), .. }] => {
+      self.write_iter(iter.map(x => if x is Char(c) { c } else { panic() }))
+      Unit
+    }
+    _ => Unit
   }
-  _ => Unit
 }
 
 ///|
-let stringbuilder_write_char_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: StringBuilder(self), .. }, { val: Char(ch), .. }] => {
-    self.write_char(ch)
-    Unit
+let stringbuilder_write_object_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: StringBuilder(self), .. }, { val: str, .. }] => {
+      self.write_object(str)
+      Unit
+    }
+    _ => Unit
   }
-  _ => Unit
 }
 
 ///|
-let stringbuilder_write_view_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: StringBuilder(self), .. }, { val: StringView(view), .. }] => {
-    self.write_view(view)
-    Unit
+let stringbuilder_write_string_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: StringBuilder(self), .. }, { val: String(str), .. }] => {
+      self.write_string(str)
+      Unit
+    }
+    _ => Unit
   }
-  _ => Unit
+}
+
+///|
+let stringbuilder_write_char_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: StringBuilder(self), .. }, { val: Char(ch), .. }] => {
+      self.write_char(ch)
+      Unit
+    }
+    _ => Unit
+  }
+}
+
+///|
+let stringbuilder_write_view_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: StringBuilder(self), .. }, { val: StringView(view), .. }] => {
+      self.write_view(view)
+      Unit
+    }
+    _ => Unit
+  }
 }

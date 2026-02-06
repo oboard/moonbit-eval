@@ -1,10 +1,10 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "oboard/moonbit-eval"
 
-import(
-  "moonbitlang/parser/syntax"
-  "oboard/moonbit-eval/interpreter"
-)
+import {
+  "moonbitlang/parser/syntax",
+  "oboard/moonbit-eval/interpreter",
+}
 
 // Values
 pub fn add_embedded_fn(MoonBitVM, String, (@interpreter.RuntimeFunctionContext) -> @interpreter.RuntimeValue raise @interpreter.ControlFlow) -> Unit

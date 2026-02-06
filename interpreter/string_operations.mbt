@@ -29,7 +29,7 @@ pub fn ClosureInterpreter::visit_multiline_string(
   elems : @list.List[@syntax.MultilineStringElem],
 ) -> RuntimeValue raise ControlFlow {
   let buf = @buffer.new()
-  elems.eachi(fn(i, elem) {
+  elems.eachi((i, elem) => {
     match elem {
       String(str) => buf.write_string(str)
       Interp(elems) => buf.write_string(self.interp_string(elems))

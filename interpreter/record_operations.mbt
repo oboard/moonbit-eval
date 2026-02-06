@@ -17,7 +17,7 @@ fn ClosureInterpreter::visit_record_update(
       let new_fields = refer.val.copy()
 
       // 更新指定字段
-      fields.each(fn(field) {
+      fields.each(field => {
         let field_name = field.label.name
         let field_value = self.visit(field.expr)
         new_fields.set(field_name, field_value)
@@ -105,8 +105,9 @@ fn ClosureInterpreter::visit_mutate(
         Label({ name, .. }) => {
           // 构造函数字段赋值处理
           let new_field_value = self.visit(field)
-          let field = refer.val.fields.search_by(field => field.name ==
-            Some(name))
+          let field = refer.val.fields.search_by(field => {
+            field.name == Some(name)
+          })
           // 处理构造函数的字段赋值
           if field is Some(i) {
             refer.val.fields[i].value = new_field_value

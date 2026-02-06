@@ -14,9 +14,9 @@ fn RuntimePackage::infer_struct_type_from_fields(
     let (type_name, type_def) = entry
     match type_def.components {
       Record(struct_fields) => {
-        let all_matched = struct_fields.all(sf => current_fields
-          .iter()
-          .any(cf => sf.name.label == cf))
+        let all_matched = struct_fields.all(sf => {
+          current_fields.iter().any(cf => sf.name.label == cf)
+        })
         if struct_fields.length() == current_fields.length() && all_matched {
           type_name
         } else {
@@ -123,10 +123,9 @@ fn ClosureInterpreter::infer_return_type_from_expr(
     Apply(func~, ..) =>
       match func {
         @syntax.Expr::Ident(id={ name: ident, .. }, ..) =>
-          self.with_ident(ident, (pkg, name) => pkg.env
-            .find(name)
-            .unwrap_or(Unit)
-            .get_type())
+          self.with_ident(ident, (pkg, name) => {
+            pkg.env.find(name).unwrap_or(Unit).get_type()
+          })
         _ => RuntimeType::any()
       }
     // 处理 match 表达式

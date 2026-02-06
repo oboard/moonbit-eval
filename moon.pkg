@@ -1,10 +1,12 @@
-{
-  "import": [
-    "moonbitlang/parser",
-    "moonbitlang/parser/syntax",
-    "oboard/moonbit-eval/interpreter"
-  ],
-  "link": {
+import {
+  "moonbitlang/parser",
+  "moonbitlang/core/bench",
+  "moonbitlang/parser/syntax",
+  "oboard/moonbit-eval/interpreter",
+}
+
+options(
+  link: {
     "js": {
       "exports": [
         "create",
@@ -15,8 +17,8 @@
         "add_embedded_fn",
         "add_embedded_method",
         "value_to_json",
-        "value_to_string"
-      ]
-    }
-  }
-}
+        "value_to_string",
+      ],
+    },
+  },
+)

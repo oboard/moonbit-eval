@@ -214,15 +214,19 @@ fn ClosureInterpreter::parse_function_type(
 ) -> RuntimeType {
   match func {
     { parameters, error_type, is_async, body, return_type, .. } => {
-      let param_types = parameters.map(param => match param {
-        DiscardPositional(ty~, ..) =>
-          self.parse_type(ty.unwrap_or(Any(loc=dummy_loc())))
-        Positional(ty~, ..) =>
-          self.parse_type(ty.unwrap_or(Any(loc=dummy_loc())))
-        Labelled(ty~, ..) => self.parse_type(ty.unwrap_or(Any(loc=dummy_loc())))
-        Optional(ty~, ..) => self.parse_type(ty.unwrap_or(Any(loc=dummy_loc())))
-        QuestionOptional(ty~, ..) =>
-          self.parse_type(ty.unwrap_or(Any(loc=dummy_loc())))
+      let param_types = parameters.map(param => {
+        match param {
+          DiscardPositional(ty~, ..) =>
+            self.parse_type(ty.unwrap_or(Any(loc=dummy_loc())))
+          Positional(ty~, ..) =>
+            self.parse_type(ty.unwrap_or(Any(loc=dummy_loc())))
+          Labelled(ty~, ..) =>
+            self.parse_type(ty.unwrap_or(Any(loc=dummy_loc())))
+          Optional(ty~, ..) =>
+            self.parse_type(ty.unwrap_or(Any(loc=dummy_loc())))
+          QuestionOptional(ty~, ..) =>
+            self.parse_type(ty.unwrap_or(Any(loc=dummy_loc())))
+        }
       })
       let return_type = match return_type {
         Some(return_type) => self.parse_type(return_type)

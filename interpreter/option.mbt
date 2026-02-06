@@ -17,268 +17,298 @@ pub let option_methods : Map[String, RuntimeFunction] = {
 
 ///|
 /// Option unwrap 方法
-let option_unwrap_fn : RuntimeFunction = ctx => match ctx.args {
-  [
-    {
-      val: Constructor(
-        { val: { name: "Some", fields: [{ value: inner_value, .. }] }, .. }
-      ),
+let option_unwrap_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [
+      {
+        val: Constructor(
+          { val: { name: "Some", fields: [{ value: inner_value, .. }] }, .. }
+        ),
+        ..,
+      },
       ..,
-    },
-    ..,
-  ] => inner_value
-  [{ val: Constructor({ val: { name: "None", fields: [] }, .. }), .. }] => Unit
-  _ => Unit
+    ] => inner_value
+    [{ val: Constructor({ val: { name: "None", fields: [] }, .. }), .. }] =>
+      Unit
+    _ => Unit
+  }
 }
 
 ///|
 /// Option map 方法
-let option_map_fn : RuntimeFunction = ctx => match ctx.args {
-  [
-    {
-      val: Constructor(
-        { val: { name: "Some", fields: [{ value: inner_value, .. }] }, .. }
-      ),
+let option_map_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [
+      {
+        val: Constructor(
+          { val: { name: "Some", fields: [{ value: inner_value, .. }] }, .. }
+        ),
+        ..,
+      },
+      { val: Fn(func), .. },
       ..,
-    },
-    { val: Fn(func), .. },
-    ..,
-  ] => {
-    // 执行闭包调用
-    let result = ctx.context.call(func.val, ctx.pkg, [
-      { val: inner_value, kind: Positional },
-    ])
-    ctx.pkg.cons("Some", [result])
+    ] => {
+      // 执行闭包调用
+      let result = ctx.context.call(func.val, ctx.pkg, [
+        { val: inner_value, kind: Positional },
+      ])
+      ctx.pkg.cons("Some", [result])
+    }
+    [{ val: Constructor({ val: { name: "None", fields: [] }, .. }), .. }, _, ..] =>
+      ctx.pkg.cons("None", [])
+    _ => ctx.pkg.cons("None", [])
   }
-  [{ val: Constructor({ val: { name: "None", fields: [] }, .. }), .. }, _, ..] =>
-    ctx.pkg.cons("None", [])
-  _ => ctx.pkg.cons("None", [])
 }
 
 ///|
 /// Option map_or 方法
-let option_map_or_fn : RuntimeFunction = ctx => match ctx.args {
-  [
-    {
-      val: Constructor(
-        { val: { name: "Some", fields: [{ value: inner_value, .. }] }, .. }
-      ),
+let option_map_or_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [
+      {
+        val: Constructor(
+          { val: { name: "Some", fields: [{ value: inner_value, .. }] }, .. }
+        ),
+        ..,
+      },
+      _,
+      { val: Fn(func), .. },
       ..,
-    },
-    _,
-    { val: Fn(func), .. },
-    ..,
-  ] =>
-    // 对于Some值，执行闭包调用
-    ctx.context.call(func.val, ctx.pkg, [{ val: inner_value, kind: Positional }])
-  [
-    { val: Constructor({ val: { name: "None", fields: [] }, .. }), .. },
-    { val: default_value, .. },
-    _,
-    ..,
-  ] => default_value
-  _ => Unit
+    ] =>
+      // 对于Some值，执行闭包调用
+      ctx.context.call(func.val, ctx.pkg, [
+        { val: inner_value, kind: Positional },
+      ])
+    [
+      { val: Constructor({ val: { name: "None", fields: [] }, .. }), .. },
+      { val: default_value, .. },
+      _,
+      ..,
+    ] => default_value
+    _ => Unit
+  }
 }
 
 ///|
 /// Option map_or_else 方法
-let option_map_or_else_fn : RuntimeFunction = ctx => match ctx.args {
-  [
-    {
-      val: Constructor(
-        { val: { name: "Some", fields: [{ value: inner_value, .. }] }, .. }
-      ),
+let option_map_or_else_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [
+      {
+        val: Constructor(
+          { val: { name: "Some", fields: [{ value: inner_value, .. }] }, .. }
+        ),
+        ..,
+      },
+      _,
+      { val: Fn(map_func), .. },
       ..,
-    },
-    _,
-    { val: Fn(map_func), .. },
-    ..,
-  ] =>
-    // 对于Some值，执行map闭包
-    ctx.context.call(map_func.val, ctx.pkg, [
-      { val: inner_value, kind: Positional },
-    ])
-  [
-    { val: Constructor({ val: { name: "None", fields: [] }, .. }), .. },
-    { val: Fn(else_func), .. },
-    _,
-    ..,
-  ] =>
-    // 对于None值，执行else闭包
-    ctx.context.call(else_func.val, ctx.pkg, [])
-  _ => Unit
+    ] =>
+      // 对于Some值，执行map闭包
+      ctx.context.call(map_func.val, ctx.pkg, [
+        { val: inner_value, kind: Positional },
+      ])
+    [
+      { val: Constructor({ val: { name: "None", fields: [] }, .. }), .. },
+      { val: Fn(else_func), .. },
+      _,
+      ..,
+    ] =>
+      // 对于None值，执行else闭包
+      ctx.context.call(else_func.val, ctx.pkg, [])
+    _ => Unit
+  }
 }
 
 ///|
 /// Option bind 方法
-let option_bind_fn : RuntimeFunction = ctx => match ctx.args {
-  [
-    {
-      val: Constructor(
-        { val: { name: "Some", fields: [{ value: inner_value, .. }] }, .. }
-      ),
+let option_bind_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [
+      {
+        val: Constructor(
+          { val: { name: "Some", fields: [{ value: inner_value, .. }] }, .. }
+        ),
+        ..,
+      },
+      { val: Fn(func), .. },
       ..,
-    },
-    { val: Fn(func), .. },
-    ..,
-  ] =>
-    // 执行闭包调用，bind应该返回函数的结果（应该是Option类型）
-    ctx.context.call(func.val, ctx.pkg, [{ val: inner_value, kind: Positional }])
-  [{ val: Constructor({ val: { name: "None", fields: [] }, .. }), .. }, _, ..] =>
-    ctx.pkg.cons("None", [])
-  _ => ctx.pkg.cons("None", [])
+    ] =>
+      // 执行闭包调用，bind应该返回函数的结果（应该是Option类型）
+      ctx.context.call(func.val, ctx.pkg, [
+        { val: inner_value, kind: Positional },
+      ])
+    [{ val: Constructor({ val: { name: "None", fields: [] }, .. }), .. }, _, ..] =>
+      ctx.pkg.cons("None", [])
+    _ => ctx.pkg.cons("None", [])
+  }
 }
 
 ///|
 /// Option flatten 方法
-let option_flatten_fn : RuntimeFunction = ctx => match ctx.args {
-  [
-    {
-      val: Constructor(
-        {
-          val: {
-            name: "Some",
-            fields: [
-              {
-                value: Constructor(
-                  {
-                    val: { name: "Some", fields: [{ value: inner_value, .. }] },
-                    ..,
-                  }
-                ),
-                ..,
-              },
-            ],
-          },
-          ..,
-        }
-      ),
+let option_flatten_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [
+      {
+        val: Constructor(
+          {
+            val: {
+              name: "Some",
+              fields: [
+                {
+                  value: Constructor(
+                    {
+                      val: {
+                        name: "Some",
+                        fields: [{ value: inner_value, .. }],
+                      },
+                      ..,
+                    }
+                  ),
+                  ..,
+                },
+              ],
+            },
+            ..,
+          }
+        ),
+        ..,
+      },
       ..,
-    },
-    ..,
-  ] => ctx.pkg.cons("Some", [inner_value])
-  [
-    {
-      val: Constructor(
-        {
-          val: {
-            name: "Some",
-            fields: [
-              {
-                value: Constructor({ val: { name: "None", fields: [] }, .. }),
-                ..,
-              },
-            ],
-          },
-          ..,
-        }
-      ),
+    ] => ctx.pkg.cons("Some", [inner_value])
+    [
+      {
+        val: Constructor(
+          {
+            val: {
+              name: "Some",
+              fields: [
+                {
+                  value: Constructor({ val: { name: "None", fields: [] }, .. }),
+                  ..,
+                },
+              ],
+            },
+            ..,
+          }
+        ),
+        ..,
+      },
       ..,
-    },
-    ..,
-  ] => ctx.pkg.cons("None", [])
-  [{ val: Constructor({ val: { name: "None", fields: [] }, .. }), .. }] =>
-    ctx.pkg.cons("None", [])
-  _ => ctx.pkg.cons("None", [])
+    ] => ctx.pkg.cons("None", [])
+    [{ val: Constructor({ val: { name: "None", fields: [] }, .. }), .. }] =>
+      ctx.pkg.cons("None", [])
+    _ => ctx.pkg.cons("None", [])
+  }
 }
 
 ///|
 /// Option is_empty 方法
-let option_is_empty_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Constructor({ val: { name: "Some", .. }, .. }), .. }] => Bool(false)
-  [{ val: Constructor({ val: { name: "None", fields: [] }, .. }), .. }] =>
-    Bool(true)
-  _ => Bool(true)
+let option_is_empty_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: Constructor({ val: { name: "Some", .. }, .. }), .. }] => Bool(false)
+    [{ val: Constructor({ val: { name: "None", fields: [] }, .. }), .. }] =>
+      Bool(true)
+    _ => Bool(true)
+  }
 }
 
 ///|
 /// Option filter 方法
-let option_filter_fn : RuntimeFunction = ctx => match ctx.args {
-  [
-    {
-      val: Constructor(
-        { val: { name: "Some", fields: [{ value: inner_value, .. }] }, .. }
-      ),
+let option_filter_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [
+      {
+        val: Constructor(
+          { val: { name: "Some", fields: [{ value: inner_value, .. }] }, .. }
+        ),
+        ..,
+      },
+      { val: Fn(predicate), .. },
       ..,
-    },
-    { val: Fn(predicate), .. },
-    ..,
-  ] => {
-    // 执行谓词闭包
-    let result = ctx.context.call(predicate.val, ctx.pkg, [
-      { val: inner_value, kind: Positional },
-    ])
-    // 根据谓词结果决定是否保留值
-    match result {
-      Bool(true) => ctx.pkg.cons("Some", [inner_value])
-      _ => ctx.pkg.cons("None", [])
+    ] => {
+      // 执行谓词闭包
+      let result = ctx.context.call(predicate.val, ctx.pkg, [
+        { val: inner_value, kind: Positional },
+      ])
+      // 根据谓词结果决定是否保留值
+      match result {
+        Bool(true) => ctx.pkg.cons("Some", [inner_value])
+        _ => ctx.pkg.cons("None", [])
+      }
     }
+    [{ val: Constructor({ val: { name: "None", fields: [] }, .. }), .. }, _, ..] =>
+      ctx.pkg.cons("None", [])
+    _ => ctx.pkg.cons("None", [])
   }
-  [{ val: Constructor({ val: { name: "None", fields: [] }, .. }), .. }, _, ..] =>
-    ctx.pkg.cons("None", [])
-  _ => ctx.pkg.cons("None", [])
 }
 
 ///|
 /// Option unwrap_or 方法
-let option_unwrap_or_fn : RuntimeFunction = ctx => match ctx.args {
-  [
-    {
-      val: Constructor(
-        { val: { name: "Some", fields: [{ value: inner_value, .. }] }, .. }
-      ),
+let option_unwrap_or_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [
+      {
+        val: Constructor(
+          { val: { name: "Some", fields: [{ value: inner_value, .. }] }, .. }
+        ),
+        ..,
+      },
+      _,
       ..,
-    },
-    _,
-    ..,
-  ] => inner_value
-  [
-    { val: Constructor({ val: { name: "None", fields: [] }, .. }), .. },
-    { val: default_value, .. },
-    ..,
-  ] => default_value
-  _ => Unit
+    ] => inner_value
+    [
+      { val: Constructor({ val: { name: "None", fields: [] }, .. }), .. },
+      { val: default_value, .. },
+      ..,
+    ] => default_value
+    _ => Unit
+  }
 }
 
 // option_unwrap_or_else_fn 已移除，现在使用支持解释器的版本
 
 ///|
 /// Option unwrap_or_default 方法
-let option_unwrap_or_default_fn : RuntimeFunction = ctx => match ctx.args {
-  [
-    {
-      val: Constructor(
-        { val: { name: "Some", fields: [{ value: inner_value, .. }] }, .. }
-      ),
+let option_unwrap_or_default_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [
+      {
+        val: Constructor(
+          { val: { name: "Some", fields: [{ value: inner_value, .. }] }, .. }
+        ),
+        ..,
+      },
       ..,
-    },
-    ..,
-  ] => inner_value
-  [{ val: Constructor({ val: { name: "None", fields: [] }, .. }), .. }] =>
-    // 返回默认值，对于数值类型返回0，其他类型返回Unit
-    // 这里简化实现，实际应该根据泛型类型参数确定默认值
-    Int(0, raw=None)
-  _ => Int(0, raw=None)
+    ] => inner_value
+    [{ val: Constructor({ val: { name: "None", fields: [] }, .. }), .. }] =>
+      // 返回默认值，对于数值类型返回0，其他类型返回Unit
+      // 这里简化实现，实际应该根据泛型类型参数确定默认值
+      Int(0, raw=None)
+    _ => Int(0, raw=None)
+  }
 }
 
 ///|
 /// Option unwrap_or_else 方法
-let option_unwrap_or_else_fn : RuntimeFunction = ctx => match ctx.args {
-  [
-    {
-      val: Constructor(
-        { val: { name: "Some", fields: [{ value: inner_value, .. }] }, .. }
-      ),
+let option_unwrap_or_else_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [
+      {
+        val: Constructor(
+          { val: { name: "Some", fields: [{ value: inner_value, .. }] }, .. }
+        ),
+        ..,
+      },
       ..,
-    },
-    ..,
-  ] => inner_value
-  [
-    { val: Constructor({ val: { name: "None", fields: [] }, .. }), .. },
-    { val: Fn(else_func), .. },
-    ..,
-  ] =>
-    // 对于None值，执行else闭包
-    ctx.context.call(else_func.val, ctx.pkg, [])
-  _ => Unit
+    ] => inner_value
+    [
+      { val: Constructor({ val: { name: "None", fields: [] }, .. }), .. },
+      { val: Fn(else_func), .. },
+      ..,
+    ] =>
+      // 对于None值，执行else闭包
+      ctx.context.call(else_func.val, ctx.pkg, [])
+    _ => Unit
+  }
 }

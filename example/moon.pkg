@@ -1,0 +1,7 @@
+import {
+  "oboard/moonbit-eval" @eval,
+}
+
+options(
+  "is-main": true,
+)

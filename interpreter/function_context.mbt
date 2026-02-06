@@ -19,35 +19,37 @@ pub fn ClosureInterpreter::create_function(
 ) -> WithType[RuntimeFunction] {
   let closure_env = pkg.env.create_closure_env()
   {
-    val: ctx => match func {
-      { parameters, body, return_type, .. } => {
-        // 切换到闭包捕获的环境
-        let old_mod = self.current_pkg
-        let old_env = pkg.env
-        self.current_pkg = pkg
-        self.current_pkg.env = closure_env
-        self.push_scope(
-          RuntimeLocation::FunctionCall(
-            "@" +
-            pkg.name +
-            "." +
-            name.unwrap_or("<function>") +
-            self.get_function_type_string(func),
-          ),
-        )
-        // 在新环境中绑定已解释的参数值
-        self.bind_runtime_parameters(parameters, @list.from_array(ctx.args))
-        defer {
-          self.pop_scope()
-          self.current_pkg.env = old_env
-          self.current_pkg = old_mod
-        }
-        // 执行函数体
-        let result = self.visit(body)
-        match (result.get_type(), result, return_type) {
-          (Any, Object({ val, .. }), Some(Arrow(res~, ..))) =>
-            Object({ val, ty: self.parse_type(res) })
-          _ => result
+    val: ctx => {
+      match func {
+        { parameters, body, return_type, .. } => {
+          // 切换到闭包捕获的环境
+          let old_mod = self.current_pkg
+          let old_env = pkg.env
+          self.current_pkg = pkg
+          self.current_pkg.env = closure_env
+          self.push_scope(
+            RuntimeLocation::FunctionCall(
+              "@" +
+              pkg.name +
+              "." +
+              name.unwrap_or("<function>") +
+              self.get_function_type_string(func),
+            ),
+          )
+          // 在新环境中绑定已解释的参数值
+          self.bind_runtime_parameters(parameters, @list.from_array(ctx.args))
+          defer {
+            self.pop_scope()
+            self.current_pkg.env = old_env
+            self.current_pkg = old_mod
+          }
+          // 执行函数体
+          let result = self.visit(body)
+          match (result.get_type(), result, return_type) {
+            (Any, Object({ val, .. }), Some(Arrow(res~, ..))) =>
+              Object({ val, ty: self.parse_type(res) })
+            _ => result
+          }
         }
       }
     },

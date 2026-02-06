@@ -29,283 +29,337 @@ pub let map_methods : Map[String, RuntimeFunction] = {
 
 ///|
 /// Map clear操作
-let map_clear_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Map(map), .. }] => {
-    map.clear()
-    Unit
+let map_clear_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: Map(map), .. }] => {
+      map.clear()
+      Unit
+    }
+    _ => Unit
   }
-  _ => Unit
 }
 
 ///|
 /// Map is_empty操作
-let map_is_empty_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Map(map), .. }] => Bool(map.is_empty())
-  _ => Unit
+let map_is_empty_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: Map(map), .. }] => Bool(map.is_empty())
+    _ => Unit
+  }
 }
 
 ///|
 /// Map capacity操作
-let map_capacity_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Map(map), .. }] => Int(map.capacity(), raw=None)
-  _ => Unit
+let map_capacity_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: Map(map), .. }] => Int(map.capacity(), raw=None)
+    _ => Unit
+  }
 }
 
 ///|
 /// Map contains操作
-let map_contains_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Map(map), .. }, { val: key, .. }] => Bool(map.contains(key))
-  _ => Unit
+let map_contains_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: Map(map), .. }, { val: key, .. }] => Bool(map.contains(key))
+    _ => Unit
+  }
 }
 
 ///|
 /// Map contains_kv操作
-let map_contains_kv_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Map(map), .. }, { val: key, .. }, { val, .. }] =>
-    Bool(map.get(key) == Some(val))
-  _ => Unit
+let map_contains_kv_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: Map(map), .. }, { val: key, .. }, { val, .. }] =>
+      Bool(map.get(key) == Some(val))
+    _ => Unit
+  }
 }
 
 ///|
 /// Map copy操作
-let map_copy_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Map(map), .. }] => Map(map.copy())
-  _ => Unit
+let map_copy_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: Map(map), .. }] => Map(map.copy())
+    _ => Unit
+  }
 }
 
 ///|
 /// Map each操作
-let map_each_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Map(map), .. }, { val: Fn(f), .. }] => {
-    map.each(fn(key, val) {
-      ctx.context.call(f.val, ctx.pkg, [
-        { val: key, kind: Positional },
-        { val, kind: Positional },
-      ])
-      |> ignore
-    })
-    Unit
+let map_each_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: Map(map), .. }, { val: Fn(f), .. }] => {
+      map.each((key, val) => {
+        ctx.context.call(f.val, ctx.pkg, [
+          { val: key, kind: Positional },
+          { val, kind: Positional },
+        ])
+        |> ignore
+      })
+      Unit
+    }
+    _ => Unit
   }
-  _ => Unit
 }
 
 ///|
 /// Map eachi操作
-let map_eachi_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Map(map), .. }, { val: Fn(f), .. }] => {
-    map.eachi(fn(i, key, val) {
-      ctx.context.call(f.val, ctx.pkg, [
-        { val: Int(i, raw=None), kind: Positional },
-        { val: key, kind: Positional },
-        { val, kind: Positional },
-      ])
-      |> ignore
-    })
-    Unit
+let map_eachi_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: Map(map), .. }, { val: Fn(f), .. }] => {
+      map.eachi((i, key, val) => {
+        ctx.context.call(f.val, ctx.pkg, [
+          { val: Int(i, raw=None), kind: Positional },
+          { val: key, kind: Positional },
+          { val, kind: Positional },
+        ])
+        |> ignore
+      })
+      Unit
+    }
+    _ => Unit
   }
-  _ => Unit
 }
 
 ///|
 /// Map from_array操作
-let map_from_array_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Array(arr), .. }] => {
-    let map = Map::new()
-    arr.each(fn(item) {
-      match item {
-        Tuple([key, val]) => map.set(key, val)
-        _ => ()
-      }
-    })
-    Map(map)
+let map_from_array_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: Array(arr), .. }] => {
+      let map = Map::new()
+      arr.each(fn(item) {
+        match item {
+          Tuple([key, val]) => map.set(key, val)
+          _ => ()
+        }
+      })
+      Map(map)
+    }
+    _ => Unit
   }
-  _ => Unit
 }
 
 ///|
 /// Map from_iter操作
-let map_from_iter_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Iter(iter), .. }] =>
-    Map(
-      Map::from_iter(
-        iter.map(item => match item {
-          Tuple([key, val]) => (key, val)
-          _ => panic()
-        }),
-      ),
-    )
-  _ => Unit
+let map_from_iter_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: Iter(iter), .. }] =>
+      Map(
+        Map::from_iter(
+          iter.map(item => {
+            match item {
+              Tuple([key, val]) => (key, val)
+              _ => panic()
+            }
+          }),
+        ),
+      )
+    _ => Unit
+  }
 }
 
 ///|
 /// Map get操作
-let map_get_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Map(map), .. }, { val: key, .. }] =>
-    RuntimeValue::from_option(map.get(key))
-  _ => Unit
+let map_get_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: Map(map), .. }, { val: key, .. }] =>
+      RuntimeValue::from_option(map.get(key))
+    _ => Unit
+  }
 }
 
 ///|
 /// Map get_or_default操作
-let map_get_or_default_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Map(map), .. }, { val: key, .. }, { val: default, .. }] =>
-    match map.get(key) {
-      Some(val) => val
-      None => default
-    }
-  _ => Unit
+let map_get_or_default_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: Map(map), .. }, { val: key, .. }, { val: default, .. }] =>
+      match map.get(key) {
+        Some(val) => val
+        None => default
+      }
+    _ => Unit
+  }
 }
 
 ///|
 /// Map get_or_init操作
-let map_get_or_init_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Map(map), .. }, { val: key, .. }, { val: Fn(f), .. }] =>
-    match map.get(key) {
-      Some(val) => val
-      None => {
-        let val = ctx.context.call(f.val, ctx.pkg, [])
-        map.set(key, val)
-        val
+let map_get_or_init_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: Map(map), .. }, { val: key, .. }, { val: Fn(f), .. }] =>
+      match map.get(key) {
+        Some(val) => val
+        None => {
+          let val = ctx.context.call(f.val, ctx.pkg, [])
+          map.set(key, val)
+          val
+        }
       }
-    }
-  _ => Unit
+    _ => Unit
+  }
 }
 
 ///|
 /// Map iter操作
-let map_iter_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Map(self), .. }] =>
-    Iter(
-      self
-      .iter()
-      .map(item => match item {
-        (key, val) => Tuple([key, val])
-      }),
-    )
-  _ => Unit
+let map_iter_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: Map(self), .. }] =>
+      Iter(
+        self
+        .iter()
+        .map(item => {
+          match item {
+            (key, val) => Tuple([key, val])
+          }
+        }),
+      )
+    _ => Unit
+  }
 }
 
 ///|
 /// Map iter2操作
-let map_iter2_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Map(self), .. }] => Iter2(self.iter2())
-  _ => Unit
+let map_iter2_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: Map(self), .. }] => Iter2(self.iter2())
+    _ => Unit
+  }
 }
 
 ///|
 /// Map keys操作
-let map_keys_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Map(map), .. }] => {
-    let arr = Array::new()
-    map.each(fn(key, _val) { arr.push(key) })
-    Array(arr)
+let map_keys_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: Map(map), .. }] => {
+      let arr = Array::new()
+      map.each(fn(key, _val) { arr.push(key) })
+      Array(arr)
+    }
+    _ => Unit
   }
-  _ => Unit
 }
 
 ///|
 /// Map map操作
-let map_map_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Map(map), .. }, { val: Fn(f), .. }] => {
-    let new_map = Map::new()
-    map.each(fn(key, val) {
-      let new_val = ctx.context.call(f.val, ctx.pkg, [
-        { val: key, kind: Positional },
-        { val, kind: Positional },
-      ])
-      new_map.set(key, new_val)
-    })
-    Map(new_map)
+let map_map_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: Map(map), .. }, { val: Fn(f), .. }] => {
+      let new_map = Map::new()
+      map.each((key, val) => {
+        let new_val = ctx.context.call(f.val, ctx.pkg, [
+          { val: key, kind: Positional },
+          { val, kind: Positional },
+        ])
+        new_map.set(key, new_val)
+      })
+      Map(new_map)
+    }
+    _ => Unit
   }
-  _ => Unit
 }
 
 ///|
 /// Map new操作
-let map_new_fn : RuntimeFunction = ctx => match ctx.args {
-  _ => Map(Map::new())
+let map_new_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    _ => Map(Map::new())
+  }
 }
 
 ///|
 /// Map of操作
-let map_of_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Array(arr), .. }] =>
-    Map(
-      Map::from_array(
-        arr.map(fn(item) {
-          match item {
-            Tuple([key, val]) => (key, val)
-            _ => error("Map of: (arr: T)")
-          }
-        }),
-      ),
-    )
-  _ => error("Map of: (arr: T)")
+let map_of_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: Array(arr), .. }] =>
+      Map(
+        Map::from_array(
+          arr.map(item => {
+            match item {
+              Tuple([key, val]) => (key, val)
+              _ => error("Map of: (arr: T)")
+            }
+          }),
+        ),
+      )
+    _ => error("Map of: (arr: T)")
+  }
 }
 
 ///|
 /// Map remove操作
-let map_remove_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Map(map), .. }, { val: key, .. }] => {
-    map.remove(key)
-    Unit
+let map_remove_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: Map(map), .. }, { val: key, .. }] => {
+      map.remove(key)
+      Unit
+    }
+    _ => Unit
   }
-  _ => Unit
 }
 
 ///|
 /// Map set操作
-let map_set_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Map(map), .. }, { val: key, .. }, { val, .. }] => {
-    map.set(key, val)
-    Unit
+let map_set_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: Map(map), .. }, { val: key, .. }, { val, .. }] => {
+      map.set(key, val)
+      Unit
+    }
+    _ => Unit
   }
-  _ => Unit
 }
 
 ///|
 /// Map size操作
-let map_size_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Map(map), .. }] => Int(map.length(), raw=None)
-  _ => Unit
+let map_size_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: Map(map), .. }] => Int(map.length(), raw=None)
+    _ => Unit
+  }
 }
 
 ///|
 /// Map to_array操作
-let map_to_array_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Map(map), .. }] => {
-    let arr : Array[RuntimeValue] = Array::new()
-    map.each(fn(key, val) { arr.push(Tuple([key, val])) })
-    Array(arr)
+let map_to_array_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: Map(map), .. }] => {
+      let arr : Array[RuntimeValue] = Array::new()
+      map.each(fn(key, val) { arr.push(Tuple([key, val])) })
+      Array(arr)
+    }
+    _ => Unit
   }
-  _ => Unit
 }
 
 ///|
 /// Map update操作
-let map_update_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Map(map), .. }, { val: key, .. }, { val: Fn(f), .. }] => {
-    match map.get(key) {
-      Some(old_val) => {
-        let new_val = ctx.context.call(f.val, ctx.pkg, [
-          { val: old_val, kind: Positional },
-        ])
-        map.set(key, new_val)
+let map_update_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: Map(map), .. }, { val: key, .. }, { val: Fn(f), .. }] => {
+      match map.get(key) {
+        Some(old_val) => {
+          let new_val = ctx.context.call(f.val, ctx.pkg, [
+            { val: old_val, kind: Positional },
+          ])
+          map.set(key, new_val)
+        }
+        None => ()
       }
-      None => ()
+      Unit
     }
-    Unit
+    _ => Unit
   }
-  _ => Unit
 }
 
 ///|
 /// Map values操作
-let map_values_fn : RuntimeFunction = ctx => match ctx.args {
-  [{ val: Map(map), .. }] => {
-    let arr = Array::new()
-    map.each(fn(_key, val) { arr.push(val) })
-    Array(arr)
+let map_values_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: Map(map), .. }] => {
+      let arr = Array::new()
+      map.each(fn(_key, val) { arr.push(val) })
+      Array(arr)
+    }
+    _ => Unit
   }
-  _ => Unit
 }

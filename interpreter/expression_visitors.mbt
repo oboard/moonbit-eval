@@ -108,7 +108,7 @@ fn ClosureInterpreter::visit_tuple(
   self : ClosureInterpreter,
   exprs : @list.List[@syntax.Expr],
 ) -> RuntimeValue raise ControlFlow {
-  let evaluated_values = exprs.map(fn(expr) { self.visit(expr) }).to_array()
+  let evaluated_values = exprs.map(expr => self.visit(expr)).to_array()
   Tuple(evaluated_values)
 }
 
@@ -162,22 +162,24 @@ fn ClosureInterpreter::visit_apply(
       // 处理构造函数调用，如 Some(5)
       Constr(constr~, ..) => {
         let fields = args
-          .map(arg => match arg.kind {
-            Positional =>
-              ConstructorField::{
-                name: None,
-                value: self.visit(arg.value),
-                mutable: false,
-              }
-            Labelled(label)
-            | LabelledPun(label)
-            | LabelledOption(label~, ..)
-            | LabelledOptionPun(label~, ..) =>
-              ConstructorField::{
-                name: Some(label.name),
-                value: self.visit(arg.value),
-                mutable: false,
-              }
+          .map(arg => {
+            match arg.kind {
+              Positional =>
+                ConstructorField::{
+                  name: None,
+                  value: self.visit(arg.value),
+                  mutable: false,
+                }
+              Labelled(label)
+              | LabelledPun(label)
+              | LabelledOption(label~, ..)
+              | LabelledOptionPun(label~, ..) =>
+                ConstructorField::{
+                  name: Some(label.name),
+                  value: self.visit(arg.value),
+                  mutable: false,
+                }
+            }
           })
           .to_array()
         let constr_name = constr.name.name
@@ -188,11 +190,13 @@ fn ClosureInterpreter::visit_apply(
       }
       // 处理静态方法调用，如 Bool::default()
       Method(type_name~, method_name~, ..) =>
-        self.with_ident(type_name.name, (pkg, name) => self.execute_static_method_call(
-          pkg.find_static_type(name),
-          method_name.name,
-          args,
-        ))
+        self.with_ident(type_name.name, (pkg, name) => {
+          self.execute_static_method_call(
+            pkg.find_static_type(name),
+            method_name.name,
+            args,
+          )
+        })
       // 处理其他表达式作为函数的情况，如 a[1](10)
       _ => {
         let func_value = self.visit(func)
@@ -257,7 +261,7 @@ fn ClosureInterpreter::visit_field(
         if field.name == Some(field_name) {
           break field.value
         }
-      } else {
+      } nobreak {
         self.error(
           "Field: " + field_name + " not found in constructor " + refer.val.name,
         )

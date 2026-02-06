@@ -650,27 +650,33 @@ pub impl Show for RuntimeValue with to_string(self) -> String {
     }
     Array(values) => {
       let parts = values
-        .map(val => match val {
-          String(s) => "\"\{s}\""
-          _ => val.to_string()
+        .map(val => {
+          match val {
+            String(s) => "\"\{s}\""
+            _ => val.to_string()
+          }
         })
         .join(", ")
       "[\{parts}]"
     }
     FixedArray(values) => {
       let parts = values
-        .map(val => match val {
-          String(s) => "\"\{s}\""
-          _ => val.to_string()
+        .map(val => {
+          match val {
+            String(s) => "\"\{s}\""
+            _ => val.to_string()
+          }
         })
         .join(", ")
       "[\{parts}]"
     }
     ArrayView(values) => {
       let parts = values
-        .map(val => match val {
-          String(s) => "\"\{s}\""
-          _ => val.to_string()
+        .map(val => {
+          match val {
+            String(s) => "\"\{s}\""
+            _ => val.to_string()
+          }
         })
         .join(", ")
       "[\{parts}]"

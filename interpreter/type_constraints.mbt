@@ -125,7 +125,7 @@ pub fn RuntimePackage::check_type_constraint(
         if !check_type_constraint2(fields[idx].value.get_type(), ty) {
           break false
         }
-      } else {
+      } nobreak {
         true
       })
     (
@@ -151,32 +151,32 @@ pub fn check_type_constraint2(
     (Arrow(_), Arrow(_)) => true
     (Tuple(tys1), Tuple(tys=tys2, ..)) =>
       tys1.length() == tys2.length() &&
-      {
+      ({
         let tys2 = tys2.to_array()
         for idx, ty in tys1 {
           if !check_type_constraint2(ty, tys2[idx]) {
             break false
           }
-        } else {
+        } nobreak {
           true
         }
-      }
+      })
     (
       Name(name=name1, tys=tys1, ..),
       Name(constr_id={ id: Ident(name=name2), .. }, tys=tys2, ..),
     ) =>
       name1 == name2 &&
       tys1.length() == tys2.length() &&
-      {
+      ({
         let tys2 = tys2.to_array()
         for idx, ty in tys1 {
           if !check_type_constraint2(ty, tys2[idx]) {
             break false
           }
-        } else {
+        } nobreak {
           true
         }
-      }
+      })
     (
       Object(pkg={ name: pkg1, .. }, name=name1),
       Object({ id: Dot(pkg=pkg2, id=name2), .. }),

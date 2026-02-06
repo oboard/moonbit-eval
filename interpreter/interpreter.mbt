@@ -205,7 +205,7 @@ pub fn ClosureInterpreter::top_visit(
             ty: Object(pkg=mod, name=binder_name),
           })
         }
-      } else {
+      } nobreak {
         Unit
       }
     }
@@ -242,7 +242,9 @@ pub fn ClosureInterpreter::top_visit(
         let target_name = target.target.map(l => l.name).unwrap_or(binder_name)
         let mod = match (pkg, type_name) {
           (Some(pkg), Some(id)) =>
-            self.with_ident(@syntax.LongIdent::Dot(pkg~, id~), (mod, _name) => mod)
+            self.with_ident(@syntax.LongIdent::Dot(pkg~, id~), (mod, _name) => 
+              mod
+            )
           (None, Some(name)) =>
             self.with_ident(@syntax.LongIdent::Ident(name~), (mod, _name) => mod)
           (Some(pkg), None) => self.find_pkg(pkg)
@@ -276,7 +278,7 @@ pub fn ClosureInterpreter::top_visit(
             match param {
               { name, .. } => type_params.push(name)
             }
-          } else {
+          } nobreak {
             ()
           }
 
@@ -289,7 +291,7 @@ pub fn ClosureInterpreter::top_visit(
                 Dot(id~, ..) => id
               },
             )
-          } else {
+          } nobreak {
             ()
           }
           if derived_traits.length() > 0 {
@@ -303,7 +305,7 @@ pub fn ClosureInterpreter::top_visit(
                 let constr_name = constr.name.name
                 // 将构造函数注册到constructors集合中
                 self.current_pkg.constructors.set(constr_name, tycon)
-              } else {
+              } nobreak {
                 ()
               }
             _ => () // Record类型不需要注册构造函数
@@ -335,7 +337,7 @@ pub fn ClosureInterpreter::top_visit(
         match quantifier {
           { name, .. } => type_params.push(name)
         }
-      } else {
+      } nobreak {
         ()
       }
 
@@ -371,19 +373,21 @@ pub fn ClosureInterpreter::top_visit(
           )
           self.current_pkg.set(func_name, func_value)
           // 处理alias属性，将别名映射到函数
-          attrs.each(attr => match attr {
-            {
-              parsed: Some(
-                Apply(
-                  { name: "alias", .. },
-                  More(Expr(Ident({ name: alias_name, .. })), ..)
-                )
-              ),
-              ..,
-            } =>
-              // println("\{alias_name} -> \{func_name}")
-              self.current_pkg.fn_aliases.set(alias_name, func_value)
-            _ => ()
+          attrs.each(attr => {
+            match attr {
+              {
+                parsed: Some(
+                  Apply(
+                    { name: "alias", .. },
+                    More(Expr(Ident({ name: alias_name, .. })), ..)
+                  )
+                ),
+                ..,
+              } =>
+                // println("\{alias_name} -> \{func_name}")
+                self.current_pkg.fn_aliases.set(alias_name, func_value)
+              _ => ()
+            }
           })
         }
         // 处理embedded函数声明
@@ -469,18 +473,17 @@ pub fn ClosureInterpreter::visit(
 
     // 处理变量标识符
     Ident(id={ name, .. }, ..) =>
-      self.with_ident(name, (
-        pkg,
-        name,
+      self.with_ident(name, (pkg, name) => {
         // 首先检查是否为构造函数
-      ) => if pkg.is_constructor(name) {
-        // 如果是构造函数，直接创建零参数构造函数实例
-        pkg.cons(name, [])
-      } else {
-        // 否则查找变量值
-        match pkg.find(name) {
-          Some(v) => v
-          None => self.error("variable @\{pkg.name}.\{name} not found")
+        if pkg.is_constructor(name) {
+          // 如果是构造函数，直接创建零参数构造函数实例
+          pkg.cons(name, [])
+        } else {
+          // 否则查找变量值
+          match pkg.find(name) {
+            Some(v) => v
+            None => self.error("variable @\{pkg.name}.\{name} not found")
+          }
         }
       })
 
@@ -634,7 +637,7 @@ pub fn ClosureInterpreter::visit(
 
     // 处理赋值操作
     Assign(var_={ name, .. }, expr~, augmented_by~, ..) =>
-      self.with_ident(name, fn(pkg, name) {
+      self.with_ident(name, (pkg, name) => {
         let new_value = match augmented_by {
           Some(op) => {
             let current_value = pkg.find(name).unwrap_or(Unit)
@@ -714,11 +717,13 @@ pub fn ClosureInterpreter::visit(
           )
           match func {
             Method(type_name~, method_name~, ..) =>
-              self.with_ident(type_name.name, (pkg, type_name) => self.execute_static_method_call(
-                pkg.find_static_type(type_name),
-                method_name.name,
-                pipe_args,
-              ))
+              self.with_ident(type_name.name, (pkg, type_name) => {
+                self.execute_static_method_call(
+                  pkg.find_static_type(type_name),
+                  method_name.name,
+                  pipe_args,
+                )
+              })
             Ident(id={ name, .. }, ..) => {
               // 处理函数调用，如 5 |> func(arg1, arg2)
               let pipe_args = @list.cons(
@@ -764,7 +769,7 @@ pub fn ClosureInterpreter::visit(
 
     // 处理 Continue 表达式
     Continue(args~, ..) => {
-      let continue_args = args.map(fn(arg) { self.visit(arg) }).to_array()
+      let continue_args = args.map(arg => self.visit(arg)).to_array()
       raise Continue(continue_args)
     }
 
@@ -773,10 +778,9 @@ pub fn ClosureInterpreter::visit(
       let name = constr.name.name
       match constr.extra_info {
         TypeName(ty_name) =>
-          self.with_ident(ty_name.name, (_env, _name) => self.current_pkg.cons(
-            name,
-            [],
-          ))
+          self.with_ident(ty_name.name, (_env, _name) => {
+            self.current_pkg.cons(name, [])
+          })
         Package(pkg) =>
           self.find_pkg(pkg).env
           .find(name)
@@ -856,7 +860,7 @@ pub fn ClosureInterpreter::visit(
     RecordUpdate(record~, fields~, ..) =>
       self.visit_record_update(record, fields)
     Method(type_name~, method_name~, ..) =>
-      self.with_ident(type_name.name, fn(pkg, ty_name) {
+      self.with_ident(type_name.name, (pkg, ty_name) => {
         // 查找用户定义的静态方法
         match pkg.struct_methods.get(ty_name) {
           Some(methods) =>
@@ -870,10 +874,9 @@ pub fn ClosureInterpreter::visit(
       })
     Map(elems~, ..) => {
       let map = elems
-        .map(elem => (
-          RuntimeValue::from_constant(elem.key),
-          self.visit(elem.expr),
-        ))
+        .map(elem => {
+          (RuntimeValue::from_constant(elem.key), self.visit(elem.expr))
+        })
         .iter()
         |> Map::from_iter
       Map(map)

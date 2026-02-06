@@ -22,11 +22,13 @@ fn ClosureInterpreter::visit_for(
   }
 
   // 执行更新块的辅助函数
-  let execute_continue_block = () => for update_tuple in continue_block {
-    match update_tuple {
-      (binder, update_expr) => {
-        let new_value = self.visit(update_expr) catch { _ => Unit }
-        self.current_pkg.env.update(binder.name, new_value)
+  let execute_continue_block = () => {
+    for update_tuple in continue_block {
+      match update_tuple {
+        (binder, update_expr) => {
+          let new_value = self.visit(update_expr) catch { _ => Unit }
+          self.current_pkg.env.update(binder.name, new_value)
+        }
       }
     }
   }
