@@ -242,9 +242,10 @@ pub fn ClosureInterpreter::top_visit(
         let target_name = target.target.map(l => l.name).unwrap_or(binder_name)
         let mod = match (pkg, type_name) {
           (Some(pkg), Some(id)) =>
-            self.with_ident(@syntax.LongIdent::Dot(pkg~, id~), (mod, _name) => 
+            self.with_ident(@syntax.LongIdent::Dot(pkg~, id~), (mod, _name) => {
+              let mod = mod
               mod
-            )
+            })
           (None, Some(name)) =>
             self.with_ident(@syntax.LongIdent::Ident(name~), (mod, _name) => mod)
           (Some(pkg), None) => self.find_pkg(pkg)
