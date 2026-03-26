@@ -22,24 +22,21 @@ pub let iter2_methods : Map[String, RuntimeFunction] = {
 let iter2_run_fn : RuntimeFunction = ctx => {
   match ctx.args {
     [{ val: Iter2(iter2), .. }, { val: Fn(func), .. }] => {
-      let result = iter2.run(fn(a, b) {
+      for a, b in iter2 {
         try {
           match
             ctx.context.call(func.val, ctx.pkg, [
               { val: a, kind: Positional },
               { val: b, kind: Positional },
             ]) {
-            Unit => IterEnd
-            _ => IterContinue
+            Unit => continue
+            _ => break
           }
         } catch {
-          _ => IterEnd
+          _ => break
         }
-      })
-      match result {
-        IterEnd => Unit
-        IterContinue => Unit
       }
+      Unit
     }
     _ => Unit
   }

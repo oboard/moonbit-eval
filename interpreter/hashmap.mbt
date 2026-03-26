@@ -417,7 +417,7 @@ let hash_map_to_string_fn : RuntimeFunction = ctx => {
       sb.write_string("{")
       let mut first = true
       map.each(fn(key, val) {
-        if not(first) {
+        if !first {
           sb.write_string(", ")
         }
         first = false

@@ -53,7 +53,7 @@ pub fn ClosureInterpreter::add_embedded_method(
   method_name : String,
   f : RuntimeFunction,
 ) -> Unit {
-  if not(self.embedded_methods.contains(type_name)) {
+  if !self.embedded_methods.contains(type_name) {
     self.embedded_methods.set(type_name, Map::new())
   }
   self.embedded_methods.get(type_name).unwrap().set(method_name, f)

@@ -336,7 +336,7 @@ let abort_fn : RuntimeFunction = ctx => {
 /// 布尔 NOT 运算
 let bool_not_fn : RuntimeFunction = ctx => {
   if ctx.args is [{ val: Bool(b), .. }] {
-    Bool(not(b))
+    Bool(!b)
   } else {
     Unit
   }
