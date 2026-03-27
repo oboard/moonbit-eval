@@ -244,7 +244,7 @@ fn ClosureInterpreter::parse_function_type(
 
 ///|
 pub fn RuntimeType::bool() -> RuntimeType {
-  Object(pkg=moonbitlang_core_bool_module, name="Bool")
+  Object(pkg=moonbitlang_core_builtin_module, name="Bool")
 }
 
 ///|

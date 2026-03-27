@@ -51,7 +51,7 @@ pub fn RuntimeEnvironment::create_closure_env(
   // 只捕获不可变变量的值，可变变量通过父环境引用
   self.values.each(fn(key, value) {
     let is_mutable = self.mutable_vars.get(key).unwrap_or(false)
-    if not(is_mutable) {
+    if !is_mutable {
       // 不可变变量：捕获当前值
       values.set(key, value)
       mutable_vars.set(key, false)

@@ -13,6 +13,7 @@ pub let fs_package : RuntimePackage = {
     trait_aliases: Map::new(),
     fn_aliases: Map::new(),
     trait_methods: Map::new(),
+    struct_constrs: Map::new(),
     values: fs_methods.map((_, v) => Fn({ val: v, ty: Internal })),
     env,
     deps: Map::new(),

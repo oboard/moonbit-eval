@@ -485,7 +485,7 @@ fn compare_types(
   while true {
     match (tys_a, tys_b) {
       (@list.More(ty_a, tail=tail_a), @list.More(ty_b, tail=tail_b)) => {
-        if not(compare_type_signatures(ty_a, ty_b)) {
+        if !compare_type_signatures(ty_a, ty_b) {
           return false
         }
         tys_a = tail_a

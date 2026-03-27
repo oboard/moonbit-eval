@@ -217,7 +217,7 @@ pub fn ClosureInterpreter::match_case(
           while true {
             match pat_list {
               @list.More(pat, tail=pat_tail) => {
-                if not(self.match_case(values[index], pat)) {
+                if !self.match_case(values[index], pat) {
                   return false
                 }
                 pat_list = pat_tail
@@ -245,7 +245,7 @@ pub fn ClosureInterpreter::match_case(
                 @list.More(array_pat, tail=pat_tail) => {
                   match array_pat {
                     @syntax.ArrayPattern::Pattern(pat) =>
-                      if not(self.match_case(values[index], pat)) {
+                      if !self.match_case(values[index], pat) {
                         return false
                       }
                     _ => return false // 其他数组模式暂不支持
@@ -273,7 +273,7 @@ pub fn ClosureInterpreter::match_case(
           for pat_field in pat_fields {
             match record_fields.get(pat_field.label.name) {
               Some(field_value) =>
-                if not(self.match_case(field_value, pat_field.pattern)) {
+                if !self.match_case(field_value, pat_field.pattern) {
                   return false
                 }
               None => return false
@@ -307,7 +307,7 @@ pub fn ClosureInterpreter::match_case(
                   @list.More(pat_arg, tail=pat_tail) => {
                     // 提取参数模式并递归匹配
                     let arg_pattern = pat_arg.pat
-                    if not(self.match_case(fields[index].value, arg_pattern)) {
+                    if !self.match_case(fields[index].value, arg_pattern) {
                       return false
                     }
                     match pat_arg.kind {

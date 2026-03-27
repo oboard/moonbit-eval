@@ -53,7 +53,7 @@ pub fn ClosureInterpreter::add_embedded_method(
   method_name : String,
   f : RuntimeFunction,
 ) -> Unit {
-  if not(self.embedded_methods.contains(type_name)) {
+  if !self.embedded_methods.contains(type_name) {
     self.embedded_methods.set(type_name, Map::new())
   }
   self.embedded_methods.get(type_name).unwrap().set(method_name, f)
@@ -271,6 +271,12 @@ pub fn ClosureInterpreter::top_visit(
     TopTypeDef(def) => {
       match def {
         { tycon, params, components, deriving, .. } => {
+          if def.components is Record(constr_decl=Some(constr_decl), ..) {
+            self.current_pkg.struct_constrs.set(
+              def.tycon,
+              constr_decl.name.name,
+            )
+          }
           self.current_pkg.type_definitions.set(tycon, def)
 
           // 处理泛型类型参数
@@ -402,6 +408,7 @@ pub fn ClosureInterpreter::top_visit(
             }
             _ => ()
           }
+        DeclNone => ()
       }
       Unit
     }

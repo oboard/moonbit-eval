@@ -46,7 +46,7 @@ fn ClosureInterpreter::visit_for(
       }
       None => true
     }
-    if not(should_continue) {
+    if !should_continue {
       break
     }
 
@@ -107,7 +107,7 @@ fn ClosureInterpreter::visit_while(
     |> ignore
   }
   // 如果没有break，执行else分支
-  if not(broke) {
+  if !broke {
     match while_else {
       Some(else_expr) =>
         result = self.visit_scoped(
