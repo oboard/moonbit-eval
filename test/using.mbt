@@ -7,7 +7,7 @@ test "function_alias" {
   // 测试函数别名定义和使用
   vm.eval(
     (
-      #|fnalias @int.abs
+      #|using @int {abs}
     ),
     top=true,
   )

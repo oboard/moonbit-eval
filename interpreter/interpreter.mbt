@@ -136,7 +136,38 @@ pub fn ClosureInterpreter::top_visit(
 ) -> RuntimeValue {
   match node {
     TopView(_) => Unit
-    TopUsing(_) => Unit
+    TopUsing(pkg~, names~, ..) => {
+      let mod = self.find_pkg(pkg.name)
+      for using_name in names {
+        let alias_target = using_name.0
+        let using_kind = using_name.1
+        let local_name = alias_target.binder.name
+        let source_name = alias_target.target.map(l => l.name).unwrap_or(local_name)
+        match using_kind {
+          @syntax.UsingKind::Trait =>
+            if mod.traits.get(source_name) is Some(target_value) {
+              self.current_pkg.trait_aliases.set(local_name, {
+                val: target_value,
+                ty: Object(pkg=mod, name=source_name),
+              })
+            }
+          @syntax.UsingKind::Type =>
+            if mod.type_definitions.get(source_name) is Some(target_value) {
+              self.current_pkg.type_aliases.set(local_name, {
+                val: target_value,
+                ty: Object(pkg=mod, name=source_name),
+              })
+            }
+          @syntax.UsingKind::Value =>
+            if mod.find(source_name) is Some(target_value) {
+              self.current_pkg.fn_aliases.set(local_name, target_value)
+              self.current_pkg.set(local_name, target_value)
+            }
+        }
+      } nobreak {
+        Unit
+      }
+    }
     TopImpl(self_ty~, trait_~, method_name~, params~, body~, ..) => {
       // 处理 trait 实现，如 impl Show for A with to_string
       let type_name = match self_ty {
@@ -187,80 +218,8 @@ pub fn ClosureInterpreter::top_visit(
         _ => Unit
       }
     }
-    TopBatchTraitAlias(pkg~, targets~, ..) => {
-      let pkg = pkg.map(l => l.name)
-      // 处理每个 trait 别名目标
-      for target in targets {
-        let binder_name = target.binder.name
-        let target_name = target.target.map(l => l.name).unwrap_or(binder_name)
-        let mod = match pkg {
-          Some(pkg) => self.find_pkg(pkg)
-          None => self.current_pkg
-        }
-        let target_value = mod.traits.get(binder_name)
-        // 将别名映射到目标 trait
-        if target_value is Some(target_value) {
-          self.current_pkg.trait_aliases.set(target_name, {
-            val: target_value,
-            ty: Object(pkg=mod, name=binder_name),
-          })
-        }
-      } nobreak {
-        Unit
-      }
-    }
-    TopBatchTypeAlias(pkg~, targets~, ..) => {
-      let pkg = pkg.map(l => l.name)
-      // 处理每个类型别名目标
-      for target in targets {
-        let binder_name = target.binder.name
-        let target_name = target.target.map(l => l.name).unwrap_or(binder_name)
-        let mod = match pkg {
-          Some(pkg) => self.find_pkg(pkg)
-          None => self.current_pkg
-        }
-        let target_value = mod.type_definitions.get(binder_name)
-        // 将别名映射到目标函数
-        if target_value is Some(target_value) {
-          self.current_pkg.type_aliases.set(target_name, {
-            val: target_value,
-            ty: Object(pkg=mod, name=binder_name),
-          })
-        }
-      }
-      Unit
-    }
     TopTest(_) => Unit
     TopImplRelation(_) => Unit
-    // 处理函数别名定义（如 fnalias @int.abs）
-    TopFuncAlias(pkg~, type_name~, targets~, ..) => {
-      let pkg = pkg.map(l => l.name)
-      let type_name = type_name.map(l => l.name)
-      // 处理每个别名目标
-      for target in targets {
-        let binder_name = target.binder.name
-        let target_name = target.target.map(l => l.name).unwrap_or(binder_name)
-        let mod = match (pkg, type_name) {
-          (Some(pkg), Some(id)) =>
-            self.with_ident(@syntax.LongIdent::Dot(pkg~, id~), (mod, _name) => {
-              let mod = mod
-              mod
-            })
-          (None, Some(name)) =>
-            self.with_ident(@syntax.LongIdent::Ident(name~), (mod, _name) => mod)
-          (Some(pkg), None) => self.find_pkg(pkg)
-          (None, None) => self.current_pkg
-        }
-        let target_value = mod.find(binder_name)
-        // 将别名映射到目标函数
-        if target_value is Some(target_value) {
-          self.current_pkg.fn_aliases.set(target_name, target_value)
-          self.current_pkg.set(binder_name, target_value)
-        }
-      }
-      Unit
-    }
-
     // 处理顶层常量定义（如 const Zero = 0）
     TopLetDef(binder~, expr~, ..) => {
       let value = self.visit(expr) catch { _ => Unit }
