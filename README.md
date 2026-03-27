@@ -33,7 +33,18 @@ inspect(vm.eval("if x > 40 { \"big\" } else { \"small\" }"), content="big")
 
 // Pattern matching
 inspect(vm.eval("match (1, 2) { (a, b) => a + b }"), content="3")
+
+// Using aliases (new parser style)
+inspect(vm.eval("using @int {abs}", top=true), content="()")
+inspect(vm.eval("abs(-5)"), content="5")
 ```
+
+## Parser Notes
+
+- `parse_code_to_expr` now uses the same path as `moonbitlang/parser` handrolled parser tests:
+  `lexer.tokens_from_string(...).tokens -> handrolled_parser.parse_expr(...)`.
+- This removes the old wrapper trick (`fn init { ... }`) and keeps expression parsing behavior aligned with upstream.
+- Diagnostics from parser reports are preserved and returned in `Err(...)` when parse fails.
 
 ## ✨ Features
 
@@ -116,7 +127,7 @@ inspect(vm.eval("match (1, 2) { (a, b) => a + b }"), content="3")
 | Type system | ✅ | Basic type checking and inference |
 | Static method calls | ✅ | Class::method() syntax |
 | Pipe operator | ✅ | \|> operator for function chaining |
-| Function aliases | ✅ | Alias support (e.g., not for %bool_not) |
+| Function aliases | ✅ | `using @pkg {name}` alias support |
 | Cross-package method calls | ✅ | Method calls across different packages |
 | Error handling | ✅ | Result type error handling |
 | Group expressions | ✅ | Parenthesized expressions for precedence |

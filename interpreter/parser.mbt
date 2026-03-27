@@ -1,19 +1,17 @@
 ///|
 pub fn parse_code_to_expr(code : String) -> Result[@syntax.Expr, String] {
-  let (impls, diagnostics) = @moonbitlang/parser.parse_string(
-    "fn init{\n  \{code}\n}",
-    parser=Handrolled,
+  let tokens = @moonbitlang/parser/lexer.tokens_from_string(
+    code,
+    comment=true,
   )
-  match impls {
-    @list.List::More(
-      @syntax.Impl::TopFuncDef(fun_decl=_, decl_body~, loc=_),
-      tail=@list.List::Empty
-    ) =>
-      match decl_body {
-        @syntax.DeclBody::DeclBody(local_types=_, expr~) => Ok(expr)
-        _ => Err("Invalid function declaration body")
-      }
-    _ => Err(diagnostics.fold(init="", (acc, cur) => "\{acc}\n\{cur}"))
+  .tokens
+  let (expr, diagnostics) = @moonbitlang/parser/handrolled_parser.parse_expr(
+    tokens,
+  )
+  if diagnostics.is_empty() {
+    Ok(expr)
+  } else {
+    Err(diagnostics.fold(init="", (acc, cur) => "\{acc}\n\{cur}"))
   }
 }
 
