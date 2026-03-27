@@ -28538,7 +28538,7 @@ let moonbitlang_core_list_module : RuntimePackage = RuntimePackage::new(
       #|pub fn[A] List::from_array(arr : ArrayView[A]) -> List[A] {
       #|  for i = arr.length() - 1, list = Empty; i >= 0; {
       #|    continue i - 1, More(arr[i], tail=list)
-      #|  } else {
+      #|  } nobreak {
       #|    list
       #|  }
       #|}

@@ -13,7 +13,7 @@ fn RuntimePackage::infer_struct_type_from_fields(
   .fold(init="Any", fn(result, entry) {
     let (type_name, type_def) = entry
     match type_def.components {
-      Record(struct_fields) => {
+      Record(fields=struct_fields, ..) => {
         let all_matched = struct_fields.all(sf => {
           current_fields.iter().any(cf => sf.name.label == cf)
         })

@@ -28,20 +28,40 @@ pub fn ModuleInfo::get_zip_url(self : ModuleInfo) -> String noraise {
 }
 
 ///|
+/// Wrapper around @syntax.TraitDecl with placeholder ToJson implementation.
+struct TraitDecl(@syntax.TraitDecl)
+
+///|
+impl ToJson for TraitDecl with to_json(self) {
+  { "name": self.0.name.name }
+}
+
+///|
+/// Wrapper around @syntax.TypeDecl with placeholder ToJson implementation
+/// and optional constructor information introduced since 0.8.0.
+struct TypeDecl(@syntax.TypeDecl)
+
+///|
+impl ToJson for TypeDecl with to_json(self) {
+  { "name": self.0.tycon }
+}
+
+///|
 pub(all) struct RuntimePackage {
   name : String
-  traits : Map[String, @syntax.TraitDecl]
+  traits : Map[String, TraitDecl]
   // 函数别名存储 - 存储函数名到其实际实现的映射
   fn_aliases : Map[String, RuntimeValue]
-  type_aliases : Map[String, WithType[@syntax.TypeDecl]]
+  type_aliases : Map[String, WithType[TypeDecl]]
   // trait 别名存储 - 存储 trait 名到其实际实现的映射
-  trait_aliases : Map[String, WithType[@syntax.TraitDecl]]
+  trait_aliases : Map[String, WithType[TraitDecl]]
   // 存根 - 存储函数名到其实际实现的映射
   stubs : Map[String, String]
   // 类型定义
-  type_definitions : Map[String, @syntax.TypeDecl]
+  type_definitions : Map[String, TypeDecl]
   // 类型派生的trait映射 - 存储类型名到其derive的trait列表
   type_derived_traits : Map[String, Array[String]] // type_name -> [trait_name]
+  struct_constrs : Map[String, String]
   // 构造函数集合 - 存储构造函数名
   constructors : Map[String, String] // constructor_name -> type_name
   struct_methods : Map[String, Map[String, RuntimeValue]]
@@ -104,6 +124,7 @@ pub fn RuntimePackage::new(
     deps: deps.unwrap_or(Map::new()),
     files: files.unwrap_or(Map::new()),
     loaded: false,
+    struct_constrs: Map::new(),
   }
 }
 

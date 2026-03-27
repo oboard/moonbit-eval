@@ -98,7 +98,7 @@ test "for_loops" {
         #|    println("even: \{i}")
         #|    continue i + 1, acc + i
         #|  }
-        #|} else {
+        #|} nobreak {
         #|  acc
         #|}
       ),

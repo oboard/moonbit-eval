@@ -150,6 +150,25 @@ fn ClosureInterpreter::visit_array(
 }
 
 ///|
+fn ClosureInterpreter::call_struct_constr(
+  self : ClosureInterpreter,
+  pkg_name : String?,
+  type_name : String,
+  field_values : @list.List[@syntax.Argument],
+) -> RuntimeValue? raise ControlFlow {
+  let pkg = match pkg_name {
+    Some(name) => self.find_pkg(name)
+    None => self.current_pkg
+  }
+  let ty = pkg.find_static_type(type_name)
+  if pkg.struct_constrs.get(type_name) is Some(constr_name) {
+    self.execute_static_method_call(ty, constr_name, field_values) |> Some
+  } else {
+    None
+  }
+}
+
+///|
 /// 处理函数调用
 fn ClosureInterpreter::visit_apply(
   self : ClosureInterpreter,
@@ -161,6 +180,18 @@ fn ClosureInterpreter::visit_apply(
       Ident(id={ name, .. }, ..) => self.call_by_name(name, args)
       // 处理构造函数调用，如 Some(5)
       Constr(constr~, ..) => {
+        match constr.extra_info {
+          TypeName(_) => ()
+          Package(pkg_name) if self.call_struct_constr(
+              Some(pkg_name),
+              constr.name.name,
+              args,
+            )
+            is Some(result) => return result
+          NoExtraInfo if self.call_struct_constr(None, constr.name.name, args)
+            is Some(result) => return result
+          _ => ()
+        }
         let fields = args
           .map(arg => {
             match arg.kind {
