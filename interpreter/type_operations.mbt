@@ -75,7 +75,7 @@ fn RuntimePackage::find_static_type(
 
 ///|
 /// 根据运行时值推断类型
-fn RuntimeValue::get_type(self : RuntimeValue) -> RuntimeType {
+pub fn RuntimeValue::get_type(self : RuntimeValue) -> RuntimeType {
   match self {
     Unit => Any
     Bool(_) => RuntimeType::bool()

@@ -1,10 +1,6 @@
 ///|
 pub fn parse_code_to_expr(code : String) -> Result[@syntax.Expr, String] {
-  let tokens = @moonbitlang/parser/lexer.tokens_from_string(
-    code,
-    comment=true,
-  )
-  .tokens
+  let tokens = @moonbitlang/parser/lexer.tokens_from_string(code, comment=true).tokens
   let (expr, diagnostics) = @moonbitlang/parser/handrolled_parser.parse_expr(
     tokens,
   )

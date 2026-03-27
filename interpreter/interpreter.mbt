@@ -142,7 +142,9 @@ pub fn ClosureInterpreter::top_visit(
         let alias_target = using_name.0
         let using_kind = using_name.1
         let local_name = alias_target.binder.name
-        let source_name = alias_target.target.map(l => l.name).unwrap_or(local_name)
+        let source_name = alias_target.target
+          .map(l => l.name)
+          .unwrap_or(local_name)
         match using_kind {
           @syntax.UsingKind::Trait =>
             if mod.traits.get(source_name) is Some(target_value) {
