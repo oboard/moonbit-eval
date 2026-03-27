@@ -12,8 +12,6 @@ import {
   "moonbitlang/parser/syntax",
   "moonbitlang/parser/basic",
   "moonbitlang/parser",
-  "moonbitlang/parser/lexer",
-  "moonbitlang/parser/handrolled_parser",
   "moonbitlang/parser/tokens",
   "moonbitlang/parser/attribute",
   "moonbitlang/x/fs",

@@ -1,13 +1,26 @@
 ///|
+fn diagnostics_to_string(
+  diagnostics : Array[@moonbitlang/parser/basic.Report],
+) -> String {
+  diagnostics.fold(init="", (acc, cur) => "\{acc}\n\{cur}")
+}
+
+///|
 pub fn parse_code_to_expr(code : String) -> Result[@syntax.Expr, String] {
-  let tokens = @moonbitlang/parser/lexer.tokens_from_string(code, comment=true).tokens
-  let (expr, diagnostics) = @moonbitlang/parser/handrolled_parser.parse_expr(
-    tokens,
+  let (impls, diagnostics) = @moonbitlang/parser.parse_string(
+    "fn init{\n  \{code}\n}",
+    parser=Handrolled,
   )
-  if diagnostics.is_empty() {
-    Ok(expr)
-  } else {
-    Err(diagnostics.fold(init="", (acc, cur) => "\{acc}\n\{cur}"))
+  match impls {
+    @list.List::More(
+      @syntax.Impl::TopFuncDef(fun_decl=_, decl_body~, loc=_),
+      tail=@list.List::Empty
+    ) =>
+      match decl_body {
+        @syntax.DeclBody::DeclBody(local_types=_, expr~) => Ok(expr)
+        _ => Err("Invalid function declaration body")
+      }
+    _ => Err(diagnostics_to_string(diagnostics))
   }
 }
 
@@ -19,6 +32,6 @@ pub fn parse_code_to_impl(code : String) -> Result[@syntax.Impl, String] {
   )
   match impls {
     @list.List::More(top, tail=@list.List::Empty) => Ok(top)
-    _ => Err(diagnostics.fold(init="", (acc, cur) => "\{acc}\n\{cur}"))
+    _ => Err(diagnostics_to_string(diagnostics))
   }
 }
