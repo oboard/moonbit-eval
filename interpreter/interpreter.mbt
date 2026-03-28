@@ -72,7 +72,10 @@ pub fn ClosureInterpreter::top_eval(
   self : ClosureInterpreter,
   code : String,
 ) -> Unit {
-  let (impls, _diagnostics) = @moonbitlang/parser.parse_string(code)
+  let (impls, _diagnostics) = @moonbitlang/parser.parse_string(
+    code,
+    parser=Handrolled,
+  )
   impls.each(node => self.top_visit(node) |> ignore)
 }
 
@@ -363,8 +366,26 @@ pub fn ClosureInterpreter::top_visit(
           match stubs {
             Embedded(code=@syntax.EmbeddedCode::CodeString(code_str), ..) => {
               let func = self.embedded_fns.get(code_str)
-              if (type_name, func) is (Some(type_name), Some(func)) {
-                self.add_embedded_method(type_name, func_name, func)
+              if func is Some(func) {
+                let func_value = Fn({ val: func, ty: Internal })
+                self.current_pkg.set(func_name, func_value)
+                if type_name is Some(type_name) {
+                  self.add_embedded_method(type_name, func_name, func)
+                }
+                attrs.each(attr => {
+                  match attr {
+                    {
+                      parsed: Some(
+                        Apply(
+                          { name: "alias", .. },
+                          More(Expr(Ident({ name: alias_name, .. })), ..)
+                        )
+                      ),
+                      ..,
+                    } => self.current_pkg.fn_aliases.set(alias_name, func_value)
+                    _ => ()
+                  }
+                })
               }
             }
             _ => ()

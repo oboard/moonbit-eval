@@ -178,7 +178,7 @@ inspect(vm.eval("abs(-5)"), content="5")
 | #skip | ❌ | Skipping compilation of a function |
 | #cfg | ❌ | Conditional compilation based on configuration |
 | **Not Yet Supported** | | |
-| Async/await | ❌ | Asynchronous programming |
+| Async/await | 🟡 | Limited bridge support via `%async.run` / `%async.suspend` (no scheduler/event loop) |
 
 ## Contributing
 

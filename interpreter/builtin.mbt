@@ -15,6 +15,8 @@ let core_stubs : Map[String, String] = {
 let builtin_embedded_code : Map[String, RuntimeFunction] = {
   "%any.to_string": any_to_string_fn,
   "%identity": identity_fn,
+  "%async.run": async_run_fn,
+  "%async.suspend": async_suspend_fn,
   "%abort": abort_fn,
   "%panic": panic_fn,
   "%typeof": typeof_fn,
@@ -218,6 +220,76 @@ let require_fn : RuntimeFunction = ctx => {
     _ => ()
   }
   Unit
+}
+
+///|
+/// async.run stub: execute the function immediately in the current interpreter context.
+let async_run_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: Fn(func), .. }] => ctx.context.call(func.val, ctx.pkg, [])
+    _ => Unit
+  }
+}
+
+///|
+/// async.suspend stub: synchronous bridge.
+///
+/// The callback must resolve in the same call stack via either `ok(v)` or `err(e)`.
+/// First callback wins; later callbacks are ignored.
+let async_suspend_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: Fn(cb), .. }] => {
+      let mut resolved = false
+      let mut resolved_as_error = false
+      let mut resolved_value : RuntimeValue = Unit
+
+      let ok_fn : RuntimeFunction = ok_ctx => {
+        if !resolved {
+          resolved = true
+          resolved_as_error = false
+          resolved_value = match ok_ctx.args {
+            [{ val, .. }, ..] => val
+            _ => Unit
+          }
+        }
+        Unit
+      }
+
+      let err_fn : RuntimeFunction = err_ctx => {
+        if !resolved {
+          resolved = true
+          resolved_as_error = true
+          resolved_value = match err_ctx.args {
+            [{ val, .. }, ..] => val
+            _ => Unit
+          }
+        }
+        Unit
+      }
+
+      ignore(
+        ctx.context.call(cb.val, ctx.pkg, [
+          {
+            val: Fn({ val: ok_fn, ty: Internal }),
+            kind: RuntimeArgumentKind::Positional,
+          },
+          {
+            val: Fn({ val: err_fn, ty: Internal }),
+            kind: RuntimeArgumentKind::Positional,
+          },
+        ]),
+      )
+
+      if !resolved {
+        raise Error("%async.suspend callback not resolved")
+      }
+      if resolved_as_error {
+        raise Raise(resolved_value)
+      }
+      resolved_value
+    }
+    _ => Unit
+  }
 }
 
 ///|
