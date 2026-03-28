@@ -12,6 +12,16 @@ let core_stubs : Map[String, String] = {
 }
 
 ///|
+/// Bridge to host async runtime.
+fn host_async_run(f : async () -> Unit noraise) = "%async.run"
+
+///|
+/// Bridge to host async suspend primitive.
+async fn host_async_suspend(
+  cb : ((RuntimeValue) -> Unit, (Failure) -> Unit) -> Unit,
+) -> RuntimeValue raise Failure = "%async.suspend"
+
+///|
 let builtin_embedded_code : Map[String, RuntimeFunction] = {
   "%any.to_string": any_to_string_fn,
   "%identity": identity_fn,
@@ -223,10 +233,24 @@ let require_fn : RuntimeFunction = ctx => {
 }
 
 ///|
-/// async.run stub: execute the function immediately in the current interpreter context.
+/// async.run stub: delegate to host `%async.run`.
 let async_run_fn : RuntimeFunction = ctx => {
   match ctx.args {
-    [{ val: Fn(func), .. }] => ctx.context.call(func.val, ctx.pkg, [])
+    [{ val: Fn(func), .. }] => {
+      let mut result : RuntimeValue = Unit
+      let mut raised : ControlFlow? = None
+      host_async_run(() => {
+        try {
+          result = ctx.context.call(func.val, ctx.pkg, [])
+        } catch {
+          e => raised = Some(e)
+        }
+      })
+      match raised {
+        Some(e) => raise e
+        None => result
+      }
+    }
     _ => Unit
   }
 }
@@ -239,52 +263,71 @@ let async_run_fn : RuntimeFunction = ctx => {
 let async_suspend_fn : RuntimeFunction = ctx => {
   match ctx.args {
     [{ val: Fn(cb), .. }] => {
-      let mut resolved = false
       let mut resolved_as_error = false
+      let mut unresolved_callback = false
       let mut resolved_value : RuntimeValue = Unit
-
-      let ok_fn : RuntimeFunction = ok_ctx => {
-        if !resolved {
-          resolved = true
-          resolved_as_error = false
-          resolved_value = match ok_ctx.args {
-            [{ val, .. }, ..] => val
-            _ => Unit
+      host_async_run(() => {
+        try {
+          resolved_value = host_async_suspend((host_ok, host_err) => {
+            let mut resolved = false
+            let ok_fn : RuntimeFunction = ok_ctx => {
+              if !resolved {
+                resolved = true
+                let value = match ok_ctx.args {
+                  [{ val, .. }, ..] => val
+                  _ => Unit
+                }
+                host_ok(value)
+              }
+              Unit
+            }
+            let err_fn : RuntimeFunction = err_ctx => {
+              if !resolved {
+                resolved = true
+                let err_value = match err_ctx.args {
+                  [{ val, .. }, ..] => val
+                  _ => Unit
+                }
+                host_err(Failure(err_value.to_string()))
+              }
+              Unit
+            }
+            ignore(
+              ctx.context.call(cb.val, ctx.pkg, [
+                {
+                  val: Fn({ val: ok_fn, ty: Internal }),
+                  kind: RuntimeArgumentKind::Positional,
+                },
+                {
+                  val: Fn({ val: err_fn, ty: Internal }),
+                  kind: RuntimeArgumentKind::Positional,
+                },
+              ]),
+            ) catch {
+              _ =>
+                if !resolved {
+                  resolved = true
+                  host_err(Failure("control flow in async callback"))
+                }
+            }
+            if !resolved {
+              resolved = true
+              unresolved_callback = true
+              host_ok(Unit)
+            }
+          })
+        } catch {
+          Failure(msg) => {
+            resolved_as_error = true
+            resolved_value = String(msg)
           }
         }
-        Unit
-      }
-
-      let err_fn : RuntimeFunction = err_ctx => {
-        if !resolved {
-          resolved = true
-          resolved_as_error = true
-          resolved_value = match err_ctx.args {
-            [{ val, .. }, ..] => val
-            _ => Unit
-          }
-        }
-        Unit
-      }
-
-      ignore(
-        ctx.context.call(cb.val, ctx.pkg, [
-          {
-            val: Fn({ val: ok_fn, ty: Internal }),
-            kind: RuntimeArgumentKind::Positional,
-          },
-          {
-            val: Fn({ val: err_fn, ty: Internal }),
-            kind: RuntimeArgumentKind::Positional,
-          },
-        ]),
-      )
-
-      if !resolved {
-        raise Error("%async.suspend callback not resolved")
-      }
+      })
       if resolved_as_error {
         raise Raise(resolved_value)
+      }
+      if unresolved_callback {
+        raise Error("%async.suspend callback not resolved")
       }
       resolved_value
     }
