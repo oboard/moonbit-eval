@@ -1,6 +1,6 @@
 {
   "name": "oboard/moonbit-eval",
-  "version": "0.8.23",
+  "version": "0.8.24",
   "deps": {
     "moonbitlang/parser": "0.2.4",
     "moonbitlang/x": "0.4.41"
