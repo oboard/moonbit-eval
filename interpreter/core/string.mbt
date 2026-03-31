@@ -11,13 +11,22 @@ pub let string_embedded_code : Map[String, RuntimeFunction] = {
 ///|
 let string_methods : Map[String, RuntimeFunction] = {
   "length": string_length,
+  "char_length": string_char_length_fn,
+  "char_length_eq": string_char_length_eq_fn,
+  "char_length_ge": string_char_length_ge_fn,
   "add": string_add_fn,
   "equal": string_eq_fn,
   "to_string": string_to_string_fn,
+  "lexical_compare": string_lexical_compare_fn,
   "make": string_make_fn,
+  "from_array": string_from_array_fn,
+  "from_iter": string_from_iter_fn,
   "iter": string_iter_fn,
+  "iter2": string_iter2_fn,
+  "offset_of_nth_char": string_offset_of_nth_char_fn,
   "to_array": string_to_array_fn,
   "contains": string_contains_fn,
+  "contains_any": string_contains_any_fn,
   "contains_char": string_contains_char_fn,
   "find": string_find_fn,
   "find_by": string_find_by_fn,
@@ -36,6 +45,12 @@ let string_methods : Map[String, RuntimeFunction] = {
   "rev_fold": string_rev_fold_fn,
   "rev_iter": string_rev_iter_fn,
   "split": string_split_fn,
+  "split_once": string_split_once_fn,
+  "before": string_before_fn,
+  "after": string_after_fn,
+  "rev_split_once": string_rev_split_once_fn,
+  "rev_before": string_rev_before_fn,
+  "rev_after": string_rev_after_fn,
   "strip_prefix": string_strip_prefix_fn,
   "strip_suffix": string_strip_suffix_fn,
   "to_bytes": string_to_bytes_fn,
@@ -45,6 +60,16 @@ let string_methods : Map[String, RuntimeFunction] = {
   "trim_end": string_trim_end_fn,
   "trim_space": string_trim_space_fn,
   "trim_start": string_trim_start_fn,
+  "escape": string_escape_fn,
+  "get": string_get_fn,
+  "get_char": string_get_char_fn,
+  "at": string_at_fn,
+  "unsafe_get": string_unsafe_get_fn,
+  "unsafe_charcode_at": string_unsafe_charcode_at_fn,
+  "sub": string_sub_fn,
+  "substring": string_substring_fn,
+  "unsafe_substring": string_unsafe_substring_fn,
+  "suffixes": string_suffixes_fn,
   "view": string_view_fn,
   "code_unit_at": string_code_unit_at_fn,
 }
@@ -433,5 +458,289 @@ let string_view_fn : RuntimeFunction = ctx => {
     ] => StringView(s.view(end_offset~))
     [{ val: String(s), .. }] => StringView(s.view())
     _ => StringView("")
+  }
+}
+
+///|
+let string_char_length_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: String(s), .. }] => Int(s.char_length(), raw=None)
+    _ => Int(0, raw=None)
+  }
+}
+
+///|
+let string_char_length_eq_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: String(s), .. }, { val: Int(n, ..), .. }] =>
+      Bool(s.char_length_eq(n))
+    _ => Bool(false)
+  }
+}
+
+///|
+let string_char_length_ge_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: String(s), .. }, { val: Int(n, ..), .. }] =>
+      Bool(s.char_length_ge(n))
+    _ => Bool(false)
+  }
+}
+
+///|
+let string_lexical_compare_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: String(a), .. }, { val: String(b), .. }] =>
+      Int(a.lexical_compare(b), raw=None)
+    _ => Int(0, raw=None)
+  }
+}
+
+///|
+let string_from_array_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: Array(chars), .. }] => {
+      let result = String::from_array(
+        chars.map(ch => {
+          match ch {
+            Char(c) => c
+            _ => '\u{0000}'
+          }
+        }),
+      )
+      String(result)
+    }
+    _ => String("")
+  }
+}
+
+///|
+let string_from_iter_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: Iter(it), .. }] => {
+      let result = String::from_iter(
+        it.map(ch => {
+          match ch {
+            Char(c) => c
+            _ => '\u{0000}'
+          }
+        }),
+      )
+      String(result)
+    }
+    _ => String("")
+  }
+}
+
+///|
+let string_contains_any_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: String(s), .. }, { val: StringView(chars), .. }] =>
+      Bool(s.contains_any(chars~))
+    _ => Bool(false)
+  }
+}
+
+///|
+let string_get_char_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: String(s), .. }, { val: Int(i, ..), .. }] =>
+      RuntimeValue::from_option(s.get_char(i).map(c => Char(c)))
+    _ => RuntimeValue::from_option(None)
+  }
+}
+
+///|
+let string_iter2_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: String(s), .. }] => {
+      let it = s.iter2()
+      let iterator = Iter2::new(fn() {
+        match it.next() {
+          Some((i, ch)) => Some((Int(i, raw=None), Char(ch)))
+          None => None
+        }
+      })
+      Iter2(iterator.iter2())
+    }
+    _ => Unit
+  }
+}
+
+///|
+let string_offset_of_nth_char_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: String(s), .. }, { val: Int(n, ..), .. }] =>
+      RuntimeValue::from_option(
+        s.offset_of_nth_char(n).map(i => Int(i, raw=None)),
+      )
+    _ => RuntimeValue::from_option(None)
+  }
+}
+
+///|
+let string_split_once_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: String(s), .. }, { val: StringView(sep), .. }] =>
+      RuntimeValue::from_option(
+        s
+        .split_once(sep)
+        .map(pair => {
+          match pair {
+            (a, b) => Tuple([StringView(a), StringView(b)])
+          }
+        }),
+      )
+    _ => RuntimeValue::from_option(None)
+  }
+}
+
+///|
+let string_before_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: String(s), .. }, { val: StringView(needle), .. }] =>
+      RuntimeValue::from_option(s.before(needle).map(v => StringView(v)))
+    _ => RuntimeValue::from_option(None)
+  }
+}
+
+///|
+let string_after_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: String(s), .. }, { val: StringView(needle), .. }] =>
+      RuntimeValue::from_option(s.after(needle).map(v => StringView(v)))
+    _ => RuntimeValue::from_option(None)
+  }
+}
+
+///|
+let string_rev_split_once_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: String(s), .. }, { val: StringView(sep), .. }] =>
+      RuntimeValue::from_option(
+        s
+        .rev_split_once(sep)
+        .map(pair => {
+          match pair {
+            (a, b) => Tuple([StringView(a), StringView(b)])
+          }
+        }),
+      )
+    _ => RuntimeValue::from_option(None)
+  }
+}
+
+///|
+let string_rev_before_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: String(s), .. }, { val: StringView(needle), .. }] =>
+      RuntimeValue::from_option(s.rev_before(needle).map(v => StringView(v)))
+    _ => RuntimeValue::from_option(None)
+  }
+}
+
+///|
+let string_rev_after_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: String(s), .. }, { val: StringView(needle), .. }] =>
+      RuntimeValue::from_option(s.rev_after(needle).map(v => StringView(v)))
+    _ => RuntimeValue::from_option(None)
+  }
+}
+
+///|
+let string_escape_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: String(s), .. }] => String(s.escape())
+    [{ val: String(s), .. }, { val: Bool(quote), .. }] =>
+      String(s.escape(quote~))
+    _ => String("")
+  }
+}
+
+///|
+let string_get_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: String(s), .. }, { val: Int(i, ..), .. }] =>
+      if i < 0 || i >= s.length() {
+        RuntimeValue::from_option(None)
+      } else {
+        RuntimeValue::from_option(
+          Some(Int(s.code_unit_at(i).to_int(), raw=None)),
+        )
+      }
+    _ => RuntimeValue::from_option(None)
+  }
+}
+
+///|
+let string_at_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: String(s), .. }, { val: Int(i, ..), .. }] => UInt16(s.at(i))
+    _ => UInt16(0)
+  }
+}
+
+///|
+let string_unsafe_get_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: String(s), .. }, { val: Int(i, ..), .. }] => UInt16(s.unsafe_get(i))
+    _ => UInt16(0)
+  }
+}
+
+///|
+let string_unsafe_charcode_at_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: String(s), .. }, { val: Int(i, ..), .. }] =>
+      Int(s.unsafe_get(i).to_int(), raw=None)
+    _ => Int(0, raw=None)
+  }
+}
+
+///|
+let string_sub_fn : RuntimeFunction = ctx => string_substring_fn(ctx)
+
+///|
+let string_substring_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: String(s), .. }] => String(s.view().to_string())
+    [{ val: String(s), .. }, { val: Int(start, ..), .. }] =>
+      String(s.view(start_offset=start).to_string())
+    [
+      { val: String(s), .. },
+      { val: Int(start, ..), .. },
+      { val: Int(end_, ..), .. },
+    ] => String(s.view(start_offset=start, end_offset=end_).to_string())
+    _ => String("")
+  }
+}
+
+///|
+let string_unsafe_substring_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: String(s), .. }] => String(s.view().to_string())
+    [{ val: String(s), .. }, { val: Int(start, ..), .. }] =>
+      String(s.view(start_offset=start).to_string())
+    [
+      { val: String(s), .. },
+      { val: Int(start, ..), .. },
+      { val: Int(end_, ..), .. },
+    ] => String(s.view(start_offset=start, end_offset=end_).to_string())
+    _ => String("")
+  }
+}
+
+///|
+let string_suffixes_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: String(s), .. }] => {
+      let out = []
+      for v in s.suffixes() {
+        out.push(StringView(v))
+      }
+      Array(out)
+    }
+    _ => Array([])
   }
 }

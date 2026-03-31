@@ -1,5 +1,6 @@
 ///|
 pub let hash_map_methods : Map[String, RuntimeFunction] = {
+  "at": hash_map_at_fn,
   "clear": hash_map_clear_fn,
   "is_empty": hash_map_is_empty_fn,
   "capacity": hash_map_capacity_fn,
@@ -20,6 +21,8 @@ pub let hash_map_methods : Map[String, RuntimeFunction] = {
   "keys": hash_map_keys_fn,
   "length": hash_map_length_fn,
   "map": hash_map_map_fn,
+  "merge": hash_map_merge_fn,
+  "merge_in_place": hash_map_merge_in_place_fn,
   "new": hash_map_new_fn,
   "of": hash_map_of_fn,
   "remove": hash_map_remove_fn,
@@ -27,6 +30,7 @@ pub let hash_map_methods : Map[String, RuntimeFunction] = {
   "set": hash_map_set_fn,
   "size": hash_map_size_fn,
   "to_array": hash_map_to_array_fn,
+  "to_repr": hash_map_to_repr_fn,
   "to_json": hash_map_to_json_fn,
   "to_string": hash_map_to_string_fn,
   "values": hash_map_values_fn,
@@ -200,6 +204,14 @@ let hash_map_get_fn : RuntimeFunction = ctx => {
 }
 
 ///|
+let hash_map_at_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: HashMap(map), .. }, { val: key, .. }] => map.at(key)
+    _ => Unit
+  }
+}
+
+///|
 /// HashMap get_or_default操作
 let hash_map_get_or_default_fn : RuntimeFunction = ctx => {
   match ctx.args {
@@ -292,6 +304,26 @@ let hash_map_map_fn : RuntimeFunction = ctx => {
         new_map.set(key, new_val)
       })
       HashMap(new_map)
+    }
+    _ => Unit
+  }
+}
+
+///|
+let hash_map_merge_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: HashMap(left), .. }, { val: HashMap(right), .. }] =>
+      HashMap(left.merge(right))
+    _ => Unit
+  }
+}
+
+///|
+let hash_map_merge_in_place_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: HashMap(left), .. }, { val: HashMap(right), .. }] => {
+      left.merge_in_place(right)
+      HashMap(left)
     }
     _ => Unit
   }
@@ -428,6 +460,14 @@ let hash_map_to_string_fn : RuntimeFunction = ctx => {
       sb.write_string("}")
       String(sb.to_string())
     }
+    _ => Unit
+  }
+}
+
+///|
+let hash_map_to_repr_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: HashMap(map), .. }] => String(map.to_string())
     _ => Unit
   }
 }

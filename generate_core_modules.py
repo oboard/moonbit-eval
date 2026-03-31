@@ -5,16 +5,13 @@ This script reads all modules from moonbitlang/core and generates
 RuntimePackage definitions in the format expected by core_modules.mbt.
 """
 
-from ast import alias
 import os
-import json
-import re
 from pathlib import Path
-from typing import Dict, List, Set, Tuple
+from typing import Dict, List
 
 # Core library path
 CORE_PATH = "/Users/oboard/.moon/lib/core"
-OUTPUT_FILE = "src/interpreter/core_modules.mbt"
+OUTPUT_FILE = "interpreter/core/core_modules.mbt"
 
 # Removed extract_all_items function - no longer needed with new format
 
@@ -27,16 +24,9 @@ def read_module_info(module_dir: Path) -> Dict:
     alias = module_dir.relative_to(CORE_PATH).as_posix()
     module_name = pkg.replace('/', '_')
     
-    # Read moon.pkg.json if it exists
-    pkg_json_path = module_dir / "moon.pkg.json"
+    # Keep embedded package deps empty to avoid introducing definition cycles.
+    # The generated file is used as a flat registry of embedded packages.
     dependencies = []
-    if pkg_json_path.exists():
-        try:
-            with open(pkg_json_path, 'r') as f:
-                pkg_data = json.load(f)
-                dependencies = pkg_data.get('import', [])
-        except (json.JSONDecodeError, FileNotFoundError):
-            pass
     
     # Find all .mbt files (excluding test files)
     mbt_files = [f for f in module_dir.glob("*.mbt") 
@@ -44,16 +34,6 @@ def read_module_info(module_dir: Path) -> Dict:
     
     # Collect file contents with their names
     file_contents = {}
-    
-    # Add moon.pkg.json if it exists
-    if pkg_json_path.exists():
-        try:
-            with open(pkg_json_path, 'r', encoding='utf-8') as f:
-                content = f.read().strip()
-                if content:
-                    file_contents['moon.pkg.json'] = content
-        except (UnicodeDecodeError, FileNotFoundError):
-            pass
     
     for mbt_file in sorted(mbt_files):  # Sort for consistent ordering
         try:
@@ -92,7 +72,6 @@ def generate_module_code(module_info: Dict) -> str:
         return ""
     
     # Generate dependencies map
-    print(dependencies)
     dependencies_map_entries = []
     for dep in dependencies:
         if isinstance(dep, str):
@@ -143,8 +122,8 @@ def generate_core_modules_map(modules: List[dict]) -> str:
     """
     entries = []
     for module in modules: 
-        entries.append(f'"{module['alias']}": {module['name']}_module')
-        entries.append(f'"{module['pkg']}": {module['name']}_module')
+        entries.append(f'"{module["alias"]}": {module["name"]}_module')
+        entries.append(f'"{module["pkg"]}": {module["name"]}_module')
     map_content = ", ".join(entries)
     
     return f'''///|
@@ -163,8 +142,12 @@ def main():
     module_dirs = []
     for root, dirs, _ in os.walk(core_path):
         root_path = Path(root)
-        # Skip hidden directories and coverage directory
-        dirs[:] = [d for d in dirs if not d.startswith('.') and d != 'coverage']
+        # Skip hidden directories and build artifacts.
+        dirs[:] = [
+            d
+            for d in dirs
+            if not d.startswith('.') and d not in {'coverage', '_build', 'target'}
+        ]
         module_dirs.extend([root_path / d for d in dirs])
     
     print(f"Found {len(module_dirs)} modules to process")
