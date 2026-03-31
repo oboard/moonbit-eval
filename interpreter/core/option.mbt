@@ -1,19 +1,43 @@
 ///|
 pub let option_methods : Map[String, RuntimeFunction] = {
+  "to_string": option_to_string_fn,
   "unwrap": option_unwrap_fn,
+  "unwrap_or": option_unwrap_or_fn,
+  "unwrap_or_else": option_unwrap_or_else_fn,
+  "unwrap_or_default": option_unwrap_or_default_fn,
+  "unwrap_or_error": option_unwrap_or_error_fn,
+  "iter": option_iter_fn,
   "map": option_map_fn,
   "map_or": option_map_or_fn,
   "map_or_else": option_map_or_else_fn,
   "bind": option_bind_fn,
   "flatten": option_flatten_fn,
   "is_empty": option_is_empty_fn,
+  "is_some": option_is_some_fn,
+  "is_none": option_is_none_fn,
   "filter": option_filter_fn,
-  "unwrap_or": option_unwrap_or_fn,
-  "unwrap_or_else": option_unwrap_or_else_fn,
-  "unwrap_or_default": option_unwrap_or_default_fn,
 }
 
 // ===== Option 方法 =====
+
+///|
+/// Option to_string 方法
+let option_to_string_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [
+      {
+        val: Constructor(
+          { val: { name: "Some", fields: [{ value: inner_value, .. }] }, .. }
+        ),
+        ..,
+      },
+      ..,
+    ] => String("Some(" + inner_value.to_string() + ")")
+    [{ val: Constructor({ val: { name: "None", fields: [] }, .. }), .. }] =>
+      String("None")
+    _ => String("None")
+  }
+}
 
 ///|
 /// Option unwrap 方法
@@ -29,7 +53,7 @@ let option_unwrap_fn : RuntimeFunction = ctx => {
       ..,
     ] => inner_value
     [{ val: Constructor({ val: { name: "None", fields: [] }, .. }), .. }] =>
-      Unit
+      panic()
     _ => Unit
   }
 }
@@ -121,6 +145,47 @@ let option_map_or_else_fn : RuntimeFunction = ctx => {
 }
 
 ///|
+/// Option unwrap_or_error 方法
+let option_unwrap_or_error_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [
+      {
+        val: Constructor(
+          { val: { name: "Some", fields: [{ value: inner_value, .. }] }, .. }
+        ),
+        ..,
+      },
+      ..,
+    ] => inner_value
+    [
+      { val: Constructor({ val: { name: "None", fields: [] }, .. }), .. },
+      { val: err, .. },
+      ..,
+    ] => raise Raise(err)
+    _ => Unit
+  }
+}
+
+///|
+/// Option iter 方法
+let option_iter_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [
+      {
+        val: Constructor(
+          { val: { name: "Some", fields: [{ value: inner_value, .. }] }, .. }
+        ),
+        ..,
+      },
+      ..,
+    ] => Iter(Iter::singleton(inner_value))
+    [{ val: Constructor({ val: { name: "None", fields: [] }, .. }), .. }] =>
+      Iter(Iter::empty())
+    _ => Iter(Iter::empty())
+  }
+}
+
+///|
 /// Option bind 方法
 let option_bind_fn : RuntimeFunction = ctx => {
   match ctx.args {
@@ -205,6 +270,28 @@ let option_flatten_fn : RuntimeFunction = ctx => {
 ///|
 /// Option is_empty 方法
 let option_is_empty_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: Constructor({ val: { name: "Some", .. }, .. }), .. }] => Bool(false)
+    [{ val: Constructor({ val: { name: "None", fields: [] }, .. }), .. }] =>
+      Bool(true)
+    _ => Bool(true)
+  }
+}
+
+///|
+/// Option is_some 方法
+let option_is_some_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: Constructor({ val: { name: "Some", .. }, .. }), .. }] => Bool(true)
+    [{ val: Constructor({ val: { name: "None", fields: [] }, .. }), .. }] =>
+      Bool(false)
+    _ => Bool(false)
+  }
+}
+
+///|
+/// Option is_none 方法
+let option_is_none_fn : RuntimeFunction = ctx => {
   match ctx.args {
     [{ val: Constructor({ val: { name: "Some", .. }, .. }), .. }] => Bool(false)
     [{ val: Constructor({ val: { name: "None", fields: [] }, .. }), .. }] =>

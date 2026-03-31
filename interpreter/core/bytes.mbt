@@ -250,7 +250,11 @@ let bytes_from_iter_fn : RuntimeFunction = ctx => {
 let bytes_from_fixedarray_fn : RuntimeFunction = ctx => {
   match ctx.args {
     [{ val: FixedArray(arr), .. }] => {
-      let limit = if ctx.named("len") is Some(Int(i, ..)) { Some(i) } else { None }
+      let limit = if ctx.named("len") is Some(Int(i, ..)) {
+        Some(i)
+      } else {
+        None
+      }
       let out = []
       for i in 0..<arr.length() {
         if limit is Some(max) && i >= max {
@@ -273,7 +277,11 @@ let bytes_from_fixedarray_fn : RuntimeFunction = ctx => {
 let bytes_to_fixedarray_fn : RuntimeFunction = ctx => {
   match ctx.args {
     [{ val: Bytes(b), .. }] => {
-      let limit = if ctx.named("len") is Some(Int(i, ..)) { Some(i) } else { None }
+      let limit = if ctx.named("len") is Some(Int(i, ..)) {
+        Some(i)
+      } else {
+        None
+      }
       let src = b.to_array()
       let out = []
       for i in 0..<src.length() {
