@@ -134,12 +134,9 @@ pub(all) struct ModuleInfo {
   keywords : Array[String]?
   description : String?
   source : String?
-}
+} derive(Show, ToJson, @json.FromJson)
 pub fn ModuleInfo::get_zip_url(Self) -> String
 pub fn ModuleInfo::new(String, version? : String, readme? : String, repository? : String, license? : String, keywords? : Array[String], description? : String, source? : String, deps? : Map[String, String]) -> Self
-pub impl Show for ModuleInfo
-pub impl ToJson for ModuleInfo
-pub impl @json.FromJson for ModuleInfo
 
 pub(all) struct RuntimeArgument {
   val : RuntimeValue
@@ -157,7 +154,7 @@ pub(all) struct RuntimeEnvironment {
   values : Map[String, RuntimeValue]
   mutable_vars : Map[String, Bool]
   parent : RuntimeEnvironment?
-}
+} derive(ToJson)
 pub fn RuntimeEnvironment::copy(Self) -> Self
 pub fn RuntimeEnvironment::create_closure_env(Self) -> Self
 pub fn RuntimeEnvironment::find(Self, String) -> RuntimeValue?
@@ -165,7 +162,6 @@ pub fn RuntimeEnvironment::new(parent? : Self, values? : Map[String, RuntimeValu
 pub fn RuntimeEnvironment::set(Self, String, RuntimeValue) -> Unit
 pub fn RuntimeEnvironment::set_mutable_variable(Self, String, RuntimeValue) -> Unit
 pub fn RuntimeEnvironment::update(Self, String, RuntimeValue) -> Unit
-pub impl ToJson for RuntimeEnvironment
 
 pub(all) enum RuntimeErrorType {
   ErrorType(RuntimeType)
@@ -173,10 +169,9 @@ pub(all) enum RuntimeErrorType {
   NoErrorType
   Noraise
   MaybeError(RuntimeType)
-}
+} derive(ToJson)
 pub impl Eq for RuntimeErrorType
 pub impl Show for RuntimeErrorType
-pub impl ToJson for RuntimeErrorType
 
 pub(all) struct RuntimeFunctionContext {
   context : ClosureInterpreter
@@ -189,14 +184,12 @@ pub enum RuntimeLocation {
   FunctionCall(String)
   ControlFlow(String)
   LetMut(String)
-}
-pub impl Show for RuntimeLocation
+} derive(Show)
 
 pub(all) struct RuntimeModule {
   meta : ModuleInfo
   pkgs : Map[String, RuntimePackage]
-}
-pub impl ToJson for RuntimeModule
+} derive(ToJson)
 
 pub(all) struct RuntimePackage {
   name : String
@@ -216,7 +209,7 @@ pub(all) struct RuntimePackage {
   deps : Map[String, RuntimePackage]
   files : Map[String, String]
   mut loaded : Bool
-}
+} derive(ToJson)
 pub fn RuntimePackage::check_type_constraint(Self, RuntimeValue, @syntax.Type) -> Bool
 pub fn RuntimePackage::cons(Self, String, Array[RuntimeValue]) -> RuntimeValue
 pub fn RuntimePackage::cons_with_labels(Self, String, Array[(String?, RuntimeValue, Bool)]) -> RuntimeValue
@@ -226,7 +219,6 @@ pub fn RuntimePackage::find_stub(Self, String) -> String
 pub fn RuntimePackage::is_constructor(Self, String) -> Bool
 pub fn RuntimePackage::new(String, deps? : Map[String, Self], files? : Map[String, String]) -> Self
 pub fn RuntimePackage::set(Self, String, RuntimeValue) -> Unit
-pub impl ToJson for RuntimePackage
 
 pub(all) enum RuntimeType {
   Any
@@ -236,7 +228,7 @@ pub(all) enum RuntimeType {
   Option(RuntimeType)
   Object(pkg~ : RuntimePackage, name~ : String)
   Internal
-}
+} derive(ToJson)
 pub fn RuntimeType::any() -> Self
 pub fn RuntimeType::array() -> Self
 pub fn RuntimeType::array_view() -> Self
@@ -267,7 +259,6 @@ pub fn RuntimeType::uint64() -> Self
 pub fn RuntimeType::uninitialized_array() -> Self
 pub impl Eq for RuntimeType
 pub impl Show for RuntimeType
-pub impl ToJson for RuntimeType
 
 pub(all) enum RuntimeValue {
   Unit
@@ -325,8 +316,7 @@ type TypeDecl
 pub struct WithType[T] {
   val : T
   ty : RuntimeType
-}
-pub impl[T : ToJson] ToJson for WithType[T]
+} derive(ToJson)
 
 // Type aliases
 pub type RuntimeFunction = (RuntimeFunctionContext) -> RuntimeValue raise ControlFlow

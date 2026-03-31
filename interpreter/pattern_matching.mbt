@@ -186,13 +186,13 @@ pub fn ClosureInterpreter::match_case(
     Constant(c=pattern_const, ..) =>
       match (value, pattern_const) {
         (Int(v, ..), Int(s)) => {
-          let pattern_int = @strconv.parse_int(s) catch { _ => 0 }
+          let pattern_int = @string.parse_int(s) catch { _ => 0 }
           v == pattern_int
         }
         (Bool(v), Bool(b)) => v == b
         (String(v), String(s)) => v == s
         (Double(v), Double(s)) => {
-          let pattern_double = @strconv.parse_double(s) catch { _ => 0.0 }
+          let pattern_double = @string.parse_double(s) catch { _ => 0.0 }
           v == pattern_double
         }
         (Char(v), Char(s)) => {

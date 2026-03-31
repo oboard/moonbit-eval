@@ -6,7 +6,7 @@ pub fn[A] error(msg : String, loc~ : SourceLoc) -> A raise ControlFlow {
 
 ///|
 fn fromCharCode(hex : StringView, base : Int) -> Char {
-  (try! @strconv.parse_int(hex, base~)).to_char().unwrap_or('?')
+  (try! @string.parse_int(hex, base~)).to_char().unwrap_or('?')
 }
 
 ///|

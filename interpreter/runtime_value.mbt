@@ -286,7 +286,7 @@ fn parse_double(s : String) -> Double {
     if s.has_prefix("0x") || s.has_prefix("0X") {
       match s.split(".").to_array() {
         [int_part, frac_part] => {
-          let mut res = @strconv.parse_uint64(int_part, base=0).to_double()
+          let mut res = @string.parse_uint64(int_part, base=0).to_double()
           let mut scale : Double = 1
           frac_part
           .to_array()
@@ -303,11 +303,11 @@ fn parse_double(s : String) -> Double {
           })
           res
         }
-        [int_part] => @strconv.parse_uint64(int_part, base=16).to_double()
+        [int_part] => @string.parse_uint64(int_part, base=16).to_double()
         _ => 0
       }
     } else {
-      @strconv.parse_double(s)
+      @string.parse_double(s)
     }
   } catch {
     _ => 0.0
@@ -323,15 +323,14 @@ test "parse_double" {
 fn RuntimeValue::from_constant(c : @syntax.Constant) -> RuntimeValue {
   match c {
     Bool(b) => Bool(b)
-    Int(s) =>
-      Int(@strconv.parse_int64(s).to_int() catch { _ => 0 }, raw=Some(s))
-    UInt(s) => UInt(@strconv.parse_uint64(s).to_uint() catch { _ => 0U })
-    Int64(s) => Int64(@strconv.parse_int64(s) catch { _ => 0L })
-    UInt64(s) => UInt64(@strconv.parse_uint64(s) catch { _ => 0UL })
+    Int(s) => Int(@string.parse_int64(s).to_int() catch { _ => 0 }, raw=Some(s))
+    UInt(s) => UInt(@string.parse_uint64(s).to_uint() catch { _ => 0U })
+    Int64(s) => Int64(@string.parse_int64(s) catch { _ => 0L })
+    UInt64(s) => UInt64(@string.parse_uint64(s) catch { _ => 0UL })
     Float(s) => Float(Float::from_double(parse_double(s)))
     Double(s) => Double(parse_double(s))
     Byte(s) => {
-      let int_val = @strconv.parse_int64(s) catch { _ => 0 }
+      let int_val = @string.parse_int64(s) catch { _ => 0 }
       Byte(int_val.to_byte())
     }
     Char(s) => {
@@ -373,13 +372,13 @@ pub fn RuntimeValue::overload_literal(
   match (self, expected_type) {
     // 数字字面量重载 (默认Int -> 其他数字类型)
     (Int(_, raw=Some(raw)), "UInt") =>
-      UInt(@strconv.parse_uint64(raw).to_uint() catch { _ => 0U })
+      UInt(@string.parse_uint64(raw).to_uint() catch { _ => 0U })
     (Int(_, raw=Some(raw)), "Int64") =>
-      Int64(@strconv.parse_int64(raw) catch { _ => 0L })
+      Int64(@string.parse_int64(raw) catch { _ => 0L })
     (Int(_, raw=Some(raw)), "UInt64") =>
-      UInt64(@strconv.parse_uint64(raw) catch { _ => 0UL })
+      UInt64(@string.parse_uint64(raw) catch { _ => 0UL })
     (Int(_, raw=Some(raw)), "UInt16") =>
-      UInt16(@strconv.parse_uint64(raw).to_uint16() catch { _ => 0 })
+      UInt16(@string.parse_uint64(raw).to_uint16() catch { _ => 0 })
     (Int(i, ..), "Byte") => Byte(i.to_byte())
     (Int(i, ..), "Double") => Double(i.to_double())
     (Int(i, ..), "Float") => Float(Float::from_int(i))
