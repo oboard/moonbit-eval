@@ -15,4 +15,5 @@ import {
   "moonbitlang/parser/tokens",
   "moonbitlang/parser/attribute",
   "moonbitlang/x/fs",
+  "oboard/moonbit-eval/interpreter/host" @host,
 }

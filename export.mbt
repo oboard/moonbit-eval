@@ -23,7 +23,7 @@ pub fn eval_result_to_string(result : EvalResult) -> String {
 
 ///|
 pub fn code_to_ast(code : String) -> String {
-  match @interpreter.parse_code_to_impl(code) {
+  match @front.parse_code_to_impl(code) {
     Ok(i) => i.to_json().stringify()
     Err(msg) => msg
   }
@@ -33,7 +33,7 @@ pub fn code_to_ast(code : String) -> String {
 pub fn add_extern_fn(
   vm : MoonBitVM,
   name : String,
-  func : @interpreter.RuntimeFunction,
+  func : @core.RuntimeFunction,
 ) -> Unit {
   vm.interpreter.add_extern_fn(name, func)
 }
@@ -42,7 +42,7 @@ pub fn add_extern_fn(
 pub fn add_embedded_fn(
   vm : MoonBitVM,
   name : String,
-  func : @interpreter.RuntimeFunction,
+  func : @core.RuntimeFunction,
 ) -> Unit {
   vm.interpreter.add_embedded_fn(name, func)
 }
@@ -52,7 +52,7 @@ pub fn add_embedded_method(
   vm : MoonBitVM,
   name : String,
   method_name : String,
-  func : @interpreter.RuntimeFunction,
+  func : @core.RuntimeFunction,
 ) -> Unit {
   vm.interpreter.add_embedded_method(name, method_name, func)
 }

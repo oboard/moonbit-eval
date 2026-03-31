@@ -12,16 +12,6 @@ let core_stubs : Map[String, String] = {
 }
 
 ///|
-/// Bridge to host async runtime.
-fn host_async_run(f : async () -> Unit noraise) = "%async.run"
-
-///|
-/// Bridge to host async suspend primitive.
-async fn host_async_suspend(
-  cb : ((RuntimeValue) -> Unit, (Failure) -> Unit) -> Unit,
-) -> RuntimeValue raise Failure = "%async.suspend"
-
-///|
 let builtin_embedded_code : Map[String, RuntimeFunction] = {
   "%any.to_string": any_to_string_fn,
   "%identity": identity_fn,
@@ -239,7 +229,7 @@ let async_run_fn : RuntimeFunction = ctx => {
     [{ val: Fn(func), .. }] => {
       let mut result : RuntimeValue = Unit
       let mut raised : ControlFlow? = None
-      host_async_run(() => {
+      @host.run_async(() => {
         try {
           result = ctx.context.call(func.val, ctx.pkg, [])
         } catch {
@@ -266,9 +256,9 @@ let async_suspend_fn : RuntimeFunction = ctx => {
       let mut resolved_as_error = false
       let mut unresolved_callback = false
       let mut resolved_value : RuntimeValue = Unit
-      host_async_run(() => {
+      @host.run_async(() => {
         try {
-          resolved_value = host_async_suspend((host_ok, host_err) => {
+          resolved_value = @host.async_suspend((host_ok, host_err) => {
             let mut resolved = false
             let ok_fn : RuntimeFunction = ok_ctx => {
               if !resolved {
@@ -288,7 +278,7 @@ let async_suspend_fn : RuntimeFunction = ctx => {
                   [{ val, .. }, ..] => val
                   _ => Unit
                 }
-                host_err(Failure(err_value.to_string()))
+                host_err(Failure::Failure(err_value.to_string()))
               }
               Unit
             }
@@ -307,7 +297,7 @@ let async_suspend_fn : RuntimeFunction = ctx => {
               _ =>
                 if !resolved {
                   resolved = true
-                  host_err(Failure("control flow in async callback"))
+                  host_err(Failure::Failure("control flow in async callback"))
                 }
             }
             if !resolved {
@@ -317,7 +307,7 @@ let async_suspend_fn : RuntimeFunction = ctx => {
             }
           })
         } catch {
-          Failure(msg) => {
+          Failure::Failure(msg) => {
             resolved_as_error = true
             resolved_value = String(msg)
           }

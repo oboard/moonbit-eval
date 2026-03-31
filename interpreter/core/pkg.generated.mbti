@@ -1,5 +1,5 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "oboard/moonbit-eval/interpreter"
+package "oboard/moonbit-eval/interpreter/core"
 
 import {
   "moonbitlang/core/bigint",

@@ -1,0 +1,20 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "oboard/moonbit-eval/interpreter/front"
+
+import {
+  "moonbitlang/parser/syntax",
+}
+
+// Values
+pub fn parse_code_to_expr(String) -> Result[@syntax.Expr, String]
+
+pub fn parse_code_to_impl(String) -> Result[@syntax.Impl, String]
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits
+

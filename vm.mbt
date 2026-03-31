@@ -243,7 +243,7 @@ pub fn MoonBitVM::eval(
       })
       return Success(last_result, self.interpreter)
     }
-    match @interpreter.parse_code_to_expr(code) {
+    match @front.parse_code_to_expr(code) {
       Ok(expr) => {
         let result_value = self.interpreter.visit(expr)
         if log.unwrap_or(self.log) {
@@ -254,7 +254,7 @@ pub fn MoonBitVM::eval(
       Err(_) => self.eval(code, log?, top=true)
     }
   } catch {
-    @interpreter.ControlFlow::Error(msg) => Error(msg, self.interpreter)
+    @core.ControlFlow::Error(msg) => Error(msg, self.interpreter)
     _ => panic()
   }
 }

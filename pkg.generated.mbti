@@ -3,15 +3,15 @@ package "oboard/moonbit-eval"
 
 import {
   "moonbitlang/parser/syntax",
-  "oboard/moonbit-eval/interpreter",
+  "oboard/moonbit-eval/interpreter/core",
 }
 
 // Values
-pub fn add_embedded_fn(MoonBitVM, String, (@interpreter.RuntimeFunctionContext) -> @interpreter.RuntimeValue raise @interpreter.ControlFlow) -> Unit
+pub fn add_embedded_fn(MoonBitVM, String, (@core.RuntimeFunctionContext) -> @core.RuntimeValue raise @core.ControlFlow) -> Unit
 
-pub fn add_embedded_method(MoonBitVM, String, String, (@interpreter.RuntimeFunctionContext) -> @interpreter.RuntimeValue raise @interpreter.ControlFlow) -> Unit
+pub fn add_embedded_method(MoonBitVM, String, String, (@core.RuntimeFunctionContext) -> @core.RuntimeValue raise @core.ControlFlow) -> Unit
 
-pub fn add_extern_fn(MoonBitVM, String, (@interpreter.RuntimeFunctionContext) -> @interpreter.RuntimeValue raise @interpreter.ControlFlow) -> Unit
+pub fn add_extern_fn(MoonBitVM, String, (@core.RuntimeFunctionContext) -> @core.RuntimeValue raise @core.ControlFlow) -> Unit
 
 pub fn code_to_ast(String) -> String
 
@@ -19,21 +19,21 @@ pub fn eval_result_to_string(EvalResult) -> String
 
 pub fn expr_to_string(@syntax.Expr) -> String
 
-pub fn value_to_json(@interpreter.RuntimeValue) -> String
+pub fn value_to_json(@core.RuntimeValue) -> String
 
-pub fn value_to_string(@interpreter.RuntimeValue) -> String
+pub fn value_to_string(@core.RuntimeValue) -> String
 
 // Errors
 
 // Types and methods
 pub enum EvalResult {
-  Success(@interpreter.RuntimeValue, @interpreter.ClosureInterpreter)
-  Error(String, @interpreter.ClosureInterpreter)
+  Success(@core.RuntimeValue, @core.ClosureInterpreter)
+  Error(String, @core.ClosureInterpreter)
 }
 pub impl Show for EvalResult
 
 pub(all) struct MoonBitVM {
-  interpreter : @interpreter.ClosureInterpreter
+  interpreter : @core.ClosureInterpreter
   log : Bool
 }
 pub fn MoonBitVM::create(log? : Bool) -> Self

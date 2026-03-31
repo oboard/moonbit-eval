@@ -1,5 +1,4 @@
 import {
   "oboard/moonbit-eval" @eval,
-  "oboard/moonbit-eval/interpreter",
   "moonbitlang/core/list",
 }

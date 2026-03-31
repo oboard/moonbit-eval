@@ -1,2 +1,5 @@
 ///|
-using @interpreter {type ClosureInterpreter, type RuntimeValue}
+using @core {type ClosureInterpreter}
+
+///|
+using @core {type RuntimeValue}

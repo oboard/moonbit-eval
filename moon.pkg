@@ -2,7 +2,8 @@ import {
   "moonbitlang/parser",
   "moonbitlang/core/bench",
   "moonbitlang/parser/syntax",
-  "oboard/moonbit-eval/interpreter",
+  "oboard/moonbit-eval/interpreter/core" @core,
+  "oboard/moonbit-eval/interpreter/front" @front,
 }
 
 options(
