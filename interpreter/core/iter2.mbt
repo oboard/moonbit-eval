@@ -9,6 +9,7 @@ pub let iter2_methods : Map[String, RuntimeFunction] = {
   "iterator2": iter2_iter2_fn,
   "new": iter2_new_fn,
   "next": iter2_next_fn,
+  "output": iter2_output_fn,
   "run": iter2_run_fn,
   "to_array": iter2_to_array_fn,
 }
@@ -119,6 +120,17 @@ let iter2_concat_fn : RuntimeFunction = ctx => {
     [{ val: Iter2(iter2_1), .. }, { val: Iter2(iter2_2), .. }] => {
       let concatenated = iter2_1.concat(iter2_2)
       Iter2(concatenated)
+    }
+    _ => Unit
+  }
+}
+
+///|
+let iter2_output_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: Iter2(iter2), .. }, { val: StringBuilder(logger), .. }] => {
+      iter2.output(logger)
+      Unit
     }
     _ => Unit
   }

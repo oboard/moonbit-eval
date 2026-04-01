@@ -97,6 +97,7 @@ pub let array_methods : Map[String, RuntimeFunction] = {
   "unsafe_extract_uint_le": array_unsafe_extract_uint_le_fn,
   "sort": array_sort_fn,
   "zip": array_zip_fn,
+  "output": array_output_fn,
 }
 
 ///|
@@ -1700,5 +1701,16 @@ let array_unsafe_extract_uint64_be_fn : RuntimeFunction = ctx => {
         ),
       )
     _ => UInt64(0UL)
+  }
+}
+
+///|
+let array_output_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: Array(arr), .. }, { val: StringBuilder(logger), .. }] => {
+      arr.output(logger)
+      Unit
+    }
+    _ => Unit
   }
 }

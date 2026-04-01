@@ -40,6 +40,7 @@ pub let int_methods : Map[String, RuntimeFunction] = {
   "to_le_bytes": int_to_le_bytes_fn,
   "next_power_of_two": int_next_power_of_two_fn,
   "abs": int_abs_fn,
+  "output": int_output_fn,
 }
 
 ///|
@@ -490,6 +491,17 @@ let int_next_power_of_two_fn : RuntimeFunction = ctx => {
 let int_abs_fn : RuntimeFunction = ctx => {
   match ctx.args {
     [{ val: Int(i, ..), .. }] => Int(i.abs(), raw=None)
+    _ => Unit
+  }
+}
+
+///|
+let int_output_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: Int(i, ..), .. }, { val: StringBuilder(logger), .. }] => {
+      i.output(logger)
+      Unit
+    }
     _ => Unit
   }
 }

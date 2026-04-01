@@ -48,6 +48,7 @@ pub let array_view_methods : Map[String, RuntimeFunction] = {
   "unsafe_extract_int_le": array_view_unsafe_extract_int_le_fn,
   "unsafe_extract_int64_be": array_view_unsafe_extract_int64_be_fn,
   "unsafe_extract_int64_le": array_view_unsafe_extract_int64_le_fn,
+  "output": array_view_output_fn,
 }
 
 ///|
@@ -1086,6 +1087,17 @@ let array_view_unsafe_extract_int64_be_fn : RuntimeFunction = ctx => {
         ),
       )
     _ => Int64(0L)
+  }
+}
+
+///|
+let array_view_output_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: ArrayView(arr), .. }, { val: StringBuilder(logger), .. }] => {
+      arr.output(logger)
+      Unit
+    }
+    _ => Unit
   }
 }
 

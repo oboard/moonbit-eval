@@ -72,6 +72,7 @@ let string_methods : Map[String, RuntimeFunction] = {
   "suffixes": string_suffixes_fn,
   "view": string_view_fn,
   "code_unit_at": string_code_unit_at_fn,
+  "output": string_output_fn,
 }
 
 // Core string functions
@@ -114,6 +115,17 @@ let string_to_string_fn : RuntimeFunction = ctx => {
   match ctx.args {
     [{ val: String(s), .. }] => String(s)
     _ => String("")
+  }
+}
+
+///|
+let string_output_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: String(s), .. }, { val: StringBuilder(logger), .. }] => {
+      s.output(logger)
+      Unit
+    }
+    _ => Unit
   }
 }
 

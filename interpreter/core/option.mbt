@@ -1,6 +1,7 @@
 ///|
 pub let option_methods : Map[String, RuntimeFunction] = {
   "to_string": option_to_string_fn,
+  "output": option_output_fn,
   "unwrap": option_unwrap_fn,
   "unwrap_or": option_unwrap_or_fn,
   "unwrap_or_else": option_unwrap_or_else_fn,
@@ -396,6 +397,36 @@ let option_unwrap_or_else_fn : RuntimeFunction = ctx => {
     ] =>
       // 对于None值，执行else闭包
       ctx.context.call(else_func.val, ctx.pkg, [])
+    _ => Unit
+  }
+}
+
+///|
+let option_output_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [
+      {
+        val: Constructor(
+          { val: { name: "Some", fields: [{ value: inner_value, .. }] }, .. }
+        ),
+        ..,
+      },
+      { val: StringBuilder(logger), .. },
+      ..,
+    ] => {
+      logger.write_string("Some(")
+      logger.write_string(inner_value.to_string())
+      logger.write_string(")")
+      Unit
+    }
+    [
+      { val: Constructor({ val: { name: "None", fields: [] }, .. }), .. },
+      { val: StringBuilder(logger), .. },
+      ..,
+    ] => {
+      logger.write_string("None")
+      Unit
+    }
     _ => Unit
   }
 }

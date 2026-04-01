@@ -31,6 +31,7 @@ pub let map_methods : Map[String, RuntimeFunction] = {
   "to_array": map_to_array_fn,
   "update": map_update_fn,
   "values": map_values_fn,
+  "output": map_output_fn,
 }
 
 ///|
@@ -440,6 +441,17 @@ let map_update_fn : RuntimeFunction = ctx => {
 let map_values_fn : RuntimeFunction = ctx => {
   match ctx.args {
     [{ val: Map(map), .. }] => Iter(map.values())
+    _ => Unit
+  }
+}
+
+///|
+let map_output_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: Map(map), .. }, { val: StringBuilder(logger), .. }] => {
+      map.output(logger)
+      Unit
+    }
     _ => Unit
   }
 }

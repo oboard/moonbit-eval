@@ -69,6 +69,7 @@ pub let fixedarray_methods : Map[String, RuntimeFunction] = {
   "set_utf8_char": fixedarray_set_utf8_char_fn,
   "set_utf16le_char": fixedarray_set_utf16le_char_fn,
   "set_utf16be_char": fixedarray_set_utf16be_char_fn,
+  "output": fixedarray_output_fn,
 }
 
 ///|
@@ -1407,6 +1408,17 @@ let fixedarray_set_utf8_char_fn : RuntimeFunction = ctx => {
         }
         _ => abort("Char out of range")
       }
+    }
+    _ => Unit
+  }
+}
+
+///|
+let fixedarray_output_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: FixedArray(arr), .. }, { val: StringBuilder(logger), .. }] => {
+      arr.output(logger)
+      Unit
     }
     _ => Unit
   }

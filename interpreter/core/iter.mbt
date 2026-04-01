@@ -47,6 +47,7 @@ pub let iter_methods : Map[String, RuntimeFunction] = {
   "to_array": iter_to_array_fn,
   "view": iter_view_fn,
   "zip": iter_zip_fn,
+  "output": iter_output_fn,
 }
 
 ///|
@@ -638,6 +639,17 @@ let iter_tap_fn : RuntimeFunction = ctx => {
         ])
       })
       Iter(result)
+    }
+    _ => Unit
+  }
+}
+
+///|
+let iter_output_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: Iter(iter), .. }, { val: StringBuilder(logger), .. }] => {
+      iter.output(logger)
+      Unit
     }
     _ => Unit
   }

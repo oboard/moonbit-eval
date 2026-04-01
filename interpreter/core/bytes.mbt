@@ -34,6 +34,7 @@ pub let bytes_methods : Map[String, RuntimeFunction] = {
   "unsafe_read_uint64_be": bytes_unsafe_read_uint64_be_fn,
   "to_unchecked_string": bytes_to_unchecked_string_fn,
   "unsafe_get": bytes_unsafe_get_fn,
+  "output": bytes_output_fn,
 }
 
 ///|
@@ -418,5 +419,16 @@ let bytes_unsafe_read_uint64_be_fn : RuntimeFunction = ctx => {
     [{ val: Bytes(b), .. }, { val: Int(i, ..), .. }] =>
       UInt64(b.unsafe_read_uint64_be(i))
     _ => UInt64(0UL)
+  }
+}
+
+///|
+let bytes_output_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: Bytes(b), .. }, { val: StringBuilder(logger), .. }] => {
+      b.output(logger)
+      Unit
+    }
+    _ => Unit
   }
 }

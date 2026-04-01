@@ -119,7 +119,11 @@ let core_embedded_code : Map[String, RuntimeFunction] = [
 
 ///|
 let core_embedded_methods : Map[String, Map[String, RuntimeFunction]] = {
-  "Bool": { "compare": bool_compare_fn, "default": bool_default_fn },
+  "Bool": {
+    "compare": bool_compare_fn,
+    "default": bool_default_fn,
+    "output": primitive_output_fn,
+  },
   "Int": int_methods,
   "String": string_methods,
   "StringView": string_view_methods,
@@ -129,32 +133,42 @@ let core_embedded_methods : Map[String, Map[String, RuntimeFunction]] = {
     "compare": uint_compare_fn,
     "to_i32_reinterpret": uint_to_int_fn,
     "to_f64": uint_to_double_fn,
+    "output": primitive_output_fn,
   },
-  "Float": { "compare": float_compare_fn, "to_f64": float_to_double_fn },
+  "Float": {
+    "compare": float_compare_fn,
+    "to_f64": float_to_double_fn,
+    "output": primitive_output_fn,
+  },
   "Double": {
     "compare": double_compare_fn,
     "to_i64_saturate": double_to_int64_fn,
     "to_int64": double_to_int64_fn,
+    "output": primitive_output_fn,
   },
   "Char": {
     "compare": char_compare_fn,
     "to_int": char_to_int_fn,
     "to_string": char_to_string_fn,
+    "output": primitive_output_fn,
   },
   "Byte": {
     "compare": byte_compare_fn,
     "to_int": byte_to_int_fn,
     "to_uint": byte_to_uint_fn,
+    "output": primitive_output_fn,
   },
   "Int64": {
     "compare": int64_compare_fn,
     "to_i32": int64_to_int_fn,
     "to_f64": int64_to_double_fn,
+    "output": primitive_output_fn,
   },
   "UInt64": {
     "compare": uint64_compare_fn,
     "to_u32": uint64_to_uint_fn,
     "to_i64_reinterpret": uint64_to_int64_fn,
+    "output": primitive_output_fn,
   },
   "Array": array_methods,
   "Bytes": bytes_methods,
@@ -174,6 +188,45 @@ let core_embedded_methods : Map[String, Map[String, RuntimeFunction]] = {
 let identity_fn : RuntimeFunction = ctx => {
   match ctx.args {
     [{ val: value, .. }] => value
+    _ => Unit
+  }
+}
+
+///|
+let primitive_output_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: Bool(v), .. }, { val: StringBuilder(logger), .. }] => {
+      v.output(logger)
+      Unit
+    }
+    [{ val: UInt(v), .. }, { val: StringBuilder(logger), .. }] => {
+      v.output(logger)
+      Unit
+    }
+    [{ val: Float(v), .. }, { val: StringBuilder(logger), .. }] => {
+      v.output(logger)
+      Unit
+    }
+    [{ val: Double(v), .. }, { val: StringBuilder(logger), .. }] => {
+      v.output(logger)
+      Unit
+    }
+    [{ val: Char(v), .. }, { val: StringBuilder(logger), .. }] => {
+      v.output(logger)
+      Unit
+    }
+    [{ val: Byte(v), .. }, { val: StringBuilder(logger), .. }] => {
+      v.output(logger)
+      Unit
+    }
+    [{ val: Int64(v), .. }, { val: StringBuilder(logger), .. }] => {
+      v.output(logger)
+      Unit
+    }
+    [{ val: UInt64(v), .. }, { val: StringBuilder(logger), .. }] => {
+      v.output(logger)
+      Unit
+    }
     _ => Unit
   }
 }

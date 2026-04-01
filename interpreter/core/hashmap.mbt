@@ -33,6 +33,7 @@ pub let hash_map_methods : Map[String, RuntimeFunction] = {
   "to_repr": hash_map_to_repr_fn,
   "to_json": hash_map_to_json_fn,
   "to_string": hash_map_to_string_fn,
+  "output": hash_map_output_fn,
   "values": hash_map_values_fn,
 }
 
@@ -468,6 +469,17 @@ let hash_map_to_string_fn : RuntimeFunction = ctx => {
 let hash_map_to_repr_fn : RuntimeFunction = ctx => {
   match ctx.args {
     [{ val: HashMap(map), .. }] => String(map.to_string())
+    _ => Unit
+  }
+}
+
+///|
+let hash_map_output_fn : RuntimeFunction = ctx => {
+  match ctx.args {
+    [{ val: HashMap(map), .. }, { val: StringBuilder(logger), .. }] => {
+      map.output(logger)
+      Unit
+    }
     _ => Unit
   }
 }
