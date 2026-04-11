@@ -3,7 +3,7 @@ pub enum RuntimeLocation {
   FunctionCall(String)
   ControlFlow(String)
   LetMut(String)
-} derive(Show)
+} derive(Debug)
 
 ///| 变量管理模块
 

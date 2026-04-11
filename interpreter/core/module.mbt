@@ -19,7 +19,7 @@ pub(all) struct ModuleInfo {
   keywords : Array[String]?
   description : String?
   source : String?
-} derive(Show, ToJson, FromJson)
+} derive(Debug, ToJson, FromJson)
 
 ///|
 pub fn ModuleInfo::get_zip_url(self : ModuleInfo) -> String noraise {

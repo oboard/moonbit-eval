@@ -144,55 +144,57 @@ fn ClosureInterpreter::bind_runtime_parameters(
   params : @list.List[@syntax.Parameter],
   args : @list.List[RuntimeArgument],
 ) -> Unit raise ControlFlow {
-  loop (params, args) {
-    // 处理可选参数的默认值情况
-    (
-      @list.More(param, tail=rest_params),
-      @list.More({ val: Unit, .. }, tail=rest_args),
-    ) =>
-      match param {
-        // 可选参数没有对应实参时，使用默认值
-        Optional(binder={ name, .. }, default~, ..) => {
-          let default_value = self.visit(default)
-          self.current_pkg.env.set(name, default_value)
-          continue (rest_params, rest_args)
+  for state = (params, args) {
+    match state {
+      // 处理可选参数的默认值情况
+      (
+        @list.More(param, tail=rest_params),
+        @list.More({ val: Unit, .. }, tail=rest_args),
+      ) =>
+        match param {
+          // 可选参数没有对应实参时，使用默认值
+          Optional(binder={ name, .. }, default~, ..) => {
+            let default_value = self.visit(default)
+            self.current_pkg.env.set(name, default_value)
+            continue (rest_params, rest_args)
+          }
+          // 问号可选参数没有对应实参时，不绑定任何值
+          QuestionOptional(..) => continue (rest_params, rest_args)
+          _ => break
         }
-        // 问号可选参数没有对应实参时，不绑定任何值
-        QuestionOptional(..) => continue (rest_params, rest_args)
-        _ => ()
+      (@list.More(param, tail=rest_params), @list.More(arg, tail=rest_args)) => {
+        let value = arg.val
+        match param {
+          // 位置参数：直接绑定参数值
+          Positional(binder={ name, .. }, ..)
+          // 标签参数：绑定带标签的参数值
+          | Labelled(binder={ name, .. }, ..)
+          // 问号可选参数：绑定参数值
+          | QuestionOptional(binder={ name, .. }, ..)
+          // 可选参数：当有参数提供时绑定参数值
+          | Optional(binder={ name, .. }, ..) =>
+            self.current_pkg.env.set(name, value)
+          // 丢弃位置参数：不绑定到任何变量
+          DiscardPositional(..) => ()
+        }
+        continue (rest_params, rest_args)
       }
-    (@list.More(param, tail=rest_params), @list.More(arg, tail=rest_args)) => {
-      let value = arg.val
-      match param {
-        // 位置参数：直接绑定参数值
-        Positional(binder={ name, .. }, ..)
-        // 标签参数：绑定带标签的参数值
-        | Labelled(binder={ name, .. }, ..)
-        // 问号可选参数：绑定参数值
-        | QuestionOptional(binder={ name, .. }, ..)
-        // 可选参数：当有参数提供时绑定参数值
-        | Optional(binder={ name, .. }, ..) =>
-          self.current_pkg.env.set(name, value)
-        // 丢弃位置参数：不绑定到任何变量
-        DiscardPositional(..) => ()
-      }
-      continue (rest_params, rest_args)
+      // 处理可选参数的默认值情况
+      (@list.More(param, tail=rest_params), @list.Empty) =>
+        match param {
+          // 可选参数没有对应实参时，使用默认值
+          Optional(binder={ name, .. }, default~, ..) => {
+            let default_value = self.visit(default)
+            self.current_pkg.env.set(name, default_value)
+            continue (rest_params, @list.new())
+          }
+          // 问号可选参数没有对应实参时，不绑定任何值
+          QuestionOptional(..) => continue (rest_params, @list.new())
+          _ => break
+        }
+      (@list.Empty, @list.Empty) => break
+      _ => break
     }
-    // 处理可选参数的默认值情况
-    (@list.More(param, tail=rest_params), @list.Empty) =>
-      match param {
-        // 可选参数没有对应实参时，使用默认值
-        Optional(binder={ name, .. }, default~, ..) => {
-          let default_value = self.visit(default)
-          self.current_pkg.env.set(name, default_value)
-          continue (rest_params, @list.new())
-        }
-        // 问号可选参数没有对应实参时，不绑定任何值
-        QuestionOptional(..) => continue (rest_params, @list.new())
-        _ => ()
-      }
-    (@list.Empty, @list.Empty) => ()
-    _ => ()
   }
 }
 

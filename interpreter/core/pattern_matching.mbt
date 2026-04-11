@@ -103,16 +103,18 @@ fn format_pattern(pattern : @syntax.Pattern) -> String {
       let pat_strs = []
       match pats {
         @syntax.ArrayPatterns::Closed(patterns) =>
-          loop patterns {
-            @list.More(array_pat, tail=pat_tail) => {
-              match array_pat {
-                @syntax.ArrayPattern::Pattern(pat) =>
-                  pat_strs.push(format_pattern(pat))
-                _ => pat_strs.push("<array_pattern>")
+          for state = patterns {
+            match state {
+              @list.More(array_pat, tail=pat_tail) => {
+                match array_pat {
+                  @syntax.ArrayPattern::Pattern(pat) =>
+                    pat_strs.push(format_pattern(pat))
+                  _ => pat_strs.push("<array_pattern>")
+                }
+                continue pat_tail
               }
-              continue pat_tail
+              @list.Empty => break
             }
-            @list.Empty => break
           }
         _ => pat_strs.push("<array_pattern>")
       }
@@ -241,19 +243,21 @@ pub fn ClosureInterpreter::match_case(
                 return false
               }
               let mut index = 0
-              loop patterns {
-                @list.More(array_pat, tail=pat_tail) => {
-                  match array_pat {
-                    @syntax.ArrayPattern::Pattern(pat) =>
-                      if !self.match_case(values[index], pat) {
-                        return false
-                      }
-                    _ => return false // 其他数组模式暂不支持
+              for state = patterns {
+                match state {
+                  @list.More(array_pat, tail=pat_tail) => {
+                    match array_pat {
+                      @syntax.ArrayPattern::Pattern(pat) =>
+                        if !self.match_case(values[index], pat) {
+                          return false
+                        }
+                      _ => return false // 其他数组模式暂不支持
+                    }
+                    index = index + 1
+                    continue pat_tail
                   }
-                  index = index + 1
-                  continue pat_tail
+                  @list.Empty => break
                 }
-                @list.Empty => break
               }
               true
             }
@@ -303,28 +307,30 @@ pub fn ClosureInterpreter::match_case(
                   return false
                 }
                 let mut index = 0
-                loop pat_args {
-                  @list.More(pat_arg, tail=pat_tail) => {
-                    // 提取参数模式并递归匹配
-                    let arg_pattern = pat_arg.pat
-                    if !self.match_case(fields[index].value, arg_pattern) {
-                      return false
+                for state = pat_args {
+                  match state {
+                    @list.More(pat_arg, tail=pat_tail) => {
+                      // 提取参数模式并递归匹配
+                      let arg_pattern = pat_arg.pat
+                      if !self.match_case(fields[index].value, arg_pattern) {
+                        return false
+                      }
+                      match pat_arg.kind {
+                        Positional => ()
+                        Labelled(label)
+                        | LabelledPun(label)
+                        | LabelledOption(label~, ..)
+                        | LabelledOptionPun(label~, ..) =>
+                          self.current_pkg.env.set(
+                            label.name,
+                            fields[index].value,
+                          )
+                      }
+                      index += 1
+                      continue pat_tail
                     }
-                    match pat_arg.kind {
-                      Positional => ()
-                      Labelled(label)
-                      | LabelledPun(label)
-                      | LabelledOption(label~, ..)
-                      | LabelledOptionPun(label~, ..) =>
-                        self.current_pkg.env.set(
-                          label.name,
-                          fields[index].value,
-                        )
-                    }
-                    index += 1
-                    continue pat_tail
+                    @list.Empty => break
                   }
-                  @list.Empty => break
                 }
                 true
               }
