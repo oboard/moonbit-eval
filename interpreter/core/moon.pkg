@@ -4,6 +4,7 @@ import {
   "moonbitlang/core/json",
   "moonbitlang/core/bigint",
   "moonbitlang/core/buffer",
+  "moonbitlang/core/debug" @debug,
   "moonbitlang/core/string",
   "moonbitlang/core/hashmap",
   "moonbitlang/core/strconv",

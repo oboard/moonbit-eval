@@ -172,7 +172,7 @@ fn array_runtime_values_to_byte_view(
 
 ///|
 fn array_runtime_byte_view_to_value(view : ArrayView[Byte]) -> RuntimeValue {
-  ArrayView(view.to_array().map(byte => Byte(byte))[:])
+  ArrayView(view.to_owned().map(byte => Byte(byte))[:])
 }
 
 ///|
@@ -1054,8 +1054,8 @@ let array_unsafe_blit_fixed_fn : RuntimeFunction = ctx => {
 let array_split_at_fn : RuntimeFunction = ctx => {
   match ctx.args {
     [{ val: Array(arr), .. }, { val: Int(index, ..), .. }] => {
-      let left = arr[:index].to_array()
-      let right = arr[index:].to_array()
+      let left = arr[:index].to_owned()
+      let right = arr[index:].to_owned()
       Tuple([Array(left), Array(right)])
     }
     _ => Unit
@@ -1103,7 +1103,9 @@ let array_ends_with_fn : RuntimeFunction = ctx => {
 let array_strip_prefix_fn : RuntimeFunction = ctx => {
   match ctx.args {
     [{ val: Array(arr), .. }, { val: Array(prefix), .. }] =>
-      RuntimeValue::from_option(arr.strip_prefix(prefix).map(v => Array(v)))
+      RuntimeValue::from_option(
+        arr.strip_prefix(prefix).map(v => Array(v.to_owned())),
+      )
     _ => RuntimeValue::from_option(None)
   }
 }
@@ -1112,7 +1114,9 @@ let array_strip_prefix_fn : RuntimeFunction = ctx => {
 let array_strip_suffix_fn : RuntimeFunction = ctx => {
   match ctx.args {
     [{ val: Array(arr), .. }, { val: Array(suffix), .. }] =>
-      RuntimeValue::from_option(arr.strip_suffix(suffix).map(v => Array(v)))
+      RuntimeValue::from_option(
+        arr.strip_suffix(suffix).map(v => Array(v.to_owned())),
+      )
     _ => RuntimeValue::from_option(None)
   }
 }
@@ -1321,7 +1325,7 @@ let array_rev_iter_fn : RuntimeFunction = ctx => {
 ///|
 let array_from_fixed_array_fn : RuntimeFunction = ctx => {
   match ctx.args {
-    [{ val: FixedArray(arr), .. }] => Array(arr[:].to_array())
+    [{ val: FixedArray(arr), .. }] => Array(arr[:].to_owned())
     _ => Unit
   }
 }
@@ -1708,7 +1712,7 @@ let array_unsafe_extract_uint64_be_fn : RuntimeFunction = ctx => {
 let array_output_fn : RuntimeFunction = ctx => {
   match ctx.args {
     [{ val: Array(arr), .. }, { val: StringBuilder(logger), .. }] => {
-      arr.output(logger)
+      logger.write_string(Array(arr).to_string())
       Unit
     }
     _ => Unit

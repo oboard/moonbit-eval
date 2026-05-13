@@ -54,7 +54,7 @@ pub fn ClosureInterpreter::add_embedded_method(
   f : RuntimeFunction,
 ) -> Unit {
   if !self.embedded_methods.contains(type_name) {
-    self.embedded_methods.set(type_name, Map::new())
+    self.embedded_methods.set(type_name, {})
   }
   self.embedded_methods.get(type_name).unwrap().set(method_name, f)
 }
@@ -293,13 +293,21 @@ pub fn ClosureInterpreter::top_visit(
       let attrs = fun_decl.attrs
       let type_name = match fun_decl.type_name {
         Some({ name: Ident(name=type_name), .. }) => Some(type_name)
-        Some({ name: Dot(..), .. }) => None // 处理点号形式的类型名
+        Some({ name: Dot(id=type_name, ..), .. }) => Some(type_name)
         None =>
           match fun_decl.decl_params {
             Some(More(Positional(ty=Some(ty), ..), ..)) =>
               Some(extract_type_name(ty))
-            _ => None
+            _ =>
+              match fun_decl.return_type {
+                Some(ty) if type_to_string(ty) == func_name => Some(func_name)
+                _ => None
+              }
           }
+      }
+      let effective_func_name = match (func_name, type_name) {
+        ("", Some(type_name)) => type_name
+        _ => func_name
       }
 
       // 处理泛型函数的类型参数
@@ -335,14 +343,25 @@ pub fn ClosureInterpreter::top_visit(
             self.define_struct_method(
               self.current_pkg,
               type_name,
-              func_name,
+              effective_func_name,
               func,
             )
+            if type_name == effective_func_name {
+              self.current_pkg.struct_constrs.set(
+                type_name, effective_func_name,
+              )
+            }
           }
           let func_value = Fn(
-            self.create_function(func, self.current_pkg, name=func_name),
+            self.create_function(
+              func,
+              self.current_pkg,
+              name=effective_func_name,
+            ),
           )
-          self.current_pkg.set(func_name, func_value)
+          if effective_func_name != "" {
+            self.current_pkg.set(effective_func_name, func_value)
+          }
           // 处理alias属性，将别名映射到函数
           attrs.each(attr => {
             match attr {
@@ -485,7 +504,13 @@ pub fn ClosureInterpreter::visit(
     // 处理记录创建
     Record(type_name~, fields~, ..) =>
       self.visit_record_creation(type_name, fields)
-    ArraySpread(elems~, ..) => self.visit_array_spread(elems)
+    ArraySpread(elems~, ..) =>
+      match expected_type {
+        Some(ty) if ty == "Iter" || ty.has_prefix("Iter[") =>
+          self.visit_array_spread_as_iter(elems)
+        Some(ty) => self.visit_array_spread(elems).overload_array_literal(ty)
+        None => self.visit_array_spread(elems)
+      }
     ArrayGetSlice(array~, start_index~, end_index~, ..) => {
       let self_value = self.visit(array)
       let start = match start_index {
@@ -874,7 +899,8 @@ pub fn ClosureInterpreter::visit(
     // 模板字符串中断
     Interp(elems~, ..) => self.visit_interp(elems)
     MultilineString(elems~, ..) => self.visit_multiline_string(elems)
-    Constraint(expr~, ..) => self.visit(expr)
+    Constraint(expr~, ty~, ..) =>
+      self.visit(expr, expected_type=type_to_string(ty))
     Unit(_) => Unit
 
     // 处理 ForEach 表达式 (for i in expr)

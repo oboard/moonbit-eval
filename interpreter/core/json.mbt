@@ -220,7 +220,7 @@ let json_object_fn : RuntimeFunction = ctx => {
 let json_output_fn : RuntimeFunction = ctx => {
   match ctx.args {
     [{ val: Json(value), .. }, { val: StringBuilder(logger), .. }] => {
-      logger.write_string(value.to_string())
+      logger.write_string(value.stringify())
       Unit
     }
     _ => Unit

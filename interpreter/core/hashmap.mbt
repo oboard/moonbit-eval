@@ -106,7 +106,7 @@ let hash_map_copy_fn : RuntimeFunction = ctx => {
 /// HashMap default操作
 let hash_map_default_fn : RuntimeFunction = ctx => {
   match ctx.args {
-    _ => HashMap(@hashmap.HashMap::new())
+    _ => HashMap(@hashmap.HashMap([], capacity=8))
   }
 }
 
@@ -162,7 +162,7 @@ let hash_map_equal_fn : RuntimeFunction = ctx => {
 let hash_map_from_array_fn : RuntimeFunction = ctx => {
   match ctx.args {
     [{ val: Array(arr), .. }] => {
-      let map = @hashmap.HashMap::new()
+      let map = @hashmap.HashMap([], capacity=8)
       arr.each(fn(item) {
         match item {
           Tuple([key, val]) => map.set(key, val)
@@ -296,7 +296,7 @@ let hash_map_length_fn : RuntimeFunction = ctx => {
 let hash_map_map_fn : RuntimeFunction = ctx => {
   match ctx.args {
     [{ val: HashMap(map), .. }, { val: Fn(f), .. }] => {
-      let new_map = @hashmap.HashMap::new()
+      let new_map = @hashmap.HashMap([], capacity=8)
       map.each((key, val) => {
         let new_val = ctx.context.call(f.val, ctx.pkg, [
           { val: key, kind: Positional },
@@ -334,7 +334,7 @@ let hash_map_merge_in_place_fn : RuntimeFunction = ctx => {
 /// HashMap new操作
 let hash_map_new_fn : RuntimeFunction = ctx => {
   match ctx.args {
-    _ => HashMap(@hashmap.HashMap::new())
+    _ => HashMap(@hashmap.HashMap([], capacity=8))
   }
 }
 
@@ -343,7 +343,7 @@ let hash_map_new_fn : RuntimeFunction = ctx => {
 let hash_map_of_fn : RuntimeFunction = ctx => {
   match ctx.args {
     [{ val: Array(arr), .. }] => {
-      let result_map = @hashmap.HashMap::new()
+      let result_map = @hashmap.HashMap([], capacity=8)
       for item in arr {
         match item {
           Tuple([key, val]) => result_map.set(key, val)
@@ -433,7 +433,7 @@ let hash_map_to_json_fn : RuntimeFunction = ctx => {
   match ctx.args {
     [{ val: HashMap(map), .. }] => {
       // 简化的JSON转换，将HashMap转换为Map[RuntimeValue, RuntimeValue]
-      let json_obj : Map[RuntimeValue, RuntimeValue] = Map::new()
+      let json_obj : Map[RuntimeValue, RuntimeValue] = {}
       map.each(fn(key, val) { json_obj.set(key, val) })
       Map(json_obj)
     }
@@ -468,7 +468,7 @@ let hash_map_to_string_fn : RuntimeFunction = ctx => {
 ///|
 let hash_map_to_repr_fn : RuntimeFunction = ctx => {
   match ctx.args {
-    [{ val: HashMap(map), .. }] => String(map.to_string())
+    [{ val: HashMap(map), .. }] => String(runtime_hashmap_to_string(map))
     _ => Unit
   }
 }
@@ -477,7 +477,7 @@ let hash_map_to_repr_fn : RuntimeFunction = ctx => {
 let hash_map_output_fn : RuntimeFunction = ctx => {
   match ctx.args {
     [{ val: HashMap(map), .. }, { val: StringBuilder(logger), .. }] => {
-      map.output(logger)
+      logger.write_string(runtime_hashmap_to_string(map))
       Unit
     }
     _ => Unit

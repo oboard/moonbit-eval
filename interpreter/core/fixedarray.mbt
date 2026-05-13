@@ -84,7 +84,7 @@ fn fixedarray_runtime_value_to_byte(value : RuntimeValue) -> Byte {
 fn fixedarray_runtime_values_to_bytes(
   values : FixedArray[RuntimeValue],
 ) -> Array[Byte] {
-  values[:].to_array().map(fixedarray_runtime_value_to_byte)
+  values[:].to_owned().map(fixedarray_runtime_value_to_byte)
 }
 
 ///|
@@ -98,7 +98,7 @@ fn fixedarray_runtime_values_to_byte_view(
 fn fixedarray_runtime_byte_view_to_value(
   view : ArrayView[Byte],
 ) -> RuntimeValue {
-  ArrayView(view.to_array().map(byte => Byte(byte))[:])
+  ArrayView(view.to_owned().map(byte => Byte(byte))[:])
 }
 
 ///|
@@ -1417,7 +1417,7 @@ let fixedarray_set_utf8_char_fn : RuntimeFunction = ctx => {
 let fixedarray_output_fn : RuntimeFunction = ctx => {
   match ctx.args {
     [{ val: FixedArray(arr), .. }, { val: StringBuilder(logger), .. }] => {
-      arr.output(logger)
+      logger.write_string(FixedArray(arr).to_string())
       Unit
     }
     _ => Unit

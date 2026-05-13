@@ -368,7 +368,8 @@ let string_view_strip_suffix : RuntimeFunction = ctx => {
 ///|
 let string_view_to_array : RuntimeFunction = ctx => {
   match ctx.args {
-    [{ val: StringView(s), .. }] => Array(s.to_array().map(x => Char(x)))
+    [{ val: StringView(s), .. }] =>
+      Array(s.to_owned().to_array().map(x => Char(x)))
     _ => Array([])
   }
 }
@@ -400,7 +401,7 @@ let string_view_to_lower : RuntimeFunction = ctx => {
 ///|
 let string_view_to_string : RuntimeFunction = ctx => {
   match ctx.args {
-    [{ val: StringView(s), .. }] => String(s.to_string())
+    [{ val: StringView(s), .. }] => String(s.to_owned())
     _ => String("")
   }
 }
@@ -535,7 +536,7 @@ let string_view_from_array_fn : RuntimeFunction = ctx => {
   match ctx.args {
     [{ val: ArrayView(values), .. }] => {
       let chars = values
-        .to_array()
+        .to_owned()
         .map(v => if v is Char(c) { c } else { panic() })
       StringView(String::from_array(chars[:]).view())
     }

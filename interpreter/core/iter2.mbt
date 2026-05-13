@@ -129,7 +129,7 @@ let iter2_concat_fn : RuntimeFunction = ctx => {
 let iter2_output_fn : RuntimeFunction = ctx => {
   match ctx.args {
     [{ val: Iter2(iter2), .. }, { val: StringBuilder(logger), .. }] => {
-      iter2.output(logger)
+      logger.write_string(@debug.to_string(iter2))
       Unit
     }
     _ => Unit

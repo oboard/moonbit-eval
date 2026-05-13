@@ -336,7 +336,7 @@ let bytes_chop_prefix_fn : RuntimeFunction = ctx => {
   match ctx.args {
     [{ val: Bytes(b), .. }, { val: Bytes(p), .. }] =>
       RuntimeValue::from_option(
-        b.chop_prefix(p[:]).map(v => Bytes(v.to_bytes())),
+        b.chop_prefix(p[:]).map(v => Bytes(v.to_owned())),
       )
     _ => RuntimeValue::from_option(None)
   }
@@ -347,7 +347,7 @@ let bytes_chop_suffix_fn : RuntimeFunction = ctx => {
   match ctx.args {
     [{ val: Bytes(b), .. }, { val: Bytes(p), .. }] =>
       RuntimeValue::from_option(
-        b.chop_suffix(p[:]).map(v => Bytes(v.to_bytes())),
+        b.chop_suffix(p[:]).map(v => Bytes(v.to_owned())),
       )
     _ => RuntimeValue::from_option(None)
   }
@@ -356,14 +356,14 @@ let bytes_chop_suffix_fn : RuntimeFunction = ctx => {
 ///|
 let bytes_view_fn : RuntimeFunction = ctx => {
   match ctx.args {
-    [{ val: Bytes(b), .. }] => Bytes(b.view().to_bytes())
+    [{ val: Bytes(b), .. }] => Bytes(b.view().to_owned())
     [{ val: Bytes(b), .. }, { val: Int(start, ..), .. }] =>
-      Bytes(b.view(start~).to_bytes())
+      Bytes(b.view(start~).to_owned())
     [
       { val: Bytes(b), .. },
       { val: Int(start, ..), .. },
       { val: Int(end_, ..), .. },
-    ] => Bytes(b.view(start~, end=end_).to_bytes())
+    ] => Bytes(b.view(start~, end=end_).to_owned())
     _ => Unit
   }
 }

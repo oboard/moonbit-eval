@@ -716,14 +716,14 @@ let string_sub_fn : RuntimeFunction = ctx => string_substring_fn(ctx)
 ///|
 let string_substring_fn : RuntimeFunction = ctx => {
   match ctx.args {
-    [{ val: String(s), .. }] => String(s.view().to_string())
+    [{ val: String(s), .. }] => String(s.view().to_owned())
     [{ val: String(s), .. }, { val: Int(start, ..), .. }] =>
-      String(s.view(start_offset=start).to_string())
+      String(s.view(start_offset=start).to_owned())
     [
       { val: String(s), .. },
       { val: Int(start, ..), .. },
       { val: Int(end_, ..), .. },
-    ] => String(s.view(start_offset=start, end_offset=end_).to_string())
+    ] => String(s.view(start_offset=start, end_offset=end_).to_owned())
     _ => String("")
   }
 }
@@ -731,14 +731,14 @@ let string_substring_fn : RuntimeFunction = ctx => {
 ///|
 let string_unsafe_substring_fn : RuntimeFunction = ctx => {
   match ctx.args {
-    [{ val: String(s), .. }] => String(s.view().to_string())
+    [{ val: String(s), .. }] => String(s.view().to_owned())
     [{ val: String(s), .. }, { val: Int(start, ..), .. }] =>
-      String(s.view(start_offset=start).to_string())
+      String(s.view(start_offset=start).to_owned())
     [
       { val: String(s), .. },
       { val: Int(start, ..), .. },
       { val: Int(end_, ..), .. },
-    ] => String(s.view(start_offset=start, end_offset=end_).to_string())
+    ] => String(s.view(start_offset=start, end_offset=end_).to_owned())
     _ => String("")
   }
 }

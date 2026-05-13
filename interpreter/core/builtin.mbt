@@ -112,7 +112,7 @@ let builtin_embedded_code : Map[String, RuntimeFunction] = {
 ///|
 let core_embedded_code : Map[String, RuntimeFunction] = [
   builtin_embedded_code, string_embedded_code, int_embedded_code,
-].fold(init=Map::new(), (acc, cur) => {
+].fold(init={}, (acc, cur) => {
   cur.each(fn(key, value) { acc.set(key, value) })
   acc
 })

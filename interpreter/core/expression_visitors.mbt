@@ -56,7 +56,7 @@ fn ClosureInterpreter::visit_record_creation(
   type_name : @syntax.TypeName?,
   fields : @list.List[@syntax.FieldDef],
 ) -> RuntimeValue raise ControlFlow {
-  let evaluated_fields = Map::new()
+  let evaluated_fields = {}
   for field in fields {
     let field_value = self.visit(field.expr)
     evaluated_fields.set(field.label.name, field_value)
@@ -100,6 +100,28 @@ fn ClosureInterpreter::visit_array_spread(
     }
   }
   Array(result_values)
+}
+
+///|
+/// 处理重载为 Iter 的数组插值表达式
+fn ClosureInterpreter::visit_array_spread_as_iter(
+  self : ClosureInterpreter,
+  elems : @list.List[@syntax.SpreadableElem],
+) -> RuntimeValue raise ControlFlow {
+  let iters = []
+  for elem in elems {
+    match elem {
+      Regular(expr) => {
+        let value = self.visit(expr)
+        iters.push(Iter::singleton(value))
+      }
+      Spread(expr~, ..) => {
+        let spread_value = self.visit(expr)
+        iters.push(runtime_value_to_iter(spread_value))
+      }
+    }
+  }
+  Iter(iters.iter().flat_map(iter => iter))
 }
 
 ///|
@@ -181,7 +203,16 @@ fn ClosureInterpreter::visit_apply(
       // 处理构造函数调用，如 Some(5)
       Constr(constr~, ..) => {
         match constr.extra_info {
-          TypeName(_) => ()
+          TypeName(type_name) => {
+            let constr_type_name = match type_name.name {
+              Ident(name~) => name
+              Dot(id~, ..) => id
+            }
+            if self.call_struct_constr(None, constr_type_name, args)
+              is Some(result) {
+              return result
+            }
+          }
           Package(pkg_name) if self.call_struct_constr(
               Some(pkg_name),
               constr.name.name,

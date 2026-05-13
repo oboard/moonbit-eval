@@ -81,12 +81,12 @@ fn runtime_value_to_byte(value : RuntimeValue) -> Byte {
 
 ///|
 fn runtime_value_view_to_bytes(values : ArrayView[RuntimeValue]) -> Array[Byte] {
-  values.to_array().map(runtime_value_to_byte)
+  values.to_owned().map(runtime_value_to_byte)
 }
 
 ///|
 fn runtime_byte_view_to_value(view : ArrayView[Byte]) -> RuntimeValue {
-  ArrayView(view.to_array().map(byte => Byte(byte))[:])
+  ArrayView(view.to_owned().map(byte => Byte(byte))[:])
 }
 
 ///|
@@ -751,7 +751,7 @@ let array_view_rev_foldi_fn : RuntimeFunction = ctx => {
 /// ArrayView to_array 方法
 let array_view_to_array_fn : RuntimeFunction = ctx => {
   match ctx.args {
-    [{ val: ArrayView(arr), .. }] => Array(arr.to_array())
+    [{ val: ArrayView(arr), .. }] => Array(arr.to_owned())
     _ => Unit
   }
 }
@@ -1094,7 +1094,7 @@ let array_view_unsafe_extract_int64_be_fn : RuntimeFunction = ctx => {
 let array_view_output_fn : RuntimeFunction = ctx => {
   match ctx.args {
     [{ val: ArrayView(arr), .. }, { val: StringBuilder(logger), .. }] => {
-      arr.output(logger)
+      logger.write_string(ArrayView(arr).to_string())
       Unit
     }
     _ => Unit

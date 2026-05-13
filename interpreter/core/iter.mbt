@@ -648,7 +648,7 @@ let iter_tap_fn : RuntimeFunction = ctx => {
 let iter_output_fn : RuntimeFunction = ctx => {
   match ctx.args {
     [{ val: Iter(iter), .. }, { val: StringBuilder(logger), .. }] => {
-      iter.output(logger)
+      logger.write_string(@debug.to_string(iter))
       Unit
     }
     _ => Unit

@@ -210,7 +210,7 @@ pub fn ClosureInterpreter::define_struct_method(
   let methods = match pkg.struct_methods.get(type_name) {
     Some(methods) => methods
     None => {
-      let methods = Map::new()
+      let methods = {}
       pkg.struct_methods.set(type_name, methods)
       methods
     }
@@ -232,7 +232,7 @@ pub fn RuntimePackage::define_trait_method(
   let methods = match self.trait_methods.get(trait_id) {
     Some(methods) => methods
     None => {
-      let methods = Map::new()
+      let methods = {}
       self.trait_methods.set(trait_id, methods)
       methods
     }

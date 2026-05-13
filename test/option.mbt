@@ -7,9 +7,8 @@
 test "option_type" {
   let vm = MoonBitVM::new()
   // Test try operator (?)
-  assert_eq(
-    vm
-    .eval(
+  inspect(
+    vm.eval(
       (
         #|fn safe_divide(a : Int, b : Int) -> Int? {
         #|  if b == 0 { None } else { Some(a / b) }
@@ -17,30 +16,27 @@ test "option_type" {
         #|let result = safe_divide(10, 2)
         #|result
       ),
-    )
-    .to_string(),
-    "Some(5)",
+    ),
+    content="Some(5)",
   )
-  assert_eq(
-    vm
-    .eval(
+  inspect(
+    vm.eval(
       (
         #|let result = safe_divide(10, 0)
         #|result
       ),
-    )
-    .to_string(),
-    "None",
+    ),
+    content="None",
   )
 }
 
 ///|
 test "option_basics" {
   let vm = MoonBitVM::new()
-  assert_eq(vm.eval("@option.Some(5)").to_string(), "Some(5)")
-  assert_eq(vm.eval("Some(5)").to_string(), "Some(5)")
-  assert_eq(vm.eval("None").to_string(), "None")
-  assert_eq(vm.eval("Some(5).unwrap()").to_string(), "5")
+  inspect(vm.eval("@option.Some(5)"), content="Some(5)")
+  inspect(vm.eval("Some(5)"), content="Some(5)")
+  inspect(vm.eval("None"), content="None")
+  inspect(vm.eval("Some(5).unwrap()"), content="5")
 }
 
 ///|
@@ -56,13 +52,8 @@ test "option_pattern_matching" {
 
 ///|
 test {
-  inspect(
-    {
-      let opt = Some(5)
-      opt.map(fn(x) { x * 2 })
-    },
-    content="Some(10)",
-  )
+  let opt = Some(5)
+  assert_eq(@debug.to_string(opt.map(fn(x) { x * 2 })), "Some(10)")
 }
 
 ///|
@@ -73,9 +64,9 @@ test "option_methods" {
   inspect(vm.eval("let opt = None; opt.unwrap_or(0)"), content="0")
   inspect(vm.eval("let opt = Some(42); opt.is_empty()"), content="false")
   inspect(vm.eval("let opt = None; opt.is_empty()"), content="true")
-  assert_eq(
-    vm.eval("let opt = Some(5); opt.map(fn(x) { x * 2 })").to_string(),
-    "Some(10)",
+  inspect(
+    vm.eval("let opt = Some(5); opt.map(fn(x) { x * 2 })"),
+    content="Some(10)",
   )
   inspect(vm.eval("let opt = None; opt.map(fn(x) { x * 2 })"), content="None")
   inspect(

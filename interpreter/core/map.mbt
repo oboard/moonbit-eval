@@ -36,7 +36,7 @@ pub let map_methods : Map[String, RuntimeFunction] = {
 
 ///|
 fn map_from_pairs(iter : Iter[RuntimeValue]) -> Map[RuntimeValue, RuntimeValue] {
-  let map = Map::new()
+  let map = {}
   iter.each(fn(item) {
     match item {
       Tuple([key, val]) => map.set(key, val)
@@ -205,7 +205,7 @@ let map_get_from_bytes_fn : RuntimeFunction = ctx => {
 let map_get_from_string_fn : RuntimeFunction = ctx => {
   match ctx.args {
     [{ val: Map(map), .. }, { val: StringView(view), .. }] =>
-      RuntimeValue::from_option(map.get(String(view.to_string())))
+      RuntimeValue::from_option(map.get(String(view.to_owned())))
     [{ val: Map(map), .. }, { val: String(string), .. }] =>
       RuntimeValue::from_option(map.get(String(string)))
     _ => RuntimeValue::from_option(None)
@@ -292,7 +292,7 @@ let map_length_fn : RuntimeFunction = ctx => {
 let map_map_fn : RuntimeFunction = ctx => {
   match ctx.args {
     [{ val: Map(map), .. }, { val: Fn(f), .. }] => {
-      let new_map = Map::new()
+      let new_map = {}
       map.each((key, val) => {
         let new_val = ctx.context.call(f.val, ctx.pkg, [
           { val: key, kind: Positional },
@@ -332,9 +332,9 @@ let map_merge_in_place_fn : RuntimeFunction = ctx => {
 let map_new_fn : RuntimeFunction = ctx => {
   match ctx.args {
     [{ val: Int(capacity, ..), kind: LabelledOption("capacity") }] =>
-      Map(Map::new(capacity~))
-    [{ val: Int(capacity, ..), .. }] => Map(Map::new(capacity~))
-    _ => Map(Map::new())
+      Map(Map([], capacity~))
+    [{ val: Int(capacity, ..), .. }] => Map(Map([], capacity~))
+    _ => Map({})
   }
 }
 
@@ -449,7 +449,7 @@ let map_values_fn : RuntimeFunction = ctx => {
 let map_output_fn : RuntimeFunction = ctx => {
   match ctx.args {
     [{ val: Map(map), .. }, { val: StringBuilder(logger), .. }] => {
-      map.output(logger)
+      logger.write_string(Map(map).to_string())
       Unit
     }
     _ => Unit

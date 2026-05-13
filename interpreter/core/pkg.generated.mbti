@@ -3,6 +3,7 @@ package "oboard/moonbit-eval/interpreter/core"
 
 import {
   "moonbitlang/core/bigint",
+  "moonbitlang/core/debug",
   "moonbitlang/core/hashmap",
   "moonbitlang/core/json",
   "moonbitlang/core/list",
@@ -134,7 +135,7 @@ pub(all) struct ModuleInfo {
   keywords : Array[String]?
   description : String?
   source : String?
-} derive(Show, ToJson, @json.FromJson)
+} derive(ToJson, @debug.Debug, @json.FromJson)
 pub fn ModuleInfo::get_zip_url(Self) -> String
 pub fn ModuleInfo::new(String, version? : String, readme? : String, repository? : String, license? : String, keywords? : Array[String], description? : String, source? : String, deps? : Map[String, String]) -> Self
 
@@ -184,7 +185,7 @@ pub enum RuntimeLocation {
   FunctionCall(String)
   ControlFlow(String)
   LetMut(String)
-} derive(Show)
+} derive(@debug.Debug)
 
 pub(all) struct RuntimeModule {
   meta : ModuleInfo

@@ -92,7 +92,7 @@ pub impl Compare for RuntimeValue with compare(self, other) {
     (StringBuilder(a), StringBuilder(b)) => a.to_string().compare(b.to_string())
     (Tuple(a), Tuple(b)) => a.compare(b)
     (Array(a), Array(b)) => a.compare(b)
-    (Json(a), Json(b)) => a.to_string().compare(b.to_string())
+    (Json(a), Json(b)) => a.stringify().compare(b.stringify())
     _ => abort("unable to compare")
   }
 }
@@ -166,7 +166,7 @@ pub impl Hash for RuntimeValue with hash(self : RuntimeValue) -> Int {
     StringView(sv) => sv.hash()
     Tuple(t) => t.hash()
     Array(a) => a.hash()
-    Json(j) => j.to_string().hash()
+    Json(j) => j.stringify().hash()
     _ => abort("unable to hash")
   }
 }
@@ -408,7 +408,7 @@ pub fn RuntimeValue::overload_literal(
     // Array 到 Json 的转换 - 处理数组字面量  
     (Array(arr), "Json") => {
       // 简单的转换：将 Array 转换为 Json 字符串表示
-      let json_str = arr.to_string() // 这会生成类似 ["item1", "item2"] 的格式
+      let json_str = runtime_array_to_string(arr) // 这会生成类似 ["item1", "item2"] 的格式
       Json(@json.parse(json_str) catch { _ => return self })
     }
 
@@ -604,7 +604,12 @@ pub fn RuntimeValue::overload_array_literal(
       } else {
         self
       }
-    (Array(elements), "ArrayView") => ArrayView(elements[:])
+    (Array(elements), ty) if ty == "ArrayView" || ty.has_prefix("ArrayView[") =>
+      ArrayView(elements[:])
+    (Array(elements), ty) if ty == "FixedArray" || ty.has_prefix("FixedArray[") =>
+      FixedArray(FixedArray::from_array(elements))
+    (Array(elements), ty) if ty == "Iter" || ty.has_prefix("Iter[") =>
+      Iter(elements.iter())
     _ => self
   }
 }
@@ -616,6 +621,39 @@ pub fn RuntimeValue::is_mutable(self : RuntimeValue) -> Bool {
     Object(_) => true
     _ => false
   }
+}
+
+///|
+fn runtime_array_to_string(values : Array[RuntimeValue]) -> String {
+  let parts = values
+    .map(val => {
+      match val {
+        String(s) => "\"\{s}\""
+        _ => val.to_string()
+      }
+    })
+    .join(", ")
+  "[\{parts}]"
+}
+
+///|
+fn runtime_hashmap_to_string(
+  hashmap : @hashmap.HashMap[RuntimeValue, RuntimeValue],
+) -> String {
+  let sb = StringBuilder::new()
+  sb.write_string("HashMap::from_array([")
+  hashmap.eachi((i, key, val) => {
+    if i > 0 {
+      sb.write_string(", ")
+    }
+    sb.write_string("(")
+    sb.write_string(key.to_string())
+    sb.write_string(", ")
+    sb.write_string(val.to_string())
+    sb.write_string(")")
+  })
+  sb.write_string("])")
+  sb.to_string()
 }
 
 ///|
@@ -641,23 +679,13 @@ pub impl Show for RuntimeValue with to_string(self) -> String {
     Byte(b) => b.to_int().to_string()
     String(s) => s
     Bytes(b) => b.to_string()
-    StringView(sv) => sv.to_string()
+    StringView(sv) => sv.to_owned()
     StringBuilder(sb) => sb.to_string()
     Tuple(values) => {
       let parts = values.map(fn(v) { v.to_string() })
       "(" + parts.join(", ") + ")"
     }
-    Array(values) => {
-      let parts = values
-        .map(val => {
-          match val {
-            String(s) => "\"\{s}\""
-            _ => val.to_string()
-          }
-        })
-        .join(", ")
-      "[\{parts}]"
-    }
+    Array(values) => runtime_array_to_string(values)
     FixedArray(values) => {
       let parts = values
         .map(val => {
@@ -705,7 +733,7 @@ pub impl Show for RuntimeValue with to_string(self) -> String {
       })
       "\{self.get_type()}::{" + parts.join(", ") + "}"
     }
-    HashMap(hashmap) => hashmap.to_string()
+    HashMap(hashmap) => runtime_hashmap_to_string(hashmap)
     Constructor({ val: { name, fields }, .. }) =>
       // Format constructor call with field names if present
       if fields.length() == 0 {
@@ -724,7 +752,7 @@ pub impl Show for RuntimeValue with to_string(self) -> String {
     // 从函数中提取参数和返回类型信息
     Fn(func) => func.ty.to_string()
     Exception(msg) => "exception: " + msg
-    Json(j) => j.to_string()
+    Json(j) => j.stringify()
   }
 }
 

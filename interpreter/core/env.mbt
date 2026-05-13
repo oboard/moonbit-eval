@@ -12,13 +12,9 @@ pub fn RuntimeEnvironment::new(
   values? : Map[String, RuntimeValue],
 ) -> RuntimeEnvironment {
   if parent is Some(parent) {
-    {
-      values: values.unwrap_or({}),
-      mutable_vars: Map::new(),
-      parent: Some(parent),
-    }
+    { values: values.unwrap_or({}), mutable_vars: {}, parent: Some(parent) }
   } else {
-    { values: values.unwrap_or({}), mutable_vars: Map::new(), parent: None }
+    { values: values.unwrap_or({}), mutable_vars: {}, parent: None }
   }
 }
 
@@ -27,8 +23,8 @@ pub fn RuntimeEnvironment::new(
 pub fn RuntimeEnvironment::copy(
   self : RuntimeEnvironment,
 ) -> RuntimeEnvironment {
-  let values = Map::new()
-  let mutable_vars = Map::new()
+  let values = {}
+  let mutable_vars = {}
   self.values.each(fn(key, value) { values.set(key, value) })
   self.mutable_vars.each(fn(key, is_mutable) {
     mutable_vars.set(key, is_mutable)
@@ -45,8 +41,8 @@ pub fn RuntimeEnvironment::copy(
 pub fn RuntimeEnvironment::create_closure_env(
   self : RuntimeEnvironment,
 ) -> RuntimeEnvironment {
-  let values = Map::new()
-  let mutable_vars = Map::new()
+  let values = {}
+  let mutable_vars = {}
 
   // 只捕获不可变变量的值，可变变量通过父环境引用
   self.values.each(fn(key, value) {
