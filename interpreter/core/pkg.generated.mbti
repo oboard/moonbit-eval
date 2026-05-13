@@ -1,5 +1,5 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "oboard/moonbit-eval/interpreter/core"
+package "oboard/eval/interpreter/core"
 
 import {
   "moonbitlang/core/bigint",
@@ -45,6 +45,8 @@ pub fn load_package_dir(String, String) -> RuntimePackage?
 pub fn manualUnescape(StringView, StringBuilder) -> Unit
 
 pub let map_methods : Map[String, (RuntimeFunctionContext) -> RuntimeValue raise ControlFlow]
+
+pub fn normalize_v092_syntax(String) -> String
 
 pub let option_methods : Map[String, (RuntimeFunctionContext) -> RuntimeValue raise ControlFlow]
 

@@ -1,9 +1,9 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "oboard/moonbit-eval"
+package "oboard/eval"
 
 import {
   "moonbitlang/parser/syntax",
-  "oboard/moonbit-eval/interpreter/core",
+  "oboard/eval/interpreter/core",
 }
 
 // Values

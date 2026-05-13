@@ -152,6 +152,39 @@ fn format_pattern(pattern : @syntax.Pattern) -> String {
 }
 
 ///|
+fn ClosureInterpreter::constructor_pattern_matches_type(
+  self : ClosureInterpreter,
+  value_type : RuntimeType,
+  constr : @syntax.Constructor,
+) -> Bool {
+  match constr.extra_info {
+    TypeName(type_name) =>
+      self.with_ident(type_name.name, (pkg, name) => {
+        let expected_type = pkg.find_static_type(name)
+        if value_type == expected_type {
+          true
+        } else {
+          match (value_type, expected_type) {
+            (Any, _) | (_, Any) => true
+            (Object(name=value_name, ..), Object(name=expected_name, ..)) =>
+              value_name == expected_name
+            (Name(name=value_name, ..), Name(name=expected_name, ..)) =>
+              value_name == expected_name
+            _ => false
+          }
+        }
+      })
+    Package(pkg_name) =>
+      match value_type {
+        Object(pkg~, ..) => pkg.name == self.find_pkg(pkg_name).name
+        Name(pkg~, ..) => pkg.name == self.find_pkg(pkg_name).name
+        _ => false
+      }
+    NoExtraInfo => true
+  }
+}
+
+///|
 /// 检查模式是否匹配给定的运行时值
 pub fn ClosureInterpreter::match_case(
   self : ClosureInterpreter,
@@ -295,8 +328,9 @@ pub fn ClosureInterpreter::match_case(
     // Constructor模式匹配
     Constr(constr~, args=pattern_args, ..) =>
       match value {
-        Constructor({ val: { name, fields }, .. }) =>
-          if name == constr.name.name {
+        Constructor({ val: { name, fields }, ty }) =>
+          if name == constr.name.name &&
+            self.constructor_pattern_matches_type(ty, constr) {
             // 检查参数匹配
             match pattern_args {
               // 无参数的构造函数，只需要名称匹配

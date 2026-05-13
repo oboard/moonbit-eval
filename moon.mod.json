@@ -1,12 +1,12 @@
 {
-  "name": "oboard/moonbit-eval",
+  "name": "oboard/eval",
   "version": "0.9.2",
   "deps": {
     "moonbitlang/parser": "0.2.6",
     "moonbitlang/x": "0.4.43"
   },
   "readme": "README.md",
-  "repository": "https://github.com/oboard/moonbit-eval",
+  "repository": "https://github.com/oboard/eval",
   "license": "Apache-2.0",
   "keywords": [
     "moonbit",

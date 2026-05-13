@@ -72,6 +72,7 @@ pub fn ClosureInterpreter::top_eval(
   self : ClosureInterpreter,
   code : String,
 ) -> Unit {
+  let code = normalize_v092_syntax(code)
   let (impls, _diagnostics) = @moonbitlang/parser.parse_string(
     code,
     parser=Handrolled,
@@ -793,13 +794,11 @@ pub fn ClosureInterpreter::visit(
       let name = constr.name.name
       match constr.extra_info {
         TypeName(ty_name) =>
-          self.with_ident(ty_name.name, (_env, _name) => {
-            self.current_pkg.cons(name, [])
-          })
+          self.with_ident(ty_name.name, (pkg, _name) => pkg.cons(name, []))
         Package(pkg) =>
           self.find_pkg(pkg).env
           .find(name)
-          .unwrap_or(self.current_pkg.cons(name, []))
+          .unwrap_or(self.find_pkg(pkg).cons(name, []))
         _ =>
           self.current_pkg.env
           .find(name)

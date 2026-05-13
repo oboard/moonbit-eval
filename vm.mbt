@@ -228,6 +228,7 @@ pub fn MoonBitVM::eval(
   top? : Bool = false,
 ) -> EvalResult {
   try {
+    let code = @core.normalize_v092_syntax(code)
     if top {
       let (impls, _diagnostics) = @moonbitlang/parser.parse_string(
         code,

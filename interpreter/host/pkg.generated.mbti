@@ -1,5 +1,5 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "oboard/moonbit-eval/interpreter/host"
+package "oboard/eval/interpreter/host"
 
 // Values
 pub async fn[T, E : Error] async_suspend(((T) -> Unit, (E) -> Unit) -> Unit) -> T raise E

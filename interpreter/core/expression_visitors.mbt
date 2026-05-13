@@ -135,11 +135,100 @@ fn ClosureInterpreter::visit_tuple(
 }
 
 ///|
+fn ClosureInterpreter::syntax_iterable_to_iter(
+  self : ClosureInterpreter,
+  expr : @syntax.Expr,
+) -> Iter[RuntimeValue] raise ControlFlow {
+  match expr {
+    Infix(op~, lhs~, rhs~, ..) =>
+      match op.name {
+        Ident(name="..<") => {
+          let start_val = self.visit(lhs)
+          let end_val = self.visit(rhs)
+          match (start_val, end_val) {
+            (Int(start, ..), Int(end, ..)) =>
+              start.until(end).map(fn(i) { Int(i, raw=None) })
+            _ => Iter::empty()
+          }
+        }
+        Ident(name="..=") => {
+          let start_val = self.visit(lhs)
+          let end_val = self.visit(rhs)
+          match (start_val, end_val) {
+            (Int(start, ..), Int(end, ..)) =>
+              start.until(end, inclusive=true).map(fn(i) { Int(i, raw=None) })
+            _ => Iter::empty()
+          }
+        }
+        _ => self.visit_iterable_expr(expr)
+      }
+    _ => self.visit_iterable_expr(expr)
+  }
+}
+
+///|
+fn ClosureInterpreter::visit_iterable_expr(
+  self : ClosureInterpreter,
+  expr : @syntax.Expr,
+) -> Iter[RuntimeValue] raise ControlFlow {
+  match self.visit(expr) {
+    Iter(iter) => iter
+    value =>
+      match self.method_call(value, "iter", @list.new()) {
+        Iter(iter) => iter
+        _ => self.error("iter method not found")
+      }
+  }
+}
+
+///|
+fn ClosureInterpreter::visit_for_each_as_array(
+  self : ClosureInterpreter,
+  binders : @list.List[@syntax.Binder?],
+  expr : @syntax.Expr,
+  body : @syntax.Expr,
+) -> RuntimeValue raise ControlFlow {
+  let result : Array[RuntimeValue] = []
+  let binder_count = binders.length()
+  for value in self.syntax_iterable_to_iter(expr) {
+    self.push_scope(RuntimeLocation::ControlFlow("list comprehension"))
+    defer self.pop_scope()
+    match binders {
+      @list.More(Some(binder), tail=@list.Empty) =>
+        self.current_pkg.env.set(binder.name, value)
+      @list.More(
+        Some(binder1),
+        tail=@list.More(Some(binder2), tail=@list.Empty)
+      ) =>
+        match value {
+          Tuple([first, second]) => {
+            self.current_pkg.env.set(binder1.name, first)
+            self.current_pkg.env.set(binder2.name, second)
+          }
+          _ => ()
+        }
+      _ => if binder_count == 0 { () }
+    }
+    let value = self.visit(body) catch {
+      Continue(_) => continue
+      e => raise e
+    }
+    result.push(value)
+  }
+  Array(result)
+}
+
+///|
 /// 处理数组表达式
 fn ClosureInterpreter::visit_array(
   self : ClosureInterpreter,
   exprs : @list.List[@syntax.Expr],
 ) -> RuntimeValue raise ControlFlow {
+  match exprs {
+    @list.More(ForEach(binders~, expr~, body~, ..), tail=@list.Empty) =>
+      return self.visit_for_each_as_array(binders, expr, body)
+    _ => ()
+  }
   let result_values = []
   for expr in exprs {
     match expr {
@@ -191,6 +280,40 @@ fn ClosureInterpreter::call_struct_constr(
 }
 
 ///|
+fn ClosureInterpreter::call_struct_constr_with_type_name(
+  self : ClosureInterpreter,
+  type_name : @syntax.TypeName,
+  constr_name : String,
+  field_values : @list.List[@syntax.Argument],
+) -> RuntimeValue? raise ControlFlow {
+  self.with_ident(type_name.name, (pkg, name) => {
+    let ty = pkg.find_static_type(name)
+    if pkg.struct_constrs.get(name) is Some(method_name) {
+      let method_name = if constr_name == "" {
+        method_name
+      } else {
+        constr_name
+      }
+      Some(self.execute_static_method_call(ty, method_name, field_values))
+    } else {
+      None
+    }
+  })
+}
+
+///|
+fn ClosureInterpreter::constructor_runtime_package(
+  self : ClosureInterpreter,
+  constr : @syntax.Constructor,
+) -> RuntimePackage {
+  match constr.extra_info {
+    Package(pkg_name) => self.find_pkg(pkg_name)
+    TypeName(type_name) => self.with_ident(type_name.name, (pkg, _) => pkg)
+    NoExtraInfo => self.current_pkg
+  }
+}
+
+///|
 /// 处理函数调用
 fn ClosureInterpreter::visit_apply(
   self : ClosureInterpreter,
@@ -203,16 +326,15 @@ fn ClosureInterpreter::visit_apply(
       // 处理构造函数调用，如 Some(5)
       Constr(constr~, ..) => {
         match constr.extra_info {
-          TypeName(type_name) => {
-            let constr_type_name = match type_name.name {
-              Ident(name~) => name
-              Dot(id~, ..) => id
-            }
-            if self.call_struct_constr(None, constr_type_name, args)
+          TypeName(type_name) =>
+            if self.call_struct_constr_with_type_name(
+                type_name,
+                constr.name.name,
+                args,
+              )
               is Some(result) {
               return result
             }
-          }
           Package(pkg_name) if self.call_struct_constr(
               Some(pkg_name),
               constr.name.name,
@@ -245,9 +367,10 @@ fn ClosureInterpreter::visit_apply(
           })
           .to_array()
         let constr_name = constr.name.name
+        let pkg = self.constructor_runtime_package(constr)
         Constructor({
           val: { name: constr_name, fields },
-          ty: self.current_pkg.find_static_type(constr_name),
+          ty: pkg.find_static_type(constr_name),
         })
       }
       // 处理静态方法调用，如 Bool::default()
