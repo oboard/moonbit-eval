@@ -215,6 +215,7 @@ test "raise_expressions" {
 ///|
 test "loop_expressions" {
   let vm = MoonBitVM::new()
+  ignore(vm.eval("import { \"moonbitlang/core/list\" }"))
   // Test loop expressions
   inspect(
     vm.eval(

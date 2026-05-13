@@ -37,6 +37,7 @@ test "v092_array_spread_as_iter" {
 ///|
 test "v092_list_comprehension_array" {
   let vm = MoonBitVM::new()
+  ignore(vm.eval("import { \"moonbitlang/core/list\" }"))
   inspect(vm.eval("[for x in [1, 2, 3] => x * 2]"), content="[2, 4, 6]")
   inspect(vm.eval("[for x in 1..=3 => x + 1]"), content="[2, 3, 4]")
   inspect(
@@ -57,6 +58,7 @@ test "v092_list_comprehension_array" {
 ///|
 test "v092_qualified_package_constructor" {
   let vm = MoonBitVM::new()
+  ignore(vm.eval("import { \"moonbitlang/core/json\" }"))
   inspect(vm.eval("@json.Null"), content="Null")
   inspect(vm.eval("@json.Json::True"), content="True")
   inspect(

@@ -15,6 +15,7 @@ test "arithmetic_operators" {
 ///|
 test "math" {
   let vm = MoonBitVM::new()
+  ignore(vm.eval("import { \"moonbitlang/core/math\" }"))
   inspect(vm.eval("@math.PI"), content="3.141592653589793")
 }
 

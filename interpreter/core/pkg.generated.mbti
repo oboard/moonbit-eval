@@ -54,6 +54,8 @@ pub fn parse_code_to_expr(String) -> Result[@syntax.Expr, String]
 
 pub fn parse_code_to_impl(String) -> Result[@syntax.Impl, String]
 
+pub fn parse_package_imports(String) -> ImportParseResult
+
 pub fn runtime_value_infix(String, RuntimeValue, RuntimeValue) -> RuntimeValue
 
 pub let string_embedded_code : Map[String, (RuntimeFunctionContext) -> RuntimeValue raise ControlFlow]
@@ -95,6 +97,7 @@ pub fn ClosureInterpreter::get_function_type_string(Self, @syntax.Func) -> Strin
 pub fn ClosureInterpreter::infer_pattern_type(Self, @syntax.Pattern) -> String?
 pub fn ClosureInterpreter::interp_string(Self, @list.List[@syntax.InterpElem]) -> String raise ControlFlow
 pub fn ClosureInterpreter::is_known_function(Self, String) -> Bool
+pub fn ClosureInterpreter::load_declared_imports(Self, Array[PackageImport]) -> String?
 pub fn ClosureInterpreter::load_module(Self, RuntimeModule) -> Unit
 pub fn ClosureInterpreter::load_package(Self, RuntimePackage, target? : String) -> Unit
 pub fn ClosureInterpreter::lookup_current_function(Self) -> String
@@ -127,6 +130,11 @@ pub(all) struct ConstructorValue {
   fields : Array[ConstructorField]
 }
 
+pub(all) struct ImportParseResult {
+  code : String
+  imports : Array[PackageImport]
+}
+
 pub(all) struct ModuleInfo {
   name : String
   version : String?
@@ -140,6 +148,11 @@ pub(all) struct ModuleInfo {
 } derive(ToJson, @debug.Debug, @json.FromJson)
 pub fn ModuleInfo::get_zip_url(Self) -> String
 pub fn ModuleInfo::new(String, version? : String, readme? : String, repository? : String, license? : String, keywords? : Array[String], description? : String, source? : String, deps? : Map[String, String]) -> Self
+
+pub(all) struct PackageImport {
+  path : String
+  alias_ : String?
+}
 
 pub(all) struct RuntimeArgument {
   val : RuntimeValue

@@ -14,7 +14,7 @@ pub(all) struct ClosureInterpreter {
 
 ///|
 pub fn ClosureInterpreter::new() -> ClosureInterpreter {
-  let main = RuntimePackage::new("main", deps=core_modules)
+  let main = RuntimePackage::new("main")
   main.deps.set("fs", fs_package)
   let self = {
     extern_fns: {},
@@ -26,6 +26,24 @@ pub fn ClosureInterpreter::new() -> ClosureInterpreter {
   }
   self.load_package(main)
   self
+}
+
+///|
+pub fn ClosureInterpreter::load_declared_imports(
+  self : ClosureInterpreter,
+  imports : Array[PackageImport],
+) -> String? {
+  for item in imports {
+    let pkg = match core_modules.get(item.path) {
+      Some(pkg) => pkg
+      None => return Some("import package \{item.path} not found")
+    }
+    let alias_ = item.alias_.unwrap_or(item.path)
+    self.current_pkg.deps.set(alias_, pkg)
+    self.current_pkg.deps.set(item.path, pkg)
+    self.load_package(pkg)
+  }
+  None
 }
 
 ///|
@@ -72,9 +90,10 @@ pub fn ClosureInterpreter::top_eval(
   self : ClosureInterpreter,
   code : String,
 ) -> Unit {
-  let code = normalize_v092_syntax(code)
+  let import_result = parse_package_imports(normalize_v092_syntax(code))
+  self.load_declared_imports(import_result.imports) |> ignore
   let (impls, _diagnostics) = @moonbitlang/parser.parse_string(
-    code,
+    import_result.code,
     parser=Handrolled,
   )
   impls.each(node => self.top_visit(node) |> ignore)
