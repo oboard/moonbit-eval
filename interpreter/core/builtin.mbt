@@ -5,7 +5,6 @@ let core_stubs : Map[String, String] = {
   "println_mono": "%println",
   "println": "%println_mono",
   "typeof": "%typeof",
-  "eval": "%eval",
   "require": "%require",
   "panic": "%panic",
   "abort": "%abort",
@@ -20,7 +19,6 @@ let builtin_embedded_code : Map[String, RuntimeFunction] = {
   "%abort": abort_fn,
   "%panic": panic_fn,
   "%typeof": typeof_fn,
-  "%eval": eval_fn,
   "%require": require_fn,
   "%println_mono": println_mono_fn,
   "%ignore": ignore_fn,
@@ -247,20 +245,6 @@ let any_to_string_fn : RuntimeFunction = ctx => {
 let typeof_fn : RuntimeFunction = ctx => {
   match ctx.args {
     [{ val: value, .. }] => String(value.get_type().to_string())
-    _ => Unit
-  }
-}
-
-///|
-let eval_fn : RuntimeFunction = ctx => {
-  match ctx.args {
-    [{ val: String(code), .. }] => {
-      let expr = parse_code_to_expr(code)
-      match expr {
-        Ok(expr) => ctx.context.visit(expr)
-        Err(error) => raise Raise(String(error))
-      }
-    }
     _ => Unit
   }
 }

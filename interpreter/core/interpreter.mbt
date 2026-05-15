@@ -15,6 +15,8 @@ pub(all) struct ClosureInterpreter {
 ///|
 pub fn ClosureInterpreter::new() -> ClosureInterpreter {
   let main = RuntimePackage::new("main")
+  main.deps.set("builtin", moonbitlang_core_builtin_module)
+  main.deps.set("moonbitlang/core/builtin", moonbitlang_core_builtin_module)
   main.deps.set("fs", fs_package)
   let self = {
     extern_fns: {},
@@ -24,6 +26,7 @@ pub fn ClosureInterpreter::new() -> ClosureInterpreter {
     current_pkg: main,
     call_stack: [],
   }
+  self.load_package(moonbitlang_core_builtin_module)
   self.load_package(main)
   self
 }

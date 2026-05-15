@@ -1,7 +1,6 @@
 ///|
 test {
   let vm = MoonBitVM::new()
-  vm.run("import { \"moonbitlang/core/builtin\" }")
   assert_eq(
     vm
     .eval(

@@ -191,6 +191,83 @@ pub fn ClosureInterpreter::match_case(
   value : RuntimeValue,
   pattern : @syntax.Pattern,
 ) -> Bool {
+  fn match_array_pattern_list(
+    patterns : @list.List[@syntax.ArrayPattern],
+    values : Array[RuntimeValue],
+    start : Int,
+  ) -> Bool {
+    let mut index = start
+    for state = patterns {
+      match state {
+        @list.More(array_pat, tail=pat_tail) => {
+          if index >= values.length() {
+            return false
+          }
+          match array_pat {
+            @syntax.ArrayPattern::Pattern(pat) =>
+              if !self.match_case(values[index], pat) {
+                return false
+              }
+            _ => return false
+          }
+          index += 1
+          continue pat_tail
+        }
+        @list.Empty => break
+      }
+    }
+    true
+  }
+
+  fn map_pattern_key(key : @syntax.Constant) -> RuntimeValue? {
+    match key {
+      String(str) => Some(String(str))
+      Int(str) =>
+        Some(Int(@string.parse_int(str), raw=None)) catch {
+          _ => None
+        }
+      _ => None
+    }
+  }
+
+  fn json_pattern_key(key : @syntax.Constant) -> String? {
+    match key {
+      String(str) => Some(str)
+      _ => None
+    }
+  }
+
+  fn match_json_constructor(
+    json : Json,
+    constr_name : String,
+    pattern_args : @list.List[@syntax.ConstrPatArg]?,
+  ) -> Bool {
+    fn match_unary(value : RuntimeValue) -> Bool {
+      match pattern_args {
+        Some(@list.More(arg, tail=@list.Empty)) =>
+          self.match_case(value, arg.pat)
+        _ => false
+      }
+    }
+    match (json, constr_name, pattern_args) {
+      (Null, "Null", None) => true
+      (True, "True", None) => true
+      (False, "False", None) => true
+      (String(str), "String", _) => match_unary(String(str))
+      (Number(num, ..), "Number", _) => match_unary(Double(num))
+      (Array(arr), "Array", _) =>
+        match_unary(Array(arr.map(item => Json(item))))
+      (Object(obj), "Object", _) => {
+        let map : Map[RuntimeValue, RuntimeValue] = {}
+        for key, item in obj {
+          map.set(String(key), Json(item))
+        }
+        match_unary(Map(map))
+      }
+      _ => false
+    }
+  }
+
   match pattern {
     // 变量模式匹配（总是匹配，并绑定变量）
     Var({ name, .. }) => {
@@ -275,26 +352,38 @@ pub fn ClosureInterpreter::match_case(
               if values.length() != patterns.length() {
                 return false
               }
-              let mut index = 0
-              for state = patterns {
-                match state {
-                  @list.More(array_pat, tail=pat_tail) => {
-                    match array_pat {
-                      @syntax.ArrayPattern::Pattern(pat) =>
-                        if !self.match_case(values[index], pat) {
-                          return false
-                        }
-                      _ => return false // 其他数组模式暂不支持
-                    }
-                    index = index + 1
-                    continue pat_tail
-                  }
-                  @list.Empty => break
-                }
+              match_array_pattern_list(patterns, values, 0)
+            }
+            @syntax.ArrayPatterns::Open(left, right, binder) => {
+              let left_len = left.length()
+              let right_len = right.length()
+              if values.length() < left_len + right_len {
+                return false
+              }
+              if !match_array_pattern_list(left, values, 0) {
+                return false
+              }
+              if !match_array_pattern_list(
+                  right,
+                  values,
+                  values.length() - right_len,
+                ) {
+                return false
+              }
+              let rest_view = values[left_len:values.length() - right_len]
+              let rest = Array::new(capacity=rest_view.length())
+              for item in rest_view {
+                rest.push(item)
+              }
+              match binder {
+                @syntax.DotDotBinder::Binder(binder) =>
+                  self.current_pkg.env.set(binder.name, Array(rest))
+                @syntax.DotDotBinder::BinderAs(binder) =>
+                  self.current_pkg.env.set(binder.name, Array(rest))
+                _ => ()
               }
               true
             }
-            _ => false // 其他数组模式暂不支持
           }
         _ => false
       }
@@ -320,6 +409,42 @@ pub fn ClosureInterpreter::match_case(
         }
         _ => false
       }
+    Map(elems~, ..) =>
+      match value {
+        Map(values) => {
+          for elem in elems {
+            match map_pattern_key(elem.key) {
+              Some(key) =>
+                match values.get(key) {
+                  Some(item) =>
+                    if !self.match_case(item, elem.pat) {
+                      return false
+                    }
+                  None => return false
+                }
+              None => return false
+            }
+          }
+          true
+        }
+        Json(Object(values)) => {
+          for elem in elems {
+            match json_pattern_key(elem.key) {
+              Some(key) =>
+                match values.get(key) {
+                  Some(item) =>
+                    if !self.match_case(Json(item), elem.pat) {
+                      return false
+                    }
+                  None => return false
+                }
+              None => return false
+            }
+          }
+          true
+        }
+        _ => false
+      }
 
     // Range模式匹配
     Range(lhs~, rhs~, kind~, ..) =>
@@ -328,6 +453,8 @@ pub fn ClosureInterpreter::match_case(
     // Constructor模式匹配
     Constr(constr~, args=pattern_args, ..) =>
       match value {
+        Json(json) =>
+          match_json_constructor(json, constr.name.name, pattern_args)
         Constructor({ val: { name, fields }, ty }) =>
           if name == constr.name.name &&
             self.constructor_pattern_matches_type(ty, constr) {

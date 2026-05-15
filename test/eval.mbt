@@ -1,42 +1,14 @@
 ///|
-test "eval" {
+test "eval_can_be_user_defined" {
   let vm = MoonBitVM::new()
-  let result = vm.eval("eval(\"1 + 2\")")
-  inspect(result, content="3")
-}
-
-///|
-test "eval eval" {
-  let vm = MoonBitVM::new()
-  let result = vm.eval("eval(\"eval(\\\"1 + 2\\\")\")")
-  inspect(result, content="3")
-}
-
-///|
-test "typeof eval" {
-  let vm = MoonBitVM::new()
-  inspect(
+  ignore(
     vm.eval(
       (
-        #|typeof(eval("(1+2).to_string()"))
+        #|fn eval(value : Int) -> Int {
+        #|  value + 1
+        #|}
       ),
     ),
-    content="@moonbitlang/core/string.String",
   )
-  inspect(
-    vm.eval(
-      (
-        #|typeof(eval("1+2"))
-      ),
-    ),
-    content="@moonbitlang/core/int.Int",
-  )
-  inspect(
-    vm.eval(
-      (
-        #|eval("1+2") is 3
-      ),
-    ),
-    content="true",
-  )
+  inspect(vm.eval("eval(2)"), content="3")
 }

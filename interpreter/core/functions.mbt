@@ -163,17 +163,21 @@ fn ClosureInterpreter::bind_runtime_parameters(
           _ => break
         }
       (@list.More(param, tail=rest_params), @list.More(arg, tail=rest_args)) => {
-        let value = arg.val
         match param {
           // 位置参数：直接绑定参数值
-          Positional(binder={ name, .. }, ..)
+          Positional(binder={ name, .. }, ty~)
           // 标签参数：绑定带标签的参数值
-          | Labelled(binder={ name, .. }, ..)
+          | Labelled(binder={ name, .. }, ty~)
           // 问号可选参数：绑定参数值
-          | QuestionOptional(binder={ name, .. }, ..)
+          | QuestionOptional(binder={ name, .. }, ty~)
           // 可选参数：当有参数提供时绑定参数值
-          | Optional(binder={ name, .. }, ..) =>
+          | Optional(binder={ name, .. }, ty~, ..) => {
+            let value = match ty {
+              Some(ty) => arg.val.overload_literal(extract_type_name(ty))
+              None => arg.val
+            }
             self.current_pkg.env.set(name, value)
+          }
           // 丢弃位置参数：不绑定到任何变量
           DiscardPositional(..) => ()
         }

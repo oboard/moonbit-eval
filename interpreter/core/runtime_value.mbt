@@ -938,9 +938,13 @@ pub fn runtime_value_infix(
     // Char 运算
     (Char(left), Char(right)) =>
       match op {
-        "+" => String(left.to_string() + right.to_string())
+        "+" => String([left, right])
         "==" => Bool(left == right)
         "!=" => Bool(left != right)
+        "<" => Bool(left < right)
+        ">" => Bool(left > right)
+        "<=" => Bool(left <= right)
+        ">=" => Bool(left >= right)
         _ => Unit
       }
     // Bytes 运算
@@ -961,6 +965,7 @@ pub fn runtime_value_infix(
       }
     (Array(left), Array(right)) =>
       match op {
+        "+" => Array(left + right)
         "==" => Bool(left == right)
         "!=" => Bool(left != right)
         _ => Unit

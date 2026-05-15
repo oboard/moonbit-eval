@@ -3,7 +3,8 @@
   "version": "0.9.2",
   "deps": {
     "moonbitlang/parser": "0.3.0",
-    "moonbitlang/x": "0.4.43"
+    "moonbitlang/x": "0.4.43",
+    "moonbitlang/async": "0.19.0"
   },
   "readme": "README.md",
   "repository": "https://github.com/oboard/eval",

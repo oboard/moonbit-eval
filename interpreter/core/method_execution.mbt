@@ -88,14 +88,18 @@ fn ClosureInterpreter::call_by_name(
     .to_array(),
   )
   self.with_ident(long_ident, (pkg, name) => {
-    let name = pkg.find_stub(name)
     match self.lookup_function(pkg, name) {
       FunctionLookupResult::DirectFunction(func) =>
         self.execute_embedded_function(func, evaluated_args)
       FunctionLookupResult::NotFound =>
-        self.error(
-          "execute_function_by_name method @\{pkg.name}.\{name} not found",
-        )
+        match self.lookup_function(pkg, pkg.find_stub(name)) {
+          FunctionLookupResult::DirectFunction(func) =>
+            self.execute_embedded_function(func, evaluated_args)
+          FunctionLookupResult::NotFound =>
+            self.error(
+              "execute_function_by_name method @\{pkg.name}.\{name} not found",
+            )
+        }
     }
   })
 }
