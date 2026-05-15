@@ -1,6 +1,6 @@
 ///|
 test "tuples" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   inspect(vm.eval("let t = (1, 2)"), content="()")
   inspect(vm.eval("t.0"), content="1")
   inspect(vm.eval("t.1"), content="2")
@@ -12,7 +12,7 @@ test "tuples" {
 
 ///|
 test "arrays" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   inspect(vm.eval("let arr = [1, 2, 3]; arr.length()"), content="3")
   inspect(vm.eval("let arr = []; arr.is_empty()"), content="true")
   inspect(vm.eval("let arr = [1, 2, 3]; arr.is_empty()"), content="false")
@@ -24,7 +24,7 @@ test "arrays" {
 
 ///|
 test "array_spread" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   // Test array spread syntax
   assert_eq(
     vm
@@ -41,7 +41,7 @@ test "array_spread" {
 
 ///|
 test "array_slice_operations" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   // Test array slice get operations
   assert_eq(
     vm.eval("let arr = [1, 2, 3, 4, 5]; arr[1:3]").to_string(),
@@ -63,7 +63,7 @@ test "array_slice_operations" {
 
 ///|
 test "array_set_operations" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   // Test array set operations
   assert_eq(
     vm.eval("let mut arr = [1, 2, 3]; arr[1] = 5; arr").to_string(),
@@ -77,7 +77,7 @@ test "array_set_operations" {
 
 ///|
 test "array_augmented_set" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   // Test array augmented assignment operations
   assert_eq(
     vm.eval("let mut arr = [1, 2, 3]; arr[1] += 5; arr").to_string(),
@@ -95,7 +95,7 @@ test "array_augmented_set" {
 
 ///|
 test "structs" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   inspect(
     vm.eval(
       (
@@ -116,7 +116,7 @@ test "structs" {
 
 ///|
 test "mutable_structs" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   inspect(
     vm.eval(
       (
@@ -140,7 +140,7 @@ test "mutable_structs" {
 
 ///|
 test "record_update" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   assert_eq(
     vm
     .eval(
@@ -163,7 +163,7 @@ test "record_update" {
 
 ///|
 test "method_calls" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   assert_eq(
     vm
     .eval(
@@ -192,7 +192,7 @@ test "method_calls" {
 
 ///|
 test "trait_as_expressions" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   // Test basic string operations first
   assert_eq(vm.eval("1.to_string()").to_string(), "1")
   assert_eq(vm.eval("\"hello\" + \" world\"").to_string(), "hello world")
@@ -223,7 +223,7 @@ test "trait_as_expressions" {
 
 ///|
 test "field_mutation" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   assert_eq(
     vm
     .eval(
@@ -252,7 +252,7 @@ test "field_mutation" {
 
 ///|
 test "references" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   inspect(
     vm.eval(
       (
@@ -279,7 +279,7 @@ test "references" {
 
 ///|
 test "nested_struct_reference" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   inspect(
     vm.eval(
       (

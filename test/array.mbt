@@ -4,7 +4,7 @@
 
 ///|
 test "array_basic_methods" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   // Test array creation and basic methods
   inspect(vm.eval("let arr = [1, 2, 3]; arr.length()"), content="3")
   inspect(vm.eval("let arr = []; arr.is_empty()"), content="true")
@@ -13,7 +13,7 @@ test "array_basic_methods" {
 
 ///|
 test "array_get_set_methods" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   // Test get method
   inspect(vm.eval("let arr = [1, 2, 3]; arr.get(1)"), content="Some(2)")
   inspect(vm.eval("let arr = [1, 2, 3]; arr.get(5)"), content="None")
@@ -21,7 +21,7 @@ test "array_get_set_methods" {
 
 ///|
 test "array_push_pop_methods" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   // Test push and pop
   inspect(vm.eval("let arr = [1, 2]; arr.push(3); arr.length()"), content="3")
   inspect(vm.eval("let arr = [1, 2, 3]; arr.pop()"), content="Some(3)")
@@ -30,7 +30,7 @@ test "array_push_pop_methods" {
 
 ///|
 test "array_contains_methods" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   // Test contains method
   inspect(vm.eval("let arr = [1, 2, 3]; arr.contains(2)"), content="true")
   inspect(vm.eval("let arr = [1, 2, 3]; arr.contains(5)"), content="false")

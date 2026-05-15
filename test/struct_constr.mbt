@@ -1,6 +1,6 @@
 ///|
 test "struct_constr" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   inspect(
     vm.eval(
       (

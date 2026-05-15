@@ -5,7 +5,7 @@
 
 ///|
 test "currying" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   assert_eq(vm.eval("let add = x => y => x + y").to_string(), "()")
   assert_eq(vm.eval("let f = add(10)").to_string(), "()")
   assert_eq(vm.eval("f").to_string(), "(Any) -> Any")
@@ -17,7 +17,7 @@ test "currying" {
 
 ///|
 test "closure_environment" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   inspect(
     vm.eval(
       (

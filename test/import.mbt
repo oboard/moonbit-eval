@@ -1,6 +1,6 @@
 ///|
 test "import_core_package_for_expression_eval" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   inspect(
     vm.eval(
       (
@@ -16,7 +16,7 @@ test "import_core_package_for_expression_eval" {
 
 ///|
 test "import_core_package_with_alias" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   inspect(
     vm.eval(
       (
@@ -30,7 +30,7 @@ test "import_core_package_with_alias" {
 
 ///|
 test "import_core_package_with_main_function" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   inspect(
     vm.eval(
       (
@@ -48,7 +48,7 @@ test "import_core_package_with_main_function" {
 
 ///|
 test "core_packages_are_not_loaded_by_default" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   inspect(
     vm.eval("@list.from_array([1, 2, 3])"),
     content="Error: execute_function_by_name method @main.from_array not found",

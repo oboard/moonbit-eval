@@ -1,5 +1,5 @@
 ///|
 test "read_dir" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   println(vm.eval("@fs.read_dir(\"./\")"))
 }

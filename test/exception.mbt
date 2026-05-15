@@ -5,7 +5,7 @@
 
 ///|
 test "try_catch_expressions" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   // Test try-catch expressions
   assert_eq(
     vm

@@ -4,7 +4,7 @@
 
 ///|
 test "arithmetic_operators" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   inspect(vm.eval("1+1"), content="2")
   inspect(vm.eval("2-1"), content="1")
   inspect(vm.eval("5 * 3"), content="15")
@@ -14,21 +14,21 @@ test "arithmetic_operators" {
 
 ///|
 test "math" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   vm.run("import { \"moonbitlang/core/math\" }")
   inspect(vm.eval("@math.PI"), content="3.141592653589793")
 }
 
 ///|
 test {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   inspect(vm.eval("pub const PI = 3.14"), content="3.14")
   inspect(vm.eval("PI"), content="3.14")
 }
 
 ///|
 test "group_expressions" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   // Test grouped expressions with parentheses
   assert_eq(vm.eval("(2 + 3) * (4 + 1)").to_string(), "25")
   assert_eq(vm.eval("((1 + 2) * 3) + (4 * (5 + 6))").to_string(), "53")

@@ -1,6 +1,6 @@
 ///|
 test {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   assert_eq(
     vm
     .eval(

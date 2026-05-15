@@ -4,7 +4,7 @@
 
 ///|
 test "string_methods" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   inspect(vm.eval("let s = \"hello\""), content="()")
   inspect(vm.eval("s.length()"), content="5")
   inspect(vm.eval("s.code_unit_at(0)"), content="104")
@@ -13,7 +13,7 @@ test "string_methods" {
 
 ///|
 test "bool_methods" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   inspect(vm.eval("true.compare(false)"), content="1")
   inspect(vm.eval("false.compare(true)"), content="-1")
   inspect(vm.eval("true.compare(true)"), content="0")
@@ -22,7 +22,7 @@ test "bool_methods" {
 
 ///|
 test "int_methods" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   inspect(vm.eval("(5).lnot()"), content="-6")
   inspect(vm.eval("(5).land(3)"), content="1")
   inspect(vm.eval("(5).lor(3)"), content="7")
@@ -42,7 +42,7 @@ test "int_methods" {
 
 ///|
 test "double_methods" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   inspect(vm.eval("5.5.compare(3.5)"), content="1")
   inspect(vm.eval("3.5.compare(5.5)"), content="-1")
   inspect(vm.eval("3.5.compare(3.5)"), content="0")
@@ -51,7 +51,7 @@ test "double_methods" {
 
 ///|
 test "char_methods" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   inspect(vm.eval("'b'.compare('a')"), content="1")
   inspect(vm.eval("'a'.compare('b')"), content="-1")
   inspect(vm.eval("'a'.compare('a')"), content="0")

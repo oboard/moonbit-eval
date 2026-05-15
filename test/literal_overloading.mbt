@@ -2,7 +2,7 @@
 
 ///|
 test "char_literals" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   // Test character literals and conversions
   inspect(vm.eval("let c : Char = '1'"), content="()")
   assert_eq(vm.eval("c").to_string(), "1")
@@ -12,7 +12,7 @@ test "char_literals" {
 
 ///|
 test "numeric_literal_overloading" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
 
   // Int -> UInt conversion
   inspect(vm.eval("let u : UInt = 42"), content="()")
@@ -58,7 +58,7 @@ test "numeric_literal_overloading" {
 
 ///|
 test "char_literal_overloading" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
 
   // Char -> Int conversion (ASCII value)
   inspect(vm.eval("let i : Int = 'A'"), content="()")
@@ -77,7 +77,7 @@ test "char_literal_overloading" {
 
 ///|
 test "string_literal_overloading" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
 
   // simple string to bytes conversion
   assert_eq(vm.eval("(\"hello\" as Bytes)").to_string(), "b\"hello\"")
@@ -90,7 +90,7 @@ test "string_literal_overloading" {
 
 ///|
 test "array_literal_overloading" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
 
   // Array of Ints -> Bytes conversion
   assert_eq(
@@ -122,7 +122,7 @@ test "array_literal_overloading" {
 
 ///|
 test "double_literal_overloading" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
 
   // Double -> Float conversion (precision may vary)
   let float_result = vm.eval("(3.14 : Float)").to_string()
@@ -138,7 +138,7 @@ test "double_literal_overloading" {
 
 ///|
 test "complex_overloading_scenarios" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
 
   // Mixed type array with overloading
   inspect(vm.eval("let mixed_bytes : Bytes = [65, 66, 67]"), content="()")
@@ -158,7 +158,7 @@ test "complex_overloading_scenarios" {
 
 ///|
 test "overloading_edge_cases" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
 
   // Zero values
   inspect(vm.eval("let zero_uint : UInt = 0"), content="()")

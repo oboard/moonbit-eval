@@ -3,7 +3,7 @@ using @eval {type MoonBitVM}
 
 ///|
 test "function_alias" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   // 测试函数别名定义和使用
   vm.run(
     (

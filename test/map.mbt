@@ -1,6 +1,6 @@
 ///|
 test "map_expressions" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   // Test map literal expressions
   assert_eq(
     vm
@@ -17,7 +17,7 @@ test "map_expressions" {
 
 ///|
 test "map_operations" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   // Test simple Map::of creation first
   inspect(vm.eval("Map::of([])"), content="{}")
 

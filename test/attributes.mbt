@@ -1,6 +1,6 @@
 ///|
 test "alias" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   vm.run(
     (
       #|#alias(number_one)

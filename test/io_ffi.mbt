@@ -5,13 +5,13 @@
 
 ///|
 test "println" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   inspect(vm.eval("println(\"hello\")"), content="()")
 }
 
 ///|
 test "embedded_code" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   vm.interpreter.add_embedded_fn("%string_length2", ctx => {
     if ctx.args is [{ val: String(s), .. }] {
       Int(s.length(), raw=None)

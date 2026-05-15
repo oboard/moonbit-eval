@@ -4,7 +4,7 @@
 
 ///|
 test "if_expressions" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   inspect(
     vm.eval("if 1 > 0 { if 2 > 1 { 3 } else { 4 } } else { 5 }"),
     content="3",
@@ -16,7 +16,7 @@ test "if_expressions" {
 
 ///|
 test "type_constraints" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   // Test type constraint expressions
   assert_eq(vm.eval("(42 : Int)").to_string(), "42")
   assert_eq(vm.eval("(true : Bool)").to_string(), "true")
@@ -26,7 +26,7 @@ test "type_constraints" {
 
 ///|
 test "guard_expressions" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   // Test guard expressions
   assert_eq(
     vm
@@ -46,7 +46,7 @@ test "guard_expressions" {
 
 ///|
 test "is_expressions" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   // Test 'is' pattern matching expressions
   assert_eq(vm.eval("5 is 5").to_string(), "true")
   assert_eq(vm.eval("5 is 3").to_string(), "false")
@@ -58,7 +58,7 @@ test "is_expressions" {
 
 ///|
 test "defer_expressions" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   // Test defer expressions
   assert_eq(
     vm
@@ -76,7 +76,7 @@ test "defer_expressions" {
 
 ///|
 test "for_loops" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   // 简化测试：只测试最基本的for循环
   inspect(vm.eval("let mut sum = 0"), content="()")
   inspect(vm.eval("sum"), content="0")
@@ -111,7 +111,7 @@ test "for_loops" {
 
 ///|
 test "for_in" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   // Test array iteration
   inspect(vm.eval("let mut sum = 0"), content="()")
   inspect(vm.eval("for x in [1, 2, 3, 4, 5] { sum += x }"), content="()")
@@ -138,7 +138,7 @@ test "for_in" {
 
 ///|
 test "while_loops" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   inspect(vm.eval("let mut i = 0"), content="()")
   inspect(vm.eval("let mut sum = 0"), content="()")
   inspect(vm.eval("while i < 5 { sum += i; i += 1 }"), content="()")
@@ -148,7 +148,7 @@ test "while_loops" {
 
 ///|
 test "loop_control" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   assert_eq(
     vm
     .eval(
@@ -173,7 +173,7 @@ test "loop_control" {
 
 ///|
 test "return_expressions" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   // Test return expressions in functions
   assert_eq(
     vm
@@ -194,7 +194,7 @@ test "return_expressions" {
 
 ///|
 test "raise_expressions" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   // Test raise expressions for exceptions
   assert_eq(
     vm
@@ -214,7 +214,7 @@ test "raise_expressions" {
 
 ///|
 test "loop_expressions" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   vm.run("import { \"moonbitlang/core/list\" }")
   // Test loop expressions
   inspect(
@@ -241,7 +241,7 @@ test "loop_expressions" {
 
 ///|
 test "break_continue" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   // Test break and continue in loops
   assert_eq(
     vm

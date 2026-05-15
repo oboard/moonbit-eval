@@ -4,7 +4,7 @@
 
 ///|
 test "basic_functions" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   assert_eq(
     vm.eval("fn double(x: Int) -> Int { x * 2 }").to_string(),
     "(Int) -> Int",
@@ -19,7 +19,7 @@ test "basic_functions" {
 
 ///|
 test "named_parameters" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   assert_eq(
     vm.eval("fn add_named(a~: Int, b~: Int) -> Int { a + b }").to_string(),
     "(Int, Int) -> Int",
@@ -34,7 +34,7 @@ test "named_parameters" {
 
 ///|
 test "lambda_functions" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   inspect(vm.eval("let f = x => x * 2"), content="()")
   assert_eq(vm.eval("f(3)").to_string(), "6")
   assert_eq(vm.eval("let identity = x => x").to_string(), "()")
@@ -43,7 +43,7 @@ test "lambda_functions" {
 
 ///|
 test "closure_argument_environment" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   inspect(vm.eval("let x = 10"), content="()")
   // 创建闭包，捕获 x = 10
   inspect(vm.eval("let make_adder = y => x + y"), content="()")
@@ -61,7 +61,7 @@ test "closure_argument_environment" {
 
 ///|
 test "recursive_functions" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   assert_eq(
     vm
     .eval(
@@ -83,7 +83,7 @@ test "recursive_functions" {
 
 ///|
 test "mutually_recursive_functions" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   // Test LetRec for mutually recursive functions
   assert_eq(
     vm
@@ -107,7 +107,7 @@ test "mutually_recursive_functions" {
 
 ///|
 test "let_and_bindings" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   // Test LetAnd for simultaneous function definitions
   assert_eq(
     vm

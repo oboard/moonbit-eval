@@ -1,6 +1,6 @@
 ///|
 test "sort" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   let unsorted = @list.from_array([3, 1, 4, 1, 5, 9, 2, 6])
   assert_eq(
     @debug.to_string(unsorted.sort().to_array()),

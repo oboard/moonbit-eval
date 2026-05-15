@@ -5,7 +5,7 @@
 
 ///|
 test "module" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   vm.run("import { \"moonbitlang/core/int\" }")
   assert_eq(vm.eval("let max_value = 1").to_string(), "()")
   assert_eq(vm.eval("max_value").to_string(), "1")
@@ -20,7 +20,7 @@ test "module" {
 
 ///|
 test "math" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   vm.run("import { \"moonbitlang/core/math\" }")
   assert_eq(vm.eval("@math.abs(-1.0)").to_string(), "1")
   assert_eq(vm.eval("@math.abs").to_string(), "(Double) -> Double")
@@ -28,7 +28,7 @@ test "math" {
 
 ///|
 test "bigint" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   vm.run("import { \"moonbitlang/core/bigint\" }")
   assert_eq(vm.eval("@bigint.zero").to_string(), "0")
   assert_eq(vm.eval("@bigint.radix_bit_len").to_string(), "32")
@@ -36,7 +36,7 @@ test "bigint" {
 
 ///|
 test "cmp" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   vm.run("import { \"moonbitlang/core/cmp\" }")
   assert_eq(vm.eval("@cmp.maximum").to_string(), "(T, T) -> T")
   assert_eq(vm.eval("@cmp.minimum").to_string(), "(T, T) -> T")
@@ -46,7 +46,7 @@ test "cmp" {
 
 ///|
 test "cross_package_method_calling" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   vm.run("import { \"moonbitlang/core/list\" }")
   assert_eq(
     vm.eval("let list = @list.from_array([1,2,3]); list").to_string(),
@@ -62,7 +62,7 @@ test "cross_package_method_calling" {
 
 // ///|
 // test "online_package" {
-//   let vm = MoonBitVM::new()
+//   let vm = MoonBitVM()
 //   @mio.run(() => {
 //     let modules = try? @mooncakes.load_module("wangweigang/hello")
 //     if modules is Ok(modules) {

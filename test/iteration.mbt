@@ -2,7 +2,7 @@
 
 ///|
 test "foreach_loop" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   // Test simple for-in loop with array
   inspect(
     vm.eval(
@@ -32,7 +32,7 @@ test "foreach_loop" {
 
 ///|
 test "array_iteration" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   // 测试循环变量名不冲突的情况
   assert_eq(
     vm
@@ -58,7 +58,7 @@ test "array_iteration" {
 
 ///|
 test "string_iteration" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   assert_eq(
     vm
     .eval(
@@ -71,7 +71,7 @@ test "string_iteration" {
 
 ///|
 test "map_iteration" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   assert_eq(
     vm
     .eval(
@@ -84,7 +84,7 @@ test "map_iteration" {
 
 ///|
 test "range_iteration" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   assert_eq(
     vm.eval("let sum = 0; for i in 0..<3 { sum = sum + i }; sum").to_string(),
     "3",
@@ -97,7 +97,7 @@ test "range_iteration" {
 
 ///|
 test "break_continue_iteration" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   assert_eq(
     vm
     .eval(
@@ -118,7 +118,7 @@ test "break_continue_iteration" {
 
 ///|
 test "iterator_methods" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   assert_eq(
     vm
     .eval(
@@ -147,7 +147,7 @@ test "iterator_methods" {
 
 ///|
 test "nested_iteration" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   assert_eq(
     vm
     .eval(
@@ -160,7 +160,7 @@ test "nested_iteration" {
 
 ///|
 test "iterator_control_flow" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   inspect(vm.eval("let arr = [1, 2, 3]"), content="()")
   inspect(vm.eval("arr.iter()"), content="<iterator>")
   assert_eq(

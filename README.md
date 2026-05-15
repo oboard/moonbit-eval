@@ -17,7 +17,7 @@ Built on top of the [@moonbitlang/parser](https://github.com/moonbitlang/parser)
 ## Quick Start
 
 ```moonbit
-let vm = MoonBitVM::new()
+let vm = MoonBitVM()
 
 // Basic expressions
 inspect(vm.eval("1 + 2 * 3"), content="7")

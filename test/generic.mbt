@@ -2,7 +2,7 @@
 
 ///|
 test "generic_list" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   inspect(
     vm.eval(
       (

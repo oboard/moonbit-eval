@@ -5,7 +5,7 @@
 
 ///|
 test "option_type" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   // Test try operator (?)
   inspect(
     vm.eval(
@@ -32,7 +32,7 @@ test "option_type" {
 
 ///|
 test "option_basics" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   inspect(vm.eval("@option.Some(5)"), content="Some(5)")
   inspect(vm.eval("Some(5)"), content="Some(5)")
   inspect(vm.eval("None"), content="None")
@@ -41,7 +41,7 @@ test "option_basics" {
 
 ///|
 test "option_pattern_matching" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   inspect(vm.eval("match Some(5) { Some(x) => x, None => 0 }"), content="5")
   inspect(
     vm.eval("match Some(5) { Option::Some(x) => x, None => 0 }"),
@@ -58,7 +58,7 @@ test {
 
 ///|
 test "option_methods" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   inspect(vm.eval("let opt = Some(42); opt.unwrap()"), content="42")
   inspect(vm.eval("let opt = Some(42); opt.unwrap_or(0)"), content="42")
   inspect(vm.eval("let opt = None; opt.unwrap_or(0)"), content="0")

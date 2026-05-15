@@ -4,7 +4,7 @@
 
 ///|
 test "basic_integers" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   inspect(vm.eval("1"), content="1")
   inspect(vm.eval("42"), content="42")
   inspect(vm.eval("-5"), content="-5")
@@ -12,7 +12,7 @@ test "basic_integers" {
 
 ///|
 test "basic_booleans" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   inspect(vm.eval("true"), content="true")
   inspect(vm.eval("false"), content="false")
   inspect(vm.eval("!false"), content="true")
@@ -23,14 +23,14 @@ test "basic_booleans" {
 
 ///|
 test "basic_strings" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   inspect(vm.eval("\"hello\""), content="hello")
   inspect(vm.eval("\"hello\"+\"world\""), content="helloworld")
 }
 
 ///|
 test "escape_strings" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   inspect(vm.eval("\"hello\\nworld\""), content="hello\nworld")
   inspect(vm.eval("\"hello\\tworld\""), content="hello\tworld")
   inspect(vm.eval("\"hello\\u0042world\""), content="helloBworld")
@@ -39,7 +39,7 @@ test "escape_strings" {
 
 ///|
 test "multiline_strings" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   // Test multiline string syntax
   assert_eq(vm.eval("#|hello\n#|world").to_string(), "hello\nworld")
   assert_eq(
@@ -51,7 +51,7 @@ test "multiline_strings" {
 
 ///|
 test "string_interpolation" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   // Test string interpolation
   assert_eq(
     vm.eval("let x = 42; \"The answer is \\{x}\"").to_string(),

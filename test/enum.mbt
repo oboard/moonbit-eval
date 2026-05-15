@@ -2,7 +2,7 @@
 
 ///|
 test "basic_enum" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   inspect(
     vm.eval(
       (
@@ -31,7 +31,7 @@ test "basic_enum" {
 
 ///|
 test "enum_with_data" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   inspect(
     vm.eval(
       (
@@ -57,7 +57,7 @@ test "enum_with_data" {
 
 ///|
 test "enum_pattern_matching" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   inspect(
     vm.eval(
       (

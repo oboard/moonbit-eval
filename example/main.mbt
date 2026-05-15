@@ -1,5 +1,5 @@
 ///|
 fn main {
-  let result = @eval.MoonBitVM::new().eval("1 + 2")
+  let result = @eval.MoonBitVM().eval("1 + 2")
   println(result)
 }

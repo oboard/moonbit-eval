@@ -4,7 +4,7 @@
 
 ///|
 test "basic_pattern_matching" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   inspect(
     vm.eval(
       (
@@ -33,7 +33,7 @@ test "basic_pattern_matching" {
 
 ///|
 test "or_patterns" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   inspect(
     vm.eval(
       (
@@ -60,7 +60,7 @@ test "or_patterns" {
 
 ///|
 test "tuple_patterns" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   inspect(
     vm.eval(
       (
@@ -77,7 +77,7 @@ test "tuple_patterns" {
 
 ///|
 test "array_patterns" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   inspect(
     vm.eval(
       (
@@ -96,7 +96,7 @@ test "array_patterns" {
 
 ///|
 test "record_patterns" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   inspect(
     vm.eval(
       (
@@ -115,7 +115,7 @@ test "record_patterns" {
 
 ///|
 test "nested_patterns" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   inspect(
     vm.eval(
       (
@@ -133,7 +133,7 @@ test "nested_patterns" {
 
 ///|
 test "range_patterns" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   inspect(
     vm.eval(
       (
@@ -151,7 +151,7 @@ test "range_patterns" {
 
 ///|
 test "constructor_patterns" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   inspect(
     vm.eval(
       (
@@ -176,7 +176,7 @@ test "constructor_patterns" {
 
 ///|
 test "match_as_pattern" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   inspect(
     vm.eval(
       (

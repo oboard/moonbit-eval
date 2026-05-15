@@ -1,6 +1,6 @@
 ///|
 test "list_methods" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   vm.run("import { \"moonbitlang/core/list\" }")
   assert_eq(
     vm.eval("let list = @list.from_array([1, 2, 3]); list").to_string(),

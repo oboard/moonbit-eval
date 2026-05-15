@@ -5,21 +5,21 @@
 
 ///|
 test "immutable_variables" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   inspect(vm.eval("let a = 1"), content="()")
   inspect(vm.eval("a"), content="1")
 }
 
 ///|
 test "shadowing" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   inspect(vm.eval("let a = 0; let a = 1; a"), content="1")
   inspect(vm.eval("let mut a = 0; let a = 1; a"), content="1")
 }
 
 ///|
 test "mutable_variables" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   inspect(vm.eval("let mut a = 1"), content="()")
   inspect(vm.eval("a = 12"), content="()")
   inspect(vm.eval("a"), content="12")
@@ -27,13 +27,13 @@ test "mutable_variables" {
 
 ///|
 test "basic_mutable_variables" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   assert_eq(vm.eval("let mut x = 0; x = x + 1; x").to_string(), "1")
 }
 
 ///|
 test "sequential_assignments" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   assert_eq(
     vm
     .eval("let mut sum = 0; sum = sum + 1; sum = sum + 2; sum = sum + 3; sum")
@@ -44,7 +44,7 @@ test "sequential_assignments" {
 
 ///|
 test "field_assignment" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   // Test field assignment works - separate top and non-top
   assert_eq(
     vm
@@ -73,7 +73,7 @@ test "field_assignment" {
 
 ///|
 test "nested_struct_reference" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   assert_eq(
     vm
     .eval(

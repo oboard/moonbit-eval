@@ -1,6 +1,6 @@
 ///|
 test "json_value" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   let _ = vm.eval("let simple_json : Json = 42")
   assert_eq(
     vm.eval("typeof(simple_json)").to_string(),
@@ -10,7 +10,7 @@ test "json_value" {
 
 ///|
 test "json_array" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   vm.run("let json_array : Json = [1, 2, 3]")
   inspect(vm.eval("json_array"), content="[1,2,3]")
   assert_eq(
@@ -21,7 +21,7 @@ test "json_array" {
 
 ///|
 test "json_type" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   vm.run("let json : Json = { \"a\": [\"1\", \"2\"], \"b\": [\"3\", \"4\"] }")
   assert_eq(
     vm.eval("typeof(json)").to_string(),

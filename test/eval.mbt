@@ -1,6 +1,6 @@
 ///|
 test "eval_can_be_user_defined" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   ignore(
     vm.eval(
       (

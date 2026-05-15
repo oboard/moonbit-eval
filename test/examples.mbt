@@ -1,6 +1,6 @@
 ///|
 test "example_recursive_enum_expression_eval" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   ignore(
     vm.eval(
       (
@@ -27,7 +27,7 @@ test "example_recursive_enum_expression_eval" {
 
 ///|
 test "example_generic_quicksort" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   ignore(
     vm.eval(
       (
@@ -53,7 +53,7 @@ test "example_generic_quicksort" {
 
 ///|
 test "example_json_pattern_extract_name" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   ignore(
     vm.eval(
       (

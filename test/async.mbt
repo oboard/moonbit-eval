@@ -4,14 +4,14 @@
 
 ///|
 test "async_run_executes_function_immediately" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   vm.run("fn run_async(f : async () -> Unit noraise) = \"%async.run\"")
   inspect(vm.eval("run_async(() => 7)"), content="7")
 }
 
 ///|
 test "async_suspend_success" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   vm.run(
     (
       #|async fn[T, E : Error] async_suspend(
@@ -24,7 +24,7 @@ test "async_suspend_success" {
 
 ///|
 test "async_suspend_error_branch" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   vm.run(
     (
       #|async fn[T, E : Error] async_suspend(
@@ -49,7 +49,7 @@ test "async_suspend_error_branch" {
 
 ///|
 test "async_suspend_callback_not_resolved" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   vm.run(
     (
       #|async fn[T, E : Error] async_suspend(
@@ -71,7 +71,7 @@ test "async_suspend_callback_not_resolved" {
 
 ///|
 test "async_suspend_first_callback_wins" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   vm.run(
     (
       #|async fn[T, E : Error] async_suspend(

@@ -1,6 +1,6 @@
 ///|
 test "v092_struct_constructor_function" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   inspect(
     vm.eval(
       (
@@ -20,13 +20,13 @@ test "v092_struct_constructor_function" {
 
 ///|
 test "v092_array_literal_as_iter" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   inspect(vm.eval("([1, 2, 3] : Iter[Int]).collect()"), content="[1, 2, 3]")
 }
 
 ///|
 test "v092_array_spread_as_iter" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   inspect(
     vm.eval("([0, ..[1, 2].iter(), 3] : Iter[Int]).collect()"),
     content="[0, 1, 2, 3]",
@@ -35,7 +35,7 @@ test "v092_array_spread_as_iter" {
 
 ///|
 test "list_comprehension_array" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   vm.run("import { \"moonbitlang/core/list\" }")
   inspect(vm.eval("[for x in [1, 2, 3] { x * 2 }]"), content="[2, 4, 6]")
   inspect(
@@ -73,7 +73,7 @@ test "list_comprehension_array" {
 
 ///|
 test "v092_qualified_package_constructor" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   vm.run("import { \"moonbitlang/core/json\" }")
   inspect(vm.eval("@json.Null"), content="Null")
   inspect(vm.eval("@json.Json::True"), content="True")
