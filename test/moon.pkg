@@ -2,7 +2,7 @@ import {
   "oboard/eval" @eval,
   "moonbitlang/core/debug" @debug,
   "moonbitlang/core/list",
-  "oboard/eval/async" @eval/async
+  "oboard/eval/async" @eval/async,
 }
 
 warnings = "-29"
