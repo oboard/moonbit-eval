@@ -17,7 +17,7 @@ Built on top of the [@moonbitlang/parser](https://github.com/moonbitlang/parser)
 ## Quick Start
 
 ```moonbit
-let vm = MoonBitVM()
+let vm = MoonBitVM::new()
 
 // Basic expressions
 inspect(vm.eval("1 + 2 * 3"), content="7")
@@ -39,11 +39,71 @@ inspect(vm.eval("using @int {abs}"), content="()")
 inspect(vm.eval("abs(-5)"), content="5")
 ```
 
+## Imports and Package Loading
+
+`eval` accepts top-level expressions directly, with or without `fn main`.
+Import declarations can appear before either form.
+
+```moonbit
+let vm = MoonBitVM::new()
+
+inspect(
+  vm.eval(
+    (
+      #|import {
+      #|  "moonbitlang/core/list"
+      #|}
+      #|@list.from_array([1, 2, 3])
+    ),
+  ),
+  content="More(1, tail=More(2, tail=More(3, tail=Empty)))",
+)
+```
+
+Core packages are loaded on demand. `moonbitlang/core/builtin` is always
+available, but other core packages such as `moonbitlang/core/list` must be
+imported explicitly before using their package aliases.
+
+## Runtime Modules
+
+Optional runtime modules can be injected when constructing a VM. They register
+packages and embedded runtime functions without loading every package into the
+current eval scope.
+
+```moonbit
+let vm = MoonBitVM::new(modules=[@eval/async.module()])
+```
+
+The async module makes the root `@async` package available. Subpackages are
+lazy-loaded and must be imported explicitly:
+
+```moonbit
+inspect(
+  vm.test_all(
+    (
+      #|import { "moonbitlang/async/http" }
+      #|async test "https request" {
+      #|  let (response, body) = @async.retry(FixedDelay(250), max_retry=3, () => {
+      #|    @async.with_timeout(3000, () => @http.get("https://www.moonbitlang.com"))
+      #|  })
+      #|  assert_true(response.code is (200..<300), msg=response.code.to_string())
+      #|  assert_true(body.text().to_lower().has_prefix("<!doctype html>"), msg=body.text())
+      #|}
+    ),
+  ),
+  content="TestResult(total=1, passed=1, failed=0)",
+)
+```
+
+`vm.test_all(code)` runs top-level `test` and `async test` blocks and returns a
+`TestResult` summary instead of swallowing assertion failures.
+
 ## Parser Notes
 
-- `parse_code_to_expr` now uses the same path as `moonbitlang/parser` handrolled parser tests:
-  `lexer.tokens_from_string(...).tokens -> handrolled_parser.parse_expr(...)`.
-- This removes the old wrapper trick (`fn init { ... }`) and keeps expression parsing behavior aligned with upstream.
+- `eval` parses code through a compatibility wrapper around `moonbitlang/parser`.
+- Top-level expressions are supported directly, so users do not need to wrap
+  snippets in `fn main`.
+- Full top-level code with declarations and `fn main` remains supported.
 - Diagnostics from parser reports are preserved and returned in `Err(...)` when parse fails.
 
 ## ✨ Features
@@ -136,10 +196,11 @@ inspect(vm.eval("abs(-5)"), content="5")
 | Nested iteration | ✅ | Complex nested loop structures |
 | Iterator control flow | ✅ | break/continue in iterator contexts |
 | **Package System** | | |
-| Module imports | ✅ | @package.function syntax |
+| Module imports | ✅ | Explicit `import { "package/path" }` declarations and @package.function syntax |
 | Cross-package types | ✅ | Using types from other packages |
-| Built-in packages | ✅ | @int, @math, @bigint, @cmp, @list support |
+| Built-in packages | ✅ | Builtin package is always loaded; other core packages load through explicit imports |
 | Package method calling | ✅ | Method calls across package boundaries |
+| Runtime modules | ✅ | Optional injected modules such as `@eval/async.module()` |
 | **IO and FFI** | | |
 | Print functions | ✅ | println and print support |
 | Embedded functions | ✅ | Native function integration via FFI |
@@ -178,7 +239,7 @@ inspect(vm.eval("abs(-5)"), content="5")
 | #skip | ❌ | Skipping compilation of a function |
 | #cfg | ❌ | Conditional compilation based on configuration |
 | **Not Yet Supported** | | |
-| Async/await | 🟡 | Limited bridge support via `%async.run` / `%async.suspend` (no scheduler/event loop) |
+| Async/await | 🟡 | Async tests and selected `moonbitlang/async` APIs through explicit runtime module injection |
 
 ## Contributing
 
