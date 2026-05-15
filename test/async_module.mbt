@@ -53,7 +53,7 @@ test "async http is loaded lazily" {
 
 ///|
 test "async module is not loaded by default" {
-  let vm = MoonBitVM::new()
+  let vm = MoonBitVM()
   assert_eq(
     vm.eval("@async.with_timeout(100, () => 1)").to_string(),
     "Error: execute_function_by_name method @main.with_timeout not found",

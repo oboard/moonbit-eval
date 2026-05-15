@@ -17,7 +17,7 @@ Built on top of the [@moonbitlang/parser](https://github.com/moonbitlang/parser)
 ## Quick Start
 
 ```moonbit
-let vm = MoonBitVM::new()
+let vm = MoonBitVM()
 
 // Basic expressions
 inspect(vm.eval("1 + 2 * 3"), content="7")
@@ -45,7 +45,7 @@ inspect(vm.eval("abs(-5)"), content="5")
 Import declarations can appear before either form.
 
 ```moonbit
-let vm = MoonBitVM::new()
+let vm = MoonBitVM()
 
 inspect(
   vm.eval(
@@ -71,7 +71,7 @@ packages and embedded runtime functions without loading every package into the
 current eval scope.
 
 ```moonbit
-let vm = MoonBitVM::new(modules=[@eval/async.module()])
+let vm = MoonBitVM(modules=[@eval/async.module()])
 ```
 
 The async module makes the root `@async` package available. Subpackages are
