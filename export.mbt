@@ -23,7 +23,7 @@ pub fn eval_result_to_string(result : EvalResult) -> String {
 
 ///|
 pub fn code_to_ast(code : String) -> String {
-  match @front.parse_code_to_impl(@core.normalize_v092_syntax(code)) {
+  match @front.parse_code_to_impl(code) {
     Ok(i) => i.to_json().stringify()
     Err(msg) => msg
   }

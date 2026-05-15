@@ -90,7 +90,7 @@ pub fn ClosureInterpreter::top_eval(
   self : ClosureInterpreter,
   code : String,
 ) -> Unit {
-  let import_result = parse_package_imports(normalize_v092_syntax(code))
+  let import_result = parse_package_imports(code)
   self.load_declared_imports(import_result.imports) |> ignore
   let (impls, _diagnostics) = @moonbitlang/parser.parse_string(
     import_result.code,

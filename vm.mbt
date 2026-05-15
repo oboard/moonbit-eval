@@ -228,7 +228,6 @@ pub fn MoonBitVM::eval(
   top? : Bool = false,
 ) -> EvalResult {
   try {
-    let code = @core.normalize_v092_syntax(code)
     let import_result = @core.parse_package_imports(code)
     if self.interpreter.load_declared_imports(import_result.imports)
       is Some(msg) {

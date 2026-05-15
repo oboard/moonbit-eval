@@ -35,22 +35,39 @@ test "v092_array_spread_as_iter" {
 }
 
 ///|
-test "v092_list_comprehension_array" {
+test "list_comprehension_array" {
   let vm = MoonBitVM::new()
   ignore(vm.eval("import { \"moonbitlang/core/list\" }"))
-  inspect(vm.eval("[for x in [1, 2, 3] => x * 2]"), content="[2, 4, 6]")
-  inspect(vm.eval("[for x in 1..=3 => x + 1]"), content="[2, 3, 4]")
+  inspect(vm.eval("[for x in [1, 2, 3] { x * 2 }]"), content="[2, 4, 6]")
   inspect(
-    vm.eval("[for x in @list.from_array([1, 2, 3]) => x + 2]"),
+    vm.eval(
+      (
+        #|[
+        #|  for x in [1, 2, 3] { x * 2 }
+        #|]
+      ),
+    ),
+    content="[2, 4, 6]",
+  )
+  inspect(vm.eval("[for x in 1..=3 { x + 1 }]"), content="[2, 3, 4]")
+  inspect(
+    vm.eval("[for x in @list.from_array([1, 2, 3]) { x + 2 }]"),
     content="[3, 4, 5]",
   )
-  inspect(vm.eval("[for x in [1, 2, 3] if x > 1 => x * 2]"), content="[4, 6]")
   inspect(
-    vm.eval("[for x in [Some(1), None, Some(3)] if x is Some(y) => y * 2]"),
+    vm.eval("[for x in [1, 2, 3] { guard x > 1 else { continue }; x * 2 }]"),
+    content="[4, 6]",
+  )
+  inspect(
+    vm.eval(
+      "[for x in [Some(1), None, Some(3)] { guard x is Some(y) else { continue }; y * 2 }]",
+    ),
     content="[2, 6]",
   )
   inspect(
-    vm.eval("[for x in [Some(1), None, Some(3)] if x is None => 0]"),
+    vm.eval(
+      "[for x in [Some(1), None, Some(3)] { guard x is None else { continue }; 0 }]",
+    ),
     content="[0]",
   )
 }

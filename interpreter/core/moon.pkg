@@ -13,7 +13,7 @@ import {
   "moonbitlang/parser/syntax",
   "moonbitlang/parser/basic",
   "moonbitlang/parser",
-  "moonbitlang/parser/pkg_parser",
+  "moonbitlang/parser/moon_config",
   "moonbitlang/parser/tokens",
   "moonbitlang/parser/attribute",
   "moonbitlang/x/fs",

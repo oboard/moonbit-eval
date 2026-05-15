@@ -46,8 +46,6 @@ pub fn manualUnescape(StringView, StringBuilder) -> Unit
 
 pub let map_methods : Map[String, (RuntimeFunctionContext) -> RuntimeValue raise ControlFlow]
 
-pub fn normalize_v092_syntax(String) -> String
-
 pub let option_methods : Map[String, (RuntimeFunctionContext) -> RuntimeValue raise ControlFlow]
 
 pub fn parse_code_to_expr(String) -> Result[@syntax.Expr, String]
