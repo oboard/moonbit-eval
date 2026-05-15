@@ -33,3 +33,10 @@ test "group_expressions" {
   assert_eq(vm.eval("(2 + 3) * (4 + 1)").to_string(), "25")
   assert_eq(vm.eval("((1 + 2) * 3) + (4 * (5 + 6))").to_string(), "53")
 }
+
+///|
+test "constant_cache_preserves_short_circuit" {
+  let vm = MoonBitVM()
+  inspect(vm.eval("false && (1 / 0 == 0)"), content="false")
+  inspect(vm.eval("true || (1 / 0 == 0)"), content="true")
+}

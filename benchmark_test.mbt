@@ -9,6 +9,27 @@ test "benchmark_arithmetic_expressions" (b : @bench.T) {
   b.bench(fn() { b.keep(vm.eval(code)) })
 }
 
+///|
+test "native_benchmark_arithmetic_expressions" (b : @bench.T) {
+  b.bench(fn() { b.keep(1 + 2 * 3 - 4 / 2 + 5 * 6 - 7) })
+}
+
+///|
+test "benchmark_compiled_arithmetic_expressions" (b : @bench.T) {
+  let vm = MoonBitVM::new(log=false)
+  let compiled = vm.compile("1 + 2 * 3 - 4 / 2 + (5 * 6) - 7")
+  b.bench(fn() { b.keep(compiled.run(vm)) })
+}
+
+///|
+test "benchmark_compiled_parameters" (b : @bench.T) {
+  let vm = MoonBitVM::new(log=false)
+  let compiled = vm.compile("a + b * c - d / e + f * g - h", params=[
+    "a", "b", "c", "d", "e", "f", "g", "h",
+  ])
+  b.bench(fn() { b.keep(compiled.run(vm, args=[1, 2, 3, 4, 2, 5, 6, 7])) })
+}
+
 // 变量访问基准测试
 
 ///|

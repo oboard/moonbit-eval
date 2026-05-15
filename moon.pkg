@@ -13,6 +13,8 @@ options(
         "eval",
         "test_all",
         "run",
+        "compile",
+        "run_compiled",
         "eval_result_to_string",
         "test_result_to_string",
         "code_to_ast",

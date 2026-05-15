@@ -39,6 +39,28 @@ inspect(vm.eval("using @int {abs}"), content="()")
 inspect(vm.eval("abs(-5)"), content="5")
 ```
 
+## Compile and Run
+
+Use `compile` when the same code needs to run repeatedly. Parsing happens once,
+and each `run` executes the compiled code against the VM you pass in.
+
+```moonbit
+let vm = MoonBitVM()
+let expr = vm.compile("x + y * 2", params=["x", "y"])
+
+inspect(
+  expr.run(vm, args=[3, 4]),
+  content="11",
+)
+inspect(
+  expr.run(vm, args=[10, 1]),
+  content="12",
+)
+```
+
+Compiled parameters are bound in a temporary scope, so they do not leak into the
+VM global environment after execution.
+
 ## Imports and Package Loading
 
 `eval` accepts top-level expressions directly, with or without `fn main`.

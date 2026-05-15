@@ -1,6 +1,6 @@
 ///|
 test "async module is injected explicitly" {
-  let vm = MoonBitVM::new(modules=[@eval/async.module()])
+  let vm = MoonBitVM(modules=[@eval/async.module()])
   inspect(
     vm.eval(
       (
@@ -18,7 +18,7 @@ test "async module is injected explicitly" {
 
 ///|
 test "async module http get" {
-  let vm = MoonBitVM::new(modules=[@eval/async.module()])
+  let vm = MoonBitVM(modules=[@eval/async.module()])
   inspect(
     vm.test_all(
       (
@@ -40,7 +40,7 @@ test "async module http get" {
 
 ///|
 test "async http is loaded lazily" {
-  let vm = MoonBitVM::new(modules=[@eval/async.module()])
+  let vm = MoonBitVM(modules=[@eval/async.module()])
   let result = vm.test_all(
     (
       #|async test "missing http import" {
@@ -62,7 +62,7 @@ test "async module is not loaded by default" {
 
 ///|
 test "test result reports assertion failure" {
-  let vm = MoonBitVM::new(modules=[@eval/async.module()])
+  let vm = MoonBitVM(modules=[@eval/async.module()])
   inspect(
     vm.test_all(
       (

@@ -15,9 +15,13 @@ pub fn add_extern_fn(MoonBitVM, String, (@core.RuntimeFunctionContext) -> @core.
 
 pub fn code_to_ast(String) -> String
 
+pub fn compile(MoonBitVM, String, params? : Array[String]) -> CompiledCode
+
 pub fn eval_result_to_string(EvalResult) -> String
 
 pub fn expr_to_string(@syntax.Expr) -> String
+
+pub fn run_compiled(MoonBitVM, CompiledCode, args? : Array[&ToRuntime], log? : Bool) -> EvalResult
 
 pub fn test_all(MoonBitVM, String, log? : Bool) -> TestResult
 
@@ -30,6 +34,11 @@ pub fn value_to_string(@core.RuntimeValue) -> String
 // Errors
 
 // Types and methods
+pub(all) struct CompiledCode {
+  // private fields
+}
+pub fn CompiledCode::run(Self, MoonBitVM, args? : Array[&ToRuntime], log? : Bool) -> EvalResult
+
 pub enum EvalResult {
   Success(@core.RuntimeValue, @core.ClosureInterpreter)
   Error(String, @core.ClosureInterpreter)
@@ -39,9 +48,11 @@ pub impl Show for EvalResult
 pub(all) struct MoonBitVM {
   interpreter : @core.ClosureInterpreter
   log : Bool
+  // private fields
 }
 #alias(new)
 pub fn MoonBitVM::MoonBitVM(log? : Bool, modules? : Array[@core.RuntimeModule]) -> Self
+pub fn MoonBitVM::compile(Self, String, params? : Array[String]) -> CompiledCode
 pub fn MoonBitVM::create(log? : Bool, modules? : Array[@core.RuntimeModule]) -> Self
 pub fn MoonBitVM::eval(Self, String, log? : Bool) -> EvalResult
 pub fn MoonBitVM::run(Self, String, log? : Bool) -> Unit
@@ -64,4 +75,12 @@ pub impl Show for TestResult
 // Type aliases
 
 // Traits
+pub(open) trait ToRuntime {
+  to_runtime(Self) -> @core.RuntimeValue
+}
+pub impl ToRuntime for Bool
+pub impl ToRuntime for Int
+pub impl ToRuntime for Double
+pub impl ToRuntime for String
+pub impl ToRuntime for @core.RuntimeValue
 

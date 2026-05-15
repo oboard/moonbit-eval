@@ -9,11 +9,41 @@ pub fn value_to_string(value : RuntimeValue) -> String {
 }
 
 ///|
+pub(open) trait ToRuntime {
+  to_runtime(Self) -> RuntimeValue
+}
+
+///|
+pub impl ToRuntime for RuntimeValue with to_runtime(self) {
+  self
+}
+
+///|
+pub impl ToRuntime for Int with to_runtime(value) {
+  Int(value, raw=None)
+}
+
+///|
+pub impl ToRuntime for Bool with to_runtime(value) {
+  Bool(value)
+}
+
+///|
+pub impl ToRuntime for String with to_runtime(value) {
+  String(value)
+}
+
+///|
+pub impl ToRuntime for Double with to_runtime(value) {
+  Double(value)
+}
+
+///|
 pub fn MoonBitVM::create(
   log? : Bool = false,
   modules? : Array[RuntimeModule] = [],
 ) -> MoonBitVM {
-  MoonBitVM::new(log~, modules~)
+  MoonBitVM(log~, modules~)
 }
 
 ///|

@@ -2,12 +2,291 @@
 pub(all) struct MoonBitVM {
   interpreter : ClosureInterpreter
   log : Bool
+  priv mut fast_code : String?
+  priv mut fast_value : RuntimeValue?
+  priv import_parse_cache : Map[String, @core.ImportParseResult]
+  priv eval_parse_cache : Map[String, CachedEvalCode]
+  priv import_parse_cache_keys : Array[String]
+  priv eval_parse_cache_keys : Array[String]
 }
 
 ///|
 pub enum EvalResult {
   Success(RuntimeValue, ClosureInterpreter)
   Error(String, ClosureInterpreter)
+}
+
+///|
+pub(all) struct CompiledCode {
+  priv imports : Array[@core.PackageImport]
+  priv params : Array[String]
+  priv parsed : CachedEvalCode
+}
+
+///|
+let parse_cache_capacity : Int = 256
+
+///|
+let max_cached_source_length : Int = 64 * 1024
+
+///|
+priv enum CachedEvalCode {
+  CachedEvalResult(@core.EvalParseResult, RuntimeValue?)
+  CachedEvalError(String)
+}
+
+///|
+fn source_is_cacheable(code : String) -> Bool {
+  code.length() <= max_cached_source_length
+}
+
+///|
+fn MoonBitVM::remember_import_parse_cache_key(
+  self : MoonBitVM,
+  code : String,
+) -> Unit {
+  self.import_parse_cache_keys.push(code)
+  if self.import_parse_cache_keys.length() > parse_cache_capacity {
+    let evicted = self.import_parse_cache_keys.remove(0)
+    self.import_parse_cache.remove(evicted)
+  }
+}
+
+///|
+fn MoonBitVM::remember_eval_parse_cache_key(
+  self : MoonBitVM,
+  code : String,
+) -> Unit {
+  self.eval_parse_cache_keys.push(code)
+  if self.eval_parse_cache_keys.length() > parse_cache_capacity {
+    let evicted = self.eval_parse_cache_keys.remove(0)
+    self.eval_parse_cache.remove(evicted)
+  }
+}
+
+///|
+fn MoonBitVM::cached_package_imports(
+  self : MoonBitVM,
+  code : String,
+) -> @core.ImportParseResult {
+  if !source_is_cacheable(code) {
+    return @core.parse_package_imports(code)
+  }
+  match self.import_parse_cache.get(code) {
+    Some(result) => result
+    None => {
+      let result = @core.parse_package_imports(code)
+      self.import_parse_cache.set(code, result)
+      self.remember_import_parse_cache_key(code)
+      result
+    }
+  }
+}
+
+///|
+fn fold_constant_expr(expr : @syntax.Expr) -> RuntimeValue? {
+  match expr {
+    Constant(c~, ..) => Some(RuntimeValue::from_constant_with_type(c, None))
+    Group(expr~, ..) => fold_constant_expr(expr)
+    Unary(op~, expr~, ..) =>
+      match (op.name, fold_constant_expr(expr)) {
+        (Ident(name="!"), Some(Bool(value))) => Some(Bool(!value))
+        (Ident(name="-"), Some(Int(value, ..))) => Some(Int(-value, raw=None))
+        (Ident(name="-"), Some(Double(value))) => Some(Double(-value))
+        _ => None
+      }
+    Infix(op~, lhs~, rhs~, ..) =>
+      match op.name {
+        Ident(name="&&") =>
+          match fold_constant_expr(lhs) {
+            Some(Bool(false)) => Some(Bool(false))
+            Some(Bool(true)) => fold_constant_expr(rhs)
+            _ => None
+          }
+        Ident(name="||") =>
+          match fold_constant_expr(lhs) {
+            Some(Bool(true)) => Some(Bool(true))
+            Some(Bool(false)) => fold_constant_expr(rhs)
+            _ => None
+          }
+        Ident(name~) =>
+          match (fold_constant_expr(lhs), fold_constant_expr(rhs)) {
+            (Some(left), Some(right)) =>
+              Some(@core.runtime_value_infix(name, left, right))
+            _ => None
+          }
+        _ => None
+      }
+    _ => None
+  }
+}
+
+///|
+fn parse_eval_code_uncached(code : String) -> CachedEvalCode {
+  match @core.parse_eval_code(code) {
+    Ok(parsed) =>
+      match parsed {
+        EvalExpr(expr) => CachedEvalResult(parsed, fold_constant_expr(expr))
+        _ => CachedEvalResult(parsed, None)
+      }
+    Err(msg) => CachedEvalError(msg)
+  }
+}
+
+///|
+fn MoonBitVM::cached_eval_code(
+  self : MoonBitVM,
+  code : String,
+) -> CachedEvalCode {
+  if !source_is_cacheable(code) {
+    return parse_eval_code_uncached(code)
+  }
+  match self.eval_parse_cache.get(code) {
+    Some(entry) => entry
+    None => {
+      let entry = parse_eval_code_uncached(code)
+      self.eval_parse_cache.set(code, entry)
+      self.remember_eval_parse_cache_key(code)
+      entry
+    }
+  }
+}
+
+///|
+fn bind_compiled_args(
+  vm : MoonBitVM,
+  params : Array[String],
+  args : Array[&ToRuntime],
+) -> Unit {
+  for i in 0..<params.length() {
+    vm.interpreter.current_pkg.env.set(params[i], args[i].to_runtime())
+  }
+}
+
+///|
+fn compiled_arg_error(
+  params : Array[String],
+  args : Array[&ToRuntime],
+) -> String? {
+  if params.length() != args.length() {
+    Some(
+      "compiled code expects \{params.length()} arguments, got \{args.length()}",
+    )
+  } else {
+    None
+  }
+}
+
+///|
+pub fn MoonBitVM::compile(
+  self : MoonBitVM,
+  code : String,
+  params? : Array[String] = [],
+) -> CompiledCode {
+  let import_result = self.cached_package_imports(code)
+  {
+    imports: import_result.imports,
+    params,
+    parsed: self.cached_eval_code(import_result.code),
+  }
+}
+
+///|
+pub fn CompiledCode::run(
+  self : CompiledCode,
+  vm : MoonBitVM,
+  args? : Array[&ToRuntime] = [],
+  log? : Bool,
+) -> EvalResult {
+  let should_log = log.unwrap_or(vm.log)
+  if !should_log && self.imports.length() == 0 && self.params.length() == 0 {
+    match self.parsed {
+      CachedEvalResult(EvalExpr(_), Some(value)) =>
+        return Success(value, vm.interpreter)
+      _ => ()
+    }
+  }
+  try {
+    if self.imports.length() > 0 {
+      if vm.interpreter.load_declared_imports(self.imports) is Some(msg) {
+        return Error(msg, vm.interpreter)
+      }
+    }
+    match compiled_arg_error(self.params, args) {
+      Some(msg) => return Error(msg, vm.interpreter)
+      None => ()
+    }
+    match self.parsed {
+      CachedEvalResult(EvalTop(_), _) if self.params.length() > 0 =>
+        return Error(
+          "compiled parameters are only supported for expressions",
+          vm.interpreter,
+        )
+      _ => ()
+    }
+    let has_params = self.params.length() > 0
+    let old_env = vm.interpreter.current_pkg.env
+    if has_params {
+      vm.interpreter.current_pkg.env = @core.RuntimeEnvironment::new(
+        parent=old_env,
+      )
+      bind_compiled_args(vm, self.params, args)
+    }
+    defer (if has_params { vm.interpreter.current_pkg.env = old_env })
+    match self.parsed {
+      CachedEvalResult(EvalExpr(expr), constant_value) => {
+        let result_value = match constant_value {
+          Some(value) => value
+          None => vm.interpreter.visit(expr)
+        }
+        if should_log {
+          println(expr.to_json().stringify())
+        }
+        Success(result_value, vm.interpreter)
+      }
+      CachedEvalResult(EvalTop(impls, run_main~), _) => {
+        let mut last_result = RuntimeValue::Unit
+        impls.each(node => {
+          if should_log {
+            println(node.to_json().stringify())
+          }
+          let result = match node {
+            @syntax.Impl::TopTest(expr~, is_async~, ..) =>
+              vm.interpreter.run_top_test(expr, is_async)
+            _ => vm.interpreter.top_visit(node)
+          }
+          last_result = result
+        })
+        if run_main {
+          last_result = vm.interpreter.run_main()
+        }
+        Success(last_result, vm.interpreter)
+      }
+      CachedEvalError(msg) => Error(msg, vm.interpreter)
+    }
+  } catch {
+    @core.ControlFlow::Error(msg) => Error(msg, vm.interpreter)
+    _ => panic()
+  }
+}
+
+///|
+pub fn compile(
+  vm : MoonBitVM,
+  code : String,
+  params? : Array[String] = [],
+) -> CompiledCode {
+  vm.compile(code, params~)
+}
+
+///|
+pub fn run_compiled(
+  vm : MoonBitVM,
+  compiled : CompiledCode,
+  args? : Array[&ToRuntime] = [],
+  log? : Bool,
+) -> EvalResult {
+  compiled.run(vm, args~, log?)
 }
 
 ///|
@@ -114,7 +393,16 @@ pub fn MoonBitVM::MoonBitVM(
       _ => fail_assertion(ctx, "assert_false expects Bool")
     }
   })
-  { interpreter, log }
+  {
+    interpreter,
+    log,
+    fast_code: None,
+    fast_value: None,
+    import_parse_cache: {},
+    eval_parse_cache: {},
+    import_parse_cache_keys: [],
+    eval_parse_cache_keys: [],
+  }
 }
 
 ///|
@@ -306,24 +594,43 @@ pub fn MoonBitVM::eval(
   log? : Bool,
 ) -> EvalResult {
   try {
-    let import_result = @core.parse_package_imports(code)
+    let should_log = log.unwrap_or(self.log)
+    if !should_log {
+      match (self.fast_code, self.fast_value) {
+        (Some(cached_code), Some(value)) if cached_code == code =>
+          return Success(value, self.interpreter)
+        _ => ()
+      }
+    }
+    let source_code = code
+    let import_result = self.cached_package_imports(code)
     if self.interpreter.load_declared_imports(import_result.imports)
       is Some(msg) {
       return Error(msg, self.interpreter)
     }
+    let has_imports = import_result.imports.length() > 0
     let code = import_result.code
-    match @core.parse_eval_code(code) {
-      Ok(EvalExpr(expr)) => {
-        let result_value = self.interpreter.visit(expr)
-        if log.unwrap_or(self.log) {
+    match self.cached_eval_code(code) {
+      CachedEvalResult(EvalExpr(expr), constant_value) => {
+        let result_value = match constant_value {
+          Some(value) => {
+            if !has_imports && !should_log {
+              self.fast_code = Some(source_code)
+              self.fast_value = Some(value)
+            }
+            value
+          }
+          None => self.interpreter.visit(expr)
+        }
+        if should_log {
           println(expr.to_json().stringify())
         }
         return Success(result_value, self.interpreter)
       }
-      Ok(EvalTop(impls, run_main~)) => {
+      CachedEvalResult(EvalTop(impls, run_main~), _) => {
         let mut last_result = RuntimeValue::Unit
         impls.each(node => {
-          if log.unwrap_or(self.log) {
+          if should_log {
             println(node.to_json().stringify())
           }
           let result = match node {
@@ -338,7 +645,7 @@ pub fn MoonBitVM::eval(
         }
         return Success(last_result, self.interpreter)
       }
-      Err(msg) => return Error(msg, self.interpreter)
+      CachedEvalError(msg) => return Error(msg, self.interpreter)
     }
   } catch {
     @core.ControlFlow::Error(msg) => Error(msg, self.interpreter)
@@ -377,15 +684,16 @@ pub fn MoonBitVM::test_all(
   code : String,
   log? : Bool,
 ) -> TestResult {
-  let import_result = @core.parse_package_imports(code)
+  let import_result = self.cached_package_imports(code)
   if self.interpreter.load_declared_imports(import_result.imports) is Some(msg) {
     return failed_test("<import>", msg)
   }
   let code = import_result.code
-  let impls = match @core.parse_eval_code(code) {
-    Ok(EvalTop(impls, ..)) => impls
-    Ok(EvalExpr(_)) => return { total: 0, passed: 0, failed: 0, failures: [] }
-    Err(msg) => return failed_test("<parse>", msg)
+  let impls = match self.cached_eval_code(code) {
+    CachedEvalResult(EvalTop(impls, ..), _) => impls
+    CachedEvalResult(EvalExpr(_), _) =>
+      return { total: 0, passed: 0, failed: 0, failures: [] }
+    CachedEvalError(msg) => return failed_test("<parse>", msg)
   }
   let mut total = 0
   let mut passed = 0

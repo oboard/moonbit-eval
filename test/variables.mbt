@@ -32,6 +32,16 @@ test "basic_mutable_variables" {
 }
 
 ///|
+test "eval_cache_keeps_dynamic_variable_reads_fresh" {
+  let vm = MoonBitVM()
+  inspect(vm.eval("1 + 2"), content="3")
+  inspect(vm.eval("let mut x = 1"), content="()")
+  inspect(vm.eval("x + 1"), content="2")
+  inspect(vm.eval("x = 10"), content="()")
+  inspect(vm.eval("x + 1"), content="11")
+}
+
+///|
 test "sequential_assignments" {
   let vm = MoonBitVM()
   assert_eq(
