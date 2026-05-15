@@ -2,7 +2,12 @@ import {
   "oboard/eval" @eval,
   "moonbitlang/core/debug" @debug,
   "moonbitlang/core/list",
+  "oboard/eval/async" @eval/async,
 }
+
+// import {
+//   "oboard/eval/async" @eval/async,
+// } for "test"
 
 options(
   targets: { "async_module.mbt": [ "js" ] },
