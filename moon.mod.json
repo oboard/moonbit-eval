@@ -7,7 +7,7 @@
     "moonbitlang/async": "0.19.0"
   },
   "readme": "README.md",
-  "repository": "https://github.com/oboard/eval",
+  "repository": "https://github.com/oboard/moonbit-eval",
   "license": "Apache-2.0",
   "keywords": [
     "moonbit",
