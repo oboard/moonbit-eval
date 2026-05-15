@@ -1,8 +1,8 @@
 # MoonBit Eval
 
-[![Version](https://img.shields.io/badge/dynamic/json?url=https%3A//mooncakes.io/assets/oboard/eval/resource.json&query=%24.meta_info.version&label=mooncakes&color=yellow)](https://mooncakes.io/docs/oboard/eval)
-[![GitHub Workflow Status (with event)](https://img.shields.io/github/actions/workflow/status/oboard/eval/check.yaml)](https://github.com/oboard/eval/actions/workflows/check.yaml)
-[![License](https://img.shields.io/github/license/oboard/eval)](https://github.com/oboard/eval/blob/main/LICENSE)
+[![Version](https://img.shields.io/badge/dynamic/json?url=https%3A//mooncakes.io/api/v0/manifest/oboard/eval&query=%24.latest_version&label=mooncakes&color=yellow)](https://mooncakes.io/docs/oboard/eval)
+[![GitHub Workflow Status (with event)](https://img.shields.io/github/actions/workflow/status/oboard/moonbit-eval/check.yaml)](https://github.com/oboard/moonbit-eval/actions/workflows/check.yaml)
+[![License](https://img.shields.io/github/license/oboard/moonbit-eval)](https://github.com/oboard/moonbit-eval/blob/main/LICENSE)
 
 ## Demo
 🚀 **[REPL Demo](https://github.com/oboard/moonbit-repl/releases/)**
