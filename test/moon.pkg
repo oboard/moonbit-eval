@@ -2,12 +2,10 @@ import {
   "oboard/eval" @eval,
   "moonbitlang/core/debug" @debug,
   "moonbitlang/core/list",
-  "oboard/eval/async" @eval/async,
+  "oboard/eval/async" @eval/async
 }
 
-// import {
-//   "oboard/eval/async" @eval/async,
-// } for "test"
+warnings = "-29"
 
 options(
   targets: { "async_module.mbt": [ "js" ] },
