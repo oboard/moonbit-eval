@@ -7,6 +7,7 @@ fn diagnostics_to_string(
 
 ///|
 pub fn parse_code_to_expr(code : String) -> Result[@syntax.Expr, String] {
+  let code = normalize_v092_syntax(code)
   let (impls, diagnostics) = @moonbitlang/parser.parse_string(
     "fn init{\n  \{code}\n}",
     parser=Handrolled,
@@ -26,6 +27,7 @@ pub fn parse_code_to_expr(code : String) -> Result[@syntax.Expr, String] {
 
 ///|
 pub fn parse_code_to_impl(code : String) -> Result[@syntax.Impl, String] {
+  let code = normalize_v092_syntax(code)
   let (impls, diagnostics) = @moonbitlang/parser.parse_string(
     code,
     parser=Handrolled,
@@ -46,6 +48,7 @@ pub(all) enum EvalParseResult {
 fn parse_code_to_impls(
   code : String,
 ) -> Result[@list.List[@syntax.Impl], String] {
+  let code = normalize_v092_syntax(code)
   let (impls, diagnostics) = @moonbitlang/parser.parse_string(
     code,
     parser=Handrolled,
@@ -59,6 +62,7 @@ fn parse_code_to_impls(
 
 ///|
 fn parse_code_to_impls_lenient(code : String) -> @list.List[@syntax.Impl] {
+  let code = normalize_v092_syntax(code)
   let (impls, _) = @moonbitlang/parser.parse_string(code, parser=Handrolled)
   impls
 }

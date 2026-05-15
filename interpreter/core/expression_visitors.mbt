@@ -182,6 +182,36 @@ fn ClosureInterpreter::visit_iterable_expr(
 }
 
 ///|
+fn is_iter_expected_type(expected_type : String?) -> Bool {
+  match expected_type {
+    Some(ty) => ty == "Iter" || ty.has_prefix("Iter[")
+    None => false
+  }
+}
+
+///|
+fn ClosureInterpreter::bind_for_each_value(
+  self : ClosureInterpreter,
+  binders : @list.List[@syntax.Binder?],
+  value : RuntimeValue,
+) -> Unit {
+  let binder_count = binders.length()
+  match binders {
+    @list.More(Some(binder), tail=@list.Empty) =>
+      self.current_pkg.env.set(binder.name, value)
+    @list.More(Some(binder1), tail=@list.More(Some(binder2), tail=@list.Empty)) =>
+      match value {
+        Tuple([first, second]) => {
+          self.current_pkg.env.set(binder1.name, first)
+          self.current_pkg.env.set(binder2.name, second)
+        }
+        _ => ()
+      }
+    _ => if binder_count == 0 { () }
+  }
+}
+
+///|
 fn ClosureInterpreter::visit_for_each_as_array(
   self : ClosureInterpreter,
   binders : @list.List[@syntax.Binder?],
@@ -189,26 +219,10 @@ fn ClosureInterpreter::visit_for_each_as_array(
   body : @syntax.Expr,
 ) -> RuntimeValue raise ControlFlow {
   let result : Array[RuntimeValue] = []
-  let binder_count = binders.length()
   for value in self.syntax_iterable_to_iter(expr) {
     self.push_scope(RuntimeLocation::ControlFlow("list comprehension"))
     defer self.pop_scope()
-    match binders {
-      @list.More(Some(binder), tail=@list.Empty) =>
-        self.current_pkg.env.set(binder.name, value)
-      @list.More(
-        Some(binder1),
-        tail=@list.More(Some(binder2), tail=@list.Empty)
-      ) =>
-        match value {
-          Tuple([first, second]) => {
-            self.current_pkg.env.set(binder1.name, first)
-            self.current_pkg.env.set(binder2.name, second)
-          }
-          _ => ()
-        }
-      _ => if binder_count == 0 { () }
-    }
+    self.bind_for_each_value(binders, value)
     let value = self.visit(body) catch {
       Continue(_) => continue
       e => raise e
@@ -219,14 +233,165 @@ fn ClosureInterpreter::visit_for_each_as_array(
 }
 
 ///|
+fn ClosureInterpreter::visit_for_each_as_iter(
+  self : ClosureInterpreter,
+  binders : @list.List[@syntax.Binder?],
+  expr : @syntax.Expr,
+  body : @syntax.Expr,
+) -> RuntimeValue raise ControlFlow {
+  let source_iter = self.syntax_iterable_to_iter(expr)
+  Iter(
+    Iter::new(fn() -> RuntimeValue? {
+      while source_iter.next() is Some(value) {
+        self.push_scope(RuntimeLocation::ControlFlow("list comprehension"))
+        self.bind_for_each_value(binders, value)
+        let result = self.visit(body) catch {
+          Continue(_) => {
+            self.pop_scope()
+            continue
+          }
+          _ => {
+            self.pop_scope()
+            return None
+          }
+        }
+        self.pop_scope()
+        return Some(result)
+      }
+      None
+    }),
+  )
+}
+
+///|
+fn ClosureInterpreter::init_for_loop_scope(
+  self : ClosureInterpreter,
+  binders : @list.List[(@syntax.Binder, @syntax.Expr)],
+) -> Unit raise ControlFlow {
+  for binder_init in binders {
+    let (binder, init_expr) = binder_init
+    let init_value = self.visit(init_expr)
+    self.current_pkg.env.set(binder.name, init_value)
+  }
+}
+
+///|
+fn ClosureInterpreter::for_condition_holds(
+  self : ClosureInterpreter,
+  condition : @syntax.Expr?,
+) -> Bool raise ControlFlow {
+  match condition {
+    Some(cond) =>
+      match self.visit(cond) {
+        Bool(value) => value
+        _ => false
+      }
+    None => true
+  }
+}
+
+///|
+fn ClosureInterpreter::visit_for_as_array(
+  self : ClosureInterpreter,
+  binders : @list.List[(@syntax.Binder, @syntax.Expr)],
+  condition : @syntax.Expr?,
+  continue_block : @list.List[(@syntax.Binder, @syntax.Expr)],
+  body : @syntax.Expr,
+) -> RuntimeValue raise ControlFlow {
+  let result : Array[RuntimeValue] = []
+  self.push_scope(RuntimeLocation::ControlFlow("list comprehension"))
+  defer self.pop_scope()
+  self.init_for_loop_scope(binders)
+  while self.for_condition_holds(condition) {
+    let value = self.visit_scoped(
+      body,
+      RuntimeLocation::ControlFlow("list comprehension"),
+    ) catch {
+      Continue(_) => {
+        self.execute_for_continue_block(continue_block)
+        continue
+      }
+      e => raise e
+    }
+    result.push(value)
+    self.execute_for_continue_block(continue_block)
+  }
+  Array(result)
+}
+
+///|
+fn ClosureInterpreter::visit_for_as_iter(
+  self : ClosureInterpreter,
+  binders : @list.List[(@syntax.Binder, @syntax.Expr)],
+  condition : @syntax.Expr?,
+  continue_block : @list.List[(@syntax.Binder, @syntax.Expr)],
+  body : @syntax.Expr,
+) -> RuntimeValue raise ControlFlow {
+  let parent_env = self.current_pkg.env
+  let loop_env = RuntimeEnvironment::new(parent=parent_env)
+  self.current_pkg.env = loop_env
+  self.init_for_loop_scope(binders) catch {
+    e => {
+      self.current_pkg.env = parent_env
+      raise e
+    }
+  }
+  self.current_pkg.env = parent_env
+  Iter(
+    Iter::new(fn() -> RuntimeValue? {
+      let previous_env = self.current_pkg.env
+      self.current_pkg.env = loop_env
+      defer {
+        self.current_pkg.env = previous_env
+      }
+      while true {
+        let should_continue = self.for_condition_holds(condition) catch {
+          _ => false
+        }
+        if !should_continue {
+          break
+        }
+        let value = self.visit_scoped(
+          body,
+          RuntimeLocation::ControlFlow("list comprehension"),
+        ) catch {
+          Continue(_) => {
+            self.execute_for_continue_block(continue_block)
+            continue
+          }
+          _ => return None
+        }
+        self.execute_for_continue_block(continue_block)
+        return Some(value)
+      }
+      None
+    }),
+  )
+}
+
+///|
 /// 处理数组表达式
 fn ClosureInterpreter::visit_array(
   self : ClosureInterpreter,
   exprs : @list.List[@syntax.Expr],
+  expected_type : String?,
 ) -> RuntimeValue raise ControlFlow {
   match exprs {
     @list.More(ForEach(binders~, expr~, body~, ..), tail=@list.Empty) =>
-      return self.visit_for_each_as_array(binders, expr, body)
+      if is_iter_expected_type(expected_type) {
+        return self.visit_for_each_as_iter(binders, expr, body)
+      } else {
+        return self.visit_for_each_as_array(binders, expr, body)
+      }
+    @list.More(
+      For(binders~, condition~, continue_block~, body~, ..),
+      tail=@list.Empty
+    ) =>
+      if is_iter_expected_type(expected_type) {
+        return self.visit_for_as_iter(binders, condition, continue_block, body)
+      } else {
+        return self.visit_for_as_array(binders, condition, continue_block, body)
+      }
     _ => ()
   }
   let result_values = []

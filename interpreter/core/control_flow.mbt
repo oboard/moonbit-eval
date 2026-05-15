@@ -2,6 +2,22 @@
 /// 控制流处理 - For、While、Try、Guard、Defer等
 
 ///|
+fn ClosureInterpreter::execute_for_continue_block(
+  self : ClosureInterpreter,
+  continue_block : @list.List[(@syntax.Binder, @syntax.Expr)],
+) -> Unit {
+  let updates : Array[(String, RuntimeValue)] = []
+  for update_tuple in continue_block {
+    let (binder, update_expr) = update_tuple
+    let new_value = self.visit(update_expr) catch { _ => Unit }
+    updates.push((binder.name, new_value))
+  }
+  for update in updates {
+    self.current_pkg.env.update(update.0, update.1)
+  }
+}
+
+///|
 /// 处理 For 循环
 fn ClosureInterpreter::visit_for(
   self : ClosureInterpreter,
@@ -17,18 +33,6 @@ fn ClosureInterpreter::visit_for(
       (binder, init_expr) => {
         let init_value = self.visit(init_expr)
         self.current_pkg.env.set(binder.name, init_value)
-      }
-    }
-  }
-
-  // 执行更新块的辅助函数
-  let execute_continue_block = () => {
-    for update_tuple in continue_block {
-      match update_tuple {
-        (binder, update_expr) => {
-          let new_value = self.visit(update_expr) catch { _ => Unit }
-          self.current_pkg.env.update(binder.name, new_value)
-        }
       }
     }
   }
@@ -59,14 +63,14 @@ fn ClosureInterpreter::visit_for(
             self.current_pkg.env.update(binder.0.name, arr[i])
           })
         } else {
-          execute_continue_block()
+          self.execute_for_continue_block(continue_block)
         }
         continue
       }
       _ => Unit
     })
     |> ignore
-    execute_continue_block()
+    self.execute_for_continue_block(continue_block)
   }
   if for_else is Some(expr) {
     self.visit_scoped(expr, RuntimeLocation::ControlFlow("for else")) catch {

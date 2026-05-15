@@ -236,8 +236,9 @@ pub fn ClosureInterpreter::top_eval(
 ) -> Unit {
   let import_result = parse_package_imports(code)
   self.load_declared_imports(import_result.imports) |> ignore
+  let code = normalize_v092_syntax(import_result.code)
   let (impls, _diagnostics) = @moonbitlang/parser.parse_string(
-    import_result.code,
+    code,
     parser=Handrolled,
   )
   impls.each(node => self.top_visit(node) |> ignore)
@@ -683,7 +684,7 @@ pub fn ClosureInterpreter::visit(
 
     // 处理数组 - 支持重载字面量
     Array(exprs~, ..) => {
-      let array_result = self.visit_array(exprs)
+      let array_result = self.visit_array(exprs, expected_type)
       match expected_type {
         Some(ty) => array_result.overload_array_literal(ty)
         None => array_result
@@ -695,7 +696,12 @@ pub fn ClosureInterpreter::visit(
 
     // 处理 Let 绑定
     Let(pattern~, expr~, body~, ..) => {
-      ignore(self.match_case(self.visit(expr), pattern))
+      let value = match pattern {
+        Constraint(ty~, ..) =>
+          self.visit(expr, expected_type=type_to_string(ty))
+        _ => self.visit(expr)
+      }
+      ignore(self.match_case(value, pattern))
       self.visit(body)
     }
 

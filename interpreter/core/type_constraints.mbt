@@ -58,6 +58,21 @@ pub fn RuntimePackage::check_type_constraint(
       ),
     )
     | (
+      StringView(_),
+      Name(
+        constr_id={
+          id: Ident(name="StringView")
+          | Dot(id="StringView", ..),
+          ..,
+        },
+        ..
+      ),
+    )
+    | (
+      Bytes(_),
+      Name(constr_id={ id: Ident(name="Bytes") | Dot(id="Bytes", ..), .. }, ..),
+    )
+    | (
       Char(_),
       Name(constr_id={ id: Ident(name="Char") | Dot(id="Char", ..), .. }, ..),
     )
@@ -77,6 +92,28 @@ pub fn RuntimePackage::check_type_constraint(
     | (
       Array(_),
       Name(constr_id={ id: Ident(name="Array") | Dot(id="Array", ..), .. }, ..),
+    )
+    | (
+      FixedArray(_),
+      Name(
+        constr_id={
+          id: Ident(name="FixedArray")
+          | Dot(id="FixedArray", ..),
+          ..,
+        },
+        ..
+      ),
+    )
+    | (
+      ArrayView(_),
+      Name(
+        constr_id={ id: Ident(name="ArrayView") | Dot(id="ArrayView", ..), .. },
+        ..
+      ),
+    )
+    | (
+      Iter(_),
+      Name(constr_id={ id: Ident(name="Iter") | Dot(id="Iter", ..), .. }, ..),
     )
     | (
       Tuple(_),
