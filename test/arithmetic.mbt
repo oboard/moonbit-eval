@@ -22,7 +22,7 @@ test "math" {
 ///|
 test {
   let vm = MoonBitVM::new()
-  inspect(vm.eval("pub const PI = 3.14", top=true), content="3.14")
+  inspect(vm.eval("pub const PI = 3.14"), content="3.14")
   inspect(vm.eval("PI"), content="3.14")
 }
 

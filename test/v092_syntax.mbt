@@ -12,7 +12,6 @@ test "v092_struct_constructor_function" {
         #|  { x, y }
         #|}
       ),
-      top=true,
     ),
     content="()",
   )

@@ -37,7 +37,7 @@ pub(all) struct MoonBitVM {
   log : Bool
 }
 pub fn MoonBitVM::create(log? : Bool) -> Self
-pub fn MoonBitVM::eval(Self, String, log? : Bool, top? : Bool) -> EvalResult
+pub fn MoonBitVM::eval(Self, String, log? : Bool) -> EvalResult
 pub fn MoonBitVM::new(log? : Bool) -> Self
 
 // Type aliases

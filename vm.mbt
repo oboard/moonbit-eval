@@ -225,7 +225,6 @@ pub fn MoonBitVM::eval(
   self : MoonBitVM,
   code : String,
   log? : Bool,
-  top? : Bool = false,
 ) -> EvalResult {
   try {
     let import_result = @core.parse_package_imports(code)
@@ -234,30 +233,29 @@ pub fn MoonBitVM::eval(
       return Error(msg, self.interpreter)
     }
     let code = import_result.code
-    if top {
-      let (impls, _diagnostics) = @moonbitlang/parser.parse_string(
-        code,
-        parser=Handrolled,
-      )
-      let mut last_result = RuntimeValue::Unit
-      impls.each(node => {
-        if log.unwrap_or(self.log) {
-          println(node.to_json().stringify())
-        }
-        let result = self.interpreter.top_visit(node)
-        last_result = result
-      })
-      return Success(last_result, self.interpreter)
-    }
-    match @front.parse_code_to_expr(code) {
-      Ok(expr) => {
+    match @core.parse_eval_code(code) {
+      Ok(EvalExpr(expr)) => {
         let result_value = self.interpreter.visit(expr)
         if log.unwrap_or(self.log) {
           println(expr.to_json().stringify())
         }
         return Success(result_value, self.interpreter)
       }
-      Err(_) => self.eval(code, log?, top=true)
+      Ok(EvalTop(impls, run_main~)) => {
+        let mut last_result = RuntimeValue::Unit
+        impls.each(node => {
+          if log.unwrap_or(self.log) {
+            println(node.to_json().stringify())
+          }
+          let result = self.interpreter.top_visit(node)
+          last_result = result
+        })
+        if run_main {
+          last_result = self.interpreter.run_main()
+        }
+        return Success(last_result, self.interpreter)
+      }
+      Err(msg) => return Error(msg, self.interpreter)
     }
   } catch {
     @core.ControlFlow::Error(msg) => Error(msg, self.interpreter)

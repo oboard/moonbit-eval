@@ -21,7 +21,6 @@ test "basic_enum" {
         #|  }
         #|}
       ),
-      top=true,
     ),
     content="()",
   )
@@ -47,7 +46,6 @@ test "enum_with_data" {
         #|  }
         #|}
       ),
-      top=true,
     ),
     content="()",
   )
@@ -74,7 +72,6 @@ test "enum_pattern_matching" {
         #|  }
         #|}
       ),
-      top=true,
     ),
     content="()",
   )

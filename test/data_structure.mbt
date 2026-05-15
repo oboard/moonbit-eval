@@ -107,7 +107,6 @@ test "structs" {
         #|  self.a + self.b
         #|}
       ),
-      top=true,
     ),
     content="()",
   )
@@ -126,7 +125,6 @@ test "mutable_structs" {
         #|  mut y : Int
         #|}
       ),
-      top=true,
     ),
     content="()",
   )
@@ -152,7 +150,6 @@ test "record_update" {
         #|  age : Int
         #|}
       ),
-      top=true,
     )
     .to_string(),
     "()",
@@ -181,7 +178,6 @@ test "method_calls" {
         #|  self.value * x
         #|}
       ),
-      top=true,
     )
     .to_string(),
     "()",
@@ -217,7 +213,6 @@ test "trait_as_expressions" {
         #|  "(" + self.x.to_string() + ", " + self.y.to_string() + ")"
         #|}
       ),
-      top=true,
     )
     .to_string(),
     "()",
@@ -237,7 +232,6 @@ test "field_mutation" {
         #|  mut count : Int
         #|}
       ),
-      top=true,
     )
     .to_string(),
     "()",
@@ -266,7 +260,6 @@ test "references" {
         #|  mut value: Int
         #|}
       ),
-      top=true,
     ),
     content="()",
   )
@@ -298,7 +291,6 @@ test "nested_struct_reference" {
         #|  a: S
         #|}
       ),
-      top=true,
     ),
     content="()",
   )

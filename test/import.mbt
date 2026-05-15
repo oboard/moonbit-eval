@@ -29,6 +29,24 @@ test "import_core_package_with_alias" {
 }
 
 ///|
+test "import_core_package_with_main_function" {
+  let vm = MoonBitVM::new()
+  inspect(
+    vm.eval(
+      (
+        #|import {
+        #|  "moonbitlang/core/list"
+        #|}
+        #|fn main {
+        #|  @list.from_array([1, 2, 3]).to_array()
+        #|}
+      ),
+    ),
+    content="[1, 2, 3]",
+  )
+}
+
+///|
 test "core_packages_are_not_loaded_by_default" {
   let vm = MoonBitVM::new()
   inspect(

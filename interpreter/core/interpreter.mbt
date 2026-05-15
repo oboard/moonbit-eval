@@ -47,6 +47,17 @@ pub fn ClosureInterpreter::load_declared_imports(
 }
 
 ///|
+pub fn ClosureInterpreter::run_main(
+  self : ClosureInterpreter,
+) -> RuntimeValue raise ControlFlow {
+  match self.current_pkg.find("main") {
+    Some(Fn(func)) => self.call(func.val, self.current_pkg, [])
+    Some(_) => self.error("@\{self.current_pkg.name}.main is not a function")
+    None => Unit
+  }
+}
+
+///|
 pub fn ClosureInterpreter::add_extern_fn(
   self : ClosureInterpreter,
   name : String,

@@ -52,7 +52,6 @@ test "field_assignment" {
       (
         #|struct Point { mut x : Int, mut y : Int }
       ),
-      top=true,
     )
     .to_string(),
     "()",
@@ -66,7 +65,6 @@ test "field_assignment" {
         #|p.y = 20
         #|(p.x, p.y)
       ),
-      top=false,
     )
     .to_string(),
     "(10, 20)",

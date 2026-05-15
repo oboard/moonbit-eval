@@ -10,7 +10,6 @@ test {
       #|  "A:\{self.a}"
       #|}
     ),
-    top=true,
   )
   |> ignore
   assert_eq(vm.eval("let a = {a: 1};a").to_string(), "A::{a: 1}")

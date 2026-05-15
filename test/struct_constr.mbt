@@ -12,7 +12,6 @@ test "struct_constr" {
         #|  { name }
         #|}
       ),
-      top=true,
     ),
     content="()",
   )

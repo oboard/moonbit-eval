@@ -35,7 +35,7 @@ inspect(vm.eval("if x > 40 { \"big\" } else { \"small\" }"), content="big")
 inspect(vm.eval("match (1, 2) { (a, b) => a + b }"), content="3")
 
 // Using aliases (new parser style)
-inspect(vm.eval("using @int {abs}", top=true), content="()")
+inspect(vm.eval("using @int {abs}"), content="()")
 inspect(vm.eval("abs(-5)"), content="5")
 ```
 

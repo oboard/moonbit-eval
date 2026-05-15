@@ -8,7 +8,6 @@ test "alias" {
       #|  1 
       #|}
     ),
-    top=true,
   )
   |> ignore
   inspect(vm.eval("one()"), content="1")

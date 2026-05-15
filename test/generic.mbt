@@ -19,7 +19,6 @@ test "generic_list" {
         #|  Cons(x, xs)
         #|}
       ),
-      top=true,
     ),
     content="()",
   )
@@ -67,7 +66,6 @@ test "generic_list" {
         #|  }
         #|}
       ),
-      top=true,
     ),
     content="()",
   )

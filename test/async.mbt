@@ -5,12 +5,7 @@
 ///|
 test "async_run_executes_function_immediately" {
   let vm = MoonBitVM::new()
-  ignore(
-    vm.eval(
-      "fn run_async(f : async () -> Unit noraise) = \"%async.run\"",
-      top=true,
-    ),
-  )
+  ignore(vm.eval("fn run_async(f : async () -> Unit noraise) = \"%async.run\""))
   inspect(vm.eval("run_async(() => 7)"), content="7")
 }
 
@@ -24,7 +19,6 @@ test "async_suspend_success" {
         #|  cb : ((T) -> Unit, (E) -> Unit) -> Unit,
         #|) -> T raise E = "%async.suspend"
       ),
-      top=true,
     ),
   )
   inspect(vm.eval("async_suspend((ok, _err) => ok(42))"), content="42")
@@ -40,7 +34,6 @@ test "async_suspend_error_branch" {
         #|  cb : ((T) -> Unit, (E) -> Unit) -> Unit,
         #|) -> T raise E = "%async.suspend"
       ),
-      top=true,
     ),
   )
   inspect(
@@ -68,7 +61,6 @@ test "async_suspend_callback_not_resolved" {
         #|  cb : ((T) -> Unit, (E) -> Unit) -> Unit,
         #|) -> T raise E = "%async.suspend"
       ),
-      top=true,
     ),
   )
   assert_eq(
@@ -93,7 +85,6 @@ test "async_suspend_first_callback_wins" {
         #|  cb : ((T) -> Unit, (E) -> Unit) -> Unit,
         #|) -> T raise E = "%async.suspend"
       ),
-      top=true,
     ),
   )
   inspect(

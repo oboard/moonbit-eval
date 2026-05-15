@@ -10,7 +10,6 @@ test "function_alias" {
       #|import { "moonbitlang/core/int" }
       #|using @int {abs}
     ),
-    top=true,
   )
   |> ignore
   inspect(vm.eval("abs"), content="(Int) -> Int")
