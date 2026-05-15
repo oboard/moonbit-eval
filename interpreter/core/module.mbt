@@ -5,7 +5,8 @@ let url_base = "https://moonbitlang-mooncakes.s3.us-west-2.amazonaws.com/user"
 pub(all) struct RuntimeModule {
   meta : ModuleInfo
   pkgs : Map[String, RuntimePackage]
-} derive(ToJson)
+  embedded_fns : Map[String, RuntimeFunction]
+}
 
 ///|
 /// 包元数据

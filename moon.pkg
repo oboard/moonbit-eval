@@ -1,5 +1,6 @@
 import {
   "moonbitlang/core/bench",
+  "moonbitlang/parser/basic" @basic,
   "moonbitlang/parser/syntax",
   "oboard/eval/interpreter/core" @core,
 }
@@ -10,8 +11,10 @@ options(
       "exports": [
         "create",
         "eval",
+        "test_all",
         "run",
         "eval_result_to_string",
+        "test_result_to_string",
         "code_to_ast",
         "add_extern_fn",
         "add_embedded_fn",

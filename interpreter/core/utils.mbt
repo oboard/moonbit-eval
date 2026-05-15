@@ -5,6 +5,11 @@ pub fn[A] error(msg : String, loc~ : SourceLoc) -> A raise ControlFlow {
 }
 
 ///|
+pub fn control_error(msg : String) -> ControlFlow {
+  ControlFlow::Error(msg)
+}
+
+///|
 fn fromCharCode(hex : StringView, base : Int) -> Char {
   (try! @string.parse_int(hex, base~)).to_char().unwrap_or('?')
 }

@@ -9,8 +9,11 @@ pub fn value_to_string(value : RuntimeValue) -> String {
 }
 
 ///|
-pub fn MoonBitVM::create(log? : Bool = false) -> MoonBitVM {
-  MoonBitVM::new(log~)
+pub fn MoonBitVM::create(
+  log? : Bool = false,
+  modules? : Array[RuntimeModule] = [],
+) -> MoonBitVM {
+  MoonBitVM::new(log~, modules~)
 }
 
 ///|
@@ -19,6 +22,11 @@ pub fn eval_result_to_string(result : EvalResult) -> String {
     Success(value, _) => value.to_string()
     Error(msg, _) => "Error: " + msg
   }
+}
+
+///|
+pub fn test_result_to_string(result : TestResult) -> String {
+  result.to_string()
 }
 
 ///|

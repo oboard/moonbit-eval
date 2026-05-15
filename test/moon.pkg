@@ -3,3 +3,7 @@ import {
   "moonbitlang/core/debug" @debug,
   "moonbitlang/core/list",
 }
+
+options(
+  targets: { "async_module.mbt": [ "js" ] },
+)

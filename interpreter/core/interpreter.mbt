@@ -7,6 +7,7 @@ pub(all) struct ClosureInterpreter {
   // embedded方法存储 - 按类型组织的embedded方法定义
   embedded_methods : Map[String, Map[String, RuntimeFunction]]
   main_pkg : RuntimePackage
+  module_pkgs : Map[String, RuntimePackage]
   mut current_pkg : RuntimePackage
   // 调用栈跟踪
   call_stack : Array[RuntimeLocation]
@@ -23,6 +24,7 @@ pub fn ClosureInterpreter::new() -> ClosureInterpreter {
     embedded_fns: core_embedded_code,
     embedded_methods: core_embedded_methods,
     main_pkg: main,
+    module_pkgs: {},
     current_pkg: main,
     call_stack: [],
   }
@@ -37,9 +39,21 @@ pub fn ClosureInterpreter::load_declared_imports(
   imports : Array[PackageImport],
 ) -> String? {
   for item in imports {
-    let pkg = match core_modules.get(item.path) {
+    let pkg = match self.current_pkg.deps.get(item.path) {
       Some(pkg) => pkg
-      None => return Some("import package \{item.path} not found")
+      None =>
+        match self.main_pkg.deps.get(item.path) {
+          Some(pkg) => pkg
+          None =>
+            match self.module_pkgs.get(item.path) {
+              Some(pkg) => pkg
+              None =>
+                match core_modules.get(item.path) {
+                  Some(pkg) => pkg
+                  None => return Some("import package \{item.path} not found")
+                }
+            }
+        }
     }
     let alias_ = item.alias_.unwrap_or(item.path)
     self.current_pkg.deps.set(alias_, pkg)
@@ -50,6 +64,86 @@ pub fn ClosureInterpreter::load_declared_imports(
 }
 
 ///|
+fn package_alias(pkg_name : String) -> String {
+  let parts = pkg_name.split("/").to_array()
+  parts[parts.length() - 1].to_owned()
+}
+
+///|
+pub fn ClosureInterpreter::register_package(
+  self : ClosureInterpreter,
+  name : String,
+  pkg : RuntimePackage,
+) -> Unit {
+  self.module_pkgs.set(name, pkg)
+  self.module_pkgs.set(pkg.name, pkg)
+  self.module_pkgs.set(package_alias(pkg.name), pkg)
+}
+
+///|
+pub fn ClosureInterpreter::load_module(
+  self : ClosureInterpreter,
+  mod : RuntimeModule,
+) -> Unit {
+  for name, func in mod.embedded_fns {
+    self.embedded_fns.set(name, func)
+  }
+  for name, pkg in mod.pkgs {
+    self.register_package(name, pkg)
+  }
+  if mod.pkgs.get("async") is Some(pkg) {
+    self.current_pkg.deps.set("async", pkg)
+    self.current_pkg.deps.set(pkg.name, pkg)
+    self.load_package(pkg)
+  }
+}
+
+///|
+pub fn ClosureInterpreter::load_package(
+  self : ClosureInterpreter,
+  pkg : RuntimePackage,
+  target? : String = "wasm",
+) -> Unit {
+  if pkg.loaded {
+    return
+  }
+  pkg.loaded = true
+  // load dependencies
+  for dep in pkg.deps.values() {
+    self.load_package(dep)
+  }
+  // filter target source file
+  if pkg.files.get("moon.pkg.json") is Some(pkg_file) {
+    if (try? @json.parse(pkg_file))
+      is Ok({ "targets": Object(targets_map), .. }) {
+      for file_name, option_json in targets_map {
+        let option_list = if option_json is Array(arr) {
+          arr.map(i => if i is String(s) { s } else { "" })
+        } else {
+          continue
+        }
+        match
+          (option_list.get(0) is Some("not"), option_list.contains(target)) {
+          (true, true) => pkg.files.remove(file_name)
+          (false, false) => pkg.files.remove(file_name)
+          _ => ()
+        }
+      }
+    }
+  }
+  let old_module = self.current_pkg
+  self.current_pkg = pkg
+  defer {
+    self.current_pkg = old_module
+  }
+  for file_name, code in pkg.files {
+    if file_name.has_suffix(".mbt") {
+      self.top_eval(code)
+    }
+  }
+}
+
+///|
 pub fn ClosureInterpreter::run_main(
   self : ClosureInterpreter,
 ) -> RuntimeValue raise ControlFlow {
@@ -57,6 +151,42 @@ pub fn ClosureInterpreter::run_main(
     Some(Fn(func)) => self.call(func.val, self.current_pkg, [])
     Some(_) => self.error("@\{self.current_pkg.name}.main is not a function")
     None => Unit
+  }
+}
+
+///|
+pub fn ClosureInterpreter::run_top_test(
+  self : ClosureInterpreter,
+  expr : @syntax.Expr,
+  is_async : @moonbitlang/parser/basic.Location?,
+) -> RuntimeValue {
+  self.run_top_test_checked(expr, is_async) catch {
+    _ => Unit
+  }
+}
+
+///|
+pub fn ClosureInterpreter::run_top_test_checked(
+  self : ClosureInterpreter,
+  expr : @syntax.Expr,
+  is_async : @moonbitlang/parser/basic.Location?,
+) -> RuntimeValue raise ControlFlow {
+  if is_async is Some(_) {
+    let mut result = Unit
+    let mut raised : ControlFlow? = None
+    @host.run_async(() => {
+      try {
+        result = self.visit(expr)
+      } catch {
+        e => raised = Some(e)
+      }
+    })
+    match raised {
+      Some(e) => raise e
+      None => result
+    }
+  } else {
+    self.visit(expr)
   }
 }
 
@@ -111,59 +241,6 @@ pub fn ClosureInterpreter::top_eval(
     parser=Handrolled,
   )
   impls.each(node => self.top_visit(node) |> ignore)
-}
-
-///|
-pub fn ClosureInterpreter::load_module(
-  self : ClosureInterpreter,
-  mod : RuntimeModule,
-) -> Unit {
-  mod.pkgs.values().each(pkg => self.load_package(pkg))
-}
-
-///|
-pub fn ClosureInterpreter::load_package(
-  self : ClosureInterpreter,
-  pkg : RuntimePackage,
-  target? : String = "wasm",
-) -> Unit {
-  if pkg.loaded {
-    return
-  }
-  pkg.loaded = true
-  // load dependencies
-  for dep in pkg.deps.values() {
-    self.load_package(dep)
-  }
-  // filter target source file
-  if pkg.files.get("moon.pkg.json") is Some(pkg_file) {
-    if (try? @json.parse(pkg_file))
-      is Ok({ "targets": Object(targets_map), .. }) {
-      for file_name, option_json in targets_map {
-        let option_list = if option_json is Array(arr) {
-          arr.map(i => if i is String(s) { s } else { "" })
-        } else {
-          continue
-        }
-        match
-          (option_list.get(0) is Some("not"), option_list.contains(target)) {
-          (true, true) => pkg.files.remove(file_name)
-          (false, false) => pkg.files.remove(file_name)
-          _ => ()
-        }
-      }
-    }
-  }
-  let old_module = self.current_pkg
-  self.current_pkg = pkg
-  defer {
-    self.current_pkg = old_module
-  }
-  for file_name, code in pkg.files {
-    if file_name.has_suffix(".mbt") {
-      self.top_eval(code)
-    }
-  }
 }
 
 ///|

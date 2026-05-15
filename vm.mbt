@@ -11,6 +11,42 @@ pub enum EvalResult {
 }
 
 ///|
+pub(all) struct TestFailure {
+  name : String
+  message : String
+} derive(ToJson)
+
+///|
+pub(all) struct TestResult {
+  total : Int
+  passed : Int
+  failed : Int
+  failures : Array[TestFailure]
+} derive(ToJson)
+
+///|
+pub impl Show for TestFailure with output(self : TestFailure, logger : &Logger) -> Unit {
+  logger.write_string(self.name + ": " + self.message)
+}
+
+///|
+pub impl Show for TestResult with output(self : TestResult, logger : &Logger) -> Unit {
+  logger.write_string(self.to_string())
+}
+
+///|
+pub impl Show for TestResult with to_string(self : TestResult) -> String {
+  let summary = "TestResult(total=\{self.total}, passed=\{self.passed}, failed=\{self.failed})"
+  if self.failed == 0 {
+    summary
+  } else {
+    summary +
+    "\n" +
+    self.failures.map(failure => "FAILED " + failure.to_string()).join("\n")
+  }
+}
+
+///|
 pub impl Show for EvalResult with output(self : EvalResult, logger : &Logger) -> Unit {
   logger.write_string(self.to_string())
 }
@@ -24,9 +60,35 @@ pub impl Show for EvalResult with to_string(self : EvalResult) -> String {
 }
 
 ///|
+fn assertion_message(
+  ctx : @core.RuntimeFunctionContext,
+  fallback : String,
+) -> String {
+  match ctx.named("msg") {
+    Some(String(msg)) => msg
+    Some(StringView(msg)) => msg.to_owned()
+    _ => fallback
+  }
+}
+
+///|
+fn fail_assertion(
+  ctx : @core.RuntimeFunctionContext,
+  message : String,
+) -> RuntimeValue raise @core.ControlFlow {
+  raise @core.control_error(ctx.context.lookup_current_function() + message)
+}
+
+///|
 #alias(new)
-pub fn MoonBitVM::MoonBitVM(log? : Bool = false) -> MoonBitVM {
+pub fn MoonBitVM::MoonBitVM(
+  log? : Bool = false,
+  modules? : Array[RuntimeModule] = [],
+) -> MoonBitVM {
   let interpreter = ClosureInterpreter::new()
+  for mod in modules {
+    interpreter.load_module(mod)
+  }
   interpreter.add_extern_fn("println", ctx => {
     match ctx.args {
       [{ val: value, .. }] => {
@@ -34,6 +96,22 @@ pub fn MoonBitVM::MoonBitVM(log? : Bool = false) -> MoonBitVM {
         Unit
       }
       _ => Unit
+    }
+  })
+  interpreter.add_extern_fn("assert_true", ctx => {
+    match ctx.args {
+      [{ val: Bool(true), .. }, ..] => Unit
+      [{ val: Bool(false), .. }, ..] =>
+        fail_assertion(ctx, assertion_message(ctx, "`false` is not true"))
+      _ => fail_assertion(ctx, "assert_true expects Bool")
+    }
+  })
+  interpreter.add_extern_fn("assert_false", ctx => {
+    match ctx.args {
+      [{ val: Bool(false), .. }, ..] => Unit
+      [{ val: Bool(true), .. }, ..] =>
+        fail_assertion(ctx, assertion_message(ctx, "`true` is not false"))
+      _ => fail_assertion(ctx, "assert_false expects Bool")
     }
   })
   { interpreter, log }
@@ -248,7 +326,11 @@ pub fn MoonBitVM::eval(
           if log.unwrap_or(self.log) {
             println(node.to_json().stringify())
           }
-          let result = self.interpreter.top_visit(node)
+          let result = match node {
+            @syntax.Impl::TopTest(expr~, is_async~, ..) =>
+              self.interpreter.run_top_test(expr, is_async)
+            _ => self.interpreter.top_visit(node)
+          }
           last_result = result
         })
         if run_main {
@@ -262,6 +344,80 @@ pub fn MoonBitVM::eval(
     @core.ControlFlow::Error(msg) => Error(msg, self.interpreter)
     _ => panic()
   }
+}
+
+///|
+fn test_name(name : (String, @basic.Location)?) -> String {
+  match name {
+    Some((name, _)) => name
+    None => "<anonymous>"
+  }
+}
+
+///|
+fn control_flow_to_string(flow : @core.ControlFlow) -> String {
+  match flow {
+    @core.ControlFlow::Error(msg) => msg
+    @core.ControlFlow::Raise(value) => "raise " + value.to_string()
+    @core.ControlFlow::Return(value) => "return " + value.to_string()
+    @core.ControlFlow::Break(value) => "break " + value.to_string()
+    @core.ControlFlow::Continue(values) =>
+      "continue " + RuntimeValue::Array(values).to_string()
+  }
+}
+
+///|
+fn failed_test(name : String, message : String) -> TestResult {
+  { total: 1, passed: 0, failed: 1, failures: [{ name, message }] }
+}
+
+///|
+pub fn MoonBitVM::test_all(
+  self : MoonBitVM,
+  code : String,
+  log? : Bool,
+) -> TestResult {
+  let import_result = @core.parse_package_imports(code)
+  if self.interpreter.load_declared_imports(import_result.imports) is Some(msg) {
+    return failed_test("<import>", msg)
+  }
+  let code = import_result.code
+  let impls = match @core.parse_eval_code(code) {
+    Ok(EvalTop(impls, ..)) => impls
+    Ok(EvalExpr(_)) => return { total: 0, passed: 0, failed: 0, failures: [] }
+    Err(msg) => return failed_test("<parse>", msg)
+  }
+  let mut total = 0
+  let mut passed = 0
+  let failures : Array[TestFailure] = []
+  impls.each(node => {
+    if log.unwrap_or(self.log) {
+      println(node.to_json().stringify())
+    }
+    match node {
+      @syntax.Impl::TopTest(expr~, name~, is_async~, ..) => {
+        total = total + 1
+        let case_name = test_name(name)
+        try {
+          self.interpreter.run_top_test_checked(expr, is_async) |> ignore
+          passed = passed + 1
+        } catch {
+          flow =>
+            failures.push({
+              name: case_name,
+              message: control_flow_to_string(flow),
+            })
+        }
+      }
+      _ => self.interpreter.top_visit(node) |> ignore
+    }
+  })
+  { total, passed, failed: failures.length(), failures }
+}
+
+///|
+pub fn test_all(vm : MoonBitVM, code : String, log? : Bool) -> TestResult {
+  vm.test_all(code, log?)
 }
 
 ///|
