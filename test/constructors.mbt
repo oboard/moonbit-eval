@@ -6,7 +6,7 @@
 ///|
 test "constructor_single_argument_any_match" {
   let vm = MoonBitVM::new()
-  ignore(vm.eval("import { \"moonbitlang/core/list\" }"))
+  vm.run("import { \"moonbitlang/core/list\" }")
   assert_eq(
     vm.eval("let l = @list.from_array([1, 2]); l").to_string(),
     "More(1, tail=More(2, tail=Empty))",

@@ -1,7 +1,7 @@
 ///|
 test {
   let vm = MoonBitVM::new()
-  vm.eval(
+  vm.run(
     (
       #|struct A {
       #|  a: Int
@@ -11,7 +11,6 @@ test {
       #|}
     ),
   )
-  |> ignore
   assert_eq(vm.eval("let a = {a: 1};a").to_string(), "A::{a: 1}")
   assert_eq(vm.eval("a.to_string()").to_string(), "A:1")
 }

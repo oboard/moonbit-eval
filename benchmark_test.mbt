@@ -16,7 +16,7 @@ test "benchmark_variable_access" (b : @bench.T) {
   let vm = MoonBitVM::new(log=false)
 
   // 设置变量
-  vm.eval("let x = 42; let y = 100; let z = x + y") |> ignore
+  vm.run("let x = 42; let y = 100; let z = x + y")
   b.bench(fn() { b.keep(vm.eval("x + y + z")) })
 }
 

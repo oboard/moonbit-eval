@@ -10,6 +10,7 @@ options(
       "exports": [
         "create",
         "eval",
+        "run",
         "eval_result_to_string",
         "code_to_ast",
         "add_extern_fn",

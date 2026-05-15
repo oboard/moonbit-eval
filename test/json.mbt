@@ -11,7 +11,7 @@ test "json_value" {
 ///|
 test "json_array" {
   let vm = MoonBitVM::new()
-  vm.eval("let json_array : Json = [1, 2, 3]") |> ignore
+  vm.run("let json_array : Json = [1, 2, 3]")
   inspect(vm.eval("json_array"), content="[1,2,3]")
   assert_eq(
     vm.eval("typeof(json_array)").to_string(),
@@ -22,8 +22,7 @@ test "json_array" {
 ///|
 test "json_type" {
   let vm = MoonBitVM::new()
-  vm.eval("let json : Json = { \"a\": [\"1\", \"2\"], \"b\": [\"3\", \"4\"] }")
-  |> ignore
+  vm.run("let json : Json = { \"a\": [\"1\", \"2\"], \"b\": [\"3\", \"4\"] }")
   assert_eq(
     vm.eval("typeof(json)").to_string(),
     "@moonbitlang/core/builtin.Json",

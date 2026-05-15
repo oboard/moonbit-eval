@@ -1,7 +1,7 @@
 ///|
 test "alias" {
   let vm = MoonBitVM::new()
-  vm.eval(
+  vm.run(
     (
       #|#alias(number_one)
       #|fn one() -> Int { 
@@ -9,7 +9,6 @@ test "alias" {
       #|}
     ),
   )
-  |> ignore
   inspect(vm.eval("one()"), content="1")
   inspect(vm.eval("number_one()"), content="1")
 }

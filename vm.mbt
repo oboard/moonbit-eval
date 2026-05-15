@@ -262,3 +262,8 @@ pub fn MoonBitVM::eval(
     _ => panic()
   }
 }
+
+///|
+pub fn MoonBitVM::run(self : MoonBitVM, code : String, log? : Bool) -> Unit {
+  self.eval(code, log?) |> ignore
+}

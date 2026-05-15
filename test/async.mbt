@@ -5,20 +5,18 @@
 ///|
 test "async_run_executes_function_immediately" {
   let vm = MoonBitVM::new()
-  ignore(vm.eval("fn run_async(f : async () -> Unit noraise) = \"%async.run\""))
+  vm.run("fn run_async(f : async () -> Unit noraise) = \"%async.run\"")
   inspect(vm.eval("run_async(() => 7)"), content="7")
 }
 
 ///|
 test "async_suspend_success" {
   let vm = MoonBitVM::new()
-  ignore(
-    vm.eval(
-      (
-        #|async fn[T, E : Error] async_suspend(
-        #|  cb : ((T) -> Unit, (E) -> Unit) -> Unit,
-        #|) -> T raise E = "%async.suspend"
-      ),
+  vm.run(
+    (
+      #|async fn[T, E : Error] async_suspend(
+      #|  cb : ((T) -> Unit, (E) -> Unit) -> Unit,
+      #|) -> T raise E = "%async.suspend"
     ),
   )
   inspect(vm.eval("async_suspend((ok, _err) => ok(42))"), content="42")
@@ -27,13 +25,11 @@ test "async_suspend_success" {
 ///|
 test "async_suspend_error_branch" {
   let vm = MoonBitVM::new()
-  ignore(
-    vm.eval(
-      (
-        #|async fn[T, E : Error] async_suspend(
-        #|  cb : ((T) -> Unit, (E) -> Unit) -> Unit,
-        #|) -> T raise E = "%async.suspend"
-      ),
+  vm.run(
+    (
+      #|async fn[T, E : Error] async_suspend(
+      #|  cb : ((T) -> Unit, (E) -> Unit) -> Unit,
+      #|) -> T raise E = "%async.suspend"
     ),
   )
   inspect(
@@ -54,13 +50,11 @@ test "async_suspend_error_branch" {
 ///|
 test "async_suspend_callback_not_resolved" {
   let vm = MoonBitVM::new()
-  ignore(
-    vm.eval(
-      (
-        #|async fn[T, E : Error] async_suspend(
-        #|  cb : ((T) -> Unit, (E) -> Unit) -> Unit,
-        #|) -> T raise E = "%async.suspend"
-      ),
+  vm.run(
+    (
+      #|async fn[T, E : Error] async_suspend(
+      #|  cb : ((T) -> Unit, (E) -> Unit) -> Unit,
+      #|) -> T raise E = "%async.suspend"
     ),
   )
   assert_eq(
@@ -78,13 +72,11 @@ test "async_suspend_callback_not_resolved" {
 ///|
 test "async_suspend_first_callback_wins" {
   let vm = MoonBitVM::new()
-  ignore(
-    vm.eval(
-      (
-        #|async fn[T, E : Error] async_suspend(
-        #|  cb : ((T) -> Unit, (E) -> Unit) -> Unit,
-        #|) -> T raise E = "%async.suspend"
-      ),
+  vm.run(
+    (
+      #|async fn[T, E : Error] async_suspend(
+      #|  cb : ((T) -> Unit, (E) -> Unit) -> Unit,
+      #|) -> T raise E = "%async.suspend"
     ),
   )
   inspect(
