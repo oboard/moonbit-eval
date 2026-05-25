@@ -115,9 +115,9 @@ fn ClosureInterpreter::visit_array_set(
             context: self,
             pkg,
             args: [
-              RuntimeArgument::{ val: array_value, kind: Positional },
-              RuntimeArgument::{ val: index, kind: Positional },
-              RuntimeArgument::{ val: value, kind: Positional },
+              { val: array_value, kind: Positional },
+              { val: index, kind: Positional },
+              { val: value, kind: Positional },
             ],
           })
           |> ignore

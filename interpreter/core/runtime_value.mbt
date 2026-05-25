@@ -75,7 +75,7 @@ pub suberror ControlFlow {
 }
 
 ///|
-pub impl Compare for RuntimeValue with compare(self, other) {
+pub impl Compare for RuntimeValue with fn compare(self, other) {
   match (self, other) {
     (Int(a, ..), Int(b, ..)) => a.compare(b)
     (UInt(a), UInt(b)) => a.compare(b)
@@ -98,7 +98,7 @@ pub impl Compare for RuntimeValue with compare(self, other) {
 }
 
 ///|
-pub impl Hash for RuntimeValue with hash_combine(
+pub impl Hash for RuntimeValue with fn hash_combine(
   self : RuntimeValue,
   hasher : Hasher,
 ) -> Unit {
@@ -106,7 +106,7 @@ pub impl Hash for RuntimeValue with hash_combine(
 }
 
 ///|
-pub impl Add for RuntimeValue with add(
+pub impl Add for RuntimeValue with fn add(
   self : RuntimeValue,
   other : RuntimeValue,
 ) -> RuntimeValue {
@@ -148,7 +148,7 @@ pub impl Add for RuntimeValue with add(
 }
 
 ///|
-pub impl Hash for RuntimeValue with hash(self : RuntimeValue) -> Int {
+pub impl Hash for RuntimeValue with fn hash(self : RuntimeValue) -> Int {
   match self {
     Unit => 0
     Bool(b) => b.hash()
@@ -173,7 +173,7 @@ pub impl Hash for RuntimeValue with hash(self : RuntimeValue) -> Int {
 
 ///|
 /// 为 RuntimeValue 实现自定义的 ToJson trait
-pub impl ToJson for RuntimeValue with to_json(self : RuntimeValue) -> Json {
+pub impl ToJson for RuntimeValue with fn to_json(self : RuntimeValue) -> Json {
   match self {
     Map(m) => m.to_json()
     Unit => Json::null()
@@ -215,7 +215,7 @@ pub impl ToJson for RuntimeValue with to_json(self : RuntimeValue) -> Json {
 
 ///|
 /// 特别处理 Function 类型，通过函数签名比较相等性
-pub impl Eq for RuntimeValue with equal(
+pub impl Eq for RuntimeValue with fn equal(
   self : RuntimeValue,
   other : RuntimeValue,
 ) -> Bool {
@@ -343,6 +343,7 @@ fn RuntimeValue::from_constant(c : @syntax.Constant) -> RuntimeValue {
       manualUnescape(s.to_string_view(), builder)
       String(builder.to_string())
     }
+    Regex(s) => String(s)
     BigInt(bigint) => BigInt(@bigint.BigInt::from_string(bigint))
     Bytes(s) => {
       let builder = StringBuilder::new()
@@ -461,12 +462,9 @@ pub fn RuntimeValue::from_constant_with_type(
 ///|
 fn compare_identifiers(a : @syntax.LongIdent, b : @syntax.LongIdent) -> Bool {
   match (a, b) {
-    (
-      @syntax.LongIdent::Dot(pkg=pkg_a, id=id_a),
-      @syntax.LongIdent::Dot(pkg=pkg_b, id=id_b),
-    ) => pkg_a == pkg_b && id_a == id_b
-    (@syntax.LongIdent::Ident(name=a), @syntax.LongIdent::Ident(name=b)) =>
-      a == b
+    (Dot(pkg=pkg_a, id=id_a), Dot(pkg=pkg_b, id=id_b)) =>
+      pkg_a == pkg_b && id_a == id_b
+    (Ident(name=a), Ident(name=b)) => a == b
     _ => false
   }
 }
@@ -483,14 +481,14 @@ fn compare_types(
   let mut tys_b = b
   while true {
     match (tys_a, tys_b) {
-      (@list.More(ty_a, tail=tail_a), @list.More(ty_b, tail=tail_b)) => {
+      (More(ty_a, tail=tail_a), More(ty_b, tail=tail_b)) => {
         if !compare_type_signatures(ty_a, ty_b) {
           return false
         }
         tys_a = tail_a
         tys_b = tail_b
       }
-      (@list.Empty, @list.Empty) => break
+      (Empty, Empty) => break
       _ => return false
     }
   }
@@ -657,13 +655,13 @@ fn runtime_hashmap_to_string(
 }
 
 ///|
-pub impl Show for RuntimeValue with output(self, logger : &Logger) -> Unit {
+pub impl Show for RuntimeValue with fn output(self, logger : &Logger) -> Unit {
   logger.write_string(self.to_string())
 }
 
 ///|
 /// 将RuntimeValue转换为字符串表示
-pub impl Show for RuntimeValue with to_string(self) -> String {
+pub impl Show for RuntimeValue with fn to_string(self) -> String {
   match self {
     Unit => "()"
     Bool(b) => b.to_string()

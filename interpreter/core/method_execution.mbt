@@ -15,7 +15,7 @@ fn ClosureInterpreter::create_function_context(
   self : ClosureInterpreter,
   args : FixedArray[RuntimeArgument],
 ) -> RuntimeFunctionContext {
-  RuntimeFunctionContext::{ pkg: self.current_pkg, context: self, args }
+  { pkg: self.current_pkg, context: self, args }
 }
 
 ///|
@@ -50,22 +50,20 @@ fn ClosureInterpreter::lookup_function(
 ) -> FunctionLookupResult {
   // 首先查找用户函数
   match pkg.find(name).unwrap_or(self.current_pkg.find(name).unwrap_or(Unit)) {
-    Fn(func) => FunctionLookupResult::DirectFunction(func.val)
+    Fn(func) => DirectFunction(func.val)
     _ =>
       // 查找fn_aliases
       match pkg.fn_aliases.get(name) {
-        Some(Fn(func)) => FunctionLookupResult::DirectFunction(func.val)
+        Some(Fn(func)) => DirectFunction(func.val)
         _ =>
           // 查找extern函数
           match self.extern_fns.get(name) {
-            Some(extern_func) =>
-              FunctionLookupResult::DirectFunction(extern_func)
+            Some(extern_func) => DirectFunction(extern_func)
             None =>
               // 查找embedded函数
               match self.embedded_fns.get(name) {
-                Some(embedded_func) =>
-                  FunctionLookupResult::DirectFunction(embedded_func)
-                None => FunctionLookupResult::NotFound
+                Some(embedded_func) => DirectFunction(embedded_func)
+                None => NotFound
               }
           }
       }
@@ -81,7 +79,7 @@ fn ClosureInterpreter::call_by_name(
 ) -> RuntimeValue raise ControlFlow {
   let evaluated_args : FixedArray[RuntimeArgument] = FixedArray::from_array(
     args
-    .map(arg => RuntimeArgument::{
+    .map(arg => {
       val: self.visit(arg.value),
       kind: RuntimeArgumentKind::from_syntax(arg.kind),
     })
@@ -89,13 +87,13 @@ fn ClosureInterpreter::call_by_name(
   )
   self.with_ident(long_ident, (pkg, name) => {
     match self.lookup_function(pkg, name) {
-      FunctionLookupResult::DirectFunction(func) =>
+      DirectFunction(func) =>
         self.execute_embedded_function(func, evaluated_args)
-      FunctionLookupResult::NotFound =>
+      NotFound =>
         match self.lookup_function(pkg, pkg.find_stub(name)) {
-          FunctionLookupResult::DirectFunction(func) =>
+          DirectFunction(func) =>
             self.execute_embedded_function(func, evaluated_args)
-          FunctionLookupResult::NotFound =>
+          NotFound =>
             self.error(
               "execute_function_by_name method @\{pkg.name}.\{name} not found",
             )
@@ -122,10 +120,7 @@ fn ClosureInterpreter::method_call(
         return self.execute_embedded_function(
           embedded_method,
           FixedArray::from_array(
-            [
-              { val: self_value, kind: RuntimeArgumentKind::Positional },
-              ..evaluated_args,
-            ],
+            [{ val: self_value, kind: Positional }, ..evaluated_args],
           ),
         )
       }
@@ -155,11 +150,11 @@ fn ClosureInterpreter::execute_user_method(
   let old_mod = self.current_pkg
   let args = FixedArray::from_array(
     [
-      { val: self_value, kind: RuntimeArgumentKind::Positional },
+      { val: self_value, kind: Positional },
       ..self.convert_to_runtime_arguments(args),
     ],
   )
-  self.push_scope(RuntimeLocation::FunctionCall(method_name))
+  self.push_scope(FunctionCall(method_name))
   defer {
     self.pop_scope()
     self.current_pkg = old_mod

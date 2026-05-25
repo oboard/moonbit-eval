@@ -222,7 +222,40 @@ fn skip_non_code_source(source : String, index : Int) -> Int {
 }
 
 ///|
-fn find_matching_square(source : String, open_index : Int) -> Int {
+fn find_list_comprehension_body_brace(source : String, start : Int) -> Int {
+  let mut i = start
+  let mut paren_depth = 0
+  let mut square_depth = 0
+  while i < source.length() {
+    let skipped = skip_non_code_source(source, i)
+    if skipped != i {
+      i = skipped
+      continue
+    }
+    if paren_depth == 0 && square_depth == 0 {
+      if starts_with_at(source, i, "=>") {
+        return -1
+      }
+      match source_char(source, i) {
+        '{' => return i
+        ']' => return -1
+        _ => ()
+      }
+    }
+    match source_char(source, i) {
+      '(' => paren_depth += 1
+      ')' => paren_depth -= 1
+      '[' => square_depth += 1
+      ']' => square_depth -= 1
+      _ => ()
+    }
+    i += 1
+  }
+  -1
+}
+
+///|
+fn find_matching_curly(source : String, open_index : Int) -> Int {
   let mut i = open_index
   let mut depth = 0
   while i < source.length() {
@@ -231,46 +264,14 @@ fn find_matching_square(source : String, open_index : Int) -> Int {
       i = skipped
       continue
     }
-    let ch = source_char(source, i)
-    if ch == '[' {
-      depth += 1
-    } else if ch == ']' {
-      depth -= 1
-      if depth == 0 {
-        return i
+    match source_char(source, i) {
+      '{' => depth += 1
+      '}' => {
+        depth -= 1
+        if depth == 0 {
+          return i
+        }
       }
-    }
-    i += 1
-  }
-  -1
-}
-
-///|
-fn find_top_level_arrow(source : String, start : Int, end : Int) -> Int {
-  let mut i = start
-  let mut paren_depth = 0
-  let mut brace_depth = 0
-  let mut square_depth = 0
-  while i < end {
-    let skipped = skip_non_code_source(source, i)
-    if skipped != i {
-      i = skipped
-      continue
-    }
-    if paren_depth == 0 &&
-      brace_depth == 0 &&
-      square_depth == 0 &&
-      starts_with_at(source, i, "=>") {
-      return i
-    }
-    let ch = source_char(source, i)
-    match ch {
-      '(' => paren_depth += 1
-      ')' => paren_depth -= 1
-      '{' => brace_depth += 1
-      '}' => brace_depth -= 1
-      '[' => square_depth += 1
-      ']' => square_depth -= 1
       _ => ()
     }
     i += 1
@@ -279,101 +280,116 @@ fn find_top_level_arrow(source : String, start : Int, end : Int) -> Int {
 }
 
 ///|
-fn find_top_level_if(source : String, start : Int, end : Int) -> Int {
-  let mut i = start
-  let mut result = -1
-  let mut paren_depth = 0
-  let mut brace_depth = 0
-  let mut square_depth = 0
-  while i < end {
-    let skipped = skip_non_code_source(source, i)
-    if skipped != i {
-      i = skipped
-      continue
-    }
-    if paren_depth == 0 &&
-      brace_depth == 0 &&
-      square_depth == 0 &&
-      word_at(source, i, "if") {
-      result = i
-      i += 2
-      continue
-    }
-    let ch = source_char(source, i)
-    match ch {
-      '(' => paren_depth += 1
-      ')' => paren_depth -= 1
-      '{' => brace_depth += 1
-      '}' => brace_depth -= 1
-      '[' => square_depth += 1
-      ']' => square_depth -= 1
-      _ => ()
-    }
-    i += 1
-  }
-  result
-}
-
-///|
-fn normalize_list_comprehensions(source : String) -> String {
+fn normalize_list_comprehension_blocks(source : String) -> String {
   let buf = StringBuilder::new()
+  let mut cursor = 0
   let mut i = 0
   while i < source.length() {
     let skipped = skip_non_code_source(source, i)
     if skipped != i {
-      buf.write_view(source[i:skipped])
       i = skipped
       continue
     }
     if source_char(source, i) == '[' {
       let content_start = skip_ascii_space_at(source, i + 1)
       if word_at(source, content_start, "for") {
-        let close = find_matching_square(source, i)
-        if close > i {
-          let arrow = find_top_level_arrow(source, content_start, close)
-          if arrow >= 0 {
-            let guard_index = find_top_level_if(
-              source,
-              content_start + 3,
-              arrow,
-            )
-            let body = normalize_list_comprehensions(
-              source[arrow + 2:close].to_owned(),
-            )
-            buf.write_char('[')
-            if guard_index >= 0 {
-              buf.write_string(
-                normalize_list_comprehensions(
-                  source[content_start:guard_index].to_owned(),
-                ),
-              )
-              buf.write_string(" { guard ")
-              buf.write_string(
-                normalize_list_comprehensions(
-                  source[guard_index + 2:arrow].to_owned(),
-                ),
-              )
-              buf.write_string(" else { continue }; ")
-              buf.write_string(body)
-              buf.write_string(" }]")
-            } else {
-              buf.write_string(
-                normalize_list_comprehensions(
-                  source[content_start:arrow].to_owned(),
-                ),
-              )
-              buf.write_string(" { ")
-              buf.write_string(body)
-              buf.write_string(" }]")
-            }
-            i = close + 1
+        let body_brace = find_list_comprehension_body_brace(
+          source,
+          content_start + 3,
+        )
+        if body_brace >= 0 {
+          let body_end = find_matching_curly(source, body_brace)
+          let after_body = skip_ascii_space_at(source, body_end + 1)
+          if body_end > body_brace &&
+            after_body < source.length() &&
+            source_char(source, after_body) == ']' {
+            buf.write_view(source[cursor:body_brace])
+            buf.write_string("=> ")
+            buf.write_view(source[body_brace + 1:body_end])
+            cursor = body_end + 1
+            i = body_end + 1
             continue
           }
         }
       }
     }
-    buf.write_char(source_char(source, i))
     i += 1
+  }
+  if cursor < source.length() {
+    buf.write_view(source[cursor:])
+  }
+  buf.to_string()
+}
+
+///|
+fn find_loop_body_brace(source : String, start : Int) -> Int {
+  let mut i = start
+  let mut paren_depth = 0
+  let mut square_depth = 0
+  while i < source.length() {
+    let skipped = skip_non_code_source(source, i)
+    if skipped != i {
+      i = skipped
+      continue
+    }
+    if paren_depth == 0 && square_depth == 0 {
+      if source_char(source, i) == '{' {
+        return i
+      }
+      if source_char(source, i) == ';' {
+        return -1
+      }
+    }
+    match source_char(source, i) {
+      '(' => paren_depth += 1
+      ')' => paren_depth -= 1
+      '[' => square_depth += 1
+      ']' => square_depth -= 1
+      _ => ()
+    }
+    i += 1
+  }
+  -1
+}
+
+///|
+fn normalize_loop_expressions(source : String) -> String {
+  let loop_arg = "__moonbit_eval_loop_arg"
+  let buf = StringBuilder::new()
+  let mut cursor = 0
+  let mut i = 0
+  while i < source.length() {
+    let skipped = skip_non_code_source(source, i)
+    if skipped != i {
+      i = skipped
+      continue
+    }
+    if word_at(source, i, "loop") {
+      let arg_start = skip_ascii_space_at(source, i + 4)
+      let body_brace = find_loop_body_brace(source, arg_start)
+      if body_brace >= 0 {
+        let body_end = find_matching_curly(source, body_brace)
+        if body_end > body_brace {
+          buf.write_view(source[cursor:i])
+          buf.write_string("for ")
+          buf.write_string(loop_arg)
+          buf.write_string(" = ")
+          buf.write_view(source[arg_start:body_brace])
+          buf.write_string(" { match ")
+          buf.write_string(loop_arg)
+          buf.write_string(" {")
+          buf.write_view(source[body_brace + 1:body_end])
+          buf.write_string("} }")
+          cursor = body_end + 1
+          i = body_end + 1
+          continue
+        }
+      }
+    }
+    i += 1
+  }
+  if cursor < source.length() {
+    buf.write_view(source[cursor:])
   }
   buf.to_string()
 }
@@ -615,7 +631,8 @@ fn normalize_reverse_pipe_methods(source : String) -> String {
 ///|
 fn normalize_v092_syntax(source : String) -> String {
   source
-  |> normalize_list_comprehensions
+  |> normalize_list_comprehension_blocks
+  |> normalize_loop_expressions
   |> normalize_extenum_decls
   |> normalize_extensible_constructor_refs
   |> normalize_reverse_pipe_methods

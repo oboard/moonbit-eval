@@ -55,7 +55,7 @@ fn ClosureInterpreter::visit_for(
     }
 
     // 执行循环体，处理break和continue
-    (self.visit_scoped(body, RuntimeLocation::ControlFlow("for")) catch {
+    (self.visit_scoped(body, ControlFlow("for")) catch {
       Break(value) => return value
       Continue(arr) => {
         if !arr.is_empty() {
@@ -73,7 +73,7 @@ fn ClosureInterpreter::visit_for(
     self.execute_for_continue_block(continue_block)
   }
   if for_else is Some(expr) {
-    self.visit_scoped(expr, RuntimeLocation::ControlFlow("for else")) catch {
+    self.visit_scoped(expr, ControlFlow("for else")) catch {
       _ => Unit
     }
   } else {
@@ -99,7 +99,7 @@ fn ClosureInterpreter::visit_while(
     }
 
     // 执行循环体，处理break和continue
-    (self.visit_scoped(loop_body, RuntimeLocation::ControlFlow("while")) catch {
+    (self.visit_scoped(loop_body, ControlFlow("while")) catch {
       Break(value) => {
         result = value
         broke = true
@@ -114,10 +114,7 @@ fn ClosureInterpreter::visit_while(
   if !broke {
     match while_else {
       Some(else_expr) =>
-        result = self.visit_scoped(
-          else_expr,
-          RuntimeLocation::ControlFlow("while"),
-        )
+        result = self.visit_scoped(else_expr, ControlFlow("while"))
       None => () // 没有else分支
     }
   }
@@ -134,11 +131,10 @@ fn ClosureInterpreter::visit_guard(
 ) -> RuntimeValue raise ControlFlow {
   let cond_val = self.visit(cond)
   match cond_val {
-    Bool(true) => self.visit_scoped(body, RuntimeLocation::ControlFlow("guard"))
+    Bool(true) => self.visit_scoped(body, ControlFlow("guard"))
     Bool(false) =>
       match otherwise {
-        Some(expr) =>
-          self.visit_scoped(expr, RuntimeLocation::ControlFlow("guard else"))
+        Some(expr) => self.visit_scoped(expr, ControlFlow("guard else"))
         None => Unit
       }
     _ => Unit

@@ -18,7 +18,7 @@ pub(all) enum RuntimeType {
 } derive(ToJson)
 
 ///|
-pub impl Eq for RuntimeErrorType with equal(
+pub impl Eq for RuntimeErrorType with fn equal(
   self : RuntimeErrorType,
   other : RuntimeErrorType,
 ) -> Bool {
@@ -33,7 +33,10 @@ pub impl Eq for RuntimeErrorType with equal(
 }
 
 ///|
-pub impl Eq for RuntimeType with equal(self : RuntimeType, other : RuntimeType) -> Bool {
+pub impl Eq for RuntimeType with fn equal(
+  self : RuntimeType,
+  other : RuntimeType,
+) -> Bool {
   match (self, other) {
     (Any, Any) => true
     (
@@ -60,7 +63,7 @@ pub(all) enum RuntimeErrorType {
 } derive(ToJson)
 
 ///|
-pub impl Show for RuntimeErrorType with output(
+pub impl Show for RuntimeErrorType with fn output(
   self : RuntimeErrorType,
   logger : &Logger,
 ) -> Unit {
@@ -81,7 +84,10 @@ pub impl Show for RuntimeErrorType with output(
 }
 
 ///|
-pub impl Show for RuntimeType with output(self : RuntimeType, logger : &Logger) -> Unit {
+pub impl Show for RuntimeType with fn output(
+  self : RuntimeType,
+  logger : &Logger,
+) -> Unit {
   match self {
     Any => logger.write_string("Any")
     Arrow(args~, res~, err~, is_async~) => {
@@ -154,8 +160,8 @@ pub impl Show for RuntimeType with output(self : RuntimeType, logger : &Logger) 
 }
 
 ///|
-pub impl Show for RuntimeType with to_string(self : RuntimeType) -> String {
-  let buf = @buffer.new()
+pub impl Show for RuntimeType with fn to_string(self : RuntimeType) -> String {
+  let buf = StringBuilder::new()
   self.output(buf)
   buf.to_string()
 }

@@ -69,15 +69,19 @@ pub fn ClosureInterpreter::top_func_def_to_closure(
   name? : String,
 ) -> (String?, RuntimeValue) {
   if func
-    is TopFuncDef(fun_decl~, decl_body=DeclBody(local_types=_, expr=body), loc~) {
+    is TopFuncDef(
+      fun_decl~,
+      decl_body=DeclBody(expr=body),
+      where_clause=_,
+      loc~
+    ) {
     let func = @syntax.Func::{
       parameters: fun_decl.decl_params.unwrap_or(@list.new()),
       params_loc: loc,
       body,
       return_type: fun_decl.return_type,
       error_type: fun_decl.error_type,
-      kind: @syntax.FnKind::Arrow,
-      has_error: fun_decl.has_error,
+      kind: Arrow,
       is_async: fun_decl.is_async,
       loc,
     }

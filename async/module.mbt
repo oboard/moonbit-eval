@@ -155,7 +155,7 @@ fn last_fn_arg(
 ) -> @core.WithType[@core.RuntimeFunction]? {
   let mut result = None
   for arg in ctx.args {
-    if arg.val is @core.RuntimeValue::Fn(func) {
+    if arg.val is Fn(func) {
       result = Some(func)
     }
   }
@@ -166,10 +166,10 @@ fn last_fn_arg(
 fn string_pos_arg(ctx : @core.RuntimeFunctionContext, index : Int) -> String? {
   let mut pos = 0
   for arg in ctx.args {
-    if arg.kind is @core.RuntimeArgumentKind::Positional {
+    if arg.kind is Positional {
       if pos == index {
         return match arg.val {
-          @core.RuntimeValue::String(value) => Some(value)
+          String(value) => Some(value)
           _ => None
         }
       }
@@ -183,7 +183,7 @@ fn string_pos_arg(ctx : @core.RuntimeFunctionContext, index : Int) -> String? {
 let eval_async_with_timeout_fn : @core.RuntimeFunction = ctx => {
   match last_fn_arg(ctx) {
     Some(func) => ctx.context.call(func.val, ctx.pkg, [])
-    None => @core.RuntimeValue::Unit
+    None => Unit
   }
 }
 
@@ -191,7 +191,7 @@ let eval_async_with_timeout_fn : @core.RuntimeFunction = ctx => {
 let eval_async_retry_fn : @core.RuntimeFunction = ctx => {
   match last_fn_arg(ctx) {
     Some(func) => ctx.context.call(func.val, ctx.pkg, [])
-    None => @core.RuntimeValue::Unit
+    None => Unit
   }
 }
 
@@ -201,10 +201,10 @@ fn response_to_value(
   response : @http.Response,
 ) -> @core.RuntimeValue {
   pkg.cons_with_labels("Response", [
-    (Some("code"), @core.RuntimeValue::Int(response.code, raw=None), false),
-    (Some("reason"), @core.RuntimeValue::String(response.reason), false),
-    (Some("headers"), @core.RuntimeValue::Map({}), false),
-    (Some("cookies"), @core.RuntimeValue::Array([]), false),
+    (Some("code"), Int(response.code, raw=None), false),
+    (Some("reason"), String(response.reason), false),
+    (Some("headers"), Map({}), false),
+    (Some("cookies"), Array([]), false),
   ])
 }
 
@@ -213,9 +213,7 @@ fn data_to_value(
   pkg : @core.RuntimePackage,
   text : String,
 ) -> @core.RuntimeValue {
-  pkg.cons_with_labels("Data", [
-    (Some("text"), @core.RuntimeValue::String(text), false),
-  ])
+  pkg.cons_with_labels("Data", [(Some("text"), String(text), false)])
 }
 
 ///|
@@ -231,7 +229,7 @@ let eval_async_http_get_fn : @core.RuntimeFunction = ctx => {
       if code < 0 {
         raise @core.control_error(result.text())
       }
-      @core.RuntimeValue::Tuple([
+      Tuple([
         response_to_value(http_pkg, {
           code,
           reason: "",
@@ -241,7 +239,7 @@ let eval_async_http_get_fn : @core.RuntimeFunction = ctx => {
         data_to_value(io_pkg, result.text()),
       ])
     }
-    None => @core.RuntimeValue::Unit
+    None => Unit
   }
 }
 

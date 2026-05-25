@@ -8,7 +8,7 @@ pub fn ClosureInterpreter::pattern_match(
   value : RuntimeValue,
   cases : @list.List[@syntax.Case],
 ) -> RuntimeValue raise ControlFlow {
-  self.push_scope(RuntimeLocation::ControlFlow("match"))
+  self.push_scope(ControlFlow("match"))
   defer self.pop_scope()
   for i, case in cases {
     // 为每个case创建新的作用域
@@ -50,8 +50,7 @@ pub fn ClosureInterpreter::constants_equal_expr(
   expr2 : @syntax.Expr,
 ) -> Bool {
   match (expr1, expr2) {
-    (@syntax.Expr::Constant(c=c1, ..), @syntax.Expr::Constant(c=c2, ..)) =>
-      self.constants_equal(c1, c2)
+    (Constant(c=c1, ..), Constant(c=c2, ..)) => self.constants_equal(c1, c2)
     _ => false
   }
 }
@@ -61,7 +60,7 @@ pub fn ClosureInterpreter::constants_equal_expr(
 pub fn RuntimeValue::from_pattern(pattern : @syntax.Pattern) -> RuntimeValue {
   match pattern {
     Constant(c~, ..) => RuntimeValue::from_constant(c)
-    _ => RuntimeValue::Unit
+    _ => Unit
   }
 }
 
@@ -102,18 +101,17 @@ fn format_pattern(pattern : @syntax.Pattern) -> String {
     Array(pats~, ..) => {
       let pat_strs = []
       match pats {
-        @syntax.ArrayPatterns::Closed(patterns) =>
+        Closed(patterns) =>
           for state = patterns {
             match state {
-              @list.More(array_pat, tail=pat_tail) => {
+              More(array_pat, tail=pat_tail) => {
                 match array_pat {
-                  @syntax.ArrayPattern::Pattern(pat) =>
-                    pat_strs.push(format_pattern(pat))
+                  Pattern(pat) => pat_strs.push(format_pattern(pat))
                   _ => pat_strs.push("<array_pattern>")
                 }
                 continue pat_tail
               }
-              @list.Empty => break
+              Empty => break
             }
           }
         _ => pat_strs.push("<array_pattern>")
@@ -174,6 +172,22 @@ fn ClosureInterpreter::constructor_pattern_matches_type(
           }
         }
       })
+    TypeNameWithConstrPackage(type_name~, ..) =>
+      self.with_ident(type_name.name, (pkg, name) => {
+        let expected_type = pkg.find_static_type(name)
+        if value_type == expected_type {
+          true
+        } else {
+          match (value_type, expected_type) {
+            (Any, _) | (_, Any) => true
+            (Object(name=value_name, ..), Object(name=expected_name, ..)) =>
+              value_name == expected_name
+            (Name(name=value_name, ..), Name(name=expected_name, ..)) =>
+              value_name == expected_name
+            _ => false
+          }
+        }
+      })
     Package(pkg_name) =>
       match value_type {
         Object(pkg~, ..) => pkg.name == self.find_pkg(pkg_name).name
@@ -199,12 +213,12 @@ pub fn ClosureInterpreter::match_case(
     let mut index = start
     for state = patterns {
       match state {
-        @list.More(array_pat, tail=pat_tail) => {
+        More(array_pat, tail=pat_tail) => {
           if index >= values.length() {
             return false
           }
           match array_pat {
-            @syntax.ArrayPattern::Pattern(pat) =>
+            Pattern(pat) =>
               if !self.match_case(values[index], pat) {
                 return false
               }
@@ -213,7 +227,7 @@ pub fn ClosureInterpreter::match_case(
           index += 1
           continue pat_tail
         }
-        @list.Empty => break
+        Empty => break
       }
     }
     true
@@ -244,8 +258,7 @@ pub fn ClosureInterpreter::match_case(
   ) -> Bool {
     fn match_unary(value : RuntimeValue) -> Bool {
       match pattern_args {
-        Some(@list.More(arg, tail=@list.Empty)) =>
-          self.match_case(value, arg.pat)
+        Some(More(arg, tail=Empty)) => self.match_case(value, arg.pat)
         _ => false
       }
     }
@@ -328,14 +341,14 @@ pub fn ClosureInterpreter::match_case(
           let mut index = 0
           while true {
             match pat_list {
-              @list.More(pat, tail=pat_tail) => {
+              More(pat, tail=pat_tail) => {
                 if !self.match_case(values[index], pat) {
                   return false
                 }
                 pat_list = pat_tail
                 index = index + 1
               }
-              @list.Empty => break
+              Empty => break
             }
           }
           true
@@ -348,13 +361,13 @@ pub fn ClosureInterpreter::match_case(
       match value {
         Array(values) =>
           match pats {
-            @syntax.ArrayPatterns::Closed(patterns) => {
+            Closed(patterns) => {
               if values.length() != patterns.length() {
                 return false
               }
               match_array_pattern_list(patterns, values, 0)
             }
-            @syntax.ArrayPatterns::Open(left, right, binder) => {
+            Open(left, right, binder) => {
               let left_len = left.length()
               let right_len = right.length()
               if values.length() < left_len + right_len {
@@ -376,9 +389,9 @@ pub fn ClosureInterpreter::match_case(
                 rest.push(item)
               }
               match binder {
-                @syntax.DotDotBinder::Binder(binder) =>
+                Binder(binder) =>
                   self.current_pkg.env.set(binder.name, Array(rest))
-                @syntax.DotDotBinder::BinderAs(binder) =>
+                BinderAs(binder) =>
                   self.current_pkg.env.set(binder.name, Array(rest))
                 _ => ()
               }
@@ -470,7 +483,7 @@ pub fn ClosureInterpreter::match_case(
                 let mut index = 0
                 for state = pat_args {
                   match state {
-                    @list.More(pat_arg, tail=pat_tail) => {
+                    More(pat_arg, tail=pat_tail) => {
                       // 提取参数模式并递归匹配
                       let arg_pattern = pat_arg.pat
                       if !self.match_case(fields[index].value, arg_pattern) {
@@ -490,7 +503,7 @@ pub fn ClosureInterpreter::match_case(
                       index += 1
                       continue pat_tail
                     }
-                    @list.Empty => break
+                    Empty => break
                   }
                 }
                 true

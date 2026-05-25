@@ -122,7 +122,7 @@ fn ClosureInterpreter::infer_return_type_from_expr(
     // 处理函数调用表达式
     Apply(func~, ..) =>
       match func {
-        @syntax.Expr::Ident(id={ name: ident, .. }, ..) =>
+        Ident(id={ name: ident, .. }, ..) =>
           self.with_ident(ident, (pkg, name) => {
             pkg.env.find(name).unwrap_or(Unit).get_type()
           })
@@ -153,32 +153,32 @@ pub fn ClosureInterpreter::get_function_type_string(
       let param_strs = []
       for param in parameters {
         let param_str = match param {
-          @syntax.Parameter::Positional(binder~, ty~) =>
+          Positional(binder~, ty~) =>
             match ty {
               Some(t) => binder.name + ": " + type_to_string(t)
               None => binder.name
             }
-          @syntax.Parameter::Labelled(binder~, ty~) =>
+          Labelled(binder~, ty~) =>
             match ty {
               Some(t) => binder.name + "~: " + type_to_string(t)
               None => binder.name + "~"
             }
-          @syntax.Parameter::Optional(binder~, ty~, default~) => {
+          Optional(binder~, ty~, default~) => {
             let type_str = match ty {
               Some(t) => binder.name + "~: " + type_to_string(t)
               None => binder.name + "~"
             }
             match default {
-              @syntax.Expr::Constant(c=Int(val), ..) => type_str + " = " + val
+              Constant(c=Int(val), ..) => type_str + " = " + val
               _ => type_str
             }
           }
-          @syntax.Parameter::QuestionOptional(binder~, ty~) =>
+          QuestionOptional(binder~, ty~) =>
             match ty {
               Some(t) => binder.name + "?: " + type_to_string(t)
               None => binder.name + "?"
             }
-          @syntax.Parameter::DiscardPositional(..) => "_"
+          DiscardPositional(..) => "_"
         }
         param_strs.push(param_str)
       }

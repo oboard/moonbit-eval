@@ -28,7 +28,7 @@ pub fn ClosureInterpreter::create_function(
           self.current_pkg = pkg
           self.current_pkg.env = closure_env
           self.push_scope(
-            RuntimeLocation::FunctionCall(
+            FunctionCall(
               "@" +
               pkg.name +
               "." +

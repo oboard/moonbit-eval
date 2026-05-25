@@ -10,7 +10,7 @@ pub fn ClosureInterpreter::call_closure(
   name? : String,
 ) -> RuntimeValue raise ControlFlow {
   match function {
-    { kind: @syntax.FnKind::Lambda, .. } => {
+    { kind: Lambda, .. } => {
       // 在旧环境中解释参数值并转换为RuntimeArgument
       let runtime_args = self.convert_to_runtime_arguments(args)
 
@@ -21,7 +21,7 @@ pub fn ClosureInterpreter::call_closure(
         runtime_args,
       )
     }
-    _ => RuntimeValue::Unit
+    _ => Unit
   }
 }
 
@@ -42,7 +42,7 @@ pub fn ClosureInterpreter::call(
   //     self.current_pkg = pkg
   //     self.current_pkg.env = env
   //     self.push_scope(
-  //       RuntimeLocation::FunctionCall(
+  //       FunctionCall(
   //         "@" +
   //         pkg.name +
   //         "." +
@@ -65,7 +65,7 @@ pub fn ClosureInterpreter::call(
   //       _ => result
   //     }
   //   }
-  //   _ => RuntimeValue::Unit
+  //   _ => Unit
   // }
 }
 
@@ -84,7 +84,7 @@ pub fn ClosureInterpreter::bind_function_parameters(
 ) -> Unit raise ControlFlow {
   let env = self.current_pkg.env
   match (params, args) {
-    (@list.More(param, tail=rest_params), @list.More(arg, tail=rest_args)) => {
+    (More(param, tail=rest_params), More(arg, tail=rest_args)) => {
       let value = arg.val
       match param {
         // 位置参数：直接绑定参数值
@@ -103,7 +103,7 @@ pub fn ClosureInterpreter::bind_function_parameters(
       self.bind_function_parameters(rest_params, rest_args)
     }
     // 处理可选参数的默认值情况
-    (@list.More(param, tail=rest_params), @list.Empty) =>
+    (More(param, tail=rest_params), Empty) =>
       match param {
         // 可选参数没有对应实参时，使用默认值
         Optional(binder={ name, .. }, default~, ..) => {
@@ -116,7 +116,7 @@ pub fn ClosureInterpreter::bind_function_parameters(
           self.bind_function_parameters(rest_params, @list.new())
         _ => ()
       }
-    (@list.Empty, @list.Empty) => ()
+    (Empty, Empty) => ()
     _ => ()
   }
 }
@@ -129,7 +129,7 @@ fn ClosureInterpreter::convert_to_runtime_arguments(
 ) -> FixedArray[RuntimeArgument] raise ControlFlow {
   FixedArray::from_iter(
     args
-    .map(arg => RuntimeArgument::{
+    .map(arg => {
       val: self.visit(arg.value),
       kind: RuntimeArgumentKind::from_syntax(arg.kind),
     })
@@ -147,10 +147,7 @@ fn ClosureInterpreter::bind_runtime_parameters(
   for state = (params, args) {
     match state {
       // 处理可选参数的默认值情况
-      (
-        @list.More(param, tail=rest_params),
-        @list.More({ val: Unit, .. }, tail=rest_args),
-      ) =>
+      (More(param, tail=rest_params), More({ val: Unit, .. }, tail=rest_args)) =>
         match param {
           // 可选参数没有对应实参时，使用默认值
           Optional(binder={ name, .. }, default~, ..) => {
@@ -162,7 +159,7 @@ fn ClosureInterpreter::bind_runtime_parameters(
           QuestionOptional(..) => continue (rest_params, rest_args)
           _ => break
         }
-      (@list.More(param, tail=rest_params), @list.More(arg, tail=rest_args)) => {
+      (More(param, tail=rest_params), More(arg, tail=rest_args)) => {
         match param {
           // 位置参数：直接绑定参数值
           Positional(binder={ name, .. }, ty~)
@@ -184,7 +181,7 @@ fn ClosureInterpreter::bind_runtime_parameters(
         continue (rest_params, rest_args)
       }
       // 处理可选参数的默认值情况
-      (@list.More(param, tail=rest_params), @list.Empty) =>
+      (More(param, tail=rest_params), Empty) =>
         match param {
           // 可选参数没有对应实参时，使用默认值
           Optional(binder={ name, .. }, default~, ..) => {
@@ -196,7 +193,7 @@ fn ClosureInterpreter::bind_runtime_parameters(
           QuestionOptional(..) => continue (rest_params, @list.new())
           _ => break
         }
-      (@list.Empty, @list.Empty) => break
+      (Empty, Empty) => break
       _ => break
     }
   }
@@ -221,7 +218,7 @@ pub fn ClosureInterpreter::define_struct_method(
   }
   methods.set(
     method_name,
-    RuntimeValue::Fn(self.create_function(func, pkg, name=method_name)),
+    Fn(self.create_function(func, pkg, name=method_name)),
   )
 }
 

@@ -1,12 +1,12 @@
 ///|
 #callsite(autofill(loc))
 pub fn[A] error(msg : String, loc~ : SourceLoc) -> A raise ControlFlow {
-  raise ControlFlow::Error(msg + " " + loc.to_string())
+  raise Error(msg + " " + loc.to_string())
 }
 
 ///|
 pub fn control_error(msg : String) -> ControlFlow {
-  ControlFlow::Error(msg)
+  Error(msg)
 }
 
 ///|

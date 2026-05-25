@@ -76,7 +76,7 @@ pub impl Show for TestResult
 
 // Traits
 pub(open) trait ToRuntime {
-  to_runtime(Self) -> @core.RuntimeValue
+  fn to_runtime(Self) -> @core.RuntimeValue
 }
 pub impl ToRuntime for Bool
 pub impl ToRuntime for Int

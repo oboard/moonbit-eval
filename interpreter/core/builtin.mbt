@@ -323,20 +323,14 @@ let async_suspend_fn : RuntimeFunction = ctx => {
             }
             ignore(
               ctx.context.call(cb.val, ctx.pkg, [
-                {
-                  val: Fn({ val: ok_fn, ty: Internal }),
-                  kind: RuntimeArgumentKind::Positional,
-                },
-                {
-                  val: Fn({ val: err_fn, ty: Internal }),
-                  kind: RuntimeArgumentKind::Positional,
-                },
+                { val: Fn({ val: ok_fn, ty: Internal }), kind: Positional },
+                { val: Fn({ val: err_fn, ty: Internal }), kind: Positional },
               ]),
             ) catch {
               _ =>
                 if !resolved {
                   resolved = true
-                  host_err(Failure::Failure("control flow in async callback"))
+                  host_err(Failure("control flow in async callback"))
                 }
             }
             if !resolved {
@@ -346,7 +340,7 @@ let async_suspend_fn : RuntimeFunction = ctx => {
             }
           })
         } catch {
-          Failure::Failure(msg) => {
+          Failure(msg) => {
             resolved_as_error = true
             resolved_value = String(msg)
           }

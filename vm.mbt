@@ -251,7 +251,7 @@ pub fn CompiledCode::run(
             println(node.to_json().stringify())
           }
           let result = match node {
-            @syntax.Impl::TopTest(expr~, is_async~, ..) =>
+            TopTest(expr~, is_async~, ..) =>
               vm.interpreter.run_top_test(expr, is_async)
             _ => vm.interpreter.top_visit(node)
           }
@@ -265,7 +265,7 @@ pub fn CompiledCode::run(
       CachedEvalError(msg) => Error(msg, vm.interpreter)
     }
   } catch {
-    @core.ControlFlow::Error(msg) => Error(msg, vm.interpreter)
+    Error(msg) => Error(msg, vm.interpreter)
     _ => panic()
   }
 }
@@ -304,17 +304,20 @@ pub(all) struct TestResult {
 } derive(ToJson)
 
 ///|
-pub impl Show for TestFailure with output(self : TestFailure, logger : &Logger) -> Unit {
+pub impl Show for TestFailure with fn output(
+  self : TestFailure,
+  logger : &Logger,
+) -> Unit {
   logger.write_string(self.name + ": " + self.message)
 }
 
 ///|
-pub impl Show for TestResult with output(self : TestResult, logger : &Logger) -> Unit {
+pub impl Show for TestResult with fn output(self : TestResult, logger : &Logger) -> Unit {
   logger.write_string(self.to_string())
 }
 
 ///|
-pub impl Show for TestResult with to_string(self : TestResult) -> String {
+pub impl Show for TestResult with fn to_string(self : TestResult) -> String {
   let summary = "TestResult(total=\{self.total}, passed=\{self.passed}, failed=\{self.failed})"
   if self.failed == 0 {
     summary
@@ -326,12 +329,12 @@ pub impl Show for TestResult with to_string(self : TestResult) -> String {
 }
 
 ///|
-pub impl Show for EvalResult with output(self : EvalResult, logger : &Logger) -> Unit {
+pub impl Show for EvalResult with fn output(self : EvalResult, logger : &Logger) -> Unit {
   logger.write_string(self.to_string())
 }
 
 ///|
-pub impl Show for EvalResult with to_string(self : EvalResult) -> String {
+pub impl Show for EvalResult with fn to_string(self : EvalResult) -> String {
   match self {
     Success(value, _) => value.to_string()
     Error(msg, _) => "Error: " + msg
@@ -421,19 +424,17 @@ pub fn expr_to_string(expr : @syntax.Expr) -> String {
         Float(str) => str
         Double(str) => str
         String(str) => str
+        Regex(str) => str
         BigInt(str) => str
       }
     Unit(..) => "()"
-    Function(
-      func={ kind: @syntax.FnKind::Lambda, parameters, return_type, .. },
-      ..
-    ) => {
+    Function(func={ kind: Lambda, parameters, return_type, .. }, ..) => {
       // 辅助函数：将Type转换为字符串
       fn type_to_string(ty : @syntax.Type) -> String {
         match ty {
-          @syntax.Type::Name(constr_id~, ..) =>
+          Name(constr_id~, ..) =>
             match constr_id.id {
-              @syntax.LongIdent::Ident(name~) => name
+              Ident(name~) => name
               _ => "Any"
             }
           _ => "Any"
@@ -443,29 +444,29 @@ pub fn expr_to_string(expr : @syntax.Expr) -> String {
       let param_strs = []
       for param in parameters {
         let param_str = match param {
-          @syntax.Parameter::DiscardPositional(ty~, ..) =>
+          DiscardPositional(ty~, ..) =>
             match ty {
               Some(t) => "_: " + type_to_string(t)
               None => "_"
             }
-          @syntax.Parameter::Positional(binder~, ty~) =>
+          Positional(binder~, ty~) =>
             match ty {
               Some(t) => binder.name + ": " + type_to_string(t)
               None => binder.name
             }
-          @syntax.Parameter::Labelled(binder~, ty~) =>
+          Labelled(binder~, ty~) =>
             match ty {
               Some(t) => binder.name + "~: " + type_to_string(t)
               None => binder.name + "~"
             }
-          @syntax.Parameter::Optional(binder~, ty~, default~) =>
+          Optional(binder~, ty~, default~) =>
             (match ty {
               Some(t) => binder.name + "~: " + type_to_string(t)
               None => binder.name + "~"
             }) +
             " = " +
             expr_to_string(default)
-          @syntax.Parameter::QuestionOptional(binder~, ty~) =>
+          QuestionOptional(binder~, ty~) =>
             match ty {
               Some(t) => binder.name + "?: " + type_to_string(t)
               None => binder.name + "?"
@@ -526,7 +527,7 @@ pub fn expr_to_string(expr : @syntax.Expr) -> String {
       let type_prefix = match type_name {
         Some(name) =>
           match name.name {
-            @syntax.LongIdent::Ident(name~) => name + " "
+            Ident(name~) => name + " "
             _ => ""
           }
         None => ""
@@ -570,13 +571,8 @@ pub fn expr_to_string(expr : @syntax.Expr) -> String {
     // 处理Ident表达式
     Ident(id~, ..) =>
       match id.name {
-        @syntax.LongIdent::Ident(name~) => name
-        @syntax.LongIdent::Dot(pkg~, id~) =>
-          if pkg == "" {
-            id
-          } else {
-            pkg + "." + id
-          }
+        Ident(name~) => name
+        Dot(pkg~, id~) => if pkg == "" { id } else { pkg + "." + id }
       }
 
     // 处理Sequence表达式 - 只显示最后一个表达式的结果
@@ -634,7 +630,7 @@ pub fn MoonBitVM::eval(
             println(node.to_json().stringify())
           }
           let result = match node {
-            @syntax.Impl::TopTest(expr~, is_async~, ..) =>
+            TopTest(expr~, is_async~, ..) =>
               self.interpreter.run_top_test(expr, is_async)
             _ => self.interpreter.top_visit(node)
           }
@@ -648,7 +644,7 @@ pub fn MoonBitVM::eval(
       CachedEvalError(msg) => return Error(msg, self.interpreter)
     }
   } catch {
-    @core.ControlFlow::Error(msg) => Error(msg, self.interpreter)
+    Error(msg) => Error(msg, self.interpreter)
     _ => panic()
   }
 }
@@ -664,12 +660,11 @@ fn test_name(name : (String, @basic.Location)?) -> String {
 ///|
 fn control_flow_to_string(flow : @core.ControlFlow) -> String {
   match flow {
-    @core.ControlFlow::Error(msg) => msg
-    @core.ControlFlow::Raise(value) => "raise " + value.to_string()
-    @core.ControlFlow::Return(value) => "return " + value.to_string()
-    @core.ControlFlow::Break(value) => "break " + value.to_string()
-    @core.ControlFlow::Continue(values) =>
-      "continue " + RuntimeValue::Array(values).to_string()
+    Error(msg) => msg
+    Raise(value) => "raise " + value.to_string()
+    Return(value) => "return " + value.to_string()
+    Break(value) => "break " + value.to_string()
+    Continue(values) => "continue " + RuntimeValue::Array(values).to_string()
   }
 }
 
@@ -703,7 +698,7 @@ pub fn MoonBitVM::test_all(
       println(node.to_json().stringify())
     }
     match node {
-      @syntax.Impl::TopTest(expr~, name~, is_async~, ..) => {
+      TopTest(expr~, name~, is_async~, ..) => {
         total = total + 1
         let case_name = test_name(name)
         try {

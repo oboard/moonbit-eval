@@ -106,7 +106,7 @@ let hash_map_copy_fn : RuntimeFunction = ctx => {
 /// HashMap default操作
 let hash_map_default_fn : RuntimeFunction = ctx => {
   match ctx.args {
-    _ => HashMap(@hashmap.HashMap([], capacity=8))
+    _ => HashMap(HashMap([], capacity=8))
   }
 }
 
@@ -334,7 +334,7 @@ let hash_map_merge_in_place_fn : RuntimeFunction = ctx => {
 /// HashMap new操作
 let hash_map_new_fn : RuntimeFunction = ctx => {
   match ctx.args {
-    _ => HashMap(@hashmap.HashMap([], capacity=8))
+    _ => HashMap(HashMap([], capacity=8))
   }
 }
 

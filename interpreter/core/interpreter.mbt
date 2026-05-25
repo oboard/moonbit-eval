@@ -261,21 +261,21 @@ pub fn ClosureInterpreter::top_visit(
           .map(l => l.name)
           .unwrap_or(local_name)
         match using_kind {
-          @syntax.UsingKind::Trait =>
+          Trait =>
             if mod.traits.get(source_name) is Some(target_value) {
               self.current_pkg.trait_aliases.set(local_name, {
                 val: target_value,
                 ty: Object(pkg=mod, name=source_name),
               })
             }
-          @syntax.UsingKind::Type =>
+          Type =>
             if mod.type_definitions.get(source_name) is Some(target_value) {
               self.current_pkg.type_aliases.set(local_name, {
                 val: target_value,
                 ty: Object(pkg=mod, name=source_name),
               })
             }
-          @syntax.UsingKind::Value =>
+          Value =>
             if mod.find(source_name) is Some(target_value) {
               self.current_pkg.fn_aliases.set(local_name, target_value)
               self.current_pkg.set(local_name, target_value)
@@ -300,16 +300,15 @@ pub fn ClosureInterpreter::top_visit(
 
       // 从 body 中提取函数实现
       match body {
-        DeclBody(expr~, ..) => {
+        DeclBody(expr~) => {
           // 构造函数对象
           let func = @syntax.Func::{
             parameters: params,
             params_loc: dummy_loc(),
             body: expr,
             return_type: None,
-            error_type: @syntax.ErrorType::NoErrorType,
-            kind: @syntax.FnKind::Lambda,
-            has_error: None,
+            error_type: NoErrorType,
+            kind: Lambda,
             is_async: None,
             loc: dummy_loc(),
           }
@@ -399,7 +398,7 @@ pub fn ClosureInterpreter::top_visit(
     }
 
     // 处理顶层函数定义，包括结构体方法和embedded函数
-    TopFuncDef(fun_decl~, decl_body~, loc~) => {
+    TopFuncDef(fun_decl~, decl_body~, where_clause=_, loc~) => {
       // 从fun_decl中提取函数名
       let func_name = fun_decl.name.name
       let attrs = fun_decl.attrs
@@ -434,7 +433,7 @@ pub fn ClosureInterpreter::top_visit(
 
       // 从decl_body中提取函数体
       match decl_body {
-        DeclBody(expr~, ..) => {
+        DeclBody(expr~) => {
           // 如果是泛型函数，需要在函数调用时进行类型参数绑定
           // TODO: 实现泛型函数的类型参数推导机制
 
@@ -446,8 +445,7 @@ pub fn ClosureInterpreter::top_visit(
             body: expr,
             return_type: inferred_return_type,
             error_type: fun_decl.error_type,
-            kind: @syntax.FnKind::Lambda,
-            has_error: fun_decl.has_error,
+            kind: Lambda,
             is_async: fun_decl.is_async,
             loc,
           }
@@ -495,7 +493,7 @@ pub fn ClosureInterpreter::top_visit(
         // 处理embedded函数声明
         DeclStubs(stubs) =>
           match stubs {
-            Embedded(code=@syntax.EmbeddedCode::CodeString(code_str), ..) => {
+            Embedded(code=CodeString(code_str), ..) => {
               let func = self.embedded_fns.get(code_str)
               if func is Some(func) {
                 let func_value = Fn({ val: func, ty: Internal })
@@ -690,6 +688,15 @@ pub fn ClosureInterpreter::visit(
         None => array_result
       }
     }
+    ListComprehension(kind~, guard_~, body~, ..) => {
+      let result = self.visit_list_comprehension(
+        kind, guard_, body, expected_type,
+      )
+      match expected_type {
+        Some(ty) => result.overload_array_literal(ty)
+        None => result
+      }
+    }
 
     // 处理函数 - 闭包应该捕获对环境的引用以支持可变变量
     Function(func~, ..) => Fn(self.create_function(func, self.current_pkg))
@@ -708,7 +715,7 @@ pub fn ClosureInterpreter::visit(
     // 处理可变变量声明
     LetMut(binder={ name, .. }, expr~, body~, ..) => {
       let runtime_value = self.visit(expr)
-      self.push_scope(RuntimeLocation::LetMut(name))
+      self.push_scope(LetMut(name))
       self.current_pkg.env.set_mutable_variable(name, runtime_value)
       // 执行body部分，这是关键！
       self.visit(body)
@@ -724,19 +731,6 @@ pub fn ClosureInterpreter::visit(
         Unit(..) => Fn(self.create_function(func, self.current_pkg))
         _ => self.visit(body)
       }
-    }
-
-    // 处理递归函数定义
-    LetRec(bindings~, body~, ..) => {
-      for binding in bindings {
-        let name = binding.0.name
-        let func = binding.1
-        self.current_pkg.env.set(
-          name,
-          Fn(self.create_function(func, self.current_pkg, name~)),
-        )
-      }
-      self.visit(body)
     }
     LetAnd(bindings~, body~, ..) => {
       // Create a shared environment for all mutually recursive functions
@@ -941,31 +935,6 @@ pub fn ClosureInterpreter::visit(
     // 处理 Raise 表达式
     Raise(err_value~, ..) => raise Raise(self.visit(err_value))
 
-    // 处理 Loop 表达式
-    Loop(arg~, body~, ..) => {
-      let mut arg : RuntimeValue = self.visit(arg)
-      let cases = body.map(case => @syntax.Case::{
-        pattern: case.pattern,
-        body: case.body,
-        guard_: None,
-      })
-      let mut is_continue = true
-      let mut result = Unit
-      while is_continue {
-        is_continue = false
-        result = self.pattern_match(arg, cases) catch {
-          Break(value) => return value
-          Continue(arr) => {
-            arg = arr[0]
-            is_continue = true
-            continue
-          }
-          e => raise e
-        }
-      }
-      result
-    }
-
     // 处理 Try 表达式
     Try(body~, catch_~, ..) => self.visit_try(body, catch_)
 
@@ -973,8 +942,8 @@ pub fn ClosureInterpreter::visit(
     TryOperator(body~, kind~, ..) => {
       let result = self.visit(body)
       match (result, kind) {
-        (Exception(_), @syntax.TryOperatorKind::Question) => Unit // try? 在异常时返回 None/Unit
-        (Exception(_), @syntax.TryOperatorKind::Exclamation) => result // try! 传播异常
+        (Exception(_), Question) => Unit // try? 在异常时返回 None/Unit
+        (Exception(_), Exclamation) => result // try! 传播异常
         _ => result
       }
     }
@@ -1031,11 +1000,7 @@ pub fn ClosureInterpreter::visit(
               let end_val = self.visit(rhs)
               match (start_val, end_val) {
                 (Int(start, ..), Int(end, ..)) =>
-                  Some(
-                    RuntimeValue::Iter(
-                      start.until(end).map(fn(i) { Int(i, raw=None) }),
-                    ),
-                  )
+                  Some(Iter(start.until(end).map(fn(i) { Int(i, raw=None) })))
                 _ => None
               }
             }
@@ -1045,7 +1010,7 @@ pub fn ClosureInterpreter::visit(
               match (start_val, end_val) {
                 (Int(start, ..), Int(end, ..)) =>
                   Some(
-                    RuntimeValue::Iter(
+                    Iter(
                       start
                       .until(end, inclusive=true)
                       .map(fn(i) { Int(i, raw=None) }),
@@ -1094,7 +1059,7 @@ pub fn ClosureInterpreter::visit(
         Iter(iter_impl) =>
           for value in iter_impl {
             // 创建新作用域来隔离循环变量
-            self.push_scope(RuntimeLocation::ControlFlow("foreach"))
+            self.push_scope(ControlFlow("foreach"))
             defer self.pop_scope()
             // 绑定循环变量
             match binders {
@@ -1115,7 +1080,7 @@ pub fn ClosureInterpreter::visit(
         Iter2(iter2_impl) =>
           for first, second in iter2_impl {
             // 创建新作用域来隔离循环变量
-            self.push_scope(RuntimeLocation::ControlFlow("foreach"))
+            self.push_scope(ControlFlow("foreach"))
             defer self.pop_scope()
             // 绑定循环变量
             match binders {

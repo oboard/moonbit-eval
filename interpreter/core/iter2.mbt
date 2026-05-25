@@ -38,7 +38,7 @@ let iter2_next_fn : RuntimeFunction = ctx => {
   match ctx.args {
     [{ val: Iter2(iter2), .. }] =>
       RuntimeValue::from_option(
-        iter2.next().map(fn(pair) { RuntimeValue::Tuple([pair.0, pair.1]) }),
+        iter2.next().map(fn(pair) { Tuple([pair.0, pair.1]) }),
       )
     _ => Unit
   }
@@ -86,7 +86,7 @@ let iter2_iter_fn : RuntimeFunction = ctx => {
     [{ val: Iter2(iter2), .. }] => {
       let iter_impl : Iter[RuntimeValue] = iter2
         .iter()
-        .map(fn(pair) { RuntimeValue::Tuple([pair.0, pair.1]) })
+        .map(fn(pair) { Tuple([pair.0, pair.1]) })
       Iter(iter_impl)
     }
     _ => Unit
@@ -107,7 +107,7 @@ let iter2_to_array_fn : RuntimeFunction = ctx => {
     [{ val: Iter2(iter2), .. }] => {
       let result : Array[RuntimeValue] = iter2
         .to_array()
-        .map(fn(pair) { RuntimeValue::Tuple([pair.0, pair.1]) })
+        .map(fn(pair) { Tuple([pair.0, pair.1]) })
       Array(result)
     }
     _ => Unit

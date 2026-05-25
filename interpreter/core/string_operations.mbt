@@ -7,7 +7,7 @@ pub fn ClosureInterpreter::interp_string(
   self : ClosureInterpreter,
   elems : @list.List[@syntax.InterpElem],
 ) -> String raise ControlFlow {
-  let buffer = @buffer.new()
+  let buffer = StringBuilder::new()
   for elem in elems {
     match elem {
       Expr(expr~, ..) => buffer.write_string(self.visit(expr).to_string())
@@ -28,7 +28,7 @@ pub fn ClosureInterpreter::visit_multiline_string(
   self : ClosureInterpreter,
   elems : @list.List[@syntax.MultilineStringElem],
 ) -> RuntimeValue raise ControlFlow {
-  let buf = @buffer.new()
+  let buf = StringBuilder::new()
   elems.eachi((i, elem) => {
     match elem {
       String(str) => buf.write_string(str)
