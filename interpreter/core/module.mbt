@@ -33,7 +33,7 @@ pub fn ModuleInfo::get_zip_url(self : ModuleInfo) -> String noraise {
 struct TraitDecl(@syntax.TraitDecl)
 
 ///|
-impl ToJson for TraitDecl with to_json(self) {
+impl ToJson for TraitDecl with fn to_json(self) {
   { "name": self.0.name.name }
 }
 
@@ -43,7 +43,7 @@ impl ToJson for TraitDecl with to_json(self) {
 struct TypeDecl(@syntax.TypeDecl)
 
 ///|
-impl ToJson for TypeDecl with to_json(self) {
+impl ToJson for TypeDecl with fn to_json(self) {
   { "name": self.0.tycon }
 }
 
