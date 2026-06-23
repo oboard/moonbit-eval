@@ -1,6 +1,6 @@
 name = "oboard/eval"
 
-version = "0.9.3"
+version = "0.9.4"
 
 import {
   "moonbitlang/parser@0.3.5",
