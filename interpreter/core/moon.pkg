@@ -4,7 +4,7 @@ import {
   "moonbitlang/core/json",
   "moonbitlang/core/bigint",
   "moonbitlang/core/buffer",
-  "moonbitlang/core/debug" @debug,
+  "moonbitlang/core/debug",
   "moonbitlang/core/string",
   "moonbitlang/core/hashmap",
   "moonbitlang/core/strconv",
@@ -17,5 +17,5 @@ import {
   "moonbitlang/parser/tokens",
   "moonbitlang/parser/attribute",
   "moonbitlang/x/fs",
-  "oboard/eval/interpreter/host" @host,
+  "oboard/eval/interpreter/host",
 }

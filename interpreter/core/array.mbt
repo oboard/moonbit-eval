@@ -748,8 +748,10 @@ let array_search_by_fn : RuntimeFunction = ctx => {
   match ctx.args {
     [{ val: Array(arr), .. }, { val: Fn(f), .. }] => {
       let index = arr.search_by(val => {
-        (try? ctx.context.call(f.val, ctx.pkg, [{ val, kind: Positional }]))
-        is Ok(Bool(true))
+        (ctx.context.call(f.val, ctx.pkg, [{ val, kind: Positional }]) catch {
+          _ => Bool(false)
+        })
+        is Bool(true)
       })
       RuntimeValue::from_option(index.map(x => Int(x, raw=None)))
     }

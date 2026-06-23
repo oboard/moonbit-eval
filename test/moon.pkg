@@ -1,6 +1,6 @@
 import {
-  "oboard/eval" @eval,
-  "moonbitlang/core/debug" @debug,
+  "oboard/eval",
+  "moonbitlang/core/debug",
   "moonbitlang/core/list",
   "oboard/eval/async" @eval/async,
 }

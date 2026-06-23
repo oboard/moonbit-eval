@@ -2,7 +2,7 @@ import {
   "moonbitlang/async" @moon_async,
   "moonbitlang/async/http",
   "moonbitlang/async/io",
-  "oboard/eval/interpreter/core" @core,
+  "oboard/eval/interpreter/core",
 }
 
 warnings = "-29"

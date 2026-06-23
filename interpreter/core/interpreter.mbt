@@ -114,21 +114,24 @@ pub fn ClosureInterpreter::load_package(
   }
   // filter target source file
   if pkg.files.get("moon.pkg.json") is Some(pkg_file) {
-    if (try? @json.parse(pkg_file))
-      is Ok({ "targets": Object(targets_map), .. }) {
-      for file_name, option_json in targets_map {
-        let option_list = if option_json is Array(arr) {
-          arr.map(i => if i is String(s) { s } else { "" })
-        } else {
-          continue
-        }
-        match
-          (option_list.get(0) is Some("not"), option_list.contains(target)) {
-          (true, true) => pkg.files.remove(file_name)
-          (false, false) => pkg.files.remove(file_name)
-          _ => ()
+    try {
+      if @json.parse(pkg_file) is { "targets": Object(targets_map), .. } {
+        for file_name, option_json in targets_map {
+          let option_list = if option_json is Array(arr) {
+            arr.map(i => if i is String(s) { s } else { "" })
+          } else {
+            continue
+          }
+          match
+            (option_list.get(0) is Some("not"), option_list.contains(target)) {
+            (true, true) => pkg.files.remove(file_name)
+            (false, false) => pkg.files.remove(file_name)
+            _ => ()
+          }
         }
       }
+    } catch {
+      _ => ()
     }
   }
   let old_module = self.current_pkg
