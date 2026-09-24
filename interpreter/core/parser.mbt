@@ -1,6 +1,6 @@
 ///|
 fn diagnostics_to_string(
-  diagnostics : Array[@moonbitlang/parser/basic.Report],
+  diagnostics : Array[@moonbitlang/lexer/basic.Report],
 ) -> String {
   diagnostics.fold(init="", (acc, cur) => "\{acc}\n\{cur}")
 }

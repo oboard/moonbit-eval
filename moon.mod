@@ -3,9 +3,11 @@ name = "oboard/eval"
 version = "0.9.4"
 
 import {
-  "moonbitlang/parser@0.3.5",
-  "moonbitlang/x@0.4.45",
-  "moonbitlang/async@0.19.4",
+  "moonbitlang/parser@0.4.0",
+  "moonbitlang/lexer@0.4.0",
+  "moonbitlang/moon_config@0.4.0",
+  "moonbitlang/x@0.5.5",
+  "moonbitlang/async@0.22.4",
 }
 
 readme = "README.md"

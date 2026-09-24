@@ -122,7 +122,7 @@ let string_to_string_fn : RuntimeFunction = ctx => {
 let string_output_fn : RuntimeFunction = ctx => {
   match ctx.args {
     [{ val: String(s), .. }, { val: StringBuilder(logger), .. }] => {
-      s.output(logger)
+      Show::output(s, logger)
       Unit
     }
     _ => Unit
@@ -194,7 +194,7 @@ let string_find_by_fn : RuntimeFunction = ctx => {
         s
         .find_by(char => {
           let res = ctx.context.call(func.val, ctx.pkg, [
-            { val: Char(char), kind: Positional },
+            { val: Char(char), kind: Positional, },
           ]) catch {
             _ => Unit
           }
@@ -215,8 +215,8 @@ let string_fold_fn : RuntimeFunction = ctx => {
     [{ val: String(s), .. }, { val: init, .. }, { val: Fn(func), .. }, ..] =>
       s.fold(init~, fn(acc, char) {
         ctx.context.call(func.val, ctx.pkg, [
-          { val: acc, kind: Positional },
-          { val: Char(char), kind: Positional },
+          { val: acc, kind: Positional, },
+          { val: Char(char), kind: Positional, },
         ]) catch {
           _ => Unit
         }
@@ -301,8 +301,8 @@ let string_replace_fn : RuntimeFunction = ctx => {
   match ctx.args {
     [
       { val: String(s), .. },
-      { val: String(from), kind: Labelled("old") },
-      { val: String(to), kind: Labelled("new") },
+      { val: String(from), kind: Labelled("old"), },
+      { val: String(to), kind: Labelled("new"), },
     ] => String(s.replace(old=from, new=to))
     _ => String("")
   }
@@ -339,14 +339,14 @@ let string_rev_fold_fn : RuntimeFunction = ctx => {
   match ctx.args {
     [
       { val: String(s), .. },
-      { val: init, kind: Labelled("init") },
+      { val: init, kind: Labelled("init"), },
       { val: Fn(func), .. },
       ..,
     ] =>
       s.rev_fold(init~, fn(acc, char) {
         ctx.context.call(func.val, ctx.pkg, [
-          { val: acc, kind: Positional },
-          { val: Char(char), kind: Positional },
+          { val: acc, kind: Positional, },
+          { val: Char(char), kind: Positional, },
         ]) catch {
           _ => Unit
         }
@@ -454,18 +454,18 @@ let string_view_fn : RuntimeFunction = ctx => {
   match ctx.args {
     [
       { val: String(s), .. },
-      { val: Int(start_offset, ..), kind: Labelled("start_offset") },
-      { val: Int(end_offset, ..), kind: Labelled("end_offset") },
+      { val: Int(start_offset, ..), kind: Labelled("start_offset"), },
+      { val: Int(end_offset, ..), kind: Labelled("end_offset"), },
       ..,
     ] => StringView(s.view(start_offset~, end_offset~))
     [
       { val: String(s), .. },
-      { val: Int(start_offset, ..), kind: Labelled("start_offset") },
+      { val: Int(start_offset, ..), kind: Labelled("start_offset"), },
       ..,
     ] => StringView(s.view(start_offset~))
     [
       { val: String(s), .. },
-      { val: Int(end_offset, ..), kind: Labelled("end_offset") },
+      { val: Int(end_offset, ..), kind: Labelled("end_offset"), },
       ..,
     ] => StringView(s.view(end_offset~))
     [{ val: String(s), .. }] => StringView(s.view())

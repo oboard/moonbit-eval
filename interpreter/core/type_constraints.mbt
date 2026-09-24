@@ -63,7 +63,7 @@ pub fn RuntimePackage::check_type_constraint(
         constr_id={
           id: Ident(name="StringView")
           | Dot(id="StringView", ..),
-          ..,
+          ..
         },
         ..
       ),
@@ -87,8 +87,6 @@ pub fn RuntimePackage::check_type_constraint(
         ..
       ),
     )
-
-    // 复合类型检查
     | (
       Array(_),
       Name(constr_id={ id: Ident(name="Array") | Dot(id="Array", ..), .. }, ..),
@@ -99,7 +97,7 @@ pub fn RuntimePackage::check_type_constraint(
         constr_id={
           id: Ident(name="FixedArray")
           | Dot(id="FixedArray", ..),
-          ..,
+          ..
         },
         ..
       ),
@@ -123,29 +121,35 @@ pub fn RuntimePackage::check_type_constraint(
       Map(_),
       Name(constr_id={ id: Ident(name="Map") | Dot(id="Map", ..), .. }, ..),
     )
-
-    // Unit 类型
     | (
       Unit,
       Name(constr_id={ id: Ident(name="Unit") | Dot(id="Unit", ..), .. }, ..),
     )
-
-    // Json 类型检查
     | (
       Json(_),
       Name(constr_id={ id: Ident(name="Json") | Dot(id="Json", ..), .. }, ..),
     )
-
-    // Any 类型总是匹配
     | (_, Any(..))
     | (_, Name(constr_id={ id: Ident(name="Any") | Dot(id="Any", ..), .. }, ..))
-
-    // Option 类型检查
     | (_, Option(..))
     | (
       _,
       Name(
-        constr_id={ id: Ident(name="Option") | Dot(id="Option", ..), .. },
+        constr_id={
+          id: Ident(name="Option")
+
+          // 复合类型检查
+
+          // Unit 类型
+
+          // Json 类型检查
+
+          // Any 类型总是匹配
+
+          // Option 类型检查
+          | Dot(id="Option", ..),
+          ..
+        },
         ..
       ),
     ) => true
@@ -153,7 +157,7 @@ pub fn RuntimePackage::check_type_constraint(
     // TODO: call equal
     // 构造函数类型检查
     (
-      Constructor({ ty: Name(name=name1, ..), val: { fields, .. } }),
+      Constructor({ ty: Name(name=name1, ..), val: { fields, .. }, }),
       Name(constr_id={ id: Ident(name=name2), .. }, tys~, ..),
     ) =>
       name1 == name2 &&

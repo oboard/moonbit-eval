@@ -14,7 +14,7 @@ pub let fs_package : RuntimePackage = {
     fn_aliases: {},
     trait_methods: {},
     struct_constrs: {},
-    values: fs_methods.map((_, v) => Fn({ val: v, ty: Internal })),
+    values: fs_methods.map((_, v) => Fn({ val: v, ty: Internal, })),
     env,
     deps: {},
     files: {},

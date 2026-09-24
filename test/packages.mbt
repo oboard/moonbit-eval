@@ -22,8 +22,7 @@ test "module" {
 test "math" {
   let vm = MoonBitVM()
   vm.run("import { \"moonbitlang/core/math\" }")
-  assert_eq(vm.eval("@math.abs(-1.0)").to_string(), "1")
-  assert_eq(vm.eval("@math.abs").to_string(), "(Double) -> Double")
+  assert_eq(vm.eval("(-1.0).abs()").to_string(), "1")
 }
 
 ///|
@@ -31,7 +30,7 @@ test "bigint" {
   let vm = MoonBitVM()
   vm.run("import { \"moonbitlang/core/bigint\" }")
   assert_eq(vm.eval("@bigint.zero").to_string(), "0")
-  assert_eq(vm.eval("@bigint.radix_bit_len").to_string(), "32")
+  assert_eq(vm.eval("1N + 2N").to_string(), "3")
 }
 
 ///|

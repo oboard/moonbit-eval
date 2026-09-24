@@ -7,7 +7,7 @@ import {
   "moonbitlang/core/hashmap",
   "moonbitlang/core/json",
   "moonbitlang/core/list",
-  "moonbitlang/parser/basic",
+  "moonbitlang/lexer/basic",
   "moonbitlang/parser/syntax",
 }
 
@@ -159,8 +159,11 @@ pub(all) struct ModuleInfo {
   description : String?
   source : String?
 } derive(ToJson, @debug.Debug, @json.FromJson)
+pub fn ModuleInfo::from_json(Json, @json.JsonPath) -> Self raise @json.JsonDecodeError
 pub fn ModuleInfo::get_zip_url(Self) -> String
 pub fn ModuleInfo::new(String, version? : String, readme? : String, repository? : String, license? : String, keywords? : Array[String], description? : String, source? : String, deps? : Map[String, String]) -> Self
+pub fn ModuleInfo::to_json(Self) -> Json
+pub fn ModuleInfo::to_repr(Self) -> @debug.Repr
 
 pub(all) struct PackageImport {
   path : String
@@ -190,6 +193,7 @@ pub fn RuntimeEnvironment::find(Self, String) -> RuntimeValue?
 pub fn RuntimeEnvironment::new(parent? : Self, values? : Map[String, RuntimeValue]) -> Self
 pub fn RuntimeEnvironment::set(Self, String, RuntimeValue) -> Unit
 pub fn RuntimeEnvironment::set_mutable_variable(Self, String, RuntimeValue) -> Unit
+pub fn RuntimeEnvironment::to_json(Self) -> Json
 pub fn RuntimeEnvironment::update(Self, String, RuntimeValue) -> Unit
 
 pub(all) enum RuntimeErrorType {
@@ -199,6 +203,11 @@ pub(all) enum RuntimeErrorType {
   Noraise
   MaybeError(RuntimeType)
 } derive(ToJson)
+pub fn RuntimeErrorType::equal(Self, Self) -> Bool
+pub fn RuntimeErrorType::not_equal(Self, Self) -> Bool
+pub fn RuntimeErrorType::output(Self, &Logger) -> Unit
+pub fn RuntimeErrorType::to_json(Self) -> Json
+pub fn RuntimeErrorType::to_string(Self) -> String
 pub impl Eq for RuntimeErrorType
 pub impl Show for RuntimeErrorType
 
@@ -214,6 +223,7 @@ pub enum RuntimeLocation {
   ControlFlow(String)
   LetMut(String)
 } derive(@debug.Debug)
+pub fn RuntimeLocation::to_repr(Self) -> @debug.Repr
 
 pub(all) struct RuntimeModule {
   meta : ModuleInfo
@@ -249,6 +259,7 @@ pub fn RuntimePackage::find_stub(Self, String) -> String
 pub fn RuntimePackage::is_constructor(Self, String) -> Bool
 pub fn RuntimePackage::new(String, deps? : Map[String, Self], files? : Map[String, String]) -> Self
 pub fn RuntimePackage::set(Self, String, RuntimeValue) -> Unit
+pub fn RuntimePackage::to_json(Self) -> Json
 
 pub(all) enum RuntimeType {
   Any
@@ -268,6 +279,7 @@ pub fn RuntimeType::byte() -> Self
 pub fn RuntimeType::bytes() -> Self
 pub fn RuntimeType::char() -> Self
 pub fn RuntimeType::double() -> Self
+pub fn RuntimeType::equal(Self, Self) -> Bool
 pub fn RuntimeType::fixed_array() -> Self
 pub fn RuntimeType::float() -> Self
 pub fn RuntimeType::hashmap() -> Self
@@ -277,11 +289,15 @@ pub fn RuntimeType::iter() -> Self
 pub fn RuntimeType::json() -> Self
 pub fn RuntimeType::list() -> Self
 pub fn RuntimeType::map() -> Self
+pub fn RuntimeType::not_equal(Self, Self) -> Bool
 pub fn RuntimeType::option() -> Self
+pub fn RuntimeType::output(Self, &Logger) -> Unit
 pub fn RuntimeType::result() -> Self
 pub fn RuntimeType::string() -> Self
 pub fn RuntimeType::string_builder() -> Self
 pub fn RuntimeType::string_view() -> Self
+pub fn RuntimeType::to_json(Self) -> Json
+pub fn RuntimeType::to_string(Self) -> String
 pub fn RuntimeType::tuple() -> Self
 pub fn RuntimeType::uint() -> Self
 pub fn RuntimeType::uint16() -> Self
@@ -322,16 +338,29 @@ pub(all) enum RuntimeValue {
   Iter2(Iter2[RuntimeValue, RuntimeValue])
   Json(Json)
 }
+pub fn RuntimeValue::add(Self, Self) -> Self
+pub fn RuntimeValue::compare(Self, Self) -> Int
+pub fn RuntimeValue::equal(Self, Self) -> Bool
 pub fn RuntimeValue::from_constant_with_type(@syntax.Constant, String?) -> Self
 pub fn RuntimeValue::from_option(Self?) -> Self
 pub fn RuntimeValue::from_pattern(@syntax.Pattern) -> Self
 pub fn RuntimeValue::from_result(Result[Self, Self]) -> Self
 pub fn RuntimeValue::get_type(Self) -> RuntimeType
+pub fn RuntimeValue::hash(Self) -> Int
+pub fn RuntimeValue::hash_combine(Self, Hasher) -> Unit
 pub fn RuntimeValue::is_mutable(Self) -> Bool
 pub fn RuntimeValue::is_reference(Self) -> Bool
 pub fn RuntimeValue::iter2(Self) -> Self
+pub fn RuntimeValue::not_equal(Self, Self) -> Bool
+pub fn RuntimeValue::op_ge(Self, Self) -> Bool
+pub fn RuntimeValue::op_gt(Self, Self) -> Bool
+pub fn RuntimeValue::op_le(Self, Self) -> Bool
+pub fn RuntimeValue::op_lt(Self, Self) -> Bool
+pub fn RuntimeValue::output(Self, &Logger) -> Unit
 pub fn RuntimeValue::overload_array_literal(Self, String) -> Self
 pub fn RuntimeValue::overload_literal(Self, String) -> Self
+pub fn RuntimeValue::to_json(Self) -> Json
+pub fn RuntimeValue::to_string(Self) -> String
 pub impl Add for RuntimeValue
 pub impl Compare for RuntimeValue
 pub impl Eq for RuntimeValue
@@ -347,9 +376,9 @@ pub struct WithType[T] {
   val : T
   ty : RuntimeType
 } derive(ToJson)
+pub fn[T : ToJson] WithType::to_json(Self[T]) -> Json
 
 // Type aliases
 pub type RuntimeFunction = (RuntimeFunctionContext) -> RuntimeValue raise ControlFlow
 
 // Traits
-

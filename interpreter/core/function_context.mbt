@@ -37,7 +37,7 @@ pub fn ClosureInterpreter::create_function(
             ),
           )
           // 在新环境中绑定已解释的参数值
-          self.bind_runtime_parameters(parameters, @list.from_array(ctx.args))
+          self.bind_runtime_parameters(parameters, @list.List(ctx.args))
           defer {
             self.pop_scope()
             self.current_pkg.env = old_env
@@ -47,7 +47,7 @@ pub fn ClosureInterpreter::create_function(
           let result = self.visit(body)
           match (result.get_type(), result, return_type) {
             (Any, Object({ val, .. }), Some(Arrow(res~, ..))) =>
-              Object({ val, ty: self.parse_type(res) })
+              Object({ val, ty: self.parse_type(res), })
             _ => result
           }
         }

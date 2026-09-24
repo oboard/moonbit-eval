@@ -18,6 +18,12 @@ pub(all) enum RuntimeType {
 } derive(ToJson)
 
 ///|
+pub extend RuntimeType with ToJson::{to_json}
+
+///|
+pub extend RuntimeErrorType with Eq::{not_equal, equal}
+
+///|
 pub impl Eq for RuntimeErrorType with fn equal(
   self : RuntimeErrorType,
   other : RuntimeErrorType,
@@ -31,6 +37,9 @@ pub impl Eq for RuntimeErrorType with fn equal(
     _ => false
   }
 }
+
+///|
+pub extend RuntimeType with Eq::{not_equal, equal}
 
 ///|
 pub impl Eq for RuntimeType with fn equal(
@@ -63,6 +72,12 @@ pub(all) enum RuntimeErrorType {
 } derive(ToJson)
 
 ///|
+pub extend RuntimeErrorType with ToJson::{to_json}
+
+///|
+pub extend RuntimeErrorType with Show::{to_string, output}
+
+///|
 pub impl Show for RuntimeErrorType with fn output(
   self : RuntimeErrorType,
   logger : &Logger,
@@ -82,6 +97,9 @@ pub impl Show for RuntimeErrorType with fn output(
     }
   }
 }
+
+///|
+pub extend RuntimeType with Show::{to_string, output}
 
 ///|
 pub impl Show for RuntimeType with fn output(
@@ -161,7 +179,7 @@ pub impl Show for RuntimeType with fn output(
 
 ///|
 pub impl Show for RuntimeType with fn to_string(self : RuntimeType) -> String {
-  let buf = StringBuilder::new()
+  let buf = @builtin.StringBuilder()
   self.output(buf)
   buf.to_string()
 }
@@ -394,3 +412,6 @@ pub struct WithType[T] {
   val : T
   ty : RuntimeType
 } derive(ToJson)
+
+///|
+pub extend WithType with ToJson::{to_json}

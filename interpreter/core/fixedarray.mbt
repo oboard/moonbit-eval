@@ -328,7 +328,7 @@ fn fixedarray_byte_view_extract_bytesview(
 ) -> ArrayView[Byte] {
   let start = offset >> 3
   let end = start + (len >> 3)
-  bs.view(start~, end~)
+  bs.exact_view(start~, end~)
 }
 
 ///|
@@ -525,7 +525,7 @@ let fixedarray_binary_search_by_fn : RuntimeFunction = ctx => {
       arr
       .binary_search_by(v => {
         match
-          (try! ctx.context.call(f.val, ctx.pkg, [{ val: v, kind: Positional }])) {
+          (try! ctx.context.call(f.val, ctx.pkg, [{ val: v, kind: Positional, }])) {
           Int(i, ..) => i
           _ => raise Error("binary_search_by closure must return int")
         }
@@ -606,7 +606,7 @@ let fixedarray_all_fn : RuntimeFunction = ctx => {
       let result = arr.all(fn(elem) {
         match
           (try! ctx.context.call(f.val, ctx.pkg, [
-            { val: elem, kind: Positional },
+            { val: elem, kind: Positional, },
           ])) {
           Bool(b) => b
           _ => false
@@ -625,7 +625,7 @@ let fixedarray_any_fn : RuntimeFunction = ctx => {
       let result = arr.any(fn(elem) {
         match
           (try! ctx.context.call(f.val, ctx.pkg, [
-            { val: elem, kind: Positional },
+            { val: elem, kind: Positional, },
           ])) {
           Bool(true) => true
           _ => false
@@ -643,7 +643,7 @@ let fixedarray_each_fn : RuntimeFunction = ctx => {
     [{ val: FixedArray(arr), .. }, { val: Fn(f), .. }] => {
       arr.each(fn(elem) {
         let _ = try! ctx.context.call(f.val, ctx.pkg, [
-          { val: elem, kind: Positional },
+          { val: elem, kind: Positional, },
         ])
       })
       Unit
@@ -658,8 +658,8 @@ let fixedarray_eachi_fn : RuntimeFunction = ctx => {
     [{ val: FixedArray(arr), .. }, { val: Fn(f), .. }] => {
       arr.eachi(fn(i, elem) {
         let _ = try! ctx.context.call(f.val, ctx.pkg, [
-          { val: Int(i, raw=None), kind: Positional },
-          { val: elem, kind: Positional },
+          { val: Int(i, raw=None), kind: Positional, },
+          { val: elem, kind: Positional, },
         ])
       })
       Unit
@@ -674,8 +674,8 @@ let fixedarray_fold_fn : RuntimeFunction = ctx => {
     [{ val: FixedArray(arr), .. }, { val: init_val, .. }, { val: Fn(f), .. }] =>
       arr.fold(init=init_val, fn(acc, elem) {
         try! ctx.context.call(f.val, ctx.pkg, [
-          { val: acc, kind: Positional },
-          { val: elem, kind: Positional },
+          { val: acc, kind: Positional, },
+          { val: elem, kind: Positional, },
         ])
       })
     _ => Unit
@@ -688,9 +688,9 @@ let fixedarray_foldi_fn : RuntimeFunction = ctx => {
     [{ val: FixedArray(arr), .. }, { val: init_val, .. }, { val: Fn(f), .. }] =>
       arr.foldi(init=init_val, fn(i, acc, elem) {
         try! ctx.context.call(f.val, ctx.pkg, [
-          { val: Int(i, raw=None), kind: Positional },
-          { val: acc, kind: Positional },
-          { val: elem, kind: Positional },
+          { val: Int(i, raw=None), kind: Positional, },
+          { val: acc, kind: Positional, },
+          { val: elem, kind: Positional, },
         ])
       })
     _ => Unit
@@ -790,7 +790,7 @@ let fixedarray_makei_fn : RuntimeFunction = ctx => {
       FixedArray(
         FixedArray::makei(len, fn(i) {
           try! ctx.context.call(f.val, ctx.pkg, [
-            { val: Int(i, raw=None), kind: Positional },
+            { val: Int(i, raw=None), kind: Positional, },
           ])
         }),
       )
@@ -805,7 +805,7 @@ let fixedarray_map_fn : RuntimeFunction = ctx => {
       FixedArray(
         arr.map(fn(elem) {
           try! ctx.context.call(f.val, ctx.pkg, [
-            { val: elem, kind: Positional },
+            { val: elem, kind: Positional, },
           ])
         }),
       )
@@ -820,8 +820,8 @@ let fixedarray_mapi_fn : RuntimeFunction = ctx => {
       FixedArray(
         arr.mapi(fn(i, elem) {
           try! ctx.context.call(f.val, ctx.pkg, [
-            { val: Int(i, raw=None), kind: Positional },
-            { val: elem, kind: Positional },
+            { val: Int(i, raw=None), kind: Positional, },
+            { val: elem, kind: Positional, },
           ])
         }),
       )
@@ -832,19 +832,19 @@ let fixedarray_mapi_fn : RuntimeFunction = ctx => {
 ///|
 let fixedarray_mut_view_fn : RuntimeFunction = ctx => {
   match ctx.args {
-    [{ val: FixedArray(arr), .. }] => ArrayView(arr.mut_view().view())
+    [{ val: FixedArray(arr), .. }] => ArrayView(arr.mut_view().exact_view())
     [{ val: FixedArray(arr), .. }, { val: Int(start, ..), .. }] => {
       let end = match ctx.int_arg("end", 2) {
         Some(i) => i
         None => arr.length()
       }
-      ArrayView(arr.mut_view(start~, end~).view())
+      ArrayView(arr.mut_view(start~, end~).exact_view())
     }
     [
       { val: FixedArray(arr), .. },
       { val: Int(start, ..), .. },
       { val: Int(end, ..), .. },
-    ] => ArrayView(arr.mut_view(start~, end~).view())
+    ] => ArrayView(arr.mut_view(start~, end~).exact_view())
     _ => Unit
   }
 }
@@ -863,7 +863,7 @@ let fixedarray_rev_each_fn : RuntimeFunction = ctx => {
     [{ val: FixedArray(arr), .. }, { val: Fn(f), .. }] => {
       arr.rev_each(fn(elem) {
         let _ = try! ctx.context.call(f.val, ctx.pkg, [
-          { val: elem, kind: Positional },
+          { val: elem, kind: Positional, },
         ])
       })
       Unit
@@ -878,8 +878,8 @@ let fixedarray_rev_eachi_fn : RuntimeFunction = ctx => {
     [{ val: FixedArray(arr), .. }, { val: Fn(f), .. }] => {
       arr.rev_eachi(fn(i, elem) {
         let _ = try! ctx.context.call(f.val, ctx.pkg, [
-          { val: Int(i, raw=None), kind: Positional },
-          { val: elem, kind: Positional },
+          { val: Int(i, raw=None), kind: Positional, },
+          { val: elem, kind: Positional, },
         ])
       })
       Unit
@@ -894,8 +894,8 @@ let fixedarray_rev_fold_fn : RuntimeFunction = ctx => {
     [{ val: FixedArray(arr), .. }, { val: init_val, .. }, { val: Fn(f), .. }] =>
       arr.rev_fold(init=init_val, fn(acc, elem) {
         try! ctx.context.call(f.val, ctx.pkg, [
-          { val: acc, kind: Positional },
-          { val: elem, kind: Positional },
+          { val: acc, kind: Positional, },
+          { val: elem, kind: Positional, },
         ])
       })
     _ => Unit
@@ -908,9 +908,9 @@ let fixedarray_rev_foldi_fn : RuntimeFunction = ctx => {
     [{ val: FixedArray(arr), .. }, { val: init_val, .. }, { val: Fn(f), .. }] =>
       arr.rev_foldi(init=init_val, fn(i, acc, elem) {
         try! ctx.context.call(f.val, ctx.pkg, [
-          { val: Int(i, raw=None), kind: Positional },
-          { val: acc, kind: Positional },
-          { val: elem, kind: Positional },
+          { val: Int(i, raw=None), kind: Positional, },
+          { val: acc, kind: Positional, },
+          { val: elem, kind: Positional, },
         ])
       })
     _ => Unit
@@ -982,8 +982,8 @@ let fixedarray_sort_by_fn : RuntimeFunction = ctx => {
       arr.sort_by(fn(left, right) {
         match
           (try! ctx.context.call(cmp.val, ctx.pkg, [
-            { val: left, kind: Positional },
-            { val: right, kind: Positional },
+            { val: left, kind: Positional, },
+            { val: right, kind: Positional, },
           ])) {
           Int(i, ..) => i
           _ => 0
@@ -1000,7 +1000,7 @@ let fixedarray_sort_by_key_fn : RuntimeFunction = ctx => {
   match ctx.args {
     [{ val: FixedArray(arr), .. }, { val: Fn(map), .. }] => {
       arr.sort_by_key(fn(val) {
-        try! ctx.context.call(map.val, ctx.pkg, [{ val, kind: Positional }])
+        try! ctx.context.call(map.val, ctx.pkg, [{ val, kind: Positional, }])
       })
       Unit
     }
@@ -1037,19 +1037,19 @@ let fixedarray_swap_fn : RuntimeFunction = ctx => {
 ///|
 let fixedarray_view_fn : RuntimeFunction = ctx => {
   match ctx.args {
-    [{ val: FixedArray(arr), .. }] => ArrayView(arr.view())
+    [{ val: FixedArray(arr), .. }] => ArrayView(arr.exact_view())
     [{ val: FixedArray(arr), .. }, { val: Int(start, ..), .. }] => {
       let end = match ctx.int_arg("end", 2) {
         Some(i) => i
         None => arr.length()
       }
-      ArrayView(arr.view(start~, end~))
+      ArrayView(arr.exact_view(start~, end~))
     }
     [
       { val: FixedArray(arr), .. },
       { val: Int(start, ..), .. },
       { val: Int(end, ..), .. },
-    ] => ArrayView(arr.view(start~, end~))
+    ] => ArrayView(arr.exact_view(start~, end~))
     _ => Unit
   }
 }

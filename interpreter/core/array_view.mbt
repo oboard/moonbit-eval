@@ -350,7 +350,7 @@ fn array_view_byte_view_extract_bytesview(
 ) -> ArrayView[Byte] {
   let start = offset >> 3
   let end = start + (len >> 3)
-  bs.view(start~, end~)
+  bs.exact_view(start~, end~)
 }
 
 ///|
@@ -455,7 +455,7 @@ let array_view_all_fn : RuntimeFunction = ctx => {
     [{ val: ArrayView(arr), .. }, { val: Fn(f), .. }] =>
       Bool(
         arr.all(elem => {
-          ctx.context.call(f.val, ctx.pkg, [{ val: elem, kind: Positional }])
+          ctx.context.call(f.val, ctx.pkg, [{ val: elem, kind: Positional, }])
           is Bool(true)
         }),
       )
@@ -470,7 +470,7 @@ let array_view_any_fn : RuntimeFunction = ctx => {
     [{ val: ArrayView(arr), .. }, { val: Fn(f), .. }] =>
       Bool(
         arr.any(elem => {
-          ctx.context.call(f.val, ctx.pkg, [{ val: elem, kind: Positional }])
+          ctx.context.call(f.val, ctx.pkg, [{ val: elem, kind: Positional, }])
           is Bool(true)
         }),
       )
@@ -527,7 +527,7 @@ let array_view_binary_search_by_fn : RuntimeFunction = ctx => {
         arr
         .binary_search_by(v => {
           match
-            ctx.context.call(f.val, ctx.pkg, [{ val: v, kind: Positional }]) {
+            ctx.context.call(f.val, ctx.pkg, [{ val: v, kind: Positional, }]) {
             Int(i, ..) => i
             _ => raise Error("binary_search_by closure must return int")
           }
@@ -562,7 +562,7 @@ let array_view_each_fn : RuntimeFunction = ctx => {
   match ctx.args {
     [{ val: ArrayView(arr), .. }, { val: Fn(f), .. }] => {
       arr.each(elem => {
-        ctx.context.call(f.val, ctx.pkg, [{ val: elem, kind: Positional }])
+        ctx.context.call(f.val, ctx.pkg, [{ val: elem, kind: Positional, }])
         |> ignore
       })
       Unit
@@ -578,8 +578,8 @@ let array_view_eachi_fn : RuntimeFunction = ctx => {
     [{ val: ArrayView(arr), .. }, { val: Fn(f), .. }] => {
       arr.eachi((i, elem) => {
         ctx.context.call(f.val, ctx.pkg, [
-          { val: Int(i, raw=None), kind: Positional },
-          { val: elem, kind: Positional },
+          { val: Int(i, raw=None), kind: Positional, },
+          { val: elem, kind: Positional, },
         ])
         |> ignore
       })
@@ -596,7 +596,7 @@ let array_view_filter_fn : RuntimeFunction = ctx => {
     [{ val: ArrayView(arr), .. }, { val: Fn(f), .. }] =>
       Array(
         arr.filter(elem => {
-          ctx.context.call(f.val, ctx.pkg, [{ val: elem, kind: Positional }])
+          ctx.context.call(f.val, ctx.pkg, [{ val: elem, kind: Positional, }])
           is Bool(true)
         }),
       )
@@ -611,8 +611,8 @@ let array_view_fold_fn : RuntimeFunction = ctx => {
     [{ val: ArrayView(arr), .. }, { val: init, .. }, { val: Fn(f), .. }] =>
       arr.fold(init~, (acc, elem) => {
         ctx.context.call(f.val, ctx.pkg, [
-          { val: acc, kind: Positional },
-          { val: elem, kind: Positional },
+          { val: acc, kind: Positional, },
+          { val: elem, kind: Positional, },
         ])
       })
     _ => Unit
@@ -626,9 +626,9 @@ let array_view_foldi_fn : RuntimeFunction = ctx => {
     [{ val: ArrayView(arr), .. }, { val: init, .. }, { val: Fn(f), .. }] =>
       arr.foldi(init~, (i, acc, elem) => {
         ctx.context.call(f.val, ctx.pkg, [
-          { val: Int(i, raw=None), kind: Positional },
-          { val: acc, kind: Positional },
-          { val: elem, kind: Positional },
+          { val: Int(i, raw=None), kind: Positional, },
+          { val: acc, kind: Positional, },
+          { val: elem, kind: Positional, },
         ])
       })
     _ => Unit
@@ -692,7 +692,7 @@ let array_view_map_fn : RuntimeFunction = ctx => {
     [{ val: ArrayView(arr), .. }, { val: Fn(f), .. }] =>
       Array(
         arr.map(elem => {
-          ctx.context.call(f.val, ctx.pkg, [{ val: elem, kind: Positional }])
+          ctx.context.call(f.val, ctx.pkg, [{ val: elem, kind: Positional, }])
         }),
       )
     _ => Unit
@@ -707,8 +707,8 @@ let array_view_mapi_fn : RuntimeFunction = ctx => {
       Array(
         arr.mapi((i, elem) => {
           ctx.context.call(f.val, ctx.pkg, [
-            { val: Int(i, raw=None), kind: Positional },
-            { val: elem, kind: Positional },
+            { val: Int(i, raw=None), kind: Positional, },
+            { val: elem, kind: Positional, },
           ])
         }),
       )
@@ -723,8 +723,8 @@ let array_view_rev_fold_fn : RuntimeFunction = ctx => {
     [{ val: ArrayView(arr), .. }, { val: init, .. }, { val: Fn(f), .. }] =>
       arr.rev_fold(init~, (acc, elem) => {
         ctx.context.call(f.val, ctx.pkg, [
-          { val: acc, kind: Positional },
-          { val: elem, kind: Positional },
+          { val: acc, kind: Positional, },
+          { val: elem, kind: Positional, },
         ])
       })
     _ => Unit
@@ -738,9 +738,9 @@ let array_view_rev_foldi_fn : RuntimeFunction = ctx => {
     [{ val: ArrayView(arr), .. }, { val: init, .. }, { val: Fn(f), .. }] =>
       arr.rev_foldi(init~, (i, acc, elem) => {
         ctx.context.call(f.val, ctx.pkg, [
-          { val: Int(i, raw=None), kind: Positional },
-          { val: acc, kind: Positional },
-          { val: elem, kind: Positional },
+          { val: Int(i, raw=None), kind: Positional, },
+          { val: acc, kind: Positional, },
+          { val: elem, kind: Positional, },
         ])
       })
     _ => Unit
@@ -759,14 +759,14 @@ let array_view_to_array_fn : RuntimeFunction = ctx => {
 ///|
 let array_view_view_fn : RuntimeFunction = ctx => {
   match ctx.args {
-    [{ val: ArrayView(arr), .. }] => ArrayView(arr.view())
+    [{ val: ArrayView(arr), .. }] => ArrayView(arr.exact_view())
     [{ val: ArrayView(arr), .. }, { val: Int(start, ..), .. }] =>
-      ArrayView(arr.view(start~))
+      ArrayView(arr.exact_view(start~))
     [
       { val: ArrayView(arr), .. },
       { val: Int(start, ..), .. },
       { val: Int(end_, ..), .. },
-    ] => ArrayView(arr.view(start~, end=end_))
+    ] => ArrayView(arr.exact_view(start~, end=end_))
     _ => Unit
   }
 }

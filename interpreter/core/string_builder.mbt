@@ -16,8 +16,8 @@ let stringbuilder_methods : Map[String, RuntimeFunction] = {
 let stringbuilder_new_fn : RuntimeFunction = ctx => {
   match ctx.args {
     [{ val: Int(size_hint, ..), .. }] =>
-      StringBuilder(StringBuilder::new(size_hint~))
-    _ => StringBuilder(StringBuilder::new())
+      StringBuilder(@builtin.StringBuilder(size_hint~))
+    _ => StringBuilder(@builtin.StringBuilder())
   }
 }
 

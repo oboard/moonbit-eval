@@ -23,6 +23,15 @@ pub(all) struct ModuleInfo {
 } derive(Debug, ToJson, FromJson)
 
 ///|
+pub extend ModuleInfo with @moonbitlang/core/debug.Debug::{to_repr}
+
+///|
+pub extend ModuleInfo with ToJson::{to_json}
+
+///|
+pub extend ModuleInfo with @moonbitlang/core/json.FromJson::{from_json}
+
+///|
 pub fn ModuleInfo::get_zip_url(self : ModuleInfo) -> String noraise {
   let v = self.version.map_or("", v => "/\{v}")
   "\{url_base}/\{self.name}\{v}.zip"
@@ -74,6 +83,9 @@ pub(all) struct RuntimePackage {
   files : Map[String, String]
   mut loaded : Bool
 } derive(ToJson)
+
+///|
+pub extend RuntimePackage with ToJson::{to_json}
 
 ///|
 /// 模块元数据构造函数
@@ -147,8 +159,8 @@ pub fn RuntimePackage::cons(
   name : String,
   args : Array[RuntimeValue],
 ) -> RuntimeValue {
-  let fields = args.map(value => { name: None, value, mutable: false })
-  Constructor({ val: { name, fields }, ty: self.find_static_type(name) })
+  let fields = args.map(value => { name: None, value, mutable: false, })
+  Constructor({ val: { name, fields, }, ty: self.find_static_type(name), })
 }
 
 ///|
@@ -160,9 +172,9 @@ pub fn RuntimePackage::cons_with_labels(
 ) -> RuntimeValue {
   let fields = labeled_args.map(fn(arg) {
     let (label, value, mutable) = arg
-    { name: label, value, mutable }
+    { name: label, value, mutable, }
   })
-  Constructor({ val: { name, fields }, ty: self.find_static_type(name) })
+  Constructor({ val: { name, fields, }, ty: self.find_static_type(name), })
 }
 
 ///|

@@ -78,7 +78,7 @@ let bytes_makei_fn : RuntimeFunction = ctx => {
       let result = Bytes::makei(len, i => {
         let arg = Int(i, raw=None)
         let ret = ctx.context.call(f.val, ctx.pkg, [
-          { val: arg, kind: Positional },
+          { val: arg, kind: Positional, },
         ])
         match ret {
           Byte(b) => b
@@ -356,14 +356,14 @@ let bytes_chop_suffix_fn : RuntimeFunction = ctx => {
 ///|
 let bytes_view_fn : RuntimeFunction = ctx => {
   match ctx.args {
-    [{ val: Bytes(b), .. }] => Bytes(b.view().to_owned())
+    [{ val: Bytes(b), .. }] => Bytes(b.exact_view().to_owned())
     [{ val: Bytes(b), .. }, { val: Int(start, ..), .. }] =>
-      Bytes(b.view(start~).to_owned())
+      Bytes(b.exact_view(start~).to_owned())
     [
       { val: Bytes(b), .. },
       { val: Int(start, ..), .. },
       { val: Int(end_, ..), .. },
-    ] => Bytes(b.view(start~, end=end_).to_owned())
+    ] => Bytes(b.exact_view(start~, end=end_).to_owned())
     _ => Unit
   }
 }
@@ -426,7 +426,7 @@ let bytes_unsafe_read_uint64_be_fn : RuntimeFunction = ctx => {
 let bytes_output_fn : RuntimeFunction = ctx => {
   match ctx.args {
     [{ val: Bytes(b), .. }, { val: StringBuilder(logger), .. }] => {
-      b.output(logger)
+      Show::output(b, logger)
       Unit
     }
     _ => Unit

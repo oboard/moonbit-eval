@@ -135,9 +135,9 @@ let array_make_fn : RuntimeFunction = ctx => {
 /// 数组new操作
 let array_new_fn : RuntimeFunction = ctx => {
   match ctx.args {
-    [{ val: Int(len, ..), kind: LabelledOption("capacity") }] =>
-      Array(Array::new(capacity=len))
-    _ => Array(Array::new())
+    [{ val: Int(len, ..), kind: LabelledOption("capacity"), }] =>
+      Array(@builtin.Array(capacity=len))
+    _ => Array([])
   }
 }
 
@@ -402,13 +402,13 @@ fn array_byte_view_extract_bytesview(
 ) -> ArrayView[Byte] {
   let start = offset >> 3
   let end = start + (len >> 3)
-  bs.view(start~, end~)
+  bs.exact_view(start~, end~)
 }
 
 ///|
 fn runtime_option_value(value : RuntimeValue) -> RuntimeValue? {
   match value {
-    Constructor({ val: { name: "Some", fields: [{ value: x, .. }] }, .. }) =>
+    Constructor({ val: { name: "Some", fields: [{ value: x, .. }], }, .. }) =>
       Some(x)
     Constructor({ val: { name: "None", .. }, .. }) => None
     _ => None
@@ -652,7 +652,7 @@ let array_each_fn : RuntimeFunction = ctx => {
     [{ val: Array(arr), .. }, { val: Fn(f), .. }] => {
       arr.each(fn(val) {
         let _ = try! ctx.context.call(f.val, ctx.pkg, [
-          { val, kind: Positional },
+          { val, kind: Positional, },
         ])
       })
       Unit
@@ -668,8 +668,8 @@ let array_eachi_fn : RuntimeFunction = ctx => {
     [{ val: Array(arr), .. }, { val: Fn(f), .. }] => {
       arr.eachi(fn(i, val) {
         let _ = try! ctx.context.call(f.val, ctx.pkg, [
-          { val: Int(i, raw=None), kind: Positional },
-          { val, kind: Positional },
+          { val: Int(i, raw=None), kind: Positional, },
+          { val, kind: Positional, },
         ])
       })
       Unit
@@ -684,7 +684,7 @@ let array_map_fn : RuntimeFunction = ctx => {
   match ctx.args {
     [{ val: Array(arr), .. }, { val: Fn(f), .. }] => {
       let new_arr = arr.map(fn(val) {
-        try! ctx.context.call(f.val, ctx.pkg, [{ val, kind: Positional }])
+        try! ctx.context.call(f.val, ctx.pkg, [{ val, kind: Positional, }])
       })
       Array(new_arr)
     }
@@ -699,8 +699,8 @@ let array_mapi_fn : RuntimeFunction = ctx => {
     [{ val: Array(arr), .. }, { val: Fn(f), .. }] => {
       let new_arr = arr.mapi(fn(i, val) {
         try! ctx.context.call(f.val, ctx.pkg, [
-          { val: Int(i, raw=None), kind: Positional },
-          { val, kind: Positional },
+          { val: Int(i, raw=None), kind: Positional, },
+          { val, kind: Positional, },
         ])
       })
       Array(new_arr)
@@ -716,7 +716,7 @@ let array_filter_fn : RuntimeFunction = ctx => {
     [{ val: Array(arr), .. }, { val: Fn(f), .. }] => {
       let new_arr = arr.filter(fn(val) {
         match
-          (try! ctx.context.call(f.val, ctx.pkg, [{ val, kind: Positional }])) {
+          (try! ctx.context.call(f.val, ctx.pkg, [{ val, kind: Positional, }])) {
           Bool(b) => b
           _ => false
         }
@@ -734,8 +734,8 @@ let array_fold_fn : RuntimeFunction = ctx => {
     [{ val: Array(arr), .. }, { val: init_val, .. }, { val: Fn(f), .. }, ..] =>
       arr.fold(init=init_val, fn(acc, val) {
         try! ctx.context.call(f.val, ctx.pkg, [
-          { val: acc, kind: Positional },
-          { val, kind: Positional },
+          { val: acc, kind: Positional, },
+          { val, kind: Positional, },
         ])
       })
     _ => Unit
@@ -748,7 +748,7 @@ let array_search_by_fn : RuntimeFunction = ctx => {
   match ctx.args {
     [{ val: Array(arr), .. }, { val: Fn(f), .. }] => {
       let index = arr.search_by(val => {
-        (ctx.context.call(f.val, ctx.pkg, [{ val, kind: Positional }]) catch {
+        (ctx.context.call(f.val, ctx.pkg, [{ val, kind: Positional, }]) catch {
           _ => Bool(false)
         })
         is Bool(true)
@@ -851,7 +851,7 @@ let array_all_fn : RuntimeFunction = ctx => {
     [{ val: Array(arr), .. }, { val: Fn(f), .. }] => {
       let result = arr.all(fn(val) {
         match
-          (try! ctx.context.call(f.val, ctx.pkg, [{ val, kind: Positional }])) {
+          (try! ctx.context.call(f.val, ctx.pkg, [{ val, kind: Positional, }])) {
           Bool(b) => b
           _ => false
         }
@@ -868,7 +868,7 @@ let array_any_fn : RuntimeFunction = ctx => {
     [{ val: Array(arr), .. }, { val: Fn(f), .. }] => {
       let result = arr.any(fn(val) {
         match
-          (try! ctx.context.call(f.val, ctx.pkg, [{ val, kind: Positional }])) {
+          (try! ctx.context.call(f.val, ctx.pkg, [{ val, kind: Positional, }])) {
           Bool(true) => true
           _ => false
         }
@@ -902,7 +902,7 @@ let array_binary_search_by_fn : RuntimeFunction = ctx => {
         .binary_search_by(v => {
           match
             (try! ctx.context.call(f.val, ctx.pkg, [
-              { val: v, kind: Positional },
+              { val: v, kind: Positional, },
             ])) {
             Int(i, ..) => i
             _ => raise Error("binary_search_by closure must return int")
@@ -943,13 +943,13 @@ let array_view_fn : RuntimeFunction = ctx => {
         Some(i) => i
         None => arr.length()
       }
-      ArrayView(arr.view(start~, end~))
+      ArrayView(arr.exact_view(start~, end~))
     }
     [
       { val: Array(arr), .. },
       { val: Int(start, ..), .. },
       { val: Int(end, ..), .. },
-    ] => ArrayView(arr.view(start~, end~))
+    ] => ArrayView(arr.exact_view(start~, end~))
     _ => Unit
   }
 }
@@ -1071,7 +1071,7 @@ let array_split_fn : RuntimeFunction = ctx => {
       let chunks = arr.split(fn(v) {
         match
           (try! ctx.context.call(pred.val, ctx.pkg, [
-            { val: v, kind: Positional },
+            { val: v, kind: Positional, },
           ])) {
           Bool(b) => b
           _ => false
@@ -1139,9 +1139,9 @@ let array_foldi_fn : RuntimeFunction = ctx => {
     [{ val: Array(arr), .. }, { val: init_val, .. }, { val: Fn(f), .. }] =>
       arr.foldi(init=init_val, fn(i, acc, val) {
         try! ctx.context.call(f.val, ctx.pkg, [
-          { val: Int(i, raw=None), kind: Positional },
-          { val: acc, kind: Positional },
-          { val, kind: Positional },
+          { val: Int(i, raw=None), kind: Positional, },
+          { val: acc, kind: Positional, },
+          { val, kind: Positional, },
         ])
       })
     _ => Unit
@@ -1154,8 +1154,8 @@ let array_rev_fold_fn : RuntimeFunction = ctx => {
     [{ val: Array(arr), .. }, { val: init_val, .. }, { val: Fn(f), .. }] =>
       arr.rev_fold(init=init_val, fn(acc, val) {
         try! ctx.context.call(f.val, ctx.pkg, [
-          { val: acc, kind: Positional },
-          { val, kind: Positional },
+          { val: acc, kind: Positional, },
+          { val, kind: Positional, },
         ])
       })
     _ => Unit
@@ -1168,9 +1168,9 @@ let array_rev_foldi_fn : RuntimeFunction = ctx => {
     [{ val: Array(arr), .. }, { val: init_val, .. }, { val: Fn(f), .. }] =>
       arr.rev_foldi(init=init_val, fn(i, acc, val) {
         try! ctx.context.call(f.val, ctx.pkg, [
-          { val: Int(i, raw=None), kind: Positional },
-          { val: acc, kind: Positional },
-          { val, kind: Positional },
+          { val: Int(i, raw=None), kind: Positional, },
+          { val: acc, kind: Positional, },
+          { val, kind: Positional, },
         ])
       })
     _ => Unit
@@ -1183,7 +1183,7 @@ let array_rev_each_fn : RuntimeFunction = ctx => {
     [{ val: Array(arr), .. }, { val: Fn(f), .. }] => {
       arr.rev_each(fn(val) {
         let _ = try! ctx.context.call(f.val, ctx.pkg, [
-          { val, kind: Positional },
+          { val, kind: Positional, },
         ])
       })
       Unit
@@ -1198,8 +1198,8 @@ let array_rev_eachi_fn : RuntimeFunction = ctx => {
     [{ val: Array(arr), .. }, { val: Fn(f), .. }] => {
       arr.rev_eachi(fn(i, val) {
         let _ = try! ctx.context.call(f.val, ctx.pkg, [
-          { val: Int(i, raw=None), kind: Positional },
-          { val, kind: Positional },
+          { val: Int(i, raw=None), kind: Positional, },
+          { val, kind: Positional, },
         ])
       })
       Unit
@@ -1213,7 +1213,7 @@ let array_map_in_place_fn : RuntimeFunction = ctx => {
   match ctx.args {
     [{ val: Array(arr), .. }, { val: Fn(f), .. }] => {
       arr.map_in_place(fn(val) {
-        try! ctx.context.call(f.val, ctx.pkg, [{ val, kind: Positional }])
+        try! ctx.context.call(f.val, ctx.pkg, [{ val, kind: Positional, }])
       })
       Unit
     }
@@ -1227,8 +1227,8 @@ let array_mapi_in_place_fn : RuntimeFunction = ctx => {
     [{ val: Array(arr), .. }, { val: Fn(f), .. }] => {
       arr.mapi_in_place(fn(i, val) {
         try! ctx.context.call(f.val, ctx.pkg, [
-          { val: Int(i, raw=None), kind: Positional },
-          { val, kind: Positional },
+          { val: Int(i, raw=None), kind: Positional, },
+          { val, kind: Positional, },
         ])
       })
       Unit
@@ -1243,7 +1243,7 @@ let array_filter_map_fn : RuntimeFunction = ctx => {
     [{ val: Array(arr), .. }, { val: Fn(f), .. }] => {
       let new_arr = arr.filter_map(fn(val) {
         runtime_option_value(
-          try! ctx.context.call(f.val, ctx.pkg, [{ val, kind: Positional }]),
+          try! ctx.context.call(f.val, ctx.pkg, [{ val, kind: Positional, }]),
         )
       })
       Array(new_arr)
@@ -1259,7 +1259,7 @@ let array_extract_if_fn : RuntimeFunction = ctx => {
       Array(
         arr.extract_if(fn(val) {
           match
-            (try! ctx.context.call(f.val, ctx.pkg, [{ val, kind: Positional }])) {
+            (try! ctx.context.call(f.val, ctx.pkg, [{ val, kind: Positional, }])) {
             Bool(b) => b
             _ => false
           }
@@ -1275,7 +1275,7 @@ let array_retain_fn : RuntimeFunction = ctx => {
     [{ val: Array(arr), .. }, { val: Fn(f), .. }] => {
       arr.retain(fn(val) {
         match
-          (try! ctx.context.call(f.val, ctx.pkg, [{ val, kind: Positional }])) {
+          (try! ctx.context.call(f.val, ctx.pkg, [{ val, kind: Positional, }])) {
           Bool(b) => b
           _ => false
         }
@@ -1292,7 +1292,7 @@ let array_retain_map_fn : RuntimeFunction = ctx => {
     [{ val: Array(arr), .. }, { val: Fn(f), .. }] => {
       arr.retain_map(fn(val) {
         runtime_option_value(
-          try! ctx.context.call(f.val, ctx.pkg, [{ val, kind: Positional }]),
+          try! ctx.context.call(f.val, ctx.pkg, [{ val, kind: Positional, }]),
         )
       })
       Unit
@@ -1308,7 +1308,7 @@ let array_makei_fn : RuntimeFunction = ctx => {
       Array(
         Array::makei(len, fn(i) {
           try! ctx.context.call(f.val, ctx.pkg, [
-            { val: Int(i, raw=None), kind: Positional },
+            { val: Int(i, raw=None), kind: Positional, },
           ])
         }),
       )
@@ -1377,8 +1377,8 @@ let array_last_fn : RuntimeFunction = ctx => {
 let array_unzip_fn : RuntimeFunction = ctx => {
   match ctx.args {
     [{ val: Array(arr), .. }] => {
-      let left = Array::new(capacity=arr.length())
-      let right = Array::new(capacity=arr.length())
+      let left = @builtin.Array(capacity=arr.length())
+      let right = @builtin.Array(capacity=arr.length())
       for pair in arr {
         match pair {
           Tuple([x, y]) => {
@@ -1421,8 +1421,8 @@ let array_chunk_by_fn : RuntimeFunction = ctx => {
         .chunk_by(fn(left, right) {
           match
             (try! ctx.context.call(f.val, ctx.pkg, [
-              { val: left, kind: Positional },
-              { val: right, kind: Positional },
+              { val: left, kind: Positional, },
+              { val: right, kind: Positional, },
             ])) {
             Bool(b) => b
             _ => false
@@ -1474,7 +1474,7 @@ let array_shuffle_fn : RuntimeFunction = ctx => {
       let rand = fn(upper) {
         match
           (try! ctx.context.call(rand0.val, ctx.pkg, [
-            { val: Int(upper, raw=None), kind: Positional },
+            { val: Int(upper, raw=None), kind: Positional, },
           ])) {
           Int(i, ..) => i
           _ => 0
@@ -1494,7 +1494,7 @@ let array_shuffle_in_place_fn : RuntimeFunction = ctx => {
       let rand = fn(upper) {
         match
           (try! ctx.context.call(rand0.val, ctx.pkg, [
-            { val: Int(upper, raw=None), kind: Positional },
+            { val: Int(upper, raw=None), kind: Positional, },
           ])) {
           Int(i, ..) => i
           _ => 0
@@ -1514,8 +1514,8 @@ let array_sort_by_fn : RuntimeFunction = ctx => {
       arr.sort_by(fn(left, right) {
         match
           (try! ctx.context.call(cmp.val, ctx.pkg, [
-            { val: left, kind: Positional },
-            { val: right, kind: Positional },
+            { val: left, kind: Positional, },
+            { val: right, kind: Positional, },
           ])) {
           Int(i, ..) => i
           _ => 0
@@ -1532,7 +1532,7 @@ let array_sort_by_key_fn : RuntimeFunction = ctx => {
   match ctx.args {
     [{ val: Array(arr), .. }, { val: Fn(map), .. }] => {
       arr.sort_by_key(fn(val) {
-        try! ctx.context.call(map.val, ctx.pkg, [{ val, kind: Positional }])
+        try! ctx.context.call(map.val, ctx.pkg, [{ val, kind: Positional, }])
       })
       Unit
     }
@@ -1543,19 +1543,19 @@ let array_sort_by_key_fn : RuntimeFunction = ctx => {
 ///|
 let array_mut_view_fn : RuntimeFunction = ctx => {
   match ctx.args {
-    [{ val: Array(arr), .. }] => ArrayView(arr.mut_view().view())
+    [{ val: Array(arr), .. }] => ArrayView(arr.mut_view().exact_view())
     [{ val: Array(arr), .. }, { val: Int(start, ..), .. }] => {
       let end = match ctx.int_arg("end", 2) {
         Some(i) => i
         None => arr.length()
       }
-      ArrayView(arr.mut_view(start~, end~).view())
+      ArrayView(arr.mut_view(start~, end~).exact_view())
     }
     [
       { val: Array(arr), .. },
       { val: Int(start, ..), .. },
       { val: Int(end, ..), .. },
-    ] => ArrayView(arr.mut_view(start~, end~).view())
+    ] => ArrayView(arr.mut_view(start~, end~).exact_view())
     _ => Unit
   }
 }

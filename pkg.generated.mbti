@@ -43,6 +43,8 @@ pub enum EvalResult {
   Success(@core.RuntimeValue, @core.ClosureInterpreter)
   Error(String, @core.ClosureInterpreter)
 }
+pub fn EvalResult::output(Self, &Logger) -> Unit
+pub fn EvalResult::to_string(Self) -> String
 pub impl Show for EvalResult
 
 pub(all) struct MoonBitVM {
@@ -62,6 +64,9 @@ pub(all) struct TestFailure {
   name : String
   message : String
 } derive(ToJson)
+pub fn TestFailure::output(Self, &Logger) -> Unit
+pub fn TestFailure::to_json(Self) -> Json
+pub fn TestFailure::to_string(Self) -> String
 pub impl Show for TestFailure
 
 pub(all) struct TestResult {
@@ -70,6 +75,9 @@ pub(all) struct TestResult {
   failed : Int
   failures : Array[TestFailure]
 } derive(ToJson)
+pub fn TestResult::output(Self, &Logger) -> Unit
+pub fn TestResult::to_json(Self) -> Json
+pub fn TestResult::to_string(Self) -> String
 pub impl Show for TestResult
 
 // Type aliases
@@ -83,4 +91,3 @@ pub impl ToRuntime for Int
 pub impl ToRuntime for Double
 pub impl ToRuntime for String
 pub impl ToRuntime for @core.RuntimeValue
-

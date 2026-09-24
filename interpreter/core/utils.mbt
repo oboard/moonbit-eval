@@ -17,40 +17,62 @@ fn fromCharCode(hex : StringView, base : Int) -> Char {
 ///|
 pub fn manualUnescape(input : StringView, buf : StringBuilder) -> Unit {
   for state = input {
-    match state {
-      // EOF
-      "" => break
-      rest => {
-        let (c, next_rest) = lexmatch rest with longest {
-          ("\\n", rest) => ('\n', rest)
-          ("\\t", rest) => ('\t', rest)
-          ("\\r", rest) => ('\r', rest)
-          // Backspace
-          ("\\b", rest) => ('\b', rest)
-          // Unicode escape
-          ("\\u[0-9a-fA-F]{4}" as raw, rest) =>
-            (fromCharCode(raw[2:], 16), rest)
-          ("\\x[0-9a-fA-F]{2}" as raw, rest) =>
-            (fromCharCode(raw[2:], 16), rest)
-          // Unicode escape with braces
-          ("\\u[{][0-9a-fA-F]+[}]" as raw, rest) =>
-            (fromCharCode(raw[3:-1], 16), rest)
-          // Octal escape
-          ("\\o[0-3][0-7]{2}" as raw, rest) => (fromCharCode(raw[2:], 8), rest)
-          ("\\\\", rest) => ('\\', rest)
-          ("." as c, rest) => (c, rest)
-          _ => break
-        }
-        buf.write_char(c)
-        continue next_rest
+    lexmatch state with longest {
+      // EOF handled by the `_` case below
+      (re"^(?:\\n)", after=rest) => {
+        buf.write_char('\n')
+        continue rest
       }
+      (re"^(?:\\t)", after=rest) => {
+        buf.write_char('\t')
+        continue rest
+      }
+      (re"^(?:\\r)", after=rest) => {
+        buf.write_char('\r')
+        continue rest
+      }
+      // Backspace
+      (re"^(?:\\b)", after=rest) => {
+        buf.write_char('\b')
+        continue rest
+      }
+      // Unicode escape
+      (re"^(?:\\u[0-9a-fA-F]{4})" as raw, after=rest) => {
+        buf.write_char(fromCharCode(raw.exact_view(start=2), 16))
+        continue rest
+      }
+      (re"^(?:\\x[0-9a-fA-F]{2})" as raw, after=rest) => {
+        buf.write_char(fromCharCode(raw.exact_view(start=2), 16))
+        continue rest
+      }
+      // Unicode escape with braces
+      (re"^(?:\\u[{][0-9a-fA-F]+[}])" as raw, after=rest) => {
+        buf.write_char(
+          fromCharCode(raw.exact_view(start=3, end=raw.length() - 1), 16),
+        )
+        continue rest
+      }
+      // Octal escape
+      (re"^(?:\\o[0-3][0-7]{2})" as raw, after=rest) => {
+        buf.write_char(fromCharCode(raw.exact_view(start=2), 8))
+        continue rest
+      }
+      (re"^(?:\\\\)", after=rest) => {
+        buf.write_char('\\')
+        continue rest
+      }
+      (re"^(?:.)" as c, after=rest) => {
+        buf.write_char(c)
+        continue rest
+      }
+      _ => break
     }
   }
 }
 
 ///|
 test "manualUnescape" {
-  let builder = StringBuilder::new()
+  let builder = @builtin.StringBuilder()
   manualUnescape("\\nhello", builder)
   inspect(
     builder.to_string(),
@@ -59,7 +81,7 @@ test "manualUnescape" {
       #|hello
     ),
   )
-  let builder = StringBuilder::new()
+  let builder = @builtin.StringBuilder()
   manualUnescape("hello\\nworld", builder)
   inspect(
     builder.to_string(),
@@ -68,13 +90,13 @@ test "manualUnescape" {
       #|world
     ),
   )
-  let builder = StringBuilder::new()
+  let builder = @builtin.StringBuilder()
   manualUnescape("\\u0041", builder)
   inspect(builder.to_string(), content="A")
-  let builder = StringBuilder::new()
+  let builder = @builtin.StringBuilder()
   manualUnescape("\\x41", builder)
   inspect(builder.to_string(), content="A")
-  let builder = StringBuilder::new()
+  let builder = @builtin.StringBuilder()
   manualUnescape("\\o061", builder)
   inspect(builder.to_string(), content="1")
 }

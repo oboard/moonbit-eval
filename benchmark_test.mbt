@@ -4,7 +4,7 @@
 
 // 表达式求值基准测试
 test "benchmark_arithmetic_expressions" (b : @bench.T) {
-  let vm = MoonBitVM::new(log=false)
+  let vm = @eval.MoonBitVM::new(log=false)
   let code = "1 + 2 * 3 - 4 / 2 + (5 * 6) - 7"
   b.bench(fn() { b.keep(vm.eval(code)) })
 }
@@ -16,14 +16,14 @@ test "native_benchmark_arithmetic_expressions" (b : @bench.T) {
 
 ///|
 test "benchmark_compiled_arithmetic_expressions" (b : @bench.T) {
-  let vm = MoonBitVM::new(log=false)
+  let vm = @eval.MoonBitVM::new(log=false)
   let compiled = vm.compile("1 + 2 * 3 - 4 / 2 + (5 * 6) - 7")
   b.bench(fn() { b.keep(compiled.run(vm)) })
 }
 
 ///|
 test "benchmark_compiled_parameters" (b : @bench.T) {
-  let vm = MoonBitVM::new(log=false)
+  let vm = @eval.MoonBitVM::new(log=false)
   let compiled = vm.compile("a + b * c - d / e + f * g - h", params=[
     "a", "b", "c", "d", "e", "f", "g", "h",
   ])
@@ -34,7 +34,7 @@ test "benchmark_compiled_parameters" (b : @bench.T) {
 
 ///|
 test "benchmark_variable_access" (b : @bench.T) {
-  let vm = MoonBitVM::new(log=false)
+  let vm = @eval.MoonBitVM::new(log=false)
 
   // 设置变量
   vm.run("let x = 42; let y = 100; let z = x + y")
@@ -45,7 +45,7 @@ test "benchmark_variable_access" (b : @bench.T) {
 
 ///|
 test "benchmark_function_calls" (b : @bench.T) {
-  let vm = MoonBitVM::new(log=false)
+  let vm = @eval.MoonBitVM::new(log=false)
   let code = "fn add(x, y) { x + y }; fn mul(x, y) { x * y }; fn complex(a, b, c) { add(mul(a, b), c) }; complex(10, 20, 30)"
   b.bench(fn() { b.keep(vm.eval(code)) })
 }
@@ -54,7 +54,7 @@ test "benchmark_function_calls" (b : @bench.T) {
 
 ///|
 test "benchmark_array_operations" (b : @bench.T) {
-  let vm = MoonBitVM::new(log=false)
+  let vm = @eval.MoonBitVM::new(log=false)
   let code = "let arr = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]; let sum = arr[0] + arr[1] + arr[2] + arr[3] + arr[4]; sum"
   b.bench(fn() { b.keep(vm.eval(code)) })
 }
@@ -63,7 +63,7 @@ test "benchmark_array_operations" (b : @bench.T) {
 
 ///|
 test "benchmark_recursive_functions" (b : @bench.T) {
-  let vm = MoonBitVM::new(log=false)
+  let vm = @eval.MoonBitVM::new(log=false)
   let code = "fn fibonacci(n) { if n <= 1 { n } else { fibonacci(n - 1) + fibonacci(n - 2) } }; fibonacci(10)"
   b.bench(fn() { b.keep(vm.eval(code)) })
 }
@@ -72,7 +72,7 @@ test "benchmark_recursive_functions" (b : @bench.T) {
 
 ///|
 test "benchmark_tail_recursive_fibonacci" (b : @bench.T) {
-  let vm = MoonBitVM::new(log=false)
+  let vm = @eval.MoonBitVM::new(log=false)
   let code = "fn fib_tail(n, a, b) { if n == 0 { a } else { fib_tail(n - 1, b, a + b) } }; fn fibonacci_fast(n) { fib_tail(n, 0, 1) }; fibonacci_fast(10)"
   b.bench(fn() { b.keep(vm.eval(code)) })
 }
@@ -81,7 +81,7 @@ test "benchmark_tail_recursive_fibonacci" (b : @bench.T) {
 
 ///|
 test "benchmark_iterative_fibonacci" (b : @bench.T) {
-  let vm = MoonBitVM::new(log=false)
+  let vm = @eval.MoonBitVM::new(log=false)
   let code = "fn fibonacci_iter(n) { let mut a = 0; let mut b = 1; let mut i = 0; while i < n { let temp = a + b; a = b; b = temp; i = i + 1 }; a }; fibonacci_iter(10)"
   b.bench(fn() { b.keep(vm.eval(code)) })
 }
@@ -90,7 +90,7 @@ test "benchmark_iterative_fibonacci" (b : @bench.T) {
 
 ///|
 test "benchmark_complex_expressions" (b : @bench.T) {
-  let vm = MoonBitVM::new(log=false)
+  let vm = @eval.MoonBitVM::new(log=false)
   let code = "let a = 10; let b = 20; let c = 30; (a + b) * c - (a * b) + (c / 2) - (a - b)"
   b.bench(fn() { b.keep(vm.eval(code)) })
 }

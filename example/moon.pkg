@@ -2,6 +2,4 @@ import {
   "oboard/eval",
 }
 
-options(
-  "is-main": true,
-)
+pkgtype(kind: "executable")

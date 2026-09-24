@@ -7,14 +7,17 @@ pub(all) struct RuntimeEnvironment {
 } derive(ToJson)
 
 ///|
+pub extend RuntimeEnvironment with ToJson::{to_json}
+
+///|
 pub fn RuntimeEnvironment::new(
   parent? : RuntimeEnvironment,
   values? : Map[String, RuntimeValue],
 ) -> RuntimeEnvironment {
   if parent is Some(parent) {
-    { values: values.unwrap_or({}), mutable_vars: {}, parent: Some(parent) }
+    { values: values.unwrap_or({}), mutable_vars: {}, parent: Some(parent), }
   } else {
-    { values: values.unwrap_or({}), mutable_vars: {}, parent: None }
+    { values: values.unwrap_or({}), mutable_vars: {}, parent: None, }
   }
 }
 
@@ -23,8 +26,8 @@ pub fn RuntimeEnvironment::new(
 pub fn RuntimeEnvironment::copy(
   self : RuntimeEnvironment,
 ) -> RuntimeEnvironment {
-  let values = {}
-  let mutable_vars = {}
+  let values = @builtin.Map([])
+  let mutable_vars = @builtin.Map([])
   self.values.each(fn(key, value) { values.set(key, value) })
   self.mutable_vars.each(fn(key, is_mutable) {
     mutable_vars.set(key, is_mutable)
@@ -33,7 +36,7 @@ pub fn RuntimeEnvironment::copy(
     Some(parent) => Some(parent.copy())
     None => None
   }
-  { values, mutable_vars, parent }
+  { values, mutable_vars, parent, }
 }
 
 ///|
@@ -41,8 +44,8 @@ pub fn RuntimeEnvironment::copy(
 pub fn RuntimeEnvironment::create_closure_env(
   self : RuntimeEnvironment,
 ) -> RuntimeEnvironment {
-  let values = {}
-  let mutable_vars = {}
+  let values = @builtin.Map([])
+  let mutable_vars = @builtin.Map([])
 
   // 只捕获不可变变量的值，可变变量通过父环境引用
   self.values.each(fn(key, value) {
@@ -57,7 +60,7 @@ pub fn RuntimeEnvironment::create_closure_env(
 
   // 设置父环境为当前环境，这样可变变量可以通过父环境访问
   // 继承父环境的全局状态（如类型定义、方法等）
-  { values, mutable_vars, parent: Some(self) }
+  { values, mutable_vars, parent: Some(self), }
 }
 
 ///|
@@ -83,6 +86,7 @@ pub fn ClosureInterpreter::top_func_def_to_closure(
       error_type: fun_decl.error_type,
       kind: Arrow,
       is_async: fun_decl.is_async,
+      nocancel_: None,
       loc,
     }
     let type_name = match fun_decl {
@@ -98,7 +102,7 @@ pub fn ClosureInterpreter::top_func_def_to_closure(
             ..
           )
         ),
-        ..,
+        ..
       } => Some(name)
       _ => None
     }

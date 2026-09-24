@@ -271,7 +271,7 @@ pub fn ClosureInterpreter::match_case(
       (Array(arr), "Array", _) =>
         match_unary(Array(arr.map(item => Json(item))))
       (Object(obj), "Object", _) => {
-        let map : Map[RuntimeValue, RuntimeValue] = {}
+        let map : Map[RuntimeValue, RuntimeValue] = @builtin.Map([])
         for key, item in obj {
           map.set(String(key), Json(item))
         }
@@ -384,7 +384,7 @@ pub fn ClosureInterpreter::match_case(
                 return false
               }
               let rest_view = values[left_len:values.length() - right_len]
-              let rest = Array::new(capacity=rest_view.length())
+              let rest = @builtin.Array(capacity=rest_view.length())
               for item in rest_view {
                 rest.push(item)
               }
@@ -468,7 +468,7 @@ pub fn ClosureInterpreter::match_case(
       match value {
         Json(json) =>
           match_json_constructor(json, constr.name.name, pattern_args)
-        Constructor({ val: { name, fields }, ty }) =>
+        Constructor({ val: { name, fields, }, ty, }) =>
           if name == constr.name.name &&
             self.constructor_pattern_matches_type(ty, constr) {
             // 检查参数匹配

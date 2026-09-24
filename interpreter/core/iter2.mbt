@@ -51,8 +51,8 @@ let iter2_run_fn : RuntimeFunction = ctx => {
       while iter2.next() is Some((a, b)) {
         guard iter_result_is_continue(
           try! ctx.context.call(func.val, ctx.pkg, [
-            { val: a, kind: Positional },
-            { val: b, kind: Positional },
+            { val: a, kind: Positional, },
+            { val: b, kind: Positional, },
           ]),
         ) else {
           break ctx.pkg.cons("IterEnd", [])
@@ -70,8 +70,8 @@ let iter2_each_fn : RuntimeFunction = ctx => {
     [{ val: Iter2(iter2), .. }, { val: Fn(func), .. }] => {
       iter2.each(fn(a, b) {
         let _ = try! ctx.context.call(func.val, ctx.pkg, [
-          { val: a, kind: Positional },
-          { val: b, kind: Positional },
+          { val: a, kind: Positional, },
+          { val: b, kind: Positional, },
         ])
       })
       Unit

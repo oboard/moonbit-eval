@@ -499,7 +499,7 @@ let int_abs_fn : RuntimeFunction = ctx => {
 let int_output_fn : RuntimeFunction = ctx => {
   match ctx.args {
     [{ val: Int(i, ..), .. }, { val: StringBuilder(logger), .. }] => {
-      i.output(logger)
+      Show::output(i, logger)
       Unit
     }
     _ => Unit

@@ -3,48 +3,106 @@
 Generate embedded core modules for moonbit-eval interpreter.
 This script reads all modules from moonbitlang/core and generates
 RuntimePackage definitions in the format expected by core_modules.mbt.
+It honors the `options.targets` directive in each package's moon.pkg
+to include only files relevant for the js target.
 """
 
 import os
+import re
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Optional, Set, Tuple
 
 # Core library path
 CORE_PATH = "/Users/oboard/.moon/lib/core"
 OUTPUT_FILE = "interpreter/core/core_modules.mbt"
 
-# Removed extract_all_items function - no longer needed with new format
+# Target we are building for
+BUILD_TARGET = "js"
 
-def read_module_info(module_dir: Path) -> Dict:
+def parse_targets(moon_pkg_content: str) -> Dict[str, List[str]]:
+    """Parse options(targets: { ... }) from moon.pkg content.
+    
+    Returns a dict mapping filename -> list of target strings.
+    Files not listed in targets are included for all targets.
     """
-    Read module information from a directory.
-    Returns dict with module name, dependencies, and concatenated code content.
+    targets = {}
+    # Match options(targets: { ... }) block
+    m = re.search(r'targets\s*:\s*\{([^}]*)\}', moon_pkg_content, re.DOTALL)
+    if not m:
+        return targets
+    
+    block = m.group(1)
+    # Parse each entry: "filename": [ "target1", "target2" ]
+    for entry_m in re.finditer(r'"([^"]+)"\s*:\s*\[([^\]]*)\]', block):
+        filename = entry_m.group(1)
+        targets_str = entry_m.group(2)
+        target_list = [t.strip().strip('"') for t in targets_str.split(',') if t.strip().strip('"')]
+        targets[filename] = target_list
+    
+    return targets
+
+def should_include_file(filename: str, targets: Dict[str, List[str]], build_target: str) -> bool:
+    """Determine if a file should be included for the given build target.
+    
+    Rules:
+    - If file is not in targets dict, include for all targets.
+    - If the target list starts with "not", include for targets NOT in the list.
+    - Otherwise, include only for targets IN the list.
     """
+    if filename not in targets:
+        return True
+    
+    target_list = targets[filename]
+    if not target_list:
+        return True
+    
+    if target_list[0] == "not":
+        # Exclude for listed targets
+        return build_target not in target_list[1:]
+    else:
+        # Include only for listed targets
+        return build_target in target_list
+
+def read_module_info(module_dir: Path) -> Optional[Dict]:
+    """Read module information from a directory."""
     pkg = "moonbitlang/core/" + module_dir.relative_to(CORE_PATH).as_posix()
     alias = module_dir.relative_to(CORE_PATH).as_posix()
     module_name = pkg.replace('/', '_')
     
-    # Keep embedded package deps empty to avoid introducing definition cycles.
-    # The generated file is used as a flat registry of embedded packages.
     dependencies = []
+    
+    # Read moon.pkg to get targets
+    moon_pkg_path = module_dir / "moon.pkg"
+    file_targets = {}
+    if moon_pkg_path.exists():
+        try:
+            with open(moon_pkg_path, 'r', encoding='utf-8') as f:
+                pkg_content = f.read()
+                file_targets = parse_targets(pkg_content)
+        except (UnicodeDecodeError, FileNotFoundError):
+            pass
     
     # Find all .mbt files (excluding test files)
     mbt_files = [f for f in module_dir.glob("*.mbt") 
                  if not f.name.endswith('_test.mbt') and not f.name.endswith('_wbtest.mbt')]
     
-    # Collect file contents with their names
+    # Collect file contents with their names, filtering by target
     file_contents = {}
     
-    for mbt_file in sorted(mbt_files):  # Sort for consistent ordering
+    for mbt_file in sorted(mbt_files):
+        if not should_include_file(mbt_file.name, file_targets, BUILD_TARGET):
+            continue
         try:
             with open(mbt_file, 'r', encoding='utf-8') as f:
                 content = f.read().strip()
-                if content:  # Only add non-empty content
+                if content:
                     file_contents[mbt_file.name] = content
         except (UnicodeDecodeError, FileNotFoundError):
             continue
     
-    # Join all content with double newlines for backward compatibility
+    if not file_contents:
+        return None
+    
     concatenated_code = '\n\n'.join(file_contents.values())
     
     return {
@@ -56,19 +114,14 @@ def read_module_info(module_dir: Path) -> Dict:
         'files': file_contents
     }
 
-# Removed has_non_self_parameters function - no longer needed with new format
-
 def generate_module_code(module_info: Dict) -> str:
-    """
-    Generate RuntimePackage code for a single module.
-    """
+    """Generate RuntimePackage code for a single module."""
     pkg = module_info['pkg']
     module_name = module_info['name']
-    code = module_info['code']
     dependencies = module_info['dependencies']
     files = module_info['files']
     
-    if not code.strip():
+    if not files:
         return ""
     
     # Generate dependencies map
@@ -85,22 +138,18 @@ def generate_module_code(module_info: Dict) -> str:
     # Generate files map
     files_map_entries = []
     for filename, content in files.items():
-        # Format the code with #| prefix for each line, filtering out comments and empty lines
         code_lines = content.split('\n')
         formatted_code_lines = []
         for line in code_lines:
-            # Skip comment lines and empty lines to reduce file size
             stripped_line = line.strip()
-            if not stripped_line or stripped_line.startswith('//') or stripped_line.startswith('///') or stripped_line.startswith('///'):
+            if not stripped_line or stripped_line.startswith('//') or stripped_line.startswith('///'):
                 continue
-            # Escape quotes and backslashes for the string literal
             formatted_code_lines.append(f'    #|{line}')
         
         if formatted_code_lines:
             formatted_content = '\n'.join(formatted_code_lines)
             files_map_entries.append(f'  "{filename}": (\n{formatted_content}\n  )')
         else:
-            # For empty files, generate empty string
             files_map_entries.append(f'  "{filename}": ""')
     
     files_map_str = ',\n'.join(files_map_entries)
@@ -117,9 +166,7 @@ let {module_name}_module : RuntimePackage = RuntimePackage::new(
     return module_code
 
 def generate_core_modules_map(modules: List[dict]) -> str:
-    """
-    Generate the core_modules map declaration.
-    """
+    """Generate the core_modules map declaration."""
     entries = []
     for module in modules: 
         entries.append(f'"{module["alias"]}": {module["name"]}_module')
@@ -130,19 +177,17 @@ def generate_core_modules_map(modules: List[dict]) -> str:
 let core_modules : Map[String, RuntimePackage] = {{ {map_content} }}'''
 
 def main():
-    """
-    Main function to generate all core modules.
-    """
+    """Main function to generate all core modules."""
     core_path = Path(CORE_PATH)
     
     if not core_path.exists():
         print(f"Error: Core path {CORE_PATH} does not exist")
         return
+    
     # Get all module directories recursively
     module_dirs = []
     for root, dirs, _ in os.walk(core_path):
         root_path = Path(root)
-        # Skip hidden directories and build artifacts.
         dirs[:] = [
             d
             for d in dirs
@@ -155,13 +200,12 @@ def main():
     generated_modules = []
     module_codes = []
     
-    # Process each module
     for module_dir in sorted(module_dirs):
         print(f"Processing module: {module_dir.name}")
         
         module_info = read_module_info(module_dir)
         
-        if module_info['code'].strip():
+        if module_info and module_info['code'].strip():
             module_code = generate_module_code(module_info)
             if module_code:
                 module_codes.append(module_code)
@@ -169,7 +213,7 @@ def main():
                 code_lines = len([line for line in module_info['code'].split('\n') if line.strip()])
                 print(f"  Generated module with {code_lines} lines of code")
         else:
-            print(f"  No code content found")
+            print(f"  No code content found (filtered by target)")
     
     # Generate the complete file content
     header = '''///|
@@ -185,17 +229,14 @@ fn dummy_loc() -> @basic.Location {
   }
 }'''
     
-    # Generate core_modules map
     core_modules_map = generate_core_modules_map(generated_modules)
     
-    # Combine all parts
     full_content = "\n\n".join([
         header,
         core_modules_map,
         dummy_loc
     ] + module_codes)
     
-    # Write to output file
     output_path = Path(OUTPUT_FILE)
     with open(output_path, 'w', encoding='utf-8') as f:
         f.write(full_content)

@@ -24,7 +24,7 @@ fn ClosureInterpreter::visit_record_update(
       })
 
       // 创建新的结构体
-      Object({ val: new_fields, ty: refer.ty })
+      Object({ val: new_fields, ty: refer.ty, })
     }
     _ => self.error("RecordUpdate can only be applied to struct values")
   }

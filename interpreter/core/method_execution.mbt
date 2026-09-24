@@ -15,7 +15,7 @@ fn ClosureInterpreter::create_function_context(
   self : ClosureInterpreter,
   args : FixedArray[RuntimeArgument],
 ) -> RuntimeFunctionContext {
-  { pkg: self.current_pkg, context: self, args }
+  { pkg: self.current_pkg, context: self, args, }
 }
 
 ///|
@@ -120,7 +120,7 @@ fn ClosureInterpreter::method_call(
         return self.execute_embedded_function(
           embedded_method,
           FixedArray::from_array(
-            [{ val: self_value, kind: Positional }, ..evaluated_args],
+            [{ val: self_value, kind: Positional, }, ..evaluated_args],
           ),
         )
       }
@@ -150,7 +150,7 @@ fn ClosureInterpreter::execute_user_method(
   let old_mod = self.current_pkg
   let args = FixedArray::from_array(
     [
-      { val: self_value, kind: Positional },
+      { val: self_value, kind: Positional, },
       ..self.convert_to_runtime_arguments(args),
     ],
   )
@@ -160,7 +160,7 @@ fn ClosureInterpreter::execute_user_method(
     self.current_pkg = old_mod
   }
   match func {
-    Fn(func) => (func.val)({ context: self, pkg, args })
+    Fn(func) => (func.val)({ context: self, pkg, args, })
     _ =>
       self.error(
         "exec method: \{self_value.get_type().to_string()}::\{method_name} not found",

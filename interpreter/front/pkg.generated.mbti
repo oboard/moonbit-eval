@@ -17,4 +17,3 @@ pub fn parse_code_to_impl(String) -> Result[@syntax.Impl, String]
 // Type aliases
 
 // Traits
-

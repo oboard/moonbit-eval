@@ -117,8 +117,8 @@ let hash_map_each_fn : RuntimeFunction = ctx => {
     [{ val: HashMap(map), .. }, { val: Fn(f), .. }] => {
       map.each((key, val) => {
         ctx.context.call(f.val, ctx.pkg, [
-          { val: key, kind: Positional },
-          { val, kind: Positional },
+          { val: key, kind: Positional, },
+          { val, kind: Positional, },
         ])
         |> ignore
       })
@@ -135,9 +135,9 @@ let hash_map_eachi_fn : RuntimeFunction = ctx => {
     [{ val: HashMap(map), .. }, { val: Fn(f), .. }] => {
       map.eachi((i, key, val) => {
         ctx.context.call(f.val, ctx.pkg, [
-          { val: Int(i, raw=None), kind: Positional },
-          { val: key, kind: Positional },
-          { val, kind: Positional },
+          { val: Int(i, raw=None), kind: Positional, },
+          { val: key, kind: Positional, },
+          { val, kind: Positional, },
         ])
         |> ignore
       })
@@ -274,7 +274,7 @@ let hash_map_iter2_fn : RuntimeFunction = ctx => {
 let hash_map_keys_fn : RuntimeFunction = ctx => {
   match ctx.args {
     [{ val: HashMap(map), .. }] => {
-      let arr = Array::new()
+      let arr = []
       map.each(fn(key, _val) { arr.push(key) })
       Array(arr)
     }
@@ -299,8 +299,8 @@ let hash_map_map_fn : RuntimeFunction = ctx => {
       let new_map = @hashmap.HashMap([], capacity=8)
       map.each((key, val) => {
         let new_val = ctx.context.call(f.val, ctx.pkg, [
-          { val: key, kind: Positional },
-          { val, kind: Positional },
+          { val: key, kind: Positional, },
+          { val, kind: Positional, },
         ])
         new_map.set(key, new_val)
       })
@@ -377,8 +377,8 @@ let hash_map_retain_fn : RuntimeFunction = ctx => {
         try {
           match
             ctx.context.call(f.val, ctx.pkg, [
-              { val: key, kind: Positional },
-              { val, kind: Positional },
+              { val: key, kind: Positional, },
+              { val, kind: Positional, },
             ]) {
             Bool(b) => b
             _ => false
@@ -419,7 +419,7 @@ let hash_map_size_fn : RuntimeFunction = ctx => {
 let hash_map_to_array_fn : RuntimeFunction = ctx => {
   match ctx.args {
     [{ val: HashMap(map), .. }] => {
-      let arr : Array[RuntimeValue] = Array::new()
+      let arr : Array[RuntimeValue] = []
       map.each(fn(key, val) { arr.push(Tuple([key, val])) })
       Array(arr)
     }
@@ -433,7 +433,7 @@ let hash_map_to_json_fn : RuntimeFunction = ctx => {
   match ctx.args {
     [{ val: HashMap(map), .. }] => {
       // 简化的JSON转换，将HashMap转换为Map[RuntimeValue, RuntimeValue]
-      let json_obj : Map[RuntimeValue, RuntimeValue] = {}
+      let json_obj : Map[RuntimeValue, RuntimeValue] = @builtin.Map([])
       map.each(fn(key, val) { json_obj.set(key, val) })
       Map(json_obj)
     }
@@ -446,7 +446,7 @@ let hash_map_to_json_fn : RuntimeFunction = ctx => {
 let hash_map_to_string_fn : RuntimeFunction = ctx => {
   match ctx.args {
     [{ val: HashMap(map), .. }] => {
-      let sb = StringBuilder::new()
+      let sb = @builtin.StringBuilder()
       sb.write_string("{")
       let mut first = true
       map.each(fn(key, val) {

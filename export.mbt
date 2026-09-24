@@ -62,8 +62,8 @@ pub fn test_result_to_string(result : TestResult) -> String {
 ///|
 pub fn code_to_ast(code : String) -> String {
   match @core.parse_eval_code(code) {
-    Ok(EvalExpr(expr)) => expr.to_json().stringify()
-    Ok(EvalTop(impls, ..)) => impls.to_json().stringify()
+    Ok(EvalExpr(expr)) => @json.to_json(expr).stringify()
+    Ok(EvalTop(impls, ..)) => @json.to_json(impls).stringify()
     Err(msg) => msg
   }
 }

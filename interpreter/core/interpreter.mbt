@@ -161,7 +161,7 @@ pub fn ClosureInterpreter::run_main(
 pub fn ClosureInterpreter::run_top_test(
   self : ClosureInterpreter,
   expr : @syntax.Expr,
-  is_async : @moonbitlang/parser/basic.Location?,
+  is_async : @moonbitlang/lexer/basic.Location?,
 ) -> RuntimeValue {
   self.run_top_test_checked(expr, is_async) catch {
     _ => Unit
@@ -172,7 +172,7 @@ pub fn ClosureInterpreter::run_top_test(
 pub fn ClosureInterpreter::run_top_test_checked(
   self : ClosureInterpreter,
   expr : @syntax.Expr,
-  is_async : @moonbitlang/parser/basic.Location?,
+  is_async : @moonbitlang/lexer/basic.Location?,
 ) -> RuntimeValue raise ControlFlow {
   if is_async is Some(_) {
     let mut result = Unit
@@ -254,6 +254,7 @@ pub fn ClosureInterpreter::top_visit(
 ) -> RuntimeValue {
   match node {
     TopView(_) => Unit
+    TopExtend(_) | TopImport(_) => Unit
     TopUsing(pkg~, names~, ..) => {
       let mod = self.find_pkg(pkg.name)
       for using_name in names {
@@ -313,6 +314,7 @@ pub fn ClosureInterpreter::top_visit(
             error_type: NoErrorType,
             kind: Lambda,
             is_async: None,
+            nocancel_: None,
             loc: dummy_loc(),
           }
 
@@ -349,12 +351,6 @@ pub fn ClosureInterpreter::top_visit(
     TopTypeDef(def) => {
       match def {
         { tycon, params, components, deriving, .. } => {
-          if def.components is Record(constr_decl=Some(constr_decl), ..) {
-            self.current_pkg.struct_constrs.set(
-              def.tycon,
-              constr_decl.name.name,
-            )
-          }
           self.current_pkg.type_definitions.set(tycon, def)
 
           // 处理泛型类型参数
@@ -450,6 +446,7 @@ pub fn ClosureInterpreter::top_visit(
             error_type: fun_decl.error_type,
             kind: Lambda,
             is_async: fun_decl.is_async,
+            nocancel_: None,
             loc,
           }
           if type_name is Some(type_name) {
@@ -485,7 +482,7 @@ pub fn ClosureInterpreter::top_visit(
                     More(Expr(Ident({ name: alias_name, .. })), ..)
                   )
                 ),
-                ..,
+                ..
               } =>
                 // println("\{alias_name} -> \{func_name}")
                 self.current_pkg.fn_aliases.set(alias_name, func_value)
@@ -499,7 +496,7 @@ pub fn ClosureInterpreter::top_visit(
             Embedded(code=CodeString(code_str), ..) => {
               let func = self.embedded_fns.get(code_str)
               if func is Some(func) {
-                let func_value = Fn({ val: func, ty: Internal })
+                let func_value = Fn({ val: func, ty: Internal, })
                 self.current_pkg.set(func_name, func_value)
                 if type_name is Some(type_name) {
                   self.add_embedded_method(type_name, func_name, func)
@@ -513,7 +510,7 @@ pub fn ClosureInterpreter::top_visit(
                           More(Expr(Ident({ name: alias_name, .. })), ..)
                         )
                       ),
-                      ..,
+                      ..
                     } => self.current_pkg.fn_aliases.set(alias_name, func_value)
                     _ => ()
                   }
@@ -538,7 +535,7 @@ pub fn ClosureInterpreter::top_visit(
       self.current_pkg.traits.set(decl.name.name, decl)
       Unit
     }
-    // _ => self.error("TopExpr: unimplemented:" + node.to_json().stringify())
+    // _ => self.error("TopExpr: unimplemented:" + @json.to_json(node).stringify())
   }
 }
 
@@ -650,9 +647,9 @@ pub fn ClosureInterpreter::visit(
           match ty.find_method("op_as_view") {
             Some((pkg, Fn(func))) =>
               self.call(func.val, pkg, [
-                { val: self_value, kind: Positional },
-                { val: start.unwrap_or(Unit), kind: LabelledOption("start") },
-                { val: end.unwrap_or(Unit), kind: LabelledOption("end") },
+                { val: self_value, kind: Positional, },
+                { val: start.unwrap_or(Unit), kind: LabelledOption("start"), },
+                { val: end.unwrap_or(Unit), kind: LabelledOption("end"), },
               ])
             Some(_) =>
               self.error("\{ty.to_string()}::op_as_view is not a function")
@@ -833,7 +830,7 @@ pub fn ClosureInterpreter::visit(
         // 处理简单函数调用，如 5 |> ignore
         Ident(id={ name, .. }, ..) => {
           let pipe_args = @list.cons(
-            @syntax.Argument::{ value: lhs, kind: Positional },
+            @syntax.Argument::{ value: lhs, kind: Positional, },
             @list.new(),
           )
           self.call_by_name(name, pipe_args)
@@ -841,7 +838,7 @@ pub fn ClosureInterpreter::visit(
         // 处理方法调用，如 [] |> Array::push(5)
         Apply(func~, args~, ..) => {
           let pipe_args = @list.cons(
-            @syntax.Argument::{ value: lhs, kind: Positional },
+            @syntax.Argument::{ value: lhs, kind: Positional, },
             args,
           )
           match func {
@@ -856,7 +853,7 @@ pub fn ClosureInterpreter::visit(
             Ident(id={ name, .. }, ..) => {
               // 处理函数调用，如 5 |> func(arg1, arg2)
               let pipe_args = @list.cons(
-                @syntax.Argument::{ value: lhs, kind: Positional },
+                @syntax.Argument::{ value: lhs, kind: Positional, },
                 args,
               )
               self.call_by_name(name, pipe_args)
@@ -941,11 +938,10 @@ pub fn ClosureInterpreter::visit(
     // 处理 Try 表达式
     Try(body~, catch_~, ..) => self.visit_try(body, catch_)
 
-    // 处理 TryOperator 表达式 (try? 和 try!)
+    // 处理 TryOperator 表达式 (try!)
     TryOperator(body~, kind~, ..) => {
       let result = self.visit(body)
       match (result, kind) {
-        (Exception(_), Question) => Unit // try? 在异常时返回 None/Unit
         (Exception(_), Exclamation) => result // try! 传播异常
         _ => result
       }
@@ -991,7 +987,7 @@ pub fn ClosureInterpreter::visit(
     Unit(_) => Unit
 
     // 处理 ForEach 表达式 (for i in expr)
-    ForEach(binders~, expr~, body~, ..) => {
+    ForEach(binders~, expr~, init~, continue_block~, body~, else_block~, ..) => {
       let iterable_value = self.visit(expr)
 
       // 检查是否为范围表达式，否则使用默认迭代器
@@ -1016,6 +1012,22 @@ pub fn ClosureInterpreter::visit(
                     Iter(
                       start
                       .until(end, inclusive=true)
+                      .map(fn(i) { Int(i, raw=None) }),
+                    ),
+                  )
+                _ => None
+              }
+            }
+            Ident(name=">..") => {
+              // 降序区间：a >.. b 迭代 a-1, a-2, ..., b
+              let start_val = self.visit(lhs)
+              let end_val = self.visit(rhs)
+              match (start_val, end_val) {
+                (Int(start, ..), Int(end, ..)) =>
+                  Some(
+                    Iter(
+                      (start - 1)
+                      .until(end - 1, step=-1)
                       .map(fn(i) { Int(i, raw=None) }),
                     ),
                   )
@@ -1057,6 +1069,40 @@ pub fn ClosureInterpreter::visit(
           }
       }
 
+      // 为循环状态变量（累加器）创建外层作用域
+      // for i in expr; acc = init { body } nobreak { else }
+      self.push_scope(ControlFlow("foreach state"))
+      defer self.pop_scope()
+      // 绑定循环状态变量
+      for init_binder in init {
+        let (binder, init_expr) = init_binder
+        let init_value = self.visit(init_expr)
+        self.current_pkg.env.set(binder.name, init_value)
+      }
+      let mut loop_broken = false
+      let mut break_value = Unit
+
+      // 处理 continue：更新循环状态变量
+      fn update_loop_state(
+        arr : Array[RuntimeValue],
+      ) -> Unit raise ControlFlow {
+        if arr.is_empty() {
+          // 无显式值：按 continue_block 求值并更新
+          for cb in continue_block {
+            let (binder, cb_expr) = cb
+            let value = self.visit(cb_expr)
+            self.current_pkg.env.update(binder.name, value)
+          }
+        } else {
+          // continue v：将值按位置写入循环状态变量
+          init.eachi(fn(i, init_binder) {
+            if i < arr.length() {
+              self.current_pkg.env.update(init_binder.0.name, arr[i])
+            }
+          })
+        }
+      }
+
       // 使用迭代器进行迭代
       match final_iterator {
         Iter(iter_impl) =>
@@ -1075,8 +1121,15 @@ pub fn ClosureInterpreter::visit(
               self.visit(body) |> ignore
               continue
             } catch {
-              Break(_) => break
-              Continue(_) => continue
+              Break(value) => {
+                loop_broken = true
+                break_value = value
+                break
+              }
+              Continue(arr) => {
+                update_loop_state(arr)
+                continue
+              }
               e => raise e
             }
           }
@@ -1097,16 +1150,30 @@ pub fn ClosureInterpreter::visit(
               self.visit(body) |> ignore
               continue
             } catch {
-              Break(_) => break
-              Continue(_) => continue
+              Break(value) => {
+                loop_broken = true
+                break_value = value
+                break
+              }
+              Continue(arr) => {
+                update_loop_state(arr)
+                continue
+              }
               e => raise e
             }
           }
         _ => self.error("foreach: invalid iterator")
       }
-      Unit
+      if loop_broken {
+        break_value
+      } else {
+        match else_block {
+          Some(else_expr) => self.visit(else_expr)
+          None => Unit
+        }
+      }
     }
-    _ => self.error("visit: unimplemented " + node.to_json().stringify())
+    _ => self.error("visit: unimplemented " + @json.to_json(node).stringify())
   }
 }
 

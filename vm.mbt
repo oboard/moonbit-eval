@@ -240,7 +240,7 @@ pub fn CompiledCode::run(
           None => vm.interpreter.visit(expr)
         }
         if should_log {
-          println(expr.to_json().stringify())
+          println(@json.to_json(expr).stringify())
         }
         Success(result_value, vm.interpreter)
       }
@@ -248,7 +248,7 @@ pub fn CompiledCode::run(
         let mut last_result = RuntimeValue::Unit
         impls.each(node => {
           if should_log {
-            println(node.to_json().stringify())
+            println(@json.to_json(node).stringify())
           }
           let result = match node {
             TopTest(expr~, is_async~, ..) =>
@@ -296,6 +296,9 @@ pub(all) struct TestFailure {
 } derive(ToJson)
 
 ///|
+pub extend TestFailure with ToJson::{to_json}
+
+///|
 pub(all) struct TestResult {
   total : Int
   passed : Int
@@ -304,12 +307,21 @@ pub(all) struct TestResult {
 } derive(ToJson)
 
 ///|
+pub extend TestResult with ToJson::{to_json}
+
+///|
+pub extend TestFailure with Show::{to_string, output}
+
+///|
 pub impl Show for TestFailure with fn output(
   self : TestFailure,
   logger : &Logger,
 ) -> Unit {
   logger.write_string(self.name + ": " + self.message)
 }
+
+///|
+pub extend TestResult with Show::{to_string, output}
 
 ///|
 pub impl Show for TestResult with fn output(self : TestResult, logger : &Logger) -> Unit {
@@ -327,6 +339,9 @@ pub impl Show for TestResult with fn to_string(self : TestResult) -> String {
     self.failures.map(failure => "FAILED " + failure.to_string()).join("\n")
   }
 }
+
+///|
+pub extend EvalResult with Show::{to_string, output}
 
 ///|
 pub impl Show for EvalResult with fn output(self : EvalResult, logger : &Logger) -> Unit {
@@ -619,7 +634,7 @@ pub fn MoonBitVM::eval(
           None => self.interpreter.visit(expr)
         }
         if should_log {
-          println(expr.to_json().stringify())
+          println(@json.to_json(expr).stringify())
         }
         return Success(result_value, self.interpreter)
       }
@@ -627,7 +642,7 @@ pub fn MoonBitVM::eval(
         let mut last_result = RuntimeValue::Unit
         impls.each(node => {
           if should_log {
-            println(node.to_json().stringify())
+            println(@json.to_json(node).stringify())
           }
           let result = match node {
             TopTest(expr~, is_async~, ..) =>
@@ -670,7 +685,7 @@ fn control_flow_to_string(flow : @core.ControlFlow) -> String {
 
 ///|
 fn failed_test(name : String, message : String) -> TestResult {
-  { total: 1, passed: 0, failed: 1, failures: [{ name, message }] }
+  { total: 1, passed: 0, failed: 1, failures: [{ name, message, }], }
 }
 
 ///|
@@ -687,7 +702,7 @@ pub fn MoonBitVM::test_all(
   let impls = match self.cached_eval_code(code) {
     CachedEvalResult(EvalTop(impls, ..), _) => impls
     CachedEvalResult(EvalExpr(_), _) =>
-      return { total: 0, passed: 0, failed: 0, failures: [] }
+      return { total: 0, passed: 0, failed: 0, failures: [], }
     CachedEvalError(msg) => return failed_test("<parse>", msg)
   }
   let mut total = 0
@@ -695,7 +710,7 @@ pub fn MoonBitVM::test_all(
   let failures : Array[TestFailure] = []
   impls.each(node => {
     if log.unwrap_or(self.log) {
-      println(node.to_json().stringify())
+      println(@json.to_json(node).stringify())
     }
     match node {
       TopTest(expr~, name~, is_async~, ..) => {
@@ -715,7 +730,7 @@ pub fn MoonBitVM::test_all(
       _ => self.interpreter.top_visit(node) |> ignore
     }
   })
-  { total, passed, failed: failures.length(), failures }
+  { total, passed, failed: failures.length(), failures, }
 }
 
 ///|

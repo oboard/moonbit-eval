@@ -5,6 +5,9 @@ pub enum RuntimeLocation {
   LetMut(String)
 } derive(Debug)
 
+///|
+pub extend RuntimeLocation with Debug::{to_repr}
+
 ///| 变量管理模块
 
 ///| 处理变量查找、设置和作用域管理
@@ -140,7 +143,7 @@ pub fn RuntimeEnvironment::update(
 pub fn ClosureInterpreter::lookup_current_function(
   self : ClosureInterpreter,
 ) -> String {
-  let buf = StringBuilder::new()
+  let buf = @builtin.StringBuilder()
   self.call_stack.each(frame => {
     if frame is FunctionCall(name) {
       buf.write_string("\{name} => ")

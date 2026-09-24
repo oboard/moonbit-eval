@@ -1,9 +1,13 @@
 import {
-  "moonbitlang/core/bench",
-  "moonbitlang/parser/basic",
+  "moonbitlang/core/json",
   "moonbitlang/parser/syntax",
+  "moonbitlang/lexer/basic",
   "oboard/eval/interpreter/core",
 }
+
+import {
+  "moonbitlang/core/bench",
+} for "test"
 
 options(
   link: {

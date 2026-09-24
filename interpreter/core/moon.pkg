@@ -1,21 +1,22 @@
 import {
+  "moonbitlang/core/builtin",
   "moonbitlang/core/list",
-  "moonbitlang/core/array",
   "moonbitlang/core/json",
   "moonbitlang/core/bigint",
-  "moonbitlang/core/buffer",
   "moonbitlang/core/debug",
   "moonbitlang/core/string",
   "moonbitlang/core/hashmap",
-  "moonbitlang/core/strconv",
   "moonbitlang/core/encoding/utf8" @encoding/utf8,
   "moonbitlang/x/encoding",
   "moonbitlang/parser/syntax",
-  "moonbitlang/parser/basic",
+  "moonbitlang/lexer/basic",
   "moonbitlang/parser",
-  "moonbitlang/parser/moon_config",
-  "moonbitlang/parser/tokens",
-  "moonbitlang/parser/attribute",
+  "moonbitlang/moon_config",
   "moonbitlang/x/fs",
   "oboard/eval/interpreter/host",
 }
+
+// The generated core_modules.mbt embeds the whole core library as string
+// literals, which legitimately exceeds the per-segment line limit (033).
+
+warnings = "-33"

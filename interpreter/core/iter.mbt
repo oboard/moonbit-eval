@@ -53,9 +53,9 @@ pub let iter_methods : Map[String, RuntimeFunction] = {
 ///|
 fn runtime_option_to_value(value : RuntimeValue) -> RuntimeValue? {
   match value {
-    Constructor({ val: { name: "Some", fields: [{ value, .. }] }, .. }) =>
+    Constructor({ val: { name: "Some", fields: [{ value, .. }], }, .. }) =>
       Some(value)
-    Constructor({ val: { name: "None", fields: [] }, .. }) => None
+    Constructor({ val: { name: "None", fields: [], }, .. }) => None
     _ => None
   }
 }
@@ -67,11 +67,11 @@ fn runtime_option_to_pair(
   match value {
     Constructor(
       {
-        val: { name: "Some", fields: [{ value: Tuple([left, right]), .. }] },
-        ..,
+        val: { name: "Some", fields: [{ value: Tuple([left, right]), .. }], },
+        ..
       }
     ) => Some((left, right))
-    Constructor({ val: { name: "None", fields: [] }, .. }) => None
+    Constructor({ val: { name: "None", fields: [], }, .. }) => None
     _ => None
   }
 }
@@ -88,7 +88,7 @@ fn runtime_value_to_iter(value : RuntimeValue) -> Iter[RuntimeValue] {
 ///|
 fn iter_result_is_continue(value : RuntimeValue) -> Bool {
   match value {
-    Constructor({ val: { name: "IterContinue", fields: [] }, .. }) => true
+    Constructor({ val: { name: "IterContinue", fields: [], }, .. }) => true
     _ => false
   }
 }
@@ -96,7 +96,7 @@ fn iter_result_is_continue(value : RuntimeValue) -> Bool {
 ///|
 fn iter_result_is_end(value : RuntimeValue) -> Bool {
   match value {
-    Constructor({ val: { name: "IterEnd", fields: [] }, .. }) => true
+    Constructor({ val: { name: "IterEnd", fields: [], }, .. }) => true
     _ => false
   }
 }
@@ -248,28 +248,28 @@ let iter_view_fn : RuntimeFunction = ctx => {
   match ctx.args {
     [
       { val: Iter(iter), .. },
-      { val: Int(start, ..), kind: LabelledOption("start") },
-      { val: Int(end_, ..), kind: LabelledOption("end") },
+      { val: Int(start, ..), kind: LabelledOption("start"), },
+      { val: Int(end_, ..), kind: LabelledOption("end"), },
       ..,
-    ] => Iter(iter.view(start~, end=end_))
+    ] => Iter(iter.clamped_view(start~, end=end_))
     [
       { val: Iter(iter), .. },
-      { val: Int(start, ..), kind: LabelledOption("start") },
+      { val: Int(start, ..), kind: LabelledOption("start"), },
       ..,
-    ] => Iter(iter.view(start~))
+    ] => Iter(iter.clamped_view(start~))
     [
       { val: Iter(iter), .. },
-      { val: Int(end_, ..), kind: LabelledOption("end") },
+      { val: Int(end_, ..), kind: LabelledOption("end"), },
       ..,
-    ] => Iter(iter.view(end=end_))
+    ] => Iter(iter.clamped_view(end=end_))
     [
       { val: Iter(iter), .. },
       { val: Int(start, ..), .. },
       { val: Int(end_, ..), .. },
-    ] => Iter(iter.view(start~, end=end_))
+    ] => Iter(iter.clamped_view(start~, end=end_))
     [{ val: Iter(iter), .. }, { val: Int(start, ..), .. }] =>
-      Iter(iter.view(start~))
-    [{ val: Iter(iter), .. }] => Iter(iter.view())
+      Iter(iter.clamped_view(start~))
+    [{ val: Iter(iter), .. }] => Iter(iter.clamped_view())
     _ => Unit
   }
 }
@@ -338,7 +338,7 @@ let iter_each_fn : RuntimeFunction = ctx => {
     [{ val: Iter(iter), .. }, { val: Fn(func), .. }] => {
       iter.each(val => {
         let _ = try! ctx.context.call(func.val, ctx.pkg, [
-          { val, kind: Positional },
+          { val, kind: Positional, },
         ])
       })
       Unit
@@ -352,7 +352,7 @@ let iter_map_fn : RuntimeFunction = ctx => {
   match ctx.args {
     [{ val: Iter(iter), .. }, { val: Fn(func), .. }] => {
       let mapped = iter.map(val => {
-        try! ctx.context.call(func.val, ctx.pkg, [{ val, kind: Positional }])
+        try! ctx.context.call(func.val, ctx.pkg, [{ val, kind: Positional, }])
       })
       Iter(mapped)
     }
@@ -366,7 +366,7 @@ let iter_filter_fn : RuntimeFunction = ctx => {
     [{ val: Iter(iter), .. }, { val: Fn(func), .. }] => {
       let filtered = iter.filter(fn(val) {
         match
-          (try! ctx.context.call(func.val, ctx.pkg, [{ val, kind: Positional }])) {
+          (try! ctx.context.call(func.val, ctx.pkg, [{ val, kind: Positional, }])) {
           Bool(true) => true
           _ => false
         }
@@ -383,8 +383,8 @@ let iter_fold_fn : RuntimeFunction = ctx => {
     [{ val: Iter(iter), .. }, { val: init, .. }, { val: Fn(func), .. }] =>
       iter.fold(init~, (acc, val) => {
         try! ctx.context.call(func.val, ctx.pkg, [
-          { val: acc, kind: Positional },
-          { val, kind: Positional },
+          { val: acc, kind: Positional, },
+          { val, kind: Positional, },
         ])
       })
     _ => Unit
@@ -397,7 +397,7 @@ let iter_all_fn : RuntimeFunction = ctx => {
     [{ val: Iter(iter), .. }, { val: Fn(func), .. }] => {
       let result = iter.all(fn(val) {
         match
-          (try! ctx.context.call(func.val, ctx.pkg, [{ val, kind: Positional }])) {
+          (try! ctx.context.call(func.val, ctx.pkg, [{ val, kind: Positional, }])) {
           Bool(b) => b
           _ => false
         }
@@ -414,7 +414,7 @@ let iter_any_fn : RuntimeFunction = ctx => {
     [{ val: Iter(iter), .. }, { val: Fn(func), .. }] => {
       let result = iter.any(fn(val) {
         match
-          (try! ctx.context.call(func.val, ctx.pkg, [{ val, kind: Positional }])) {
+          (try! ctx.context.call(func.val, ctx.pkg, [{ val, kind: Positional, }])) {
           Bool(true) => true
           _ => false
         }
@@ -431,7 +431,7 @@ let iter_find_first_fn : RuntimeFunction = ctx => {
     [{ val: Iter(iter), .. }, { val: Fn(func), .. }] => {
       let result = iter.find_first(fn(val) {
         match
-          (try! ctx.context.call(func.val, ctx.pkg, [{ val, kind: Positional }])) {
+          (try! ctx.context.call(func.val, ctx.pkg, [{ val, kind: Positional, }])) {
           Bool(b) => b
           _ => false
         }
@@ -448,8 +448,8 @@ let iter_eachi_fn : RuntimeFunction = ctx => {
     [{ val: Iter(iter), .. }, { val: Fn(func), .. }] => {
       iter.eachi(fn(index, val) {
         let _ = try! ctx.context.call(func.val, ctx.pkg, [
-          { val: Int(index, raw=None), kind: Positional },
-          { val, kind: Positional },
+          { val: Int(index, raw=None), kind: Positional, },
+          { val, kind: Positional, },
         ])
       })
       Unit
@@ -464,7 +464,7 @@ let iter_drop_while_fn : RuntimeFunction = ctx => {
     [{ val: Iter(iter), .. }, { val: Fn(func), .. }] => {
       let result = iter.drop_while(fn(val) {
         match
-          (try! ctx.context.call(func.val, ctx.pkg, [{ val, kind: Positional }])) {
+          (try! ctx.context.call(func.val, ctx.pkg, [{ val, kind: Positional, }])) {
           Bool(b) => b
           _ => false
         }
@@ -482,7 +482,9 @@ let iter_filter_map_fn : RuntimeFunction = ctx => {
       let result = iter.filter_map(fn(val) {
         match
           runtime_option_to_value(
-            try! ctx.context.call(func.val, ctx.pkg, [{ val, kind: Positional }]),
+            try! ctx.context.call(func.val, ctx.pkg, [
+              { val, kind: Positional, },
+            ]),
           ) {
           Some(v) => Some(v)
           None => None
@@ -500,7 +502,7 @@ let iter_flat_map_fn : RuntimeFunction = ctx => {
     [{ val: Iter(iter), .. }, { val: Fn(func), .. }] => {
       let result = iter.flat_map(fn(val) {
         runtime_value_to_iter(
-          try! ctx.context.call(func.val, ctx.pkg, [{ val, kind: Positional }]),
+          try! ctx.context.call(func.val, ctx.pkg, [{ val, kind: Positional, }]),
         )
       })
       Iter(result)
@@ -546,7 +548,7 @@ let iter_just_run_fn : RuntimeFunction = ctx => {
       while iter.next() is Some(x) {
         if iter_result_is_end(
             try! ctx.context.call(func.val, ctx.pkg, [
-              { val: x, kind: Positional },
+              { val: x, kind: Positional, },
             ]),
           ) {
           break
@@ -565,7 +567,9 @@ let iter_map_while_fn : RuntimeFunction = ctx => {
       let result = iter.map_while(fn(val) {
         match
           runtime_option_to_value(
-            try! ctx.context.call(func.val, ctx.pkg, [{ val, kind: Positional }]),
+            try! ctx.context.call(func.val, ctx.pkg, [
+              { val, kind: Positional, },
+            ]),
           ) {
           Some(v) => Some(v)
           None => None
@@ -583,8 +587,8 @@ let iter_mapi_fn : RuntimeFunction = ctx => {
     [{ val: Iter(iter), .. }, { val: Fn(func), .. }] => {
       let result = iter.mapi((index, val) => {
         try! ctx.context.call(func.val, ctx.pkg, [
-          { val: Int(index, raw=None), kind: Positional },
-          { val, kind: Positional },
+          { val: Int(index, raw=None), kind: Positional, },
+          { val, kind: Positional, },
         ])
       })
       Iter(result)
@@ -600,7 +604,7 @@ let iter_run_fn : RuntimeFunction = ctx => {
       while iter.next() is Some(x) {
         guard iter_result_is_continue(
           try! ctx.context.call(func.val, ctx.pkg, [
-            { val: x, kind: Positional },
+            { val: x, kind: Positional, },
           ]),
         ) else {
           break ctx.pkg.cons("IterEnd", [])
@@ -618,7 +622,7 @@ let iter_take_while_fn : RuntimeFunction = ctx => {
     [{ val: Iter(iter), .. }, { val: Fn(func), .. }] => {
       let result = iter.take_while(fn(val) {
         match
-          (try! ctx.context.call(func.val, ctx.pkg, [{ val, kind: Positional }])) {
+          (try! ctx.context.call(func.val, ctx.pkg, [{ val, kind: Positional, }])) {
           Bool(b) => b
           _ => false
         }
@@ -635,7 +639,7 @@ let iter_tap_fn : RuntimeFunction = ctx => {
     [{ val: Iter(iter), .. }, { val: Fn(func), .. }] => {
       let result = iter.tap(fn(val) {
         let _ = try! ctx.context.call(func.val, ctx.pkg, [
-          { val, kind: Positional },
+          { val, kind: Positional, },
         ])
       })
       Iter(result)

@@ -109,7 +109,7 @@ let builtin_embedded_code : Map[String, RuntimeFunction] = {
 
 ///|
 let core_embedded_code : Map[String, RuntimeFunction] = [
-  builtin_embedded_code, string_embedded_code, int_embedded_code,
+  builtin_embedded_code, string_embedded_code, int_embedded_code, extra_embedded_code,
 ].fold(init={}, (acc, cur) => {
   cur.each(fn(key, value) { acc.set(key, value) })
   acc
@@ -194,35 +194,35 @@ let identity_fn : RuntimeFunction = ctx => {
 let primitive_output_fn : RuntimeFunction = ctx => {
   match ctx.args {
     [{ val: Bool(v), .. }, { val: StringBuilder(logger), .. }] => {
-      v.output(logger)
+      Show::output(v, logger)
       Unit
     }
     [{ val: UInt(v), .. }, { val: StringBuilder(logger), .. }] => {
-      v.output(logger)
+      Show::output(v, logger)
       Unit
     }
     [{ val: Float(v), .. }, { val: StringBuilder(logger), .. }] => {
-      v.output(logger)
+      Show::output(v, logger)
       Unit
     }
     [{ val: Double(v), .. }, { val: StringBuilder(logger), .. }] => {
-      v.output(logger)
+      Show::output(v, logger)
       Unit
     }
     [{ val: Char(v), .. }, { val: StringBuilder(logger), .. }] => {
-      v.output(logger)
+      Show::output(v, logger)
       Unit
     }
     [{ val: Byte(v), .. }, { val: StringBuilder(logger), .. }] => {
-      v.output(logger)
+      Show::output(v, logger)
       Unit
     }
     [{ val: Int64(v), .. }, { val: StringBuilder(logger), .. }] => {
-      v.output(logger)
+      Show::output(v, logger)
       Unit
     }
     [{ val: UInt64(v), .. }, { val: StringBuilder(logger), .. }] => {
-      v.output(logger)
+      Show::output(v, logger)
       Unit
     }
     _ => Unit
@@ -323,8 +323,8 @@ let async_suspend_fn : RuntimeFunction = ctx => {
             }
             ignore(
               ctx.context.call(cb.val, ctx.pkg, [
-                { val: Fn({ val: ok_fn, ty: Internal }), kind: Positional },
-                { val: Fn({ val: err_fn, ty: Internal }), kind: Positional },
+                { val: Fn({ val: ok_fn, ty: Internal, }), kind: Positional, },
+                { val: Fn({ val: err_fn, ty: Internal, }), kind: Positional, },
               ]),
             ) catch {
               _ =>

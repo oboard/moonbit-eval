@@ -33,7 +33,7 @@ fn default_import_alias(path : String) -> String {
 ///|
 fn parse_moon_config_import_item(ast : @moon_config.Ast) -> PackageImport? {
   match ast {
-    Str(path, ..) => Some({ path, alias_: Some(default_import_alias(path)) })
+    Str(path, ..) => Some({ path, alias_: Some(default_import_alias(path)), })
     Obj(fields, ..) => {
       let mut path = None
       let mut alias_ = None
@@ -79,7 +79,7 @@ fn collect_imports_from_moon_config(
                 imports.push(import_)
               }
             }
-            spans.push({ start: loc.start.cnum, end: loc.end.cnum })
+            spans.push({ start: loc.start.cnum, end: loc.end.cnum, })
           }
           _ => ()
         }
@@ -91,7 +91,7 @@ fn collect_imports_from_moon_config(
 
 ///|
 fn remove_import_spans(source : String, spans : Array[ImportSpan]) -> String {
-  let buf = StringBuilder::new()
+  let buf = @builtin.StringBuilder()
   let mut cursor = 0
   for span in spans {
     let start = span.start.clamp(min=0, max=source.length())
@@ -115,7 +115,7 @@ fn remove_import_spans(source : String, spans : Array[ImportSpan]) -> String {
 pub fn parse_package_imports(source : String) -> ImportParseResult {
   let (ast, _diagnostics) = @moon_config.parse_moon_pkg(source)
   let (imports, spans) = collect_imports_from_moon_config(ast)
-  { code: remove_import_spans(source, spans), imports }
+  { code: remove_import_spans(source, spans), imports, }
 }
 
 ///|
@@ -281,7 +281,7 @@ fn find_matching_curly(source : String, open_index : Int) -> Int {
 
 ///|
 fn normalize_list_comprehension_blocks(source : String) -> String {
-  let buf = StringBuilder::new()
+  let buf = @builtin.StringBuilder()
   let mut cursor = 0
   let mut i = 0
   while i < source.length() {
@@ -355,7 +355,7 @@ fn find_loop_body_brace(source : String, start : Int) -> Int {
 ///|
 fn normalize_loop_expressions(source : String) -> String {
   let loop_arg = "__moonbit_eval_loop_arg"
-  let buf = StringBuilder::new()
+  let buf = @builtin.StringBuilder()
   let mut cursor = 0
   let mut i = 0
   while i < source.length() {
@@ -416,7 +416,7 @@ fn find_header_brace(source : String, start : Int) -> Int {
 
 ///|
 fn normalize_enum_header(header : String) -> String {
-  let buf = StringBuilder::new()
+  let buf = @builtin.StringBuilder()
   let mut i = 0
   while i < header.length() {
     if source_char(header, i) == '@' {
@@ -441,7 +441,7 @@ fn normalize_enum_header(header : String) -> String {
 
 ///|
 fn normalize_extenum_decls(source : String) -> String {
-  let buf = StringBuilder::new()
+  let buf = @builtin.StringBuilder()
   let mut i = 0
   while i < source.length() {
     let skipped = skip_non_code_source(source, i)
@@ -491,7 +491,7 @@ fn scan_left_type_ref(source : String, index : Int) -> Int {
 
 ///|
 fn normalize_extensible_constructor_refs(source : String) -> String {
-  let buf = StringBuilder::new()
+  let buf = @builtin.StringBuilder()
   let mut cursor = 0
   let mut i = 0
   while i < source.length() {
@@ -592,7 +592,7 @@ fn find_reverse_pipe_rhs_end(source : String, start : Int) -> Int {
 
 ///|
 fn normalize_reverse_pipe_methods(source : String) -> String {
-  let buf = StringBuilder::new()
+  let buf = @builtin.StringBuilder()
   let mut cursor = 0
   let mut i = 0
   while i + 1 < source.length() {

@@ -75,6 +75,9 @@ pub suberror ControlFlow {
 }
 
 ///|
+pub extend RuntimeValue with Compare::{op_lt, op_le, op_ge, compare, op_gt}
+
+///|
 pub impl Compare for RuntimeValue with fn compare(self, other) {
   match (self, other) {
     (Int(a, ..), Int(b, ..)) => a.compare(b)
@@ -98,12 +101,18 @@ pub impl Compare for RuntimeValue with fn compare(self, other) {
 }
 
 ///|
+pub extend RuntimeValue with Hash::{hash, hash_combine}
+
+///|
 pub impl Hash for RuntimeValue with fn hash_combine(
   self : RuntimeValue,
   hasher : Hasher,
 ) -> Unit {
   hasher.combine(self)
 }
+
+///|
+pub extend RuntimeValue with Add::{add}
 
 ///|
 pub impl Add for RuntimeValue with fn add(
@@ -124,19 +133,19 @@ pub impl Add for RuntimeValue with fn add(
     (Bytes(a), Bytes(b)) => Bytes(a + b)
     (StringView(a), StringView(b)) => StringView(a + b)
     (StringBuilder(a), StringBuilder(b)) => {
-      let result = StringBuilder::new()
+      let result = @builtin.StringBuilder()
       result.write_string(a.to_string())
       result.write_string(b.to_string())
       StringBuilder(result)
     }
     (StringBuilder(sb), String(s)) => {
-      let result = StringBuilder::new()
+      let result = @builtin.StringBuilder()
       result.write_string(sb.to_string())
       result.write_string(s)
       StringBuilder(result)
     }
     (String(s), StringBuilder(sb)) => {
-      let result = StringBuilder::new()
+      let result = @builtin.StringBuilder()
       result.write_string(s)
       result.write_string(sb.to_string())
       StringBuilder(result)
@@ -172,6 +181,9 @@ pub impl Hash for RuntimeValue with fn hash(self : RuntimeValue) -> Int {
 }
 
 ///|
+pub extend RuntimeValue with ToJson::{to_json}
+
+///|
 /// 为 RuntimeValue 实现自定义的 ToJson trait
 pub impl ToJson for RuntimeValue with fn to_json(self : RuntimeValue) -> Json {
   match self {
@@ -197,9 +209,9 @@ pub impl ToJson for RuntimeValue with fn to_json(self : RuntimeValue) -> Json {
     FixedArray(a) => a.to_json()
     ArrayView(a) => a.to_json()
     Object(s) => s.val.to_json()
-    HashMap(m) => m.to_json()
+    HashMap(m) => @json.to_json(m)
     Fn(f) => ["function", f.ty.to_json()]
-    Constructor({ val: { name, fields }, .. }) => {
+    Constructor({ val: { name, fields, }, .. }) => {
       let args = fields.map(fn(field) { field.value })
       [name, args.to_json()]
     }
@@ -212,6 +224,9 @@ pub impl ToJson for RuntimeValue with fn to_json(self : RuntimeValue) -> Json {
 }
 
 ///| 为 RuntimeValue 实现自定义的 Eq trait
+
+///|
+pub extend RuntimeValue with Eq::{not_equal, equal}
 
 ///|
 /// 特别处理 Function 类型，通过函数签名比较相等性
@@ -247,8 +262,8 @@ pub impl Eq for RuntimeValue with fn equal(
 
     // 构造函数比较
     (
-      Constructor({ val: { name: name_a, fields: fields_a }, .. }),
-      Constructor({ val: { name: name_b, fields: fields_b }, .. }),
+      Constructor({ val: { name: name_a, fields: fields_a, }, .. }),
+      Constructor({ val: { name: name_b, fields: fields_b, }, .. }),
     ) =>
       if name_a != name_b || fields_a.length() != fields_b.length() {
         false
@@ -334,19 +349,19 @@ fn RuntimeValue::from_constant(c : @syntax.Constant) -> RuntimeValue {
       Byte(int_val.to_byte())
     }
     Char(s) => {
-      let builder = StringBuilder::new()
+      let builder = @builtin.StringBuilder()
       manualUnescape(s, builder)
       Char(builder.to_string().get_char(0).unwrap_or(' '))
     }
     String(s) => {
-      let builder = StringBuilder::new()
+      let builder = @builtin.StringBuilder()
       manualUnescape(s.to_string_view(), builder)
       String(builder.to_string())
     }
     Regex(s) => String(s)
     BigInt(bigint) => BigInt(@bigint.BigInt::from_string(bigint))
     Bytes(s) => {
-      let builder = StringBuilder::new()
+      let builder = @builtin.StringBuilder()
       manualUnescape(s.to_string_view(), builder)
       Bytes(@encoding.encode(UTF8, builder.to_string()))
     }
@@ -638,7 +653,7 @@ fn runtime_array_to_string(values : Array[RuntimeValue]) -> String {
 fn runtime_hashmap_to_string(
   hashmap : @hashmap.HashMap[RuntimeValue, RuntimeValue],
 ) -> String {
-  let sb = StringBuilder::new()
+  let sb = @builtin.StringBuilder()
   sb.write_string("HashMap::from_array([")
   hashmap.eachi((i, key, val) => {
     if i > 0 {
@@ -653,6 +668,9 @@ fn runtime_hashmap_to_string(
   sb.write_string("])")
   sb.to_string()
 }
+
+///|
+pub extend RuntimeValue with Show::{to_string, output}
 
 ///|
 pub impl Show for RuntimeValue with fn output(self, logger : &Logger) -> Unit {
@@ -732,7 +750,7 @@ pub impl Show for RuntimeValue with fn to_string(self) -> String {
       "\{self.get_type()}::{" + parts.join(", ") + "}"
     }
     HashMap(hashmap) => runtime_hashmap_to_string(hashmap)
-    Constructor({ val: { name, fields }, .. }) =>
+    Constructor({ val: { name, fields, }, .. }) =>
       // Format constructor call with field names if present
       if fields.length() == 0 {
         "\{name}"
@@ -881,11 +899,161 @@ pub fn runtime_value_infix(
         ">" => Bool(left > right)
         "<=" => Bool(left <= right)
         ">=" => Bool(left >= right)
+        "<<" => Int(left << right, raw=None)
+        ">>" => Int(left >> right, raw=None)
+        "&" => Int(left & right, raw=None)
+        "|" => Int(left | right, raw=None)
+        "^" => Int(left ^ right, raw=None)
         // 增强赋值操作符 - 注意：这些操作符不应该在这里处理
         // 它们应该在解释器的 Infix 处理中被特殊处理
         "+=" | "-=" | "*=" | "/=" | "%=" => Unit
         _ => Unit
       }
+    (Int(left, ..), Int64(right)) =>
+      match op {
+        "<<" | ">>" => Unit
+        _ => runtime_value_infix(op, Int64(left.to_int64()), Int64(right))
+      }
+    (Int64(left), Int(right, ..)) =>
+      match op {
+        "<<" => Int64(left << right)
+        ">>" => Int64(left >> right)
+        _ => runtime_value_infix(op, Int64(left), Int64(right.to_int64()))
+      }
+    // Int64 运算
+    (Int64(left), Int64(right)) =>
+      match op {
+        "+" => Int64(left + right)
+        "-" => Int64(left - right)
+        "*" => Int64(left * right)
+        "/" => Int64(left / right)
+        "%" => Int64(left % right)
+        "==" => Bool(left == right)
+        "!=" => Bool(left != right)
+        "<" => Bool(left < right)
+        ">" => Bool(left > right)
+        "<=" => Bool(left <= right)
+        ">=" => Bool(left >= right)
+        "&" => Int64(left & right)
+        "|" => Int64(left | right)
+        "^" => Int64(left ^ right)
+        _ => Unit
+      }
+    // UInt 运算
+    (UInt(left), UInt(right)) =>
+      match op {
+        "+" => UInt(left + right)
+        "-" => UInt(left - right)
+        "*" => UInt(left * right)
+        "/" => UInt(left / right)
+        "%" => UInt(left % right)
+        "==" => Bool(left == right)
+        "!=" => Bool(left != right)
+        "<" => Bool(left < right)
+        ">" => Bool(left > right)
+        "<=" => Bool(left <= right)
+        ">=" => Bool(left >= right)
+        "&" => UInt(left & right)
+        "|" => UInt(left | right)
+        "^" => UInt(left ^ right)
+        _ => Unit
+      }
+    (UInt(left), Int(right, ..)) =>
+      match op {
+        "<<" => UInt(left << right)
+        ">>" => UInt(left >> right)
+        _ => Unit
+      }
+    // UInt64 运算
+    (UInt64(left), UInt64(right)) =>
+      match op {
+        "+" => UInt64(left + right)
+        "-" => UInt64(left - right)
+        "*" => UInt64(left * right)
+        "/" => UInt64(left / right)
+        "%" => UInt64(left % right)
+        "==" => Bool(left == right)
+        "!=" => Bool(left != right)
+        "<" => Bool(left < right)
+        ">" => Bool(left > right)
+        "<=" => Bool(left <= right)
+        ">=" => Bool(left >= right)
+        "&" => UInt64(left & right)
+        "|" => UInt64(left | right)
+        "^" => UInt64(left ^ right)
+        _ => Unit
+      }
+    (UInt64(left), Int(right, ..)) =>
+      match op {
+        "<<" => UInt64(left << right)
+        ">>" => UInt64(left >> right)
+        _ => Unit
+      }
+    // Float 运算
+    (Float(left), Float(right)) =>
+      match op {
+        "+" => Float(left + right)
+        "-" => Float(left - right)
+        "*" => Float(left * right)
+        "/" => Float(left / right)
+        "==" => Bool(left == right)
+        "!=" => Bool(left != right)
+        "<" => Bool(left < right)
+        ">" => Bool(left > right)
+        "<=" => Bool(left <= right)
+        ">=" => Bool(left >= right)
+        _ => Unit
+      }
+    // BigInt 运算
+    (BigInt(left), BigInt(right)) =>
+      match op {
+        "+" => BigInt(left + right)
+        "-" => BigInt(left - right)
+        "*" => BigInt(left * right)
+        "/" => BigInt(left / right)
+        "%" => BigInt(left % right)
+        "==" => Bool(left == right)
+        "!=" => Bool(left != right)
+        "<" => Bool(left < right)
+        ">" => Bool(left > right)
+        "<=" => Bool(left <= right)
+        ">=" => Bool(left >= right)
+        _ => Unit
+      }
+    // Byte 运算
+    (Byte(left), Byte(right)) =>
+      match op {
+        "+" => Byte(left + right)
+        "-" => Byte(left - right)
+        "*" => Byte(left * right)
+        "/" => Byte(left / right)
+        "%" => Byte(left % right)
+        "==" => Bool(left == right)
+        "!=" => Bool(left != right)
+        "&" => Byte(left & right)
+        "|" => Byte(left | right)
+        "^" => Byte(left ^ right)
+        _ => Unit
+      }
+    // UInt16 运算
+    (UInt16(left), UInt16(right)) => {
+      let li = left.to_int()
+      let ri = right.to_int()
+      match op {
+        "+" => UInt16((li + ri).to_uint16())
+        "-" => UInt16((li - ri).to_uint16())
+        "*" => UInt16((li * ri).to_uint16())
+        "/" => UInt16((li / ri).to_uint16())
+        "%" => UInt16((li % ri).to_uint16())
+        "==" => Bool(left == right)
+        "!=" => Bool(left != right)
+        "<" => Bool(left < right)
+        ">" => Bool(left > right)
+        "<=" => Bool(left <= right)
+        ">=" => Bool(left >= right)
+        _ => Unit
+      }
+    }
     // Double 运算
     (Double(left), Double(right)) =>
       match op {
@@ -985,13 +1153,13 @@ pub fn RuntimeValue::from_option(val : RuntimeValue?) -> RuntimeValue {
       Constructor({
         val: {
           name: "Some",
-          fields: [{ name: None, value: x, mutable: false }],
+          fields: [{ name: None, value: x, mutable: false, }],
         },
         ty: RuntimeType::option(),
       })
     None =>
       Constructor({
-        val: { name: "None", fields: [] },
+        val: { name: "None", fields: [], },
         ty: RuntimeType::option(),
       })
   }
@@ -1004,12 +1172,18 @@ pub fn RuntimeValue::from_result(
   match val {
     Ok(x) =>
       Constructor({
-        val: { name: "Ok", fields: [{ name: None, value: x, mutable: false }] },
+        val: {
+          name: "Ok",
+          fields: [{ name: None, value: x, mutable: false, }],
+        },
         ty: RuntimeType::result(),
       })
     Err(x) =>
       Constructor({
-        val: { name: "Err", fields: [{ name: None, value: x, mutable: false }] },
+        val: {
+          name: "Err",
+          fields: [{ name: None, value: x, mutable: false, }],
+        },
         ty: RuntimeType::result(),
       })
   }

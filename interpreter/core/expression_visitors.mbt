@@ -56,13 +56,13 @@ fn ClosureInterpreter::visit_record_creation(
   type_name : @syntax.TypeName?,
   fields : @list.List[@syntax.FieldDef],
 ) -> RuntimeValue raise ControlFlow {
-  let evaluated_fields = {}
+  let evaluated_fields = @builtin.Map([])
   for field in fields {
     let field_value = self.visit(field.expr)
     evaluated_fields.set(field.label.name, field_value)
   }
   fn alloc(pkg : RuntimePackage, name : String) -> RuntimeValue {
-    Object({ val: evaluated_fields, ty: Object(pkg~, name~) })
+    Object({ val: evaluated_fields, ty: Object(pkg~, name~), })
   }
 
   if type_name is Some(type_name) {
@@ -157,6 +157,18 @@ fn ClosureInterpreter::syntax_iterable_to_iter(
           match (start_val, end_val) {
             (Int(start, ..), Int(end, ..)) =>
               start.until(end, inclusive=true).map(fn(i) { Int(i, raw=None) })
+            _ => Iter::empty()
+          }
+        }
+        // 降序区间：a >.. b 迭代 a-1, a-2, ..., b
+        Ident(name=">..") => {
+          let start_val = self.visit(lhs)
+          let end_val = self.visit(rhs)
+          match (start_val, end_val) {
+            (Int(start, ..), Int(end, ..)) =>
+              (start - 1)
+              .until(end - 1, step=-1)
+              .map(fn(i) { Int(i, raw=None) })
             _ => Iter::empty()
           }
         }
@@ -285,12 +297,10 @@ fn ClosureInterpreter::visit_for_each_comprehension_as_iter(
   let parent_env = self.current_pkg.env
   let loop_env = RuntimeEnvironment::new(parent=parent_env)
   self.current_pkg.env = loop_env
-  self.init_loop_bindings(init) catch {
-    e => {
-      self.current_pkg.env = parent_env
-      raise e
-    }
+  errdefer {
+    self.current_pkg.env = parent_env
   }
+  self.init_loop_bindings(init)
   self.current_pkg.env = parent_env
   Iter(
     Iter::new(fn() -> RuntimeValue? {
@@ -366,12 +376,10 @@ fn ClosureInterpreter::visit_for_comprehension_as_iter(
   let parent_env = self.current_pkg.env
   let loop_env = RuntimeEnvironment::new(parent=parent_env)
   self.current_pkg.env = loop_env
-  self.init_for_loop_scope(binders) catch {
-    e => {
-      self.current_pkg.env = parent_env
-      raise e
-    }
+  errdefer {
+    self.current_pkg.env = parent_env
   }
+  self.init_for_loop_scope(binders)
   self.current_pkg.env = parent_env
   Iter(
     Iter::new(fn() -> RuntimeValue? {
@@ -557,12 +565,10 @@ fn ClosureInterpreter::visit_for_as_iter(
   let parent_env = self.current_pkg.env
   let loop_env = RuntimeEnvironment::new(parent=parent_env)
   self.current_pkg.env = loop_env
-  self.init_for_loop_scope(binders) catch {
-    e => {
-      self.current_pkg.env = parent_env
-      raise e
-    }
+  errdefer {
+    self.current_pkg.env = parent_env
   }
+  self.init_for_loop_scope(binders)
   self.current_pkg.env = parent_env
   Iter(
     Iter::new(fn() -> RuntimeValue? {
@@ -639,7 +645,7 @@ fn ClosureInterpreter::visit_array(
       _ => result_values.push(self.visit(expr))
     }
   }
-  let final_array = Array::new()
+  let final_array = []
   for val in result_values {
     final_array.push(val)
   }
@@ -746,7 +752,7 @@ fn ClosureInterpreter::visit_apply(
           .map(arg => {
             match arg.kind {
               Positional =>
-                { name: None, value: self.visit(arg.value), mutable: false }
+                { name: None, value: self.visit(arg.value), mutable: false, }
               Labelled(label)
               | LabelledPun(label)
               | LabelledOption(label~, ..)
@@ -762,7 +768,7 @@ fn ClosureInterpreter::visit_apply(
         let constr_name = constr.name.name
         let pkg = self.constructor_runtime_package(constr)
         Constructor({
-          val: { name: constr_name, fields },
+          val: { name: constr_name, fields, },
           ty: pkg.find_static_type(constr_name),
         })
       }

@@ -516,7 +516,7 @@ let string_view_find_by_fn : RuntimeFunction = ctx => {
         s
         .find_by(char => {
           let result = ctx.context.call(func.val, ctx.pkg, [
-            { val: Char(char), kind: Positional },
+            { val: Char(char), kind: Positional, },
           ]) catch {
             _ => Unit
           }
@@ -684,28 +684,28 @@ let string_view_sub_fn : RuntimeFunction = ctx => {
   match ctx.args {
     [
       { val: StringView(s), .. },
-      { val: Int(start, ..), kind: Labelled("start") },
-      { val: Int(end_, ..), kind: Labelled("end") },
+      { val: Int(start, ..), kind: Labelled("start"), },
+      { val: Int(end_, ..), kind: Labelled("end"), },
       ..,
-    ] => StringView(s.sub(start~, end=end_))
+    ] => StringView(s.exact_view(start~, end=end_))
     [
       { val: StringView(s), .. },
-      { val: Int(start, ..), kind: Labelled("start") },
+      { val: Int(start, ..), kind: Labelled("start"), },
       ..,
-    ] => StringView(s.sub(start~))
+    ] => StringView(s.exact_view(start~))
     [
       { val: StringView(s), .. },
-      { val: Int(end_, ..), kind: Labelled("end") },
+      { val: Int(end_, ..), kind: Labelled("end"), },
       ..,
-    ] => StringView(s.sub(end=end_))
-    [{ val: StringView(s), .. }] => StringView(s.sub())
+    ] => StringView(s.exact_view(end=end_))
+    [{ val: StringView(s), .. }] => StringView(s.exact_view())
     [
       { val: StringView(s), .. },
       { val: Int(start, ..), .. },
       { val: Int(end_, ..), .. },
-    ] => StringView(s.sub(start~, end=end_))
+    ] => StringView(s.exact_view(start~, end=end_))
     [{ val: StringView(s), .. }, { val: Int(start, ..), .. }] =>
-      StringView(s.sub(start~))
+      StringView(s.exact_view(start~))
     _ => StringView("")
   }
 }
@@ -733,18 +733,18 @@ let string_view_view_fn : RuntimeFunction = ctx => {
   match ctx.args {
     [
       { val: StringView(s), .. },
-      { val: Int(start_offset, ..), kind: Labelled("start_offset") },
-      { val: Int(end_offset, ..), kind: Labelled("end_offset") },
+      { val: Int(start_offset, ..), kind: Labelled("start_offset"), },
+      { val: Int(end_offset, ..), kind: Labelled("end_offset"), },
       ..,
     ] => StringView(s.view(start_offset~, end_offset~))
     [
       { val: StringView(s), .. },
-      { val: Int(start_offset, ..), kind: Labelled("start_offset") },
+      { val: Int(start_offset, ..), kind: Labelled("start_offset"), },
       ..,
     ] => StringView(s.view(start_offset~))
     [
       { val: StringView(s), .. },
-      { val: Int(end_offset, ..), kind: Labelled("end_offset") },
+      { val: Int(end_offset, ..), kind: Labelled("end_offset"), },
       ..,
     ] => StringView(s.view(end_offset~))
     [{ val: StringView(s), .. }] => StringView(s.view())

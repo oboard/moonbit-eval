@@ -36,7 +36,7 @@ pub let map_methods : Map[String, RuntimeFunction] = {
 
 ///|
 fn map_from_pairs(iter : Iter[RuntimeValue]) -> Map[RuntimeValue, RuntimeValue] {
-  let map = {}
+  let map = @builtin.Map([])
   iter.each(fn(item) {
     match item {
       Tuple([key, val]) => map.set(key, val)
@@ -111,8 +111,8 @@ let map_each_fn : RuntimeFunction = ctx => {
     [{ val: Map(map), .. }, { val: Fn(f), .. }] => {
       map.each((key, val) => {
         ctx.context.call(f.val, ctx.pkg, [
-          { val: key, kind: Positional },
-          { val, kind: Positional },
+          { val: key, kind: Positional, },
+          { val, kind: Positional, },
         ])
         |> ignore
       })
@@ -129,9 +129,9 @@ let map_eachi_fn : RuntimeFunction = ctx => {
     [{ val: Map(map), .. }, { val: Fn(f), .. }] => {
       map.eachi((i, key, val) => {
         ctx.context.call(f.val, ctx.pkg, [
-          { val: Int(i, raw=None), kind: Positional },
-          { val: key, kind: Positional },
-          { val, kind: Positional },
+          { val: Int(i, raw=None), kind: Positional, },
+          { val: key, kind: Positional, },
+          { val, kind: Positional, },
         ])
         |> ignore
       })
@@ -292,11 +292,11 @@ let map_length_fn : RuntimeFunction = ctx => {
 let map_map_fn : RuntimeFunction = ctx => {
   match ctx.args {
     [{ val: Map(map), .. }, { val: Fn(f), .. }] => {
-      let new_map = {}
+      let new_map = @builtin.Map([])
       map.each((key, val) => {
         let new_val = ctx.context.call(f.val, ctx.pkg, [
-          { val: key, kind: Positional },
-          { val, kind: Positional },
+          { val: key, kind: Positional, },
+          { val, kind: Positional, },
         ])
         new_map.set(key, new_val)
       })
@@ -331,7 +331,7 @@ let map_merge_in_place_fn : RuntimeFunction = ctx => {
 /// Map new操作
 let map_new_fn : RuntimeFunction = ctx => {
   match ctx.args {
-    [{ val: Int(capacity, ..), kind: LabelledOption("capacity") }] =>
+    [{ val: Int(capacity, ..), kind: LabelledOption("capacity"), }] =>
       Map(Map([], capacity~))
     [{ val: Int(capacity, ..), .. }] => Map(Map([], capacity~))
     _ => Map({})
@@ -370,8 +370,8 @@ let map_retain_fn : RuntimeFunction = ctx => {
         try {
           match
             ctx.context.call(f.val, ctx.pkg, [
-              { val: key, kind: Positional },
-              { val, kind: Positional },
+              { val: key, kind: Positional, },
+              { val, kind: Positional, },
             ]) {
             Bool(b) => b
             _ => false
@@ -403,7 +403,7 @@ let map_set_fn : RuntimeFunction = ctx => {
 let map_to_array_fn : RuntimeFunction = ctx => {
   match ctx.args {
     [{ val: Map(map), .. }] => {
-      let arr : Array[RuntimeValue] = Array::new()
+      let arr : Array[RuntimeValue] = []
       map.each(fn(key, val) { arr.push(Tuple([key, val])) })
       Array(arr)
     }
@@ -418,13 +418,13 @@ let map_update_fn : RuntimeFunction = ctx => {
     [{ val: Map(map), .. }, { val: key, .. }, { val: Fn(f), .. }] => {
       let current = map.get(key)
       let result = ctx.context.call(f.val, ctx.pkg, [
-        { val: RuntimeValue::from_option(current), kind: Positional },
+        { val: RuntimeValue::from_option(current), kind: Positional, },
       ])
       match result {
         Constructor(
-          { val: { name: "Some", fields: [{ value: new_value, .. }] }, .. }
+          { val: { name: "Some", fields: [{ value: new_value, .. }], }, .. }
         ) => map.set(key, new_value)
-        Constructor({ val: { name: "None", fields: [] }, .. }) =>
+        Constructor({ val: { name: "None", fields: [], }, .. }) =>
           if current is Some(_) {
             map.remove(key)
           }
