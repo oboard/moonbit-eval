@@ -1,5 +1,3 @@
 import {
   "oboard/eval",
 }
-
-pkgtype(kind: "executable")
